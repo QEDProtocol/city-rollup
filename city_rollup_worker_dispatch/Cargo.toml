@@ -1,0 +1,30 @@
+[package]
+edition = "2021"
+name    = "city_rollup_worker_dispatch"
+version = "0.1.0"
+
+
+[dependencies]
+plonky2 = { workspace = true }
+anyhow = { workspace = true }
+serde_json = { workspace = true }
+serde = { workspace = true }
+serde_with = { workspace = true }
+serde_repr = { workspace = true }
+postcard = { workspace = true }
+hex = { workspace = true }
+rand = { workspace = true }
+reqwest = { workspace = true }
+url = { workspace = true }
+k256 = { workspace = true }
+async-trait = { workspace = true }
+city_crypto           = { path = "../city_crypto" }
+city_common           = { path = "../city_common" }
+tokio                 = { workspace = true }
+redis = { version = "0.25.3", features = ["tokio-comp"] }
+
+
+[dev-dependencies]
+criterion = "0.5.1"
+rand_chacha = "0.3.1"
+hex-literal = "0.4.1"

@@ -1,0 +1,41 @@
+[package]
+edition = "2021"
+name    = "city_common_circuit"
+version = "0.1.0"
+
+
+[dependencies]
+plonky2 = { workspace = true }
+anyhow = { workspace = true }
+num = { workspace = true }
+unroll = { workspace = true }
+serde_json = { workspace = true }
+itertools = { workspace = true }
+postcard = { workspace = true }
+serde = { workspace = true }
+serde_with = { workspace = true }
+hex = { workspace = true }
+rand = { workspace = true }
+bitflags = { workspace = true }
+bitcoin = { workspace = true }
+sha2 = { workspace = true }
+ripemd = { workspace = true }
+starkyx = { workspace = true }
+log = { workspace = true }
+env_logger = { workspace = true }
+hashbrown = { workspace = true }
+lazy_static = { workspace = true }
+k256 = { workspace = true }
+reqwest = { workspace = true }
+tokio = { workspace = true }
+url = { workspace = true }
+rayon = { workspace = true }
+kvq           = { path = "../kvq" }
+city_crypto           = { path = "../city_crypto" }
+city_common           = { path = "../city_common" }
+
+
+[dev-dependencies]
+criterion = "0.5.1"
+rand_chacha = "0.3.1"
+hex-literal = "0.4.1"
