@@ -2,11 +2,9 @@ use clap::command;
 use clap::Parser;
 use clap::Subcommand;
 
-#[cfg(debug_assertions)]
 pub mod l2transfer;
+pub mod l2worker;
 pub mod rpcserver;
-#[cfg(debug_assertions)]
-pub mod worker;
 
 #[derive(Parser)]
 pub struct Cli {
@@ -17,8 +15,6 @@ pub struct Cli {
 #[derive(Subcommand)]
 pub enum Commands {
     RPCServer(city_common::cli::args::RPCServerArgs),
-    #[cfg(debug_assertions)]
-    Worker(city_common::cli::args::RollupProvingWorkerArgs),
-    #[cfg(debug_assertions)]
     L2Transfer(city_common::cli::args::L2TransferArgs),
+    L2Worker(city_common::cli::args::L2WorkerArgs),
 }

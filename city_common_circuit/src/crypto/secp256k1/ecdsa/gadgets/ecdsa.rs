@@ -133,10 +133,11 @@ mod tests {
             self.sizes.push(size);
             self.labels.push(name.to_string());
         }
+        /*
         pub fn add_field_string(&mut self, name: String, size: usize) {
             self.sizes.push(size);
             self.labels.push(name);
-        }
+        }*/
         pub fn generate<T: Clone>(&self, value: Vec<T>) -> Vec<SimpleStructField<T>> {
             let mut result = Vec::new();
             let mut start = 0;

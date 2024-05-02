@@ -1,12 +1,9 @@
+use plonky2::field::goldilocks_field::GoldilocksField;
 use plonky2::field::types::Field;
-use plonky2::hash::hash_types::{HashOut, HashOutTarget};
+use plonky2::hash::hash_types::HashOut;
+use plonky2::hash::hash_types::RichField;
 use plonky2::hash::poseidon::PoseidonHash;
-use plonky2::iop::target::{BoolTarget, Target};
 use plonky2::plonk::config::Hasher;
-use plonky2::{
-    field::extension::Extendable, hash::hash_types::RichField,
-    plonk::circuit_builder::CircuitBuilder,
-};
 
 use crate::field::qfield::QRichField;
 use crate::hash::qhashout::QHashOut;
@@ -79,7 +76,7 @@ pub struct PoseidonHasher;
 
 impl<F: QRichField> MerkleHasher<HashOut<F>> for PoseidonHasher {
     fn two_to_one(left: &HashOut<F>, right: &HashOut<F>) -> HashOut<F> {
-        PoseidonHash::two_to_one(*left, *right)
+        <PoseidonHash as plonky2::plonk::config::Hasher<F>>::two_to_one(*left, *right)
     }
 }
 impl<F: QRichField> MerkleHasherWithMarkedLeaf<HashOut<F>> for PoseidonHasher {
@@ -100,7 +97,7 @@ impl<F: QRichField> MerkleHasherWithMarkedLeaf<HashOut<F>> for PoseidonHasher {
 
 impl<F: QRichField> MerkleHasher<QHashOut<F>> for PoseidonHasher {
     fn two_to_one(left: &QHashOut<F>, right: &QHashOut<F>) -> QHashOut<F> {
-        QHashOut(PoseidonHash::two_to_one(left.0, right.0))
+        QHashOut(<PoseidonHash as plonky2::plonk::config::Hasher<F>>::two_to_one(left.0, right.0))
     }
 }
 impl<F: QRichField> MerkleHasherWithMarkedLeaf<QHashOut<F>> for PoseidonHasher {
@@ -116,6 +113,70 @@ impl<F: QRichField> MerkleHasherWithMarkedLeaf<QHashOut<F>> for PoseidonHasher {
             right.0.elements[3],
             F::ONE,
         ]))
+    }
+}
+
+impl<F: QRichField> MerkleHasherWithMarkedLeaf<QHashOut<F>> for PoseidonHash {
+    fn two_to_one_marked_leaf(left: &QHashOut<F>, right: &QHashOut<F>) -> QHashOut<F> {
+        QHashOut(PoseidonHash::hash_no_pad(&[
+            left.0.elements[0],
+            left.0.elements[1],
+            left.0.elements[2],
+            left.0.elements[3],
+            right.0.elements[0],
+            right.0.elements[1],
+            right.0.elements[2],
+            right.0.elements[3],
+            F::ONE,
+        ]))
+    }
+}
+impl<F: QRichField> MerkleHasherWithMarkedLeaf<HashOut<F>> for PoseidonHash {
+    fn two_to_one_marked_leaf(left: &HashOut<F>, right: &HashOut<F>) -> HashOut<F> {
+        PoseidonHash::hash_no_pad(&[
+            left.elements[0],
+            left.elements[1],
+            left.elements[2],
+            left.elements[3],
+            right.elements[0],
+            right.elements[1],
+            right.elements[2],
+            right.elements[3],
+            F::ONE,
+        ])
+    }
+}
+
+impl<F: QRichField> MerkleHasher<QHashOut<F>> for PoseidonHash {
+    fn two_to_one(left: &QHashOut<F>, right: &QHashOut<F>) -> QHashOut<F> {
+        QHashOut(<PoseidonHash as plonky2::plonk::config::Hasher<F>>::two_to_one(left.0, right.0))
+    }
+}
+impl<F: QRichField> MerkleHasher<HashOut<F>> for PoseidonHash {
+    fn two_to_one(left: &HashOut<F>, right: &HashOut<F>) -> HashOut<F> {
+        <PoseidonHash as plonky2::plonk::config::Hasher<F>>::two_to_one(*left, *right)
+    }
+}
+
+impl BaseMerkleZeroHasherWithMarkedLeaf<QHashOut<GoldilocksField>> for PoseidonHash {
+    fn get_zero_hash_marked(reverse_level: usize) -> QHashOut<GoldilocksField> {
+        PoseidonHasher::get_zero_hash_marked(reverse_level)
+    }
+}
+impl MerkleZeroHasher<QHashOut<GoldilocksField>> for PoseidonHash {
+    fn get_zero_hash(reverse_level: usize) -> QHashOut<GoldilocksField> {
+        PoseidonHasher::get_zero_hash(reverse_level)
+    }
+}
+
+impl BaseMerkleZeroHasherWithMarkedLeaf<HashOut<GoldilocksField>> for PoseidonHash {
+    fn get_zero_hash_marked(reverse_level: usize) -> HashOut<GoldilocksField> {
+        <PoseidonHash as BaseMerkleZeroHasherWithMarkedLeaf<QHashOut<GoldilocksField>>>::get_zero_hash_marked(reverse_level).0
+    }
+}
+impl MerkleZeroHasher<HashOut<GoldilocksField>> for PoseidonHash {
+    fn get_zero_hash(reverse_level: usize) -> HashOut<GoldilocksField> {
+        PoseidonHasher::get_zero_hash(reverse_level)
     }
 }
 

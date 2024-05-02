@@ -6,10 +6,7 @@ use city_crypto::hash::{
 use plonky2::{
     field::extension::Extendable,
     hash::hash_types::{HashOut, HashOutTarget, RichField},
-    iop::{
-        target::Target,
-        witness::{PartialWitness, Witness, WitnessWrite},
-    },
+    iop::{target::Target, witness::Witness},
     plonk::{circuit_builder::CircuitBuilder, config::AlgebraicHasher},
 };
 pub const NUM_HASH_OUT_ELEMENTS: usize = 4;
@@ -107,11 +104,124 @@ impl DeltaMerkleProofGadget {
             .collect::<Vec<_>>();
         //builder.range_check(index, height);
         let index_bits = builder.split_le(index, height);
+        let z_hash_target = builder.constant_hash(HashOut {
+            elements: [F::ZERO, F::ZERO, F::ZERO, F::ZERO],
+        });
+        // ensure that the old value is zero
+        builder.connect_hashes(old_value, z_hash_target);
 
         for i in 0..height {
             let zero_hash_target = builder.constant_hash(H::get_zero_hash(i));
-            builder.ensure_hash_not_equal_if(index_bits[i], old_value, zero_hash_target);
-            builder.connect_hashes_if_false(index_bits[i], old_value, zero_hash_target);
+            builder.ensure_hash_not_equal_if(index_bits[i], siblings[i], zero_hash_target);
+            builder.connect_hashes_if_false(index_bits[i], siblings[i], zero_hash_target);
+        }
+
+        let old_root = MerkleProofGadget::compute_root_bits::<H, F, D>(
+            builder,
+            &index_bits,
+            old_value,
+            &siblings,
+        );
+        let new_root = MerkleProofGadget::compute_root_bits::<H, F, D>(
+            builder,
+            &index_bits,
+            new_value,
+            &siblings,
+        );
+        Self {
+            old_root,
+            old_value,
+            new_root,
+            new_value,
+            index,
+            siblings,
+            option_flags: DeltaMerkleProofGadgetOptionFlags::none_value_placeholder,
+        }
+    }
+    pub fn add_virtual_to_pop_right<
+        H: MerkleZeroHasher<HashOut<F>> + AlgebraicHasher<F>,
+        F: RichField + Extendable<D>,
+        const D: usize,
+    >(
+        builder: &mut CircuitBuilder<F, D>,
+        height: usize,
+    ) -> Self {
+        let index = builder.add_virtual_target();
+        let old_value = builder.add_virtual_hash();
+        let new_value = builder.add_virtual_hash();
+        let siblings = (0..height)
+            .map(|_| builder.add_virtual_hash())
+            .collect::<Vec<_>>();
+        //builder.range_check(index, height);
+        let index_bits = builder.split_le(index, height);
+        let z_hash_target = builder.constant_hash(HashOut {
+            elements: [F::ZERO, F::ZERO, F::ZERO, F::ZERO],
+        });
+
+        // ensure that the old value is not a zero
+        builder.ensure_hash_not_equal(old_value, z_hash_target);
+
+        // ensure that the new value is zero
+        builder.connect_hashes(new_value, z_hash_target);
+
+        for i in 0..height {
+            let zero_hash_target = builder.constant_hash(H::get_zero_hash(i));
+            builder.ensure_hash_not_equal_if(index_bits[i], siblings[i], zero_hash_target);
+            builder.connect_hashes_if_false(index_bits[i], siblings[i], zero_hash_target);
+        }
+
+        let old_root = MerkleProofGadget::compute_root_bits::<H, F, D>(
+            builder,
+            &index_bits,
+            old_value,
+            &siblings,
+        );
+        let new_root = MerkleProofGadget::compute_root_bits::<H, F, D>(
+            builder,
+            &index_bits,
+            new_value,
+            &siblings,
+        );
+        Self {
+            old_root,
+            old_value,
+            new_root,
+            new_value,
+            index,
+            siblings,
+            option_flags: DeltaMerkleProofGadgetOptionFlags::none_value_placeholder,
+        }
+    }
+    pub fn add_virtual_to_dequeue_left<
+        H: MerkleZeroHasher<HashOut<F>> + AlgebraicHasher<F>,
+        F: RichField + Extendable<D>,
+        const D: usize,
+    >(
+        builder: &mut CircuitBuilder<F, D>,
+        height: usize,
+    ) -> Self {
+        let index = builder.add_virtual_target();
+        let old_value = builder.add_virtual_hash();
+        let new_value = builder.add_virtual_hash();
+        let siblings = (0..height)
+            .map(|_| builder.add_virtual_hash())
+            .collect::<Vec<_>>();
+        //builder.range_check(index, height);
+        let index_bits = builder.split_le(index, height);
+        let z_hash_target = builder.constant_hash(HashOut {
+            elements: [F::ZERO, F::ZERO, F::ZERO, F::ZERO],
+        });
+
+        // ensure that the old value is not a zero
+        builder.ensure_hash_not_equal(old_value, z_hash_target);
+
+        // ensure that the new value is zero
+        builder.connect_hashes(new_value, z_hash_target);
+
+        for i in 0..height {
+            let zero_hash_target = builder.constant_hash(H::get_zero_hash(i));
+            // if our path is on the right, then the sibling should be zero
+            builder.connect_hashes_if_true(index_bits[i], siblings[i], zero_hash_target);
         }
 
         let old_root = MerkleProofGadget::compute_root_bits::<H, F, D>(
@@ -155,14 +265,20 @@ impl DeltaMerkleProofGadget {
         let one = builder.one();
         // only allow updating the right hand node
         builder.connect(index_bits[0].target, one);
-        let z_hash_target = builder.constant_hash(H::get_zero_hash(0));
-        // ensure that the sibling is a zero
+        let z_hash_target = builder.constant_hash(HashOut {
+            elements: [F::ZERO, F::ZERO, F::ZERO, F::ZERO],
+        });
+        // ensure that the sibling is zero
         builder.connect_hashes(siblings[0], z_hash_target);
+        // ensure that the old value is zero
+        builder.connect_hashes(old_value, z_hash_target);
 
         for i in 1..height {
             let zero_hash_target = builder.constant_hash(H::get_zero_hash(i));
-            builder.ensure_hash_not_equal_if(index_bits[i], old_value, zero_hash_target);
-            builder.connect_hashes_if_false(index_bits[i], old_value, zero_hash_target);
+            // if our path is on the right, then the sibling should not be zero
+            builder.ensure_hash_not_equal_if(index_bits[i], siblings[i], zero_hash_target);
+            // if our path is on the left, then then sibling should be zero
+            builder.connect_hashes_if_false(index_bits[i], siblings[i], zero_hash_target);
         }
 
         let old_root = MerkleProofGadget::compute_root_bits::<H, F, D>(

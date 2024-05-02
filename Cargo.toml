@@ -10,9 +10,11 @@ members = [
   "kvq",
   "kvq_store_redb",
   "city_rollup_cli",
+  "city_rollup_user_cli",
   "city_rollup_core_node",
   "city_rollup_core_worker",
   "city_rollup_worker_dispatch",
+  "city_rollup_core_orchestrator"
 ]
 resolver = "2"
 

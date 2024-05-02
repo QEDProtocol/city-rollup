@@ -33,7 +33,7 @@ rayon = { workspace = true }
 kvq           = { path = "../kvq" }
 city_crypto           = { path = "../city_crypto" }
 city_common           = { path = "../city_common" }
-
+city_rollup_common = { path = "../city_rollup_common" }
 
 [dev-dependencies]
 criterion = "0.5.1"

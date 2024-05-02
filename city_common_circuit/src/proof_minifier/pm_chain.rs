@@ -72,9 +72,10 @@ where
                 &minifiers[i - 1].circuit_data.common,
             ));
         }
+        /*
         for m in &minifiers {
             println!("deg_bits: {} ", m.circuit_data.common.degree_bits());
-        }
+        }*/
 
         Self { minifiers }
     }
