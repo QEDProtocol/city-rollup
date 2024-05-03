@@ -16,10 +16,10 @@ use plonky2::{
 
 use crate::{
     builder::verify::CircuitBuilderVerifyProofHelpers,
-    proof_minifier::pm_core::get_circuit_fingerprint_generic, treeprover::traits::QStandardCircuit,
+    proof_minifier::pm_core::get_circuit_fingerprint_generic,
 };
 
-use super::zk_signature::ZKSignatureCircuit;
+use super::{traits::qstandard::QStandardCircuit, zk_signature::ZKSignatureCircuit};
 
 #[derive(Debug)]
 pub struct ZKSignatureWrapperCircuit<C: GenericConfig<D> + 'static, const D: usize>

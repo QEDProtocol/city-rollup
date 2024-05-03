@@ -25,6 +25,30 @@ pub struct RPCServerArgs {
 }
 
 #[derive(Clone, Args)]
+pub struct OrchestratorArgs {
+    #[clap(long, default_value = "https://localhost:3000", env)]
+    pub rollup_rpc_url: String,
+    #[clap(
+        env,
+        long,
+        default_value = "http://devnet:devnet@localhost:1337/bitcoin-rpc/?network=dogeRegtest",
+        env
+    )]
+    pub bitcoin_rpc: String,
+    #[clap(env, long, default_value = "http://localhost:1337/api", env)]
+    pub electrs_api: String,
+    #[clap(
+        env,
+        long,
+        default_value = "redis://default:city@localhost:6379/0",
+        env
+    )]
+    pub redis_uri: String,
+    #[clap(short, env, long, default_value = "db", env)]
+    pub db_path: String,
+}
+
+#[derive(Clone, Args)]
 pub struct L2WorkerArgs {
     #[clap(long, default_value = "0.0.0.0:3000", env)]
     pub rollup_rpc_address: String,
@@ -37,7 +61,12 @@ pub struct L2WorkerArgs {
     pub bitcoin_rpc: String,
     #[clap(env, long, default_value = "http://localhost:1337/api", env)]
     pub electrs_api: String,
-    #[clap(env, long, default_value = "redis://localhost:6379", env)]
+    #[clap(
+        env,
+        long,
+        default_value = "redis://default:city@localhost:6379/0",
+        env
+    )]
     pub redis_uri: String,
     #[clap(short, env, long, default_value = "db", env)]
     pub db_path: String,

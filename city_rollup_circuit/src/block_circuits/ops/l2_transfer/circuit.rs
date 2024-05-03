@@ -1,14 +1,17 @@
 use city_common_circuit::{
     builder::{core::CircuitBuilderHelpersCore, hash::core::CircuitBuilderHashCore},
-    circuits::zk_signature_wrapper::ZKSignatureWrapperCircuit,
-    proof_minifier::pm_core::get_circuit_fingerprint_generic,
-    treeprover::{
-        aggregation::state_transition::{AggStateTrackableInput, AggStateTransition},
-        traits::QStandardCircuit,
+    circuits::{
+        traits::qstandard::{QStandardCircuit, QStandardCircuitProvableWithProofStoreSync},
+        zk_signature_wrapper::ZKSignatureWrapperCircuit,
     },
+    proof_minifier::pm_core::get_circuit_fingerprint_generic,
+    treeprover::aggregation::state_transition::{AggStateTrackableInput, AggStateTransition},
 };
 use city_crypto::hash::{merkle::core::DeltaMerkleProofCore, qhashout::QHashOut};
-use city_rollup_common::introspection::rollup::constants::SIG_ACTION_TRANSFER_MAGIC;
+use city_rollup_common::{
+    introspection::rollup::constants::SIG_ACTION_TRANSFER_MAGIC,
+    qworker::{job_id::QProvingJobDataID, proof_store::QProofStoreReaderSync},
+};
 use plonky2::{
     field::extension::Extendable,
     hash::hash_types::{HashOutTarget, RichField},
@@ -32,6 +35,8 @@ use crate::{
 pub struct CRL2TransferCircuitInput<F: RichField> {
     pub sender_user_tree_delta_merkle_proof: DeltaMerkleProofCore<QHashOut<F>>,
     pub receiver_user_tree_delta_merkle_proof: DeltaMerkleProofCore<QHashOut<F>>,
+    pub allowed_circuit_hashes: QHashOut<F>,
+    pub signature_proof_id: QProvingJobDataID,
 }
 impl<F: RichField> AggStateTrackableInput<F> for CRL2TransferCircuitInput<F> {
     fn get_state_transition(&self) -> AggStateTransition<F> {
@@ -219,7 +224,6 @@ where
         &self,
         input: &CRL2TransferCircuitInput<C::F>,
         signature_proof: &ProofWithPublicInputs<C::F, C, D>,
-        allowed_circuit_hashes: QHashOut<C::F>,
     ) -> anyhow::Result<ProofWithPublicInputs<C::F, C, D>> {
         let mut pw = PartialWitness::new();
         self.l2_transfer_single_gadget
@@ -231,7 +235,10 @@ where
             );
 
         pw.set_proof_with_pis_target(&self.signature_proof_target, signature_proof);
-        pw.set_hash_target(self.allowed_circuit_hashes_target, allowed_circuit_hashes.0);
+        pw.set_hash_target(
+            self.allowed_circuit_hashes_target,
+            input.allowed_circuit_hashes.0,
+        );
 
         self.circuit_data.prove(pw)
     }
@@ -254,16 +261,18 @@ where
     }
 }
 
-/* impl<C: GenericConfig<D> + 'static, const D: usize>
-    QStandardCircuitProvable<CRL2TransferCircuitInput<C::F>, C, D> for CRL2TransferCircuit<C, D>
+impl<S: QProofStoreReaderSync, C: GenericConfig<D> + 'static, const D: usize>
+    QStandardCircuitProvableWithProofStoreSync<S, CRL2TransferCircuitInput<C::F>, C, D>
+    for CRL2TransferCircuit<C, D>
 where
     C::Hasher: AlgebraicHasher<C::F>,
 {
-    fn prove_standard(
+    fn prove_with_proof_store_sync(
         &self,
+        store: &S,
         input: &CRL2TransferCircuitInput<C::F>,
     ) -> anyhow::Result<ProofWithPublicInputs<C::F, C, D>> {
-        Ok(self.prove_base(&input, input.allowed_circuit_hashes))
+        let signature_proof = store.get_proof_by_id(input.signature_proof_id)?;
+        self.prove_base(input, &signature_proof)
     }
 }
-*/

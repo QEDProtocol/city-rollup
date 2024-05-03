@@ -1,11 +1,9 @@
 use city_common_circuit::{
     builder::hash::core::CircuitBuilderHashCore,
+    circuits::traits::qstandard::{provable::QStandardCircuitProvable, QStandardCircuit},
     hash::merkle::gadgets::delta_merkle_proof::DeltaMerkleProofGadget,
     proof_minifier::pm_core::get_circuit_fingerprint_generic,
-    treeprover::{
-        aggregation::state_transition::{AggStateTrackableInput, AggStateTransition},
-        traits::{QStandardCircuit, QStandardCircuitProvable},
-    },
+    treeprover::aggregation::state_transition::{AggStateTrackableInput, AggStateTransition},
 };
 use city_crypto::hash::{
     merkle::core::DeltaMerkleProofCore, qhashout::QHashOut, traits::hasher::MerkleZeroHasher,

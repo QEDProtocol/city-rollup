@@ -1,9 +1,9 @@
-use city_common::cli::args::L2WorkerArgs;
+use city_common::cli::args::{OrchestratorArgs, RPCServerArgs};
 
 use crate::build;
 use crate::error::Result;
 
-pub async fn run(args: L2WorkerArgs) -> Result<()> {
+pub async fn run(args: OrchestratorArgs) -> Result<()> {
     println!(
         "
 ----------------------------------------
@@ -14,7 +14,6 @@ pub async fn run(args: L2WorkerArgs) -> Result<()> {
     );
     //let indexer = city_indexer::Indexer::new(args).await?;
     //indexer.listen().await?;
-    city_rollup_core_orchestrator::debug::run_debug_demo_client(args);
-
+    city_rollup_core_orchestrator::debug::run_debug_demo(args);
     Ok(())
 }

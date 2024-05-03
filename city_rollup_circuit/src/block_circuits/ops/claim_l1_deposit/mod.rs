@@ -1,13 +1,16 @@
 use city_common_circuit::{
-    circuits::l1_secp256k1_signature::L1Secp256K1SignatureCircuit,
-    proof_minifier::pm_core::get_circuit_fingerprint_generic,
-    treeprover::{
-        aggregation::state_transition::{AggStateTrackableInput, AggStateTransition},
-        traits::QStandardCircuit,
+    circuits::{
+        l1_secp256k1_signature::L1Secp256K1SignatureCircuit,
+        traits::qstandard::{QStandardCircuit, QStandardCircuitProvableWithProofStoreSync},
     },
+    proof_minifier::pm_core::get_circuit_fingerprint_generic,
+    treeprover::aggregation::state_transition::{AggStateTrackableInput, AggStateTransition},
 };
 use city_crypto::hash::{merkle::core::DeltaMerkleProofCore, qhashout::QHashOut};
-use city_rollup_common::introspection::rollup::introspection_result::BTCRollupIntrospectionResultDeposit;
+use city_rollup_common::{
+    introspection::rollup::introspection_result::BTCRollupIntrospectionResultDeposit,
+    qworker::{job_id::QProvingJobDataID, proof_store::QProofStoreReaderSync},
+};
 use plonky2::{
     hash::{
         hash_types::{HashOutTarget, RichField},
@@ -31,6 +34,8 @@ pub struct CRClaimL1DepositCircuitInput<F: RichField> {
     pub deposit: BTCRollupIntrospectionResultDeposit<F>,
     pub user_tree_delta_merkle_proof: DeltaMerkleProofCore<QHashOut<F>>,
     pub deposit_tree_delta_merkle_proof: DeltaMerkleProofCore<QHashOut<F>>,
+    pub allowed_circuit_hashes: QHashOut<F>,
+    pub signature_proof_id: QProvingJobDataID,
 }
 impl<F: RichField> AggStateTrackableInput<F> for CRClaimL1DepositCircuitInput<F> {
     fn get_state_transition(&self) -> AggStateTransition<F> {
@@ -156,7 +161,6 @@ where
         &self,
         input: &CRClaimL1DepositCircuitInput<C::F>,
         signature_proof: &ProofWithPublicInputs<C::F, C, D>,
-        allowed_circuit_hashes: QHashOut<C::F>,
     ) -> anyhow::Result<ProofWithPublicInputs<C::F, C, D>> {
         let mut pw = PartialWitness::new();
         self.claim_single_gadget.claim_gadget.set_witness(
@@ -168,7 +172,10 @@ where
 
         pw.set_proof_with_pis_target(&self.signature_proof_target, signature_proof);
 
-        pw.set_hash_target(self.allowed_circuit_hashes_target, allowed_circuit_hashes.0);
+        pw.set_hash_target(
+            self.allowed_circuit_hashes_target,
+            input.allowed_circuit_hashes.0,
+        );
 
         self.circuit_data.prove(pw)
     }
@@ -190,17 +197,18 @@ where
         &self.circuit_data.common
     }
 }
-
-/* impl<C: GenericConfig<D> + 'static, const D: usize>
-    QStandardCircuitProvable<CRClaimL1DepositCircuitInput<C::F>, C, D> for CRClaimL1DepositCircuit<C, D>
+impl<S: QProofStoreReaderSync, C: GenericConfig<D> + 'static, const D: usize>
+    QStandardCircuitProvableWithProofStoreSync<S, CRClaimL1DepositCircuitInput<C::F>, C, D>
+    for CRClaimL1DepositCircuit<C, D>
 where
     C::Hasher: AlgebraicHasher<C::F>,
 {
-    fn prove_standard(
+    fn prove_with_proof_store_sync(
         &self,
+        store: &S,
         input: &CRClaimL1DepositCircuitInput<C::F>,
     ) -> anyhow::Result<ProofWithPublicInputs<C::F, C, D>> {
-        Ok(self.prove_base(&input, input.allowed_circuit_hashes))
+        let signature_proof = store.get_proof_by_id(input.signature_proof_id)?;
+        self.prove_base(input, &signature_proof)
     }
 }
-*/

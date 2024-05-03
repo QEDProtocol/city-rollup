@@ -1,15 +1,17 @@
 use city_common_circuit::{
     builder::hash::core::CircuitBuilderHashCore,
+    circuits::traits::qstandard::{
+        provable::QStandardCircuitProvable, QStandardCircuit,
+        QStandardCircuitProvableWithProofStoreSync,
+    },
     hash::merkle::gadgets::delta_merkle_proof::DeltaMerkleProofGadget,
     proof_minifier::pm_core::get_circuit_fingerprint_generic,
-    treeprover::{
-        aggregation::state_transition::{AggStateTrackableInput, AggStateTransition},
-        traits::{QStandardCircuit, QStandardCircuitProvable},
-    },
+    treeprover::aggregation::state_transition::{AggStateTrackableInput, AggStateTransition},
 };
 use city_crypto::hash::{
     merkle::core::DeltaMerkleProofCore, qhashout::QHashOut, traits::hasher::MerkleZeroHasher,
 };
+use city_rollup_common::qworker::proof_store::QProofStoreReaderSync;
 use plonky2::{
     hash::hash_types::{HashOut, HashOutTarget, RichField},
     iop::witness::{PartialWitness, WitnessWrite},
@@ -131,5 +133,20 @@ where
             &input.user_tree_delta_merkle_proof,
             input.allowed_circuit_hashes,
         ))
+    }
+}
+
+impl<S: QProofStoreReaderSync, C: GenericConfig<D>, const D: usize>
+    QStandardCircuitProvableWithProofStoreSync<S, CRUserRegistrationCircuitInput<C::F>, C, D>
+    for CRUserRegistrationCircuit<C, D>
+where
+    C::Hasher: AlgebraicHasher<C::F> + MerkleZeroHasher<HashOut<C::F>>,
+{
+    fn prove_with_proof_store_sync(
+        &self,
+        _store: &S,
+        input: &CRUserRegistrationCircuitInput<C::F>,
+    ) -> anyhow::Result<ProofWithPublicInputs<C::F, C, D>> {
+        self.prove_standard(input)
     }
 }

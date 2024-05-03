@@ -374,6 +374,7 @@ dependencies = [
  "city_crypto",
  "city_rollup_common",
  "city_rollup_core_node",
+ "city_rollup_core_orchestrator",
  "clap",
  "dotenv",
  "hex",
@@ -434,6 +435,7 @@ name = "city_common_circuit"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "async-trait",
  "bitcoin",
  "bitflags 2.5.0",
  "city_common",
@@ -517,6 +519,8 @@ name = "city_rollup_common"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "async-trait",
+ "bincode",
  "bitcoin",
  "city_common",
  "city_crypto",
@@ -530,6 +534,7 @@ dependencies = [
  "reqwest",
  "serde",
  "serde_json",
+ "serde_repr",
  "serde_with",
  "url",
 ]
@@ -583,6 +588,7 @@ dependencies = [
  "plonky2",
  "rand",
  "rand_chacha",
+ "redis",
  "reqwest",
  "serde",
  "serde_json",

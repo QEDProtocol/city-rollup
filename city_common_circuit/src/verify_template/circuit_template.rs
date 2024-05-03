@@ -10,7 +10,7 @@ use plonky2::plonk::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::treeprover::traits::QStandardCircuit;
+use crate::circuits::traits::qstandard::QStandardCircuit;
 
 use super::ser_data::VTFriParams;
 

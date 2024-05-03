@@ -1,17 +1,8 @@
 use city_common::logging::debug_timer::DebugTimer;
-use city_crypto::{
-    hash::qhashout::QHashOut,
-    signature::secp256k1::curve::{
-        ecdsa::{ECDSAPublicKey, ECDSASignature},
-        secp256k1::Secp256K1,
-    },
-};
 use city_rollup_common::introspection::rollup::signature::{
     QEDCompressedSecp256K1Signature, QEDPreparedSecp256K1Signature,
 };
 use plonky2::{
-    field::extension::Extendable,
-    hash::hash_types::RichField,
     iop::witness::PartialWitness,
     plonk::{
         circuit_builder::CircuitBuilder,

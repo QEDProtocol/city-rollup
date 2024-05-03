@@ -17,14 +17,16 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     proof_minifier::pm_chain::OASProofMinifierChain,
-    treeprover::traits::{QStandardCircuit, QStandardCircuitProvable},
     verify_template::{
         circuit_template::QEDCircuitVerifyTemplate,
         ser_data::{VTFriConfig, VTFriParams, VTFriReductionStrategy},
     },
 };
 
-use super::zk_signature_wrapper::ZKSignatureWrapperCircuit;
+use super::{
+    traits::qstandard::{provable::QStandardCircuitProvable, QStandardCircuit},
+    zk_signature_wrapper::ZKSignatureWrapperCircuit,
+};
 
 pub fn get_verifier_template_zk_signature() -> QEDCircuitVerifyTemplate {
     QEDCircuitVerifyTemplate {

@@ -20,8 +20,9 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     builder::{hash::core::CircuitBuilderHashCore, verify::CircuitBuilderVerifyProofHelpers},
+    circuits::traits::qstandard::QStandardCircuit,
     proof_minifier::pm_core::get_circuit_fingerprint_generic,
-    treeprover::traits::{QStandardCircuit, TPLeafAggregator, TreeProverAggCircuit},
+    treeprover::traits::{TPLeafAggregator, TreeProverAggCircuit},
 };
 pub trait AggStateTrackableInput<F: RichField> {
     fn get_state_transition(&self) -> AggStateTransition<F>;

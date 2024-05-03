@@ -34,7 +34,7 @@ kvq           = { path = "../kvq" }
 city_crypto           = { path = "../city_crypto" }
 city_common           = { path = "../city_common" }
 city_rollup_common = { path = "../city_rollup_common" }
-
+async-trait = { workspace = true }
 [dev-dependencies]
 criterion = "0.5.1"
 rand_chacha = "0.3.1"

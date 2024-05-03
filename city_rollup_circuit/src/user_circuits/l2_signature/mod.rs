@@ -1,6 +1,6 @@
 use city_common_circuit::{
+    circuits::traits::qstandard::{provable::QStandardCircuitProvable, QStandardCircuit},
     proof_minifier::pm_chain::OASProofMinifierChain,
-    treeprover::traits::{QStandardCircuit, QStandardCircuitProvable},
 };
 use city_crypto::hash::{qhashout::QHashOut, traits::hasher::MerkleZeroHasher};
 use city_rollup_common::introspection::rollup::signature::PRIVATE_KEY_CONSTANTS;
