@@ -17,7 +17,10 @@ use serde::{Deserialize, Serialize};
 
 use serde_with::serde_as;
 
-use super::constants::{SIG_ACTION_CLAIM_DEPOSIT_MAGIC, SIG_ACTION_TRANSFER_MAGIC};
+use super::{
+    constants::{SIG_ACTION_CLAIM_DEPOSIT_MAGIC, SIG_ACTION_TRANSFER_MAGIC},
+    introspection_result::BTCRollupIntrospectionResultWithdrawal,
+};
 
 pub fn secp256k1_scalar_from_bytes(bytes: &[u8], offset: usize) -> Secp256K1Scalar {
     let mut arr = [0u64; 4];
@@ -66,7 +69,7 @@ pub struct QEDPreparedSecp256K1Signature<F: RichField> {
 }
 
 impl<F: RichField> TryFrom<&QEDCompressedSecp256K1Signature> for QEDPreparedSecp256K1Signature<F> {
-    type Error = ();
+    type Error = anyhow::Error;
 
     fn try_from(value: &QEDCompressedSecp256K1Signature) -> Result<Self, Self::Error> {
         let mut message = [F::ZERO; 4];
@@ -85,7 +88,7 @@ impl<F: RichField> TryFrom<&QEDCompressedSecp256K1Signature> for QEDPreparedSecp
             (value.public_key[0] & 0x1u8).into(),
         );
         if public_key_point.is_none().into() {
-            return Err(());
+            return Err(anyhow::format_err!("Invalid public key"));
         }
         let public_key_bytes = public_key_point.unwrap().to_bytes().to_vec();
         let public_key_y = secp256k1_base_from_bytes(&public_key_bytes, 33);
@@ -111,6 +114,7 @@ pub fn hash256_to_hashout_u224<F: RichField>(hash: Hash256) -> HashOut<F> {
         }),
     }
 }
+/*
 fn public_key_enc_to_felts<F: RichField>(hash: &[u8; 33]) -> [F; 9] {
     let mut arr = [F::ZERO; 9];
     arr[0] = F::from_canonical_u8(hash[0]);
@@ -124,7 +128,8 @@ fn public_key_enc_to_felts<F: RichField>(hash: &[u8; 33]) -> [F; 9] {
     arr[8] = F::from_canonical_u32(u32::from_le_bytes(hash[29..33].try_into().unwrap()));
 
     arr
-}
+}*/
+
 #[serde_as]
 #[derive(Serialize, Deserialize, PartialEq, Clone, Debug)]
 #[serde(bound = "")]
@@ -175,6 +180,7 @@ impl<F: RichField> QEDSigAction<F> {
         nonce: u64,
         transaction_id: Hash256,
         amount: u64,
+        deposit_fee: u64,
     ) -> Self {
         let network_magic = F::from_canonical_u64(network_magic);
         let nonce = F::from_canonical_u64(nonce);
@@ -189,6 +195,7 @@ impl<F: RichField> QEDSigAction<F> {
                 tx_hash_224.elements[2],
                 tx_hash_224.elements[3],
                 F::from_noncanonical_u64(amount),
+                F::from_noncanonical_u64(deposit_fee),
             ],
             user: F::from_noncanonical_u64(user),
         }
@@ -208,6 +215,35 @@ impl<F: RichField> QEDSigAction<F> {
             sig_action: F::from_canonical_u64(SIG_ACTION_TRANSFER_MAGIC),
             nonce,
             action_arguments: vec![recipient, F::from_noncanonical_u64(amount)],
+            user: F::from_noncanonical_u64(user),
+        }
+    }
+    pub fn new_withdrawal_action<H: AlgebraicHasher<F>>(
+        network_magic: u64,
+        user: u64,
+        nonce: u64,
+        script: &[u8],
+        amount: u64,
+        withdrawal_fee: u64,
+    ) -> Self {
+        let withdrawal_amount = F::from_noncanonical_u64(amount);
+        let withdrawal_hash =
+            BTCRollupIntrospectionResultWithdrawal::from_bytes(script, withdrawal_amount)
+                .get_hash::<H>();
+
+        let network_magic = F::from_canonical_u64(network_magic);
+        let nonce = F::from_canonical_u64(nonce);
+        Self {
+            network_magic,
+            sig_action: F::from_canonical_u64(SIG_ACTION_TRANSFER_MAGIC),
+            nonce,
+            action_arguments: vec![
+                withdrawal_hash.0.elements[0],
+                withdrawal_hash.0.elements[1],
+                withdrawal_hash.0.elements[2],
+                withdrawal_hash.0.elements[3],
+                F::from_noncanonical_u64(withdrawal_fee),
+            ],
             user: F::from_noncanonical_u64(user),
         }
     }

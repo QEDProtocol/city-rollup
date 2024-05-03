@@ -89,6 +89,21 @@ impl BTCRollupIntrospectionResultWithdrawalGadget {
             elements: [self.value, first_56, mid_56, last_48_with_flag],
         }
     }
+    pub fn validate_withdrawal_hash_get_amount<F: RichField + Extendable<D>, const D: usize>(
+        builder: &mut CircuitBuilder<F, D>,
+        hash: HashOutTarget,
+    ) -> Target {
+        let value = hash.elements[0];
+        let first_56 = hash.elements[1];
+        let mid_56 = hash.elements[2];
+        let last_48_with_flag = hash.elements[3];
+        builder.range_check(first_56, 56);
+        builder.range_check(mid_56, 56);
+        // disable p2sh withdrawals for now
+        // in the future we can add support by changing n_log in the range check below from 48 to 49
+        builder.range_check(last_48_with_flag, 48);
+        value
+    }
 }
 
 pub fn get_introspection_events_hash_circuit<

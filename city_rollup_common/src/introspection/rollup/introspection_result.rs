@@ -39,6 +39,13 @@ pub struct BTCRollupIntrospectionResultWithdrawal<F: RichField> {
 }
 
 impl<F: RichField> BTCRollupIntrospectionResultWithdrawal<F> {
+    pub fn from_bytes(script_bytes: &[u8], value: F) -> Self {
+        let script = script_bytes
+            .iter()
+            .map(|f| F::from_canonical_u8(*f))
+            .collect::<Vec<F>>();
+        BTCRollupIntrospectionResultWithdrawal { script, value }
+    }
     pub fn get_hash<H: AlgebraicHasher<F>>(&self) -> QHashOut<F> {
         /*
         QHashOut(H::hash_no_pad(

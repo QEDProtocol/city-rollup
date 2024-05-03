@@ -53,6 +53,16 @@ pub struct OptionalDeltaMerkleProofGadget {
 }
 
 impl DeltaMerkleProofGadget {
+    pub fn add_virtual_to_u8h<
+        H: AlgebraicHasher<F>,
+        F: RichField + Extendable<D>,
+        const D: usize,
+    >(
+        builder: &mut CircuitBuilder<F, D>,
+        height: u8,
+    ) -> Self {
+        Self::add_virtual_to::<H, F, D>(builder, height as usize)
+    }
     pub fn add_virtual_to<H: AlgebraicHasher<F>, F: RichField + Extendable<D>, const D: usize>(
         builder: &mut CircuitBuilder<F, D>,
         height: usize,

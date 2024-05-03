@@ -1,3 +1,4 @@
+use city_common::config::rollup_constants::L1_WITHDRAWAL_TREE_HEIGHT;
 use city_common_circuit::{
     builder::hash::core::CircuitBuilderHashCore,
     hash::merkle::gadgets::delta_merkle_proof::DeltaMerkleProofGadget,
@@ -70,7 +71,7 @@ where
         let delta_merkle_proof_gadget: DeltaMerkleProofGadget =
             DeltaMerkleProofGadget::add_virtual_to_dequeue_left::<C::Hasher, C::F, D>(
                 &mut builder,
-                32,
+                L1_WITHDRAWAL_TREE_HEIGHT as usize,
             );
         let state_transition_hash = builder.hash_two_to_one::<C::Hasher>(
             delta_merkle_proof_gadget.old_root,
