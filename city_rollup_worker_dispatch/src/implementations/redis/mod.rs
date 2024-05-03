@@ -5,16 +5,29 @@ use redis::{aio::MultiplexedConnection, AsyncCommands, FromRedisValue, RedisResu
 use crate::traits::proving_dispatcher::{
     KeyValueStoreWithInc, ProvingDispatcher, ProvingWorkerListener,
 };
-
+#[derive(Clone)]
 pub struct RedisStore {
     connection: MultiplexedConnection,
 }
 
+#[derive(Clone)]
+pub struct RedisClient {
+    pub client: redis::Client,
+}
+impl RedisClient {
+    pub async fn get_store(&self) -> Result<RedisStore> {
+        RedisStore::new(self).await
+    }
+}
 impl RedisStore {
-    pub async fn new(url: &str) -> Result<Self> {
-        let client = redis::Client::open(url)?;
-        let connection = client.get_multiplexed_async_connection().await?;
+    pub async fn new(client: &RedisClient) -> Result<Self> {
+        let connection = client.client.get_multiplexed_async_connection().await?;
         Ok(Self { connection })
+    }
+    pub fn new_client(uri: &str) -> Result<RedisClient> {
+        Ok(RedisClient {
+            client: redis::Client::open(uri)?,
+        })
     }
 }
 

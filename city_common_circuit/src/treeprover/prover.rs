@@ -1,4 +1,5 @@
 use city_common::tree_planner::{BinaryTreeJob, BinaryTreePlanner};
+use city_rollup_common::qworker::proof_store::{QProofStoreReaderSync, QProofStoreWriterSync};
 use core::fmt::Debug;
 use itertools::Itertools;
 use plonky2::plonk::{config::GenericConfig, proof::ProofWithPublicInputs};
@@ -76,20 +77,22 @@ pub fn generate_agg_jobs<
     output
 }
 pub fn prove_tree_serial<
+    S: QProofStoreReaderSync + QProofStoreWriterSync,
     LA: TPLeafAggregator<IL, IO>,
     AC: TreeProverAggCircuit<IO, C, D>,
-    LC: TreeProverLeafCircuit<IL, C, D>,
+    LC: TreeProverLeafCircuit<S, IL, C, D>,
     IL: DeserializeOwned + Serialize + Clone + Debug + Send,
     IO: DeserializeOwned + Serialize + Clone + Debug + Send,
     C: GenericConfig<D>,
     const D: usize,
 >(
+    store: S,
     leaf_circuit: LC,
     agg_circuit: AC,
     leaf_inputs: Vec<IL>,
 ) -> anyhow::Result<ProofWithPublicInputs<C::F, C, D>> {
     if leaf_inputs.len() == 1 {
-        return leaf_circuit.prove_standard(&leaf_inputs[0]);
+        return leaf_circuit.prove_with_proof_store_sync(&store, &leaf_inputs[0]);
     }
 
     let leaf_fingerprint = leaf_circuit.get_fingerprint();
@@ -98,7 +101,7 @@ pub fn prove_tree_serial<
 
     let leaf_proofs = leaf_inputs
         .iter()
-        .map(|input| leaf_circuit.prove_standard(&input))
+        .map(|input| leaf_circuit.prove_with_proof_store_sync(&store, &input))
         .try_collect::<_, Vec<_>, _>()?;
 
     let mut current_proofs = vec![leaf_proofs];

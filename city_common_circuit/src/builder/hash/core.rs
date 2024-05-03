@@ -1,4 +1,5 @@
 use city_crypto::hash::qhashout::QHashOut;
+use plonky2::hash::hash_types::HashOut;
 use plonky2::hash::hashing::PlonkyPermutation;
 use plonky2::{
     field::extension::Extendable,
@@ -13,6 +14,8 @@ use crate::u32::arithmetic_u32::U32Target;
 
 const NUM_HASH_OUT_ELEMENTS: usize = 4;
 pub trait CircuitBuilderHashCore<F: RichField + Extendable<D>, const D: usize> {
+    fn ensure_hash_is_zero(&mut self, hash: HashOutTarget);
+    fn ensure_hash_is_non_zero(&mut self, hash: HashOutTarget);
     fn constant_whash(&mut self, value: QHashOut<F>) -> HashOutTarget;
     fn constant_hash_str(&mut self, value: &str) -> HashOutTarget;
     fn hashout_to_hash256_le(&mut self, value: HashOutTarget) -> Hash256Target;
@@ -122,5 +125,15 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilderHashCore<F, D>
         let is_eq_and_enabled_target = self.and(is_eq, condition).target;
         let false_target = self._false().target;
         self.connect(is_eq_and_enabled_target, false_target);
+    }
+
+    fn ensure_hash_is_zero(&mut self, hash: HashOutTarget) {
+        let zero_hash = self.constant_hash(HashOut::ZERO);
+        self.connect_hashes(hash, zero_hash);
+    }
+
+    fn ensure_hash_is_non_zero(&mut self, hash: HashOutTarget) {
+        let zero_hash = self.constant_hash(HashOut::ZERO);
+        self.ensure_hash_not_equal(hash, zero_hash)
     }
 }

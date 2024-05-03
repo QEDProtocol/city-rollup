@@ -1,5 +1,3 @@
-use std::f64::consts::E;
-
 use city_common::logging::trace_timer::TraceTimer;
 use city_common_circuit::{builder::{connect::CircuitBuilderConnectHelpers, core::{CircuitBuilderHelpersCore, WitnessHelpersCore}, signature::CircuitBuilderSignatureHelpers}, hash::{accelerator::sha256::planner::{Sha256AcceleratorDomain, Sha256AcceleratorDomainID, Sha256AcceleratorDomainPlanner, Sha256AcceleratorDomainResolver}, base_types::{felthash252::CircuitBuilderFelt252Hash, hash160bytes::Hash160BytesTarget, hash256bytes::{CircuitBuilderHash256Bytes, Hash256BytesTarget}}}};
 use city_rollup_common::introspection::rollup::introspection::{BlockSpendIntrospectionGadgetConfig, BlockSpendIntrospectionHint};
@@ -129,12 +127,12 @@ impl BTCRollupIntrospectionGadget {
             current_sighash,
             hash_domain_id: 0xffffffff,
         };
-        result.enforce_funding_transactions(builder);
-        result.enforce_block_script_transition(builder);
+        result.ensure_funding_transactions(builder);
+        result.ensure_block_script_transition(builder);
 
         result
     }
-    pub fn enforce_script_is_block_script<F: RichField + Extendable<D>, const D: usize>(
+    pub fn ensure_script_is_block_script<F: RichField + Extendable<D>, const D: usize>(
         &self,
         builder: &mut CircuitBuilder<F, D>,
         script: &[Target],
@@ -148,16 +146,16 @@ impl BTCRollupIntrospectionGadget {
         // ensure the body of the current script is the same as the target script
         builder.connect_vec(&self.current_script[33..], &script[(offset + 33)..]);
     }
-    pub fn enforce_block_script_transition<F: RichField + Extendable<D>, const D: usize>(
+    pub fn ensure_block_script_transition<F: RichField + Extendable<D>, const D: usize>(
         &mut self,
         builder: &mut CircuitBuilder<F, D>,
     ) {
         // first byte of the script should push 32 bytes for the public input
         builder.connect_constant(self.current_script[0], 32);
-        self.enforce_script_is_block_script(builder, &self.next_block_redeem_script, 0);
+        self.ensure_script_is_block_script(builder, &self.next_block_redeem_script, 0);
 
         if self.last_block_spend_index != -1 {
-            self.enforce_script_is_block_script(
+            self.ensure_script_is_block_script(
                 builder,
                 &self.funding_transactions[self.last_block_spend_index as usize].inputs[0].script,
                 281,
@@ -181,7 +179,7 @@ impl BTCRollupIntrospectionGadget {
         );
     }
 
-    pub fn enforce_funding_transactions<F: RichField + Extendable<D>, const D: usize>(
+    pub fn ensure_funding_transactions<F: RichField + Extendable<D>, const D: usize>(
         &mut self,
         builder: &mut CircuitBuilder<F, D>,
     ) {
@@ -193,7 +191,7 @@ impl BTCRollupIntrospectionGadget {
             .iter()
             .zip(self.sighash_preimage.transaction.inputs.iter())
             .enumerate()
-            .for_each(|(i, (funding_tx, spend_tx))| {
+            .for_each(|(_, (funding_tx, spend_tx))| {
                 let funding_tx_bytes = funding_tx.to_byte_targets(builder);
                 let funding_tx_hash = self.hash_domain.btc_hash256(builder, &funding_tx_bytes);
                 // ensure the funding transaction provided is actually the transaction that funded this utxo
@@ -299,7 +297,7 @@ impl BTCRollupIntrospectionGadget {
 
     pub fn finalize<F: RichField + Extendable<D>, const D: usize>(
         &mut self,
-        builder: &mut CircuitBuilder<F, D>,
+        _builder: &mut CircuitBuilder<F, D>,
         dp: &mut Sha256AcceleratorDomainPlanner,
     ) {
         self.hash_domain_id = dp.register_domain(&self.hash_domain);

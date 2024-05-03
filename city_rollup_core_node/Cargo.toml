@@ -20,7 +20,14 @@ city_crypto           = { path = "../city_crypto" }
 city_common_circuit   = { path = "../city_common_circuit" }
 city_common           = { path = "../city_common" }
 city_rollup_common    = { path = "../city_rollup_common" }
+city_rollup_worker_dispatch    = { path = "../city_rollup_worker_dispatch" }
 tokio                 = { workspace = true }
+
+http  = { workspace = true }
+http-body-util  = { workspace = true }
+hyper  = { workspace = true }
+hyper-util  = { workspace = true }
+bytes = { workspace = true }
 
 [dev-dependencies]
 criterion = "0.5.1"

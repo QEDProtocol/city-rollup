@@ -692,7 +692,7 @@ impl<F: RichField + Extendable<D>, const D: usize, FF: PrimeField> SimpleGenerat
             .collect::<Vec<Target>>();
         let overflow = self.overflow.0;
         dst.write_target_vec(&sum_targets)?;
-        dst.write_target(self.overflow.0)
+        dst.write_target(overflow)
     }
 
     fn deserialize(src: &mut Buffer, _common_data: &CommonCircuitData<F, D>) -> IoResult<Self>
@@ -701,7 +701,7 @@ impl<F: RichField + Extendable<D>, const D: usize, FF: PrimeField> SimpleGenerat
     {
         let summands_len = src.read_usize()?;
         let mut summands: Vec<NonNativeTarget<FF>> = Vec::new();
-        for i in 0..summands_len {
+        for _ in 0..summands_len {
             let summand_targets = src.read_target_vec()?;
             let summand = NonNativeTarget {
                 value: BigUintTarget {

@@ -15,10 +15,10 @@ pub trait CircuitBuilderComparison<F: RichField + Extendable<D>, const D: usize>
     fn is_greater_than_or_equal(&mut self, num_bits: usize, x: Target, y: Target) -> BoolTarget;
     fn is_greater_than(&mut self, num_bits: usize, x: Target, y: Target) -> BoolTarget;
 
-    fn enforce_is_less_than_or_equal(&mut self, num_bits: usize, x: Target, y: Target);
-    fn enforce_is_less_than(&mut self, num_bits: usize, x: Target, y: Target);
-    fn enforce_is_greater_than_or_equal(&mut self, num_bits: usize, x: Target, y: Target);
-    fn enforce_is_greater_than(&mut self, num_bits: usize, x: Target, y: Target);
+    fn ensure_is_less_than_or_equal(&mut self, num_bits: usize, x: Target, y: Target);
+    fn ensure_is_less_than(&mut self, num_bits: usize, x: Target, y: Target);
+    fn ensure_is_greater_than_or_equal(&mut self, num_bits: usize, x: Target, y: Target);
+    fn ensure_is_greater_than(&mut self, num_bits: usize, x: Target, y: Target);
 }
 
 impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilderComparison<F, D>
@@ -46,25 +46,25 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilderComparison<F, D
         self.not(is_lte)
     }
 
-    fn enforce_is_less_than_or_equal(&mut self, num_bits: usize, x: Target, y: Target) {
+    fn ensure_is_less_than_or_equal(&mut self, num_bits: usize, x: Target, y: Target) {
         let test_target = self.is_less_than_or_equal(num_bits, x, y).target;
         let true_target = self._true().target;
         self.connect(test_target, true_target);
     }
 
-    fn enforce_is_less_than(&mut self, num_bits: usize, x: Target, y: Target) {
+    fn ensure_is_less_than(&mut self, num_bits: usize, x: Target, y: Target) {
         let test_target = self.is_less_than(num_bits, x, y).target;
         let true_target = self._true().target;
         self.connect(test_target, true_target);
     }
 
-    fn enforce_is_greater_than_or_equal(&mut self, num_bits: usize, x: Target, y: Target) {
+    fn ensure_is_greater_than_or_equal(&mut self, num_bits: usize, x: Target, y: Target) {
         let test_target = self.is_greater_than_or_equal(num_bits, x, y).target;
         let true_target = self._true().target;
         self.connect(test_target, true_target);
     }
 
-    fn enforce_is_greater_than(&mut self, num_bits: usize, x: Target, y: Target) {
+    fn ensure_is_greater_than(&mut self, num_bits: usize, x: Target, y: Target) {
         let test_target = self.is_greater_than(num_bits, x, y).target;
         let true_target = self._true().target;
         self.connect(test_target, true_target);

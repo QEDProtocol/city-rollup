@@ -139,7 +139,7 @@ impl ClaimDepositGadget {
             user_tree_delta_merkle_proof.new_value.elements[0],
             computed_new_user_balance,
         );
-        builder.enforce_is_greater_than(62, new_nonce, old_nonce);
+        builder.ensure_is_greater_than(62, new_nonce, old_nonce);
         builder.connect(
             user_tree_delta_merkle_proof.old_value.elements[2],
             user_tree_delta_merkle_proof.new_value.elements[2],

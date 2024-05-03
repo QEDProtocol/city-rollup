@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 
 use plonky2::{
-    field::extension::Extendable,
     hash::hash_types::RichField,
     iop::{target::Target, witness::Witness},
 };

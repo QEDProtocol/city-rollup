@@ -9,7 +9,7 @@ use super::ecdsa::gadgets::{
     nonnative::{CircuitBuilderNonNative, NonNativeTarget},
 };
 use crate::{
-    builder::{hash::core::CircuitBuilderHashCore, signature::CircuitBuilderSignatureHelpers},
+    builder::hash::core::CircuitBuilderHashCore,
     crypto::secp256k1::ecdsa::gadgets::biguint::WitnessBigUint,
 };
 use city_crypto::{

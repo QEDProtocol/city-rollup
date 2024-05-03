@@ -3,7 +3,7 @@ use plonky2::{
     gates::gate::GateRef,
     hash::hash_types::{HashOut, RichField},
     plonk::{
-        circuit_data::{CircuitConfig, CommonCircuitData, VerifierOnlyCircuitData},
+        circuit_data::{CircuitConfig, CircuitData, CommonCircuitData, VerifierOnlyCircuitData},
         config::{AlgebraicHasher, GenericConfig},
         proof::ProofWithPublicInputs,
     },
@@ -72,9 +72,10 @@ where
                 &minifiers[i - 1].circuit_data.common,
             ));
         }
+        /*
         for m in &minifiers {
             println!("deg_bits: {} ", m.circuit_data.common.degree_bits());
-        }
+        }*/
 
         Self { minifiers }
     }
@@ -151,6 +152,9 @@ where
     }
     pub fn get_common_data(&self) -> &CommonCircuitData<F, D> {
         &self.minifiers[self.minifiers.len() - 1].circuit_data.common
+    }
+    pub fn get_into_circuit_data(self) -> CircuitData<F, C, D> {
+        self.minifiers.into_iter().last().unwrap().circuit_data
     }
 
     pub fn get_verifier_data(&self) -> &VerifierOnlyCircuitData<C, D> {
