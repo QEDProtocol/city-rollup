@@ -1,6 +1,5 @@
 use serde::{Deserialize, Serialize};
 use serde_repr::{Deserialize_repr, Serialize_repr};
-use serde_with::serde_as;
 
 #[derive(Serialize_repr, Deserialize_repr, PartialEq, Debug, Clone, Copy, Eq, Hash)]
 #[repr(u8)]

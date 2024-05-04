@@ -1,16 +1,13 @@
 use async_trait::async_trait;
 use city_crypto::hash::qhashout::QHashOut;
 use city_rollup_common::qworker::proof_store::{QProofStoreReaderAsync, QProofStoreReaderSync};
-use core::fmt::Debug;
 use plonky2::plonk::{
     circuit_data::{CommonCircuitData, VerifierOnlyCircuitData},
-    config::{AlgebraicHasher, GenericConfig},
+    config::GenericConfig,
     proof::ProofWithPublicInputs,
 };
 use serde::Serialize;
-use std::marker::PhantomData;
 
-use crate::proof_minifier::pm_chain::OASProofMinifierChain;
 pub mod provable;
 pub trait QStandardCircuit<C: GenericConfig<D>, const D: usize> {
     fn get_fingerprint(&self) -> QHashOut<C::F>;

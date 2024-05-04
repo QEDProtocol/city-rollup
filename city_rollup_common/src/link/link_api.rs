@@ -1,4 +1,4 @@
-use std::{fmt::format, str::FromStr};
+use std::str::FromStr;
 
 use city_common::data::u8bytes::U8Bytes;
 use city_crypto::hash::base_types::hash256::Hash256;

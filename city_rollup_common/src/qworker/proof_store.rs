@@ -1,5 +1,4 @@
 use async_trait::async_trait;
-use city_crypto::hash::base_types::hash256::Hash256;
 use plonky2::plonk::{config::GenericConfig, proof::ProofWithPublicInputs};
 
 use super::job_id::QProvingJobDataID;

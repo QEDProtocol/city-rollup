@@ -7,7 +7,6 @@ use plonky2::plonk::{
     proof::ProofWithPublicInputs,
 };
 use serde::Serialize;
-use std::marker::PhantomData;
 
 use crate::{
     circuits::traits::qstandard::{QStandardCircuit, QStandardCircuitProvableWithProofStoreSync},

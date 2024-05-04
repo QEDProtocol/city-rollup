@@ -3,7 +3,7 @@ use city_common::cli::args::L2TransferArgs;
 use crate::build;
 use crate::error::Result;
 
-pub async fn run(args: L2TransferArgs) -> Result<()> {
+pub async fn run(_args: L2TransferArgs) -> Result<()> {
     println!(
         "
 ----------------------------------------

@@ -48,11 +48,6 @@ impl KVQBinaryStoreReader for KVQSimpleMemoryBackingStore {
             sum_end += key_end[key_len - i - 1] as u32;
             base_key[key_len - i - 1] = 0;
         }
-        let mut sum_end = 0u32;
-        for i in 0..fuzzy_bytes {
-            sum_end += key_end[key_len - i - 1] as u32;
-            base_key[key_len - i - 1] = 0;
-        }
 
         if sum_end == 0 {
             let res = self.map.get(key);
