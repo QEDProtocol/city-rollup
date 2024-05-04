@@ -1,6 +1,7 @@
 use std::fmt::Display;
 
 use hex::FromHexError;
+use kvq::traits::KVQSerializable;
 use plonky2::hash::hash_types::{HashOut, RichField};
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
@@ -81,5 +82,22 @@ impl<F: RichField> From<Hash192> for HashOut<F> {
     }
 }
 
+impl KVQSerializable for Hash192 {
+    fn to_bytes(&self) -> anyhow::Result<Vec<u8>> {
+        Ok(self.0.to_vec())
+    }
+
+    fn from_bytes(bytes: &[u8]) -> anyhow::Result<Self> {
+        if bytes.len() != 24 {
+            anyhow::bail!(
+                "expected 24 bytes for deserializing Hash192, got {} bytes",
+                bytes.len()
+            );
+        }
+        let mut inner_data = [0u8; 24];
+        inner_data.copy_from_slice(bytes);
+        Ok(Hash192(inner_data))
+    }
+}
 pub type MerkleProof192 = MerkleProofCore<Hash192>;
 pub type DeltaMerkleProof192 = DeltaMerkleProofCore<Hash192>;

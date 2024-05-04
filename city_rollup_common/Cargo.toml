@@ -18,6 +18,7 @@ url = { workspace = true }
 k256 = { workspace = true }
 city_crypto           = { path = "../city_crypto" }
 city_common           = { path = "../city_common" }
+kvq           = { path = "../kvq" }
 async-trait = { workspace = true }
 serde_repr = { workspace = true }
 bincode = { workspace = true }

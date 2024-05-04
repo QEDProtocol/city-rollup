@@ -1,5 +1,6 @@
 use kvq::traits::KVQBinaryStore;
 use kvq::traits::KVQBinaryStoreReader;
+use kvq::traits::KVQBinaryStoreWriter;
 use kvq::traits::KVQPair;
 use redb::ReadableTable;
 use redb::Table;
@@ -120,7 +121,9 @@ where
     }
 }
 
-impl<'db, 'txn> KVQBinaryStore for KVQReDBStore<Table<'db, 'txn, &'static [u8], &'static [u8]>> {
+impl<'db, 'txn> KVQBinaryStoreWriter
+    for KVQReDBStore<Table<'db, 'txn, &'static [u8], &'static [u8]>>
+{
     fn set(&mut self, key: Vec<u8>, value: Vec<u8>) -> anyhow::Result<()> {
         self.set_ref(&key, &value)
     }
@@ -162,4 +165,18 @@ impl<'db, 'txn> KVQBinaryStore for KVQReDBStore<Table<'db, 'txn, &'static [u8], 
         }
         Ok(result)
     }
+
+    fn set_many_split_ref(&mut self, keys: &[Vec<u8>], values: &[Vec<u8>]) -> anyhow::Result<()> {
+        if keys.len() != values.len() {
+            return Err(anyhow::anyhow!(
+                "Keys and values must be of the same length"
+            ));
+        }
+        for (k, v) in keys.iter().zip(values) {
+            self.kv.insert(k.as_slice(), v.as_slice())?;
+        }
+        Ok(())
+    }
 }
+
+impl<'db, 'txn> KVQBinaryStore for KVQReDBStore<Table<'db, 'txn, &'static [u8], &'static [u8]>> {}

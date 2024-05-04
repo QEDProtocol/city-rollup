@@ -528,6 +528,7 @@ dependencies = [
  "hex",
  "hex-literal",
  "k256",
+ "kvq",
  "plonky2",
  "rand",
  "rand_chacha",
@@ -654,7 +655,9 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "bitflags 2.5.0",
+ "city_common",
  "city_crypto",
+ "city_rollup_common",
  "criterion",
  "env_logger",
  "hashbrown 0.14.5",

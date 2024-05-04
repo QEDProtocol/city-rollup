@@ -146,4 +146,8 @@ impl<S: KVQBinaryStore, K: KVQSerializable, V: KVQSerializable> KVQStoreAdapter<
         }
         Ok(results)
     }
+
+    fn set_many_split_ref(s: &mut S, keys: &[K], values: &[V]) -> anyhow::Result<()> {
+        todo!()
+    }
 }
