@@ -1,4 +1,5 @@
 pub mod base;
-pub mod deposits;
+pub mod deposit;
+pub mod requests;
 pub mod user;
-pub mod withdrawals;
+pub mod withdrawal;

@@ -560,7 +560,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn wire_indices() {
+    fn wire_indexes() {
         type CG = ComparisonGate<GoldilocksField, 4>;
         let num_bits = 40;
         let num_chunks = 5;

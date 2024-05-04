@@ -1,7 +1,4 @@
-use city_crypto::hash::{
-    merkle::core::{DeltaMerkleProofCore, MerkleProofCore},
-    qhashout::QHashOut,
-};
+use city_crypto::hash::qhashout::QHashOut;
 use city_rollup_common::api::data::store::CityUserState;
 use kvq::traits::{KVQBinaryStore, KVQBinaryStoreReader};
 use plonky2::{
@@ -10,7 +7,7 @@ use plonky2::{
 };
 
 use crate::{
-    config::{GlobalUserTreeStore, F},
+    config::{CityDeltaMerkleProof, CityHash, CityMerkleProof, GlobalUserTreeStore, F},
     models::kvq_merkle::model::{
         KVQFixedConfigMerkleTreeModelCore, KVQFixedConfigMerkleTreeModelReaderCore,
     },
@@ -33,21 +30,21 @@ impl<S: KVQBinaryStoreReader> CityStore<S> {
         store: &S,
         checkpoint_id: u64,
         user_id: u64,
-    ) -> anyhow::Result<MerkleProofCore<QHashOut<F>>> {
+    ) -> anyhow::Result<CityMerkleProof> {
         GlobalUserTreeStore::<S>::get_leaf_fc(store, checkpoint_id, user_id * 2)
     }
     pub fn get_user_tree_leaf(
         store: &S,
         checkpoint_id: u64,
         leaf_id: u64,
-    ) -> anyhow::Result<QHashOut<F>> {
+    ) -> anyhow::Result<CityHash> {
         GlobalUserTreeStore::<S>::get_leaf_value_fc(store, checkpoint_id, leaf_id)
     }
     pub fn get_user_tree_leaf_merkle_proof(
         store: &S,
         checkpoint_id: u64,
         leaf_id: u64,
-    ) -> anyhow::Result<MerkleProofCore<QHashOut<F>>> {
+    ) -> anyhow::Result<CityMerkleProof> {
         GlobalUserTreeStore::<S>::get_leaf_fc(store, checkpoint_id, leaf_id)
     }
 }
@@ -58,10 +55,7 @@ impl<S: KVQBinaryStore> CityStore<S> {
         checkpoint_id: u64,
         user: &CityUserState,
         left_before_right: bool,
-    ) -> anyhow::Result<(
-        DeltaMerkleProofCore<QHashOut<F>>,
-        DeltaMerkleProofCore<QHashOut<F>>,
-    )> {
+    ) -> anyhow::Result<(CityDeltaMerkleProof, CityDeltaMerkleProof)> {
         let leaf_id = user.user_id * 2;
         let first_leaf = if left_before_right {
             user.get_left_leaf()
@@ -93,8 +87,8 @@ impl<S: KVQBinaryStore> CityStore<S> {
         store: &mut S,
         checkpoint_id: u64,
         user_id: u64,
-        public_key: QHashOut<F>,
-    ) -> anyhow::Result<DeltaMerkleProofCore<QHashOut<F>>> {
+        public_key: CityHash,
+    ) -> anyhow::Result<CityDeltaMerkleProof> {
         let leaf_id = user_id * 2;
         GlobalUserTreeStore::set_leaf_fc(store, checkpoint_id, leaf_id + 1, public_key)
     }
@@ -104,7 +98,7 @@ impl<S: KVQBinaryStore> CityStore<S> {
         user_id: u64,
         amount: u64,
         nonce: Option<u64>,
-    ) -> anyhow::Result<DeltaMerkleProofCore<QHashOut<F>>> {
+    ) -> anyhow::Result<CityDeltaMerkleProof> {
         let leaf_id = user_id * 2;
         let current_leaf = GlobalUserTreeStore::get_leaf_value_fc(store, checkpoint_id, leaf_id)?;
         let current_balance = current_leaf.0.elements[0].to_canonical_u64();
@@ -140,7 +134,7 @@ impl<S: KVQBinaryStore> CityStore<S> {
         user_id: u64,
         amount: u64,
         nonce: Option<u64>,
-    ) -> anyhow::Result<DeltaMerkleProofCore<QHashOut<F>>> {
+    ) -> anyhow::Result<CityDeltaMerkleProof> {
         let leaf_id = user_id * 2;
         let current_leaf = GlobalUserTreeStore::get_leaf_value_fc(store, checkpoint_id, leaf_id)?;
         let current_balance = current_leaf.0.elements[0].to_canonical_u64();

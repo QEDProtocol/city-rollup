@@ -1,10 +1,16 @@
 use city_common::config::rollup_constants::{
     GLOBAL_USER_TREE_HEIGHT, L1_DEPOSIT_TREE_HEIGHT, L1_WITHDRAWAL_TREE_HEIGHT,
 };
-use city_crypto::hash::{qhashout::QHashOut, traits::hasher::PoseidonHasher};
+use city_crypto::hash::{
+    merkle::core::{DeltaMerkleProofCore, MerkleProofCore},
+    qhashout::QHashOut,
+};
 use city_rollup_common::api::data::store::CityL1Deposit;
 use kvq::adapters::standard::KVQStandardAdapter;
-use plonky2::{field::goldilocks_field::GoldilocksField, plonk::config::PoseidonGoldilocksConfig};
+use plonky2::{
+    field::goldilocks_field::GoldilocksField, hash::poseidon::PoseidonHash,
+    plonk::config::PoseidonGoldilocksConfig,
+};
 
 use crate::models::{
     kvq_merkle::{key::KVQMerkleNodeKey, model::KVQFixedConfigMerkleTreeModel},
@@ -16,6 +22,11 @@ use crate::models::{
 
 pub type F = GoldilocksField;
 pub type C = PoseidonGoldilocksConfig;
+pub type CityHasher = PoseidonHash;
+pub type CityHash = QHashOut<F>;
+pub type CityMerkleProof = MerkleProofCore<CityHash>;
+pub type CityDeltaMerkleProof = DeltaMerkleProofCore<CityHash>;
+
 pub const D: usize = 2;
 
 pub const TREE_TABLE_TYPE: u16 = 1;
@@ -34,9 +45,9 @@ pub type CityTreeStore<S, const TREE_ID: u8, const HEIGHT: u8> = KVQFixedConfigM
     TREE_TABLE_TYPE,
     false,
     S,
-    KVQStandardAdapter<S, KVQMerkleNodeKey<TREE_TABLE_TYPE>, QHashOut<F>>,
-    QHashOut<F>,
-    PoseidonHasher,
+    KVQStandardAdapter<S, KVQMerkleNodeKey<TREE_TABLE_TYPE>, CityHash>,
+    CityHash,
+    CityHasher,
 >;
 
 pub type GlobalUserTreeStore<S> = CityTreeStore<S, GLOBAL_USER_TREE_ID, GLOBAL_USER_TREE_HEIGHT>;

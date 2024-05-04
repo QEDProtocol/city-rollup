@@ -10,7 +10,7 @@ use kvq::traits::KVQStoreAdapter;
 use kvq::traits::KVQStoreAdapterReader;
 use std::marker::PhantomData;
 
-const CHECKPOINT_SIZE: usize = 8;
+pub const CHECKPOINT_ID_FUZZY_SIZE: usize = 8;
 
 pub trait KVQMerkleTreeModelReaderCore<
     const TABLE_TYPE: u16,
@@ -34,14 +34,14 @@ pub trait KVQMerkleTreeModelReaderCore<
         store: &S,
         key: &KVQMerkleNodeKey<TABLE_TYPE>,
     ) -> anyhow::Result<Option<KVQPair<KVQMerkleNodeKey<TABLE_TYPE>, Hash>>> {
-        KVA::get_leq_kv(store, key, CHECKPOINT_SIZE)
+        KVA::get_leq_kv(store, key, CHECKPOINT_ID_FUZZY_SIZE)
     }
     fn get_node(
         store: &S,
         tree_height: usize,
         key: &KVQMerkleNodeKey<TABLE_TYPE>,
     ) -> anyhow::Result<Hash> {
-        match KVA::get_leq(store, key, CHECKPOINT_SIZE)? {
+        match KVA::get_leq(store, key, CHECKPOINT_ID_FUZZY_SIZE)? {
             Some(v) => Ok(v),
             None => {
                 if MARK_LEAVES {
@@ -59,7 +59,7 @@ pub trait KVQMerkleTreeModelReaderCore<
         tree_height: usize,
         keys: &[KVQMerkleNodeKey<TABLE_TYPE>],
     ) -> anyhow::Result<Vec<Hash>> {
-        let result = KVA::get_many_leq(store, keys, CHECKPOINT_SIZE)?;
+        let result = KVA::get_many_leq(store, keys, CHECKPOINT_ID_FUZZY_SIZE)?;
         Ok(result
             .iter()
             .enumerate()
@@ -237,6 +237,17 @@ pub trait KVQFixedConfigMerkleTreeModelReaderCore<
             TREE_HEIGHT as usize,
             &Self::new_leaf_key_fc(checkpoint_id, index),
         )
+    }
+    fn get_leaf_values_fc(
+        store: &S,
+        checkpoint_id: u64,
+        indexes: &[u64],
+    ) -> anyhow::Result<Vec<Hash>> {
+        let leaf_keys = indexes
+            .iter()
+            .map(|index| Self::new_leaf_key_fc(checkpoint_id, *index))
+            .collect::<Vec<_>>();
+        Self::get_nodes(store, TREE_HEIGHT as usize, &leaf_keys)
     }
     fn get_node_value_fc(
         store: &S,

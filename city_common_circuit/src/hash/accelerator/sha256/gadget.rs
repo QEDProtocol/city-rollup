@@ -116,7 +116,7 @@ pub struct Sha256AcceleratorGadget<
     padded_chunks_array_registers:
         Vec<ArrayRegister<<S as HashInteger<BytesBuilder<L>>>::IntRegister>>,
     end_bits_array_register: ArrayRegister<BitRegister>,
-    digest_indices: ArrayRegister<ElementRegister>,
+    digest_indexes: ArrayRegister<ElementRegister>,
     hash_state: Vec<<S as SHAir<BytesBuilder<L>, CYCLE_LENGTH>>::StateVariable>,
     stark: ByteStark<L, GenericCombinedConfig<D, C>, D>,
     stark_proof_target: ByteStarkProofTarget<D>,
@@ -171,12 +171,12 @@ where
             .map(|_| bytes_builder.alloc_array_public::<S::IntRegister>(16))
             .collect::<Vec<_>>();
         let end_bits = bytes_builder.alloc_array_public::<BitRegister>(num_rounds);
-        let digest_indices = bytes_builder.alloc_array_public(num_messages);
+        let digest_indexes = bytes_builder.alloc_array_public(num_messages);
         let hash_state = bytes_builder.sha::<S, CYCLE_LENGTH>(
             &padded_chunks,
             &end_bits,
             &end_bits,
-            digest_indices,
+            digest_indexes,
         );
 
         let num_rows_degree = log2_ceil(CYCLE_LENGTH * num_rounds);
@@ -262,7 +262,7 @@ where
             acc_config,
             padded_chunks_array_registers: padded_chunks,
             end_bits_array_register: end_bits,
-            digest_indices,
+            digest_indexes,
             hash_state,
             stark,
             stark_proof_target,
@@ -294,7 +294,7 @@ where
         assert_eq!(end_bits_values.len() * 16, padded_chunks_values.len());
         let num_rounds = end_bits_values.len();
         assert_eq!(self.end_bits_array_register.len(), num_rounds);
-        assert_eq!(self.digest_indices.len(), num_messages);
+        assert_eq!(self.digest_indexes.len(), num_messages);
 
         let num_rows_degree = log2_ceil(CYCLE_LENGTH * num_rounds);
         let num_rows = 1 << num_rows_degree;
@@ -304,7 +304,7 @@ where
 
         let mut current_state = S::INITIAL_HASH;
         let mut hash_iter = self.hash_state.iter();
-        let mut digest_indices_iter = self.digest_indices.iter();
+        let mut digest_indexes_iter = self.digest_indexes.iter();
         let mut rec_digest_inds: Vec<usize> = Vec::new();
         for (i, (((message, register), end_bit), end_bit_value)) in padded_chunks_values
             .chunks_exact(16)
@@ -320,7 +320,7 @@ where
             let state = current_state.map(S::int_to_field_value);
             if *end_bit_value == C::F::ONE {
                 writer.write(
-                    &digest_indices_iter.next().unwrap(),
+                    &digest_indexes_iter.next().unwrap(),
                     &C::F::from_canonical_usize(i),
                 );
                 rec_digest_inds.push(i);

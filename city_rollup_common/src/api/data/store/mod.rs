@@ -10,6 +10,8 @@ use plonky2::{
 };
 use serde::{Deserialize, Serialize};
 
+use crate::introspection::rollup::introspection_result::BTCRollupIntrospectionResultWithdrawal;
+
 type F = GoldilocksField;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Copy, Hash, Eq, PartialEq)]
@@ -47,6 +49,10 @@ impl CityUserState {
     }
     pub fn get_right_leaf(&self) -> QHashOut<F> {
         self.public_key
+    }
+
+    pub fn can_user_spend_with_nonce(&self, amount: u64, nonce: u64) -> bool {
+        self.balance >= amount && self.nonce < nonce
     }
 }
 #[derive(Debug, Clone, Serialize, Deserialize, Copy, Hash, Eq, PartialEq)]
@@ -157,5 +163,15 @@ impl CityL1Withdrawal {
             address_type,
             value,
         }
+    }
+}
+
+impl<F: RichField> From<&CityL1Withdrawal> for QHashOut<F> {
+    fn from(withdrawal: &CityL1Withdrawal) -> Self {
+        BTCRollupIntrospectionResultWithdrawal::<F>::hash_from_public_key_hash(
+            withdrawal.value,
+            withdrawal.address,
+            withdrawal.address_type,
+        )
     }
 }

@@ -76,44 +76,68 @@ impl<const TABLE_TYPE: u16> From<[u8; 32]> for L1DepositKeyByTransactionIdCore<T
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
-pub struct L1DepositKeyByDepositIdCore<const TABLE_TYPE: u16>(pub u64);
+pub struct L1DepositKeyByDepositIdCore<const TABLE_TYPE: u16> {
+    pub deposit_id: u64,
+    pub checkpoint_id: u64,
+}
 
 impl<const TABLE_TYPE: u16> KVQSerializable for L1DepositKeyByDepositIdCore<TABLE_TYPE> {
     fn to_bytes(&self) -> anyhow::Result<Vec<u8>> {
-        let be_bytes = self.0.to_be_bytes();
+        let deposit_id_be_bytes = self.deposit_id.to_be_bytes();
+        let checkpoint_id_be_bytes = self.checkpoint_id.to_be_bytes();
         Ok(vec![
             (TABLE_TYPE >> 8) as u8,
             (TABLE_TYPE & 0xff) as u8,
-            be_bytes[0],
-            be_bytes[1],
-            be_bytes[2],
-            be_bytes[3],
-            be_bytes[4],
-            be_bytes[5],
-            be_bytes[6],
-            be_bytes[7],
+            deposit_id_be_bytes[0],
+            deposit_id_be_bytes[1],
+            deposit_id_be_bytes[2],
+            deposit_id_be_bytes[3],
+            deposit_id_be_bytes[4],
+            deposit_id_be_bytes[5],
+            deposit_id_be_bytes[6],
+            deposit_id_be_bytes[7],
+            checkpoint_id_be_bytes[0],
+            checkpoint_id_be_bytes[1],
+            checkpoint_id_be_bytes[2],
+            checkpoint_id_be_bytes[3],
+            checkpoint_id_be_bytes[4],
+            checkpoint_id_be_bytes[5],
+            checkpoint_id_be_bytes[6],
+            checkpoint_id_be_bytes[7],
         ])
     }
 
     fn from_bytes(bytes: &[u8]) -> anyhow::Result<Self> {
-        if bytes.len() != 10 {
+        if bytes.len() != 18 {
             anyhow::bail!(
-                "expected 10 bytes for deserializing L1DepositKeyByDepositIdCore, got {} bytes",
+                "expected 18 bytes for deserializing L1DepositKeyByDepositIdCore, got {} bytes",
                 bytes.len()
             );
         }
-        let mut be_bytes = [0u8; 8];
-        be_bytes.copy_from_slice(&bytes[2..]);
-        Ok(L1DepositKeyByDepositIdCore(u64::from_be_bytes(be_bytes)))
+        let mut deposit_id_be_bytes = [0u8; 8];
+        deposit_id_be_bytes.copy_from_slice(&bytes[2..10]);
+        let deposit_id = u64::from_be_bytes(deposit_id_be_bytes);
+
+        let mut checkpoint_id_be_bytes = [0u8; 8];
+        checkpoint_id_be_bytes.copy_from_slice(&bytes[10..18]);
+        let checkpoint_id = u64::from_be_bytes(checkpoint_id_be_bytes);
+
+        Ok(L1DepositKeyByDepositIdCore {
+            deposit_id,
+            checkpoint_id,
+        })
     }
 }
 impl<const TABLE_TYPE: u16> From<&CityL1Deposit> for L1DepositKeyByDepositIdCore<TABLE_TYPE> {
     fn from(deposit: &CityL1Deposit) -> Self {
-        L1DepositKeyByDepositIdCore(deposit.deposit_id)
+        L1DepositKeyByDepositIdCore::new(deposit.checkpoint_id, deposit.deposit_id)
     }
 }
-impl<const TABLE_TYPE: u16> From<u64> for L1DepositKeyByDepositIdCore<TABLE_TYPE> {
-    fn from(deposit_id: u64) -> Self {
-        L1DepositKeyByDepositIdCore(deposit_id)
+impl<const TABLE_TYPE: u16> L1DepositKeyByDepositIdCore<TABLE_TYPE> {
+    pub fn new(checkpoint_id: u64, deposit_id: u64) -> Self {
+        L1DepositKeyByDepositIdCore {
+            deposit_id,
+            checkpoint_id,
+        }
     }
 }

@@ -169,6 +169,8 @@ impl MerkleZeroHasher<QHashOut<GoldilocksField>> for PoseidonHash {
     }
 }
 
+impl MerkleZeroHasherWithMarkedLeaf<QHashOut<GoldilocksField>> for PoseidonHash {}
+
 impl BaseMerkleZeroHasherWithMarkedLeaf<HashOut<GoldilocksField>> for PoseidonHash {
     fn get_zero_hash_marked(reverse_level: usize) -> HashOut<GoldilocksField> {
         <PoseidonHash as BaseMerkleZeroHasherWithMarkedLeaf<QHashOut<GoldilocksField>>>::get_zero_hash_marked(reverse_level).0
