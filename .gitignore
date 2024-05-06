@@ -41,4 +41,6 @@ coverage.json
 logs/
 chaindata/
 ordhook-data/
+redis-data/
 db
+proof*

@@ -22,9 +22,11 @@ city_crypto           = { path = "../city_crypto" }
 city_common_circuit   = { path = "../city_common_circuit" }
 city_common           = { path = "../city_common" }
 city_rollup_common    = { path = "../city_rollup_common" }
+city_macros    = { path = "../city_macros" }
 city_rollup_worker_dispatch    = { path = "../city_rollup_worker_dispatch" }
 tokio                 = { workspace = true }
-redis = { version = "0.25.3", features = ["tokio-comp"] }
+redis                 = { workspace = true }
+
 [dev-dependencies]
 criterion = "0.5.1"
 rand_chacha = "0.3.1"

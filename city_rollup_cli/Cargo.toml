@@ -19,6 +19,7 @@ city_common_circuit   = { path = "../city_common_circuit" }
 city_common           = { path = "../city_common" }
 city_rollup_common    = { path = "../city_rollup_common" }
 city_rollup_core_node    = { path = "../city_rollup_core_node" }
+city_rollup_core_worker    = { path = "../city_rollup_core_worker" }
 city_rollup_core_orchestrator    = { path = "../city_rollup_core_orchestrator" }
 bitcoincore-rpc       = { workspace = true }
 clap                  = { workspace = true }

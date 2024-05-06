@@ -14,11 +14,9 @@ pub async fn run(args: GetPublicKeyArgs) -> Result<()> {
     let private_key_base = QHashOut::<GoldilocksField>::from_str(&args.private_key)
         .map_err(|e| anyhow::format_err!("{}", e.to_string()))?;
     let private_key = SimpleL2PrivateKey::new(private_key_base);
+    let public_key = private_key.get_public_key::<PoseidonHash>();
 
-    let circuit = ZKSignatureCircuit::<PoseidonGoldilocksConfig, 2>::new(
-        private_key.get_public_key::<PoseidonHash>(),
-    );
-    let public_key = circuit.circuit_fingerprint_public_key;
+    let circuit = ZKSignatureCircuit::<PoseidonGoldilocksConfig, 2>::new(public_key);
     println!("public_key = {}", public_key.to_string());
     Ok(())
 }

@@ -24,8 +24,6 @@ pub async fn run(args: PrintCircuitInfoArgs) -> Result<()> {
 ",
         build::PKG_VERSION
     );
-    //let indexer = city_indexer::Indexer::new(args).await?;
-    //indexer.listen().await?;
 
     const D: usize = 2;
     type C = PoseidonGoldilocksConfig;

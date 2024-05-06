@@ -12,7 +12,5 @@ pub async fn run(_args: L2TransferArgs) -> Result<()> {
 ",
         build::PKG_VERSION
     );
-    //let indexer = city_indexer::Indexer::new(args).await?;
-    //indexer.listen().await?;
     Ok(())
 }

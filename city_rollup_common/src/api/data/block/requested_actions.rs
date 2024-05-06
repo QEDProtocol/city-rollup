@@ -41,7 +41,7 @@ pub struct CityClaimDepositRequest {
     request_type: u8,
     pub user_id: u64,
     pub nonce: u64,
-    pub deposit_id: u64,
+    pub deposit_id: u32,
     pub value: u64,
 
     pub txid: Hash256,
@@ -52,7 +52,7 @@ impl CityClaimDepositRequest {
     pub fn new(
         user_id: u64,
         nonce: u64,
-        deposit_id: u64,
+        deposit_id: u32,
         value: u64,
         txid: Hash256,
         public_key: [u8; 33],

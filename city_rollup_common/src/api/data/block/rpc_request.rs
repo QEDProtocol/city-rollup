@@ -23,7 +23,7 @@ pub struct CityTokenTransferRPCRequest {
 pub struct CityClaimDepositRPCRequest {
     pub user_id: u64,
     pub nonce: u64,
-    pub deposit_id: u64,
+    pub deposit_id: u32,
     pub value: u64,
 
     pub txid: Hash256,
@@ -51,6 +51,7 @@ pub struct CityAddWithdrawalRPCRequest {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(bound = "")]
+#[serde(transparent)]
 pub struct CityRegisterUserRPCRequest<F: RichField> {
     pub public_key: QHashOut<F>,
 }
