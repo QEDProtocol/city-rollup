@@ -1,3 +1,4 @@
+use city_common::config::rollup_constants::NONCE_BIT_SIZE;
 use city_common_circuit::{
     builder::{
         comparison::CircuitBuilderComparison, core::CircuitBuilderHelpersCore,
@@ -131,7 +132,7 @@ impl ClaimDepositGadget {
             user_tree_delta_merkle_proof.new_value.elements[0],
             computed_new_user_balance,
         );
-        builder.ensure_is_greater_than(62, new_nonce, old_nonce);
+        builder.ensure_is_greater_than(NONCE_BIT_SIZE, new_nonce, old_nonce);
         builder.connect(
             user_tree_delta_merkle_proof.old_value.elements[2],
             user_tree_delta_merkle_proof.new_value.elements[2],

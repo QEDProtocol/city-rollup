@@ -119,6 +119,11 @@ pub fn prove_tree_serial<
                 &right_proof,
                 &job.input,
             )?;
+            println!(
+                "proved agg: {}, {}",
+                current_proofs.len(),
+                level_proofs.len()
+            );
             level_proofs.push(proof);
         }
         current_proofs.push(level_proofs);

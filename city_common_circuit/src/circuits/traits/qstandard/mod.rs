@@ -1,10 +1,13 @@
 use async_trait::async_trait;
-use city_crypto::hash::qhashout::QHashOut;
+use city_crypto::hash::{core::sha256::CoreSha256Hasher, qhashout::QHashOut};
 use city_rollup_common::qworker::proof_store::{QProofStoreReaderAsync, QProofStoreReaderSync};
-use plonky2::plonk::{
-    circuit_data::{CommonCircuitData, VerifierOnlyCircuitData},
-    config::GenericConfig,
-    proof::ProofWithPublicInputs,
+use plonky2::{
+    plonk::{
+        circuit_data::{CommonCircuitData, VerifierOnlyCircuitData},
+        config::GenericConfig,
+        proof::ProofWithPublicInputs,
+    },
+    util::serialization::DefaultGateSerializer,
 };
 use serde::Serialize;
 
@@ -20,6 +23,41 @@ pub trait QStandardCircuit<C: GenericConfig<D>, const D: usize> {
         );
         println!("common_data: {:?}", self.get_common_circuit_data_ref());
     }
+    fn print_config_with_name(&self, name: &str) {
+        /*let common_data_bytes = self
+            .get_common_circuit_data_ref()
+            .to_bytes(&gate_serializer)
+            .unwrap();
+        let common_data_hash = CoreSha256Hasher::hash_bytes(&common_data_bytes).to_hex_string();
+        println!(
+            "[{}] {{constants_sigmas_cap_height: {}, common_data_hash: {}}}",
+            name,
+            self.get_verifier_config_ref().constants_sigmas_cap.height(),
+            common_data_hash,
+        );
+        */
+        /*
+        println!(
+            "[{}] common_data: {:?}",
+            name,
+            self.get_common_circuit_data_ref()
+        );
+        */
+
+        /*println!(
+            "[{}] {{constants_sigmas_cap_height: {}}}",
+            name,
+            self.get_verifier_config_ref().constants_sigmas_cap.height(),
+        );*/
+        println!("{}: \"{:?}\",", name, self.get_common_circuit_data_ref());
+    }
+}
+
+pub trait QStandardCircuitWithDefault {
+    fn new_default(network_magic: u64) -> Self;
+}
+pub trait QStandardCircuitWithDefaultMinified {
+    fn new_default_with_minifiers(network_magic: u64, n_minifiers: usize) -> Self;
 }
 
 pub trait QStandardCircuitProvableWithProofStoreSync<

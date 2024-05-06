@@ -61,7 +61,7 @@ where
     ) -> Self {
         //let public_key = SimpleL2PrivateKey::new(private_key).get_public_key();
 
-        let config = CircuitConfig::standard_recursion_zk_config();
+        let config = CircuitConfig::standard_recursion_config();
         let mut builder = CircuitBuilder::<C::F, D>::new(config);
         //let verifier_template = get_verifier_template_zk_signature();
 
@@ -78,7 +78,7 @@ where
         assert_eq!(
             proof_target.public_inputs.len(),
             4,
-            "signatue proofs should have 4 public inputs"
+            "signature proofs should have 4 public inputs"
         );
         let action_hash = HashOutTarget {
             elements: [

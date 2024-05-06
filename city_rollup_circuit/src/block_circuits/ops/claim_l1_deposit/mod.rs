@@ -34,7 +34,7 @@ pub struct CRClaimL1DepositCircuitInput<F: RichField> {
     pub deposit: BTCRollupIntrospectionResultDeposit<F>,
     pub user_tree_delta_merkle_proof: DeltaMerkleProofCore<QHashOut<F>>,
     pub deposit_tree_delta_merkle_proof: DeltaMerkleProofCore<QHashOut<F>>,
-    pub allowed_circuit_hashes: QHashOut<F>,
+    pub allowed_circuit_hashes_root: QHashOut<F>,
     pub signature_proof_id: QProvingJobDataID,
 }
 impl<F: RichField> AggStateTrackableInput<F> for CRClaimL1DepositCircuitInput<F> {
@@ -60,7 +60,7 @@ where
     pub claim_single_gadget: ClaimL1DepositSingleGadget,
     pub signature_proof_target: ProofWithPublicInputsTarget<D>,
 
-    pub allowed_circuit_hashes_target: HashOutTarget,
+    pub allowed_circuit_hashes_root_target: HashOutTarget,
     // end circuit targets
     pub circuit_data: CircuitData<C::F, C, D>,
     pub fingerprint: QHashOut<C::F>,
@@ -95,6 +95,17 @@ where
             network_magic,
             l1_signature_circuit_data.common,
             l1_signature_circuit_data.verifier_only,
+        )
+    }
+    pub fn new_with_signature_circuit_data_ref(
+        network_magic: u64,
+        signature_circuit_common_data: &CommonCircuitData<C::F, D>,
+        signature_circuit_verifier_data: &VerifierOnlyCircuitData<C, D>,
+    ) -> Self {
+        Self::new_with_signature_circuit_data(
+            network_magic,
+            signature_circuit_common_data.clone(),
+            signature_circuit_verifier_data.clone(),
         )
     }
     pub fn new_with_signature_circuit_data(
@@ -137,9 +148,9 @@ where
             &signature_circuit_common_data,
         );
 
-        let allowed_circuit_hashes_target = builder.add_virtual_hash();
+        let allowed_circuit_hashes_root_target = builder.add_virtual_hash();
 
-        builder.register_public_inputs(&allowed_circuit_hashes_target.elements);
+        builder.register_public_inputs(&allowed_circuit_hashes_root_target.elements);
         builder
             .register_public_inputs(&claim_single_gadget.combined_state_transition_hash.elements);
 
@@ -149,7 +160,7 @@ where
         Self {
             claim_single_gadget,
             signature_proof_target,
-            allowed_circuit_hashes_target,
+            allowed_circuit_hashes_root_target,
             circuit_data,
             fingerprint,
             network_magic,
@@ -173,8 +184,8 @@ where
         pw.set_proof_with_pis_target(&self.signature_proof_target, signature_proof);
 
         pw.set_hash_target(
-            self.allowed_circuit_hashes_target,
-            input.allowed_circuit_hashes.0,
+            self.allowed_circuit_hashes_root_target,
+            input.allowed_circuit_hashes_root.0,
         );
 
         self.circuit_data.prove(pw)

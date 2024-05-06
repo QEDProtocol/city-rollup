@@ -1,4 +1,5 @@
 use city_common::logging::debug_timer::DebugTimer;
+use city_crypto::hash::qhashout::QHashOut;
 use city_rollup_common::introspection::rollup::signature::{
     QEDCompressedSecp256K1Signature, QEDPreparedSecp256K1Signature,
 };
@@ -6,7 +7,7 @@ use plonky2::{
     iop::witness::PartialWitness,
     plonk::{
         circuit_builder::CircuitBuilder,
-        circuit_data::{CircuitConfig, CircuitData},
+        circuit_data::{CircuitConfig, CircuitData, CommonCircuitData, VerifierOnlyCircuitData},
         config::{AlgebraicHasher, GenericConfig},
         proof::ProofWithPublicInputs,
     },
@@ -16,6 +17,8 @@ use crate::{
     crypto::secp256k1::gadget::DogeQEDSignatureGadget,
     proof_minifier::pm_chain::OASProofMinifierChain,
 };
+
+use super::traits::qstandard::QStandardCircuit;
 
 #[derive(Debug)]
 pub struct L1Secp256K1SignatureCircuit<C: GenericConfig<D> + 'static, const D: usize>
@@ -74,5 +77,23 @@ where
         let minified_proof = self.minifier_chain.prove(&base_proof)?;
         timer.lap("end minifier");
         Ok(minified_proof)
+    }
+}
+
+impl<C: GenericConfig<D>, const D: usize> QStandardCircuit<C, D>
+    for L1Secp256K1SignatureCircuit<C, D>
+where
+    C::Hasher: AlgebraicHasher<C::F>,
+{
+    fn get_fingerprint(&self) -> QHashOut<C::F> {
+        QHashOut(self.minifier_chain.get_fingerprint())
+    }
+
+    fn get_verifier_config_ref(&self) -> &VerifierOnlyCircuitData<C, D> {
+        self.minifier_chain.get_verifier_data()
+    }
+
+    fn get_common_circuit_data_ref(&self) -> &CommonCircuitData<C::F, D> {
+        self.minifier_chain.get_common_data()
     }
 }
