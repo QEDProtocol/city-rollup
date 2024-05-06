@@ -1,4 +1,4 @@
-use city_crypto::hash::base_types::{hash160::Hash160, hash256::Hash256};
+/*use city_crypto::hash::base_types::{hash160::Hash160, hash256::Hash256};
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 #[serde_as]
@@ -58,3 +58,4 @@ pub struct CityAddWithdrawalRequest {
 pub struct PlannedBlock {
     pub current_script_hash: Hash160,
 }
+*/

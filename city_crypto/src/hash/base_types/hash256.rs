@@ -2,11 +2,21 @@ use std::fmt::Display;
 
 use hex::FromHexError;
 use kvq::traits::KVQSerializable;
+use plonky2::{
+    field::{secp256k1_scalar::Secp256K1Scalar, types::PrimeField},
+    hash::hash_types::RichField,
+};
 use rand::RngCore;
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 
-use crate::hash::merkle::core::{DeltaMerkleProofCore, MerkleProofCore};
+use crate::{
+    hash::{
+        merkle::core::{DeltaMerkleProofCore, MerkleProofCore},
+        qhashout::QHashOut,
+    },
+    signature::secp256k1::curve::{ecdsa::ECDSASecretKey, secp256k1::Secp256K1},
+};
 
 #[serde_as]
 #[derive(Serialize, Deserialize, PartialEq, Clone, Copy, Debug, Eq, Hash, PartialOrd, Ord)]
@@ -27,6 +37,24 @@ impl Hash256 {
         let mut bytes = [0u8; 32];
         rand::thread_rng().fill_bytes(&mut bytes);
         Hash256(bytes)
+    }
+}
+
+impl From<Hash256> for ECDSASecretKey<Secp256K1> {
+    fn from(value: Hash256) -> Self {
+        let u64_result: [u64; 4] = core::array::from_fn(|i| {
+            let mut bytes = [0u8; 8];
+            bytes.copy_from_slice(&value.0[i * 8..(i + 1) * 8]);
+            u64::from_le_bytes(bytes)
+        });
+        let scalar = Secp256K1Scalar(u64_result);
+        ECDSASecretKey(scalar)
+    }
+}
+
+impl From<Hash256> for k256::ecdsa::SigningKey {
+    fn from(value: Hash256) -> Self {
+        Self::from_slice(&value.0).unwrap()
     }
 }
 
@@ -69,5 +97,16 @@ impl KVQSerializable for Hash256 {
         let mut inner_data = [0u8; 32];
         inner_data.copy_from_slice(bytes);
         Ok(Hash256(inner_data))
+    }
+}
+
+impl<F: RichField> From<QHashOut<F>> for Hash256 {
+    fn from(value: QHashOut<F>) -> Self {
+        let mut data = [0u8; 32];
+        for i in 0..4 {
+            let u64 = value.0.elements[i].to_canonical_u64();
+            data[i * 8..(i + 1) * 8].copy_from_slice(&u64.to_le_bytes());
+        }
+        Self(data)
     }
 }

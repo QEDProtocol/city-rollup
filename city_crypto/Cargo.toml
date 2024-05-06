@@ -20,3 +20,4 @@ sha2 = { workspace = true }
 ripemd = { workspace = true }
 k256 = { workspace = true }
 kvq = { path = "../kvq" }
+city_common = { path = "../city_common" }

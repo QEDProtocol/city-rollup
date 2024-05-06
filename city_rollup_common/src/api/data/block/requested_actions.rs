@@ -1,5 +1,9 @@
 use city_common::binaryhelpers::bytes::CompressedPublicKey;
-use city_crypto::hash::base_types::{hash160::Hash160, hash256::Hash256};
+use city_crypto::hash::{
+    base_types::{hash160::Hash160, hash256::Hash256},
+    qhashout::QHashOut,
+};
+use plonky2::hash::hash_types::RichField;
 use serde::{Deserialize, Serialize};
 
 use crate::qworker::job_id::QProvingJobDataID;
@@ -129,6 +133,22 @@ impl CityProcessWithdrawalRequest {
         Self {
             request_type: 4,
             withdrawal_id,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(bound = "")]
+pub struct CityRegisterUserRequest<F: RichField> {
+    request_type: u8,
+    pub public_key: QHashOut<F>,
+}
+
+impl<F: RichField> CityRegisterUserRequest<F> {
+    pub fn new(public_key: QHashOut<F>) -> Self {
+        Self {
+            request_type: 5,
+            public_key,
         }
     }
 }

@@ -1,7 +1,7 @@
 use city_common::logging::debug_timer::DebugTimer;
-use city_crypto::hash::qhashout::QHashOut;
-use city_rollup_common::introspection::rollup::signature::{
-    QEDCompressedSecp256K1Signature, QEDPreparedSecp256K1Signature,
+use city_crypto::{
+    hash::qhashout::QHashOut,
+    signature::secp256k1::core::{QEDCompressedSecp256K1Signature, QEDPreparedSecp256K1Signature},
 };
 use plonky2::{
     iop::witness::PartialWitness,
@@ -29,7 +29,14 @@ where
     pub base_circuit_data: CircuitData<C::F, C, D>,
     pub minifier_chain: OASProofMinifierChain<D, C::F, C>,
 }
-
+impl<C: GenericConfig<D> + 'static, const D: usize> Clone for L1Secp256K1SignatureCircuit<C, D>
+where
+    C::Hasher: AlgebraicHasher<C::F>,
+{
+    fn clone(&self) -> Self {
+        Self::new()
+    }
+}
 impl<C: GenericConfig<D> + 'static, const D: usize> L1Secp256K1SignatureCircuit<C, D>
 where
     C::Hasher: AlgebraicHasher<C::F>,

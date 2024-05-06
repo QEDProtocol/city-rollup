@@ -1,6 +1,7 @@
 use city_crypto::{
     field::conversions::bytes33_to_public_key,
     hash::{base_types::felt252::hash256_le_to_felt252_hashout, qhashout::QHashOut},
+    signature::secp256k1::core::hash256_to_hashout_u224,
 };
 use plonky2::{hash::hash_types::RichField, plonk::config::AlgebraicHasher};
 use serde::{Deserialize, Serialize};
@@ -12,12 +13,9 @@ use crate::introspection::{
     transaction::{BTCTransaction, BTCTransactionConfig},
 };
 
-use super::{
-    introspection_result::{
-        BTCRollupIntrospectionResult, BTCRollupIntrospectionResultDeposit,
-        BTCRollupIntrospectionResultWithdrawal,
-    },
-    signature::hash256_to_hashout_u224,
+use super::introspection_result::{
+    BTCRollupIntrospectionResult, BTCRollupIntrospectionResultDeposit,
+    BTCRollupIntrospectionResultWithdrawal,
 };
 
 #[serde_as]

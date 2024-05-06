@@ -6,6 +6,7 @@ use city_crypto::{
         merkle::core::compute_partial_merkle_root_from_leaves_algebraic,
         qhashout::QHashOut,
     },
+    signature::secp256k1::core::hash256_to_hashout_u224,
 };
 use plonky2::{
     hash::hash_types::{HashOut, RichField},
@@ -13,7 +14,6 @@ use plonky2::{
 };
 use serde::{Deserialize, Serialize};
 
-use super::signature::hash256_to_hashout_u224;
 pub const WITHDRAWAL_TYPE_BYTE_P2PKH: u8 = 0u8;
 pub const WITHDRAWAL_TYPE_BYTE_P2SH: u8 = 1u8;
 pub const WITHDRAWAL_TYPE_P2PKH: u64 = 0;

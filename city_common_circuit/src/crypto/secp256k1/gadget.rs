@@ -14,6 +14,7 @@ use crate::{
 };
 use city_crypto::{
     field::conversions::bytes33_to_public_key,
+    hash::qhashout::QHashOut,
     signature::secp256k1::curve::{
         curve_types::Curve,
         ecdsa::{ECDSAPublicKey, ECDSASignature},
@@ -311,9 +312,9 @@ impl DogeQEDSignatureGadget {
         witness: &mut impl Witness<F>,
         public_key: &ECDSAPublicKey<Secp256K1>,
         signature: &ECDSASignature<Secp256K1>,
-        msg: HashOut<F>,
+        msg: QHashOut<F>,
     ) {
-        witness.set_hash_target(self.msg_hash_target, msg);
+        witness.set_hash_target(self.msg_hash_target, msg.0);
         witness.set_biguint_target(
             &self.public_key_x_target,
             &biguint_from_array(public_key.0.x.0),

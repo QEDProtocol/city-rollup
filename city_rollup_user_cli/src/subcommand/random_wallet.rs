@@ -21,7 +21,7 @@ pub async fn run(_: RandomWalletArgs) -> Result<()> {
         private_key.get_public_key::<PoseidonHash>(),
     );
 
-    let public_key = circuit.public_key;
+    let public_key = circuit.circuit_fingerprint_public_key;
 
     let random_wallet = RandomWalletOutputJSON {
         public_key,

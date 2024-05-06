@@ -1,4 +1,8 @@
-use city_crypto::hash::base_types::{hash160::Hash160, hash256::Hash256};
+use city_crypto::hash::{
+    base_types::{hash160::Hash160, hash256::Hash256},
+    qhashout::QHashOut,
+};
+use plonky2::hash::hash_types::RichField;
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 
@@ -43,4 +47,10 @@ pub struct CityAddWithdrawalRPCRequest {
 
     #[serde_as(as = "serde_with::hex::Hex")]
     pub signature_proof: Vec<u8>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(bound = "")]
+pub struct CityRegisterUserRPCRequest<F: RichField> {
+    pub public_key: QHashOut<F>,
 }
