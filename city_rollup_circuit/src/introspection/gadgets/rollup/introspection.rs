@@ -224,7 +224,7 @@ impl BTCRollupIntrospectionGadget {
                     );
                     let public_key =
                         builder.bytes33_to_public_key(&funding_tx.inputs[0].script[73..106]);
-                    let txid_224 = builder.hash256_bytes_to_felt252_hashout(self.sighash_preimage.transaction.inputs[i].hash);
+                    let txid_224 = builder.hash256_bytes_to_hashout224(self.sighash_preimage.transaction.inputs[i].hash);
 
                     Some(BTCRollupIntrospectionResultDepositGadget {
                         txid_224,

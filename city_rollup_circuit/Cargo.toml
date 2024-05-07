@@ -12,6 +12,7 @@ serde = { workspace = true }
 serde_with = { workspace = true }
 hex = { workspace = true }
 rand = { workspace = true }
+hashbrown = { workspace = true }
 city_crypto           = { path = "../city_crypto" }
 city_common_circuit   = { path = "../city_common_circuit" }
 city_common           = { path = "../city_common" }

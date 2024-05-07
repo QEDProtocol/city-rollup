@@ -149,6 +149,22 @@ impl<F: RichField> QHashOut<F> {
             ],
         })
     }
+    pub fn from_felt_slice(slice: &[F]) -> Self {
+        Self(HashOut {
+            elements: [slice[0], slice[1], slice[2], slice[3]],
+        })
+    }
+    pub fn to_le_bytes(&self) -> [u8; 32] {
+        let mut result = [0u8; 32];
+        result[0..8].copy_from_slice(&self.0.elements[0].to_canonical_u64().to_le_bytes());
+        result[8..16].copy_from_slice(&self.0.elements[1].to_canonical_u64().to_le_bytes());
+        result[16..24].copy_from_slice(&self.0.elements[2].to_canonical_u64().to_le_bytes());
+        result[24..32].copy_from_slice(&self.0.elements[3].to_canonical_u64().to_le_bytes());
+        result
+    }
+    pub fn to_string_le(&self) -> String {
+        hex::encode(self.to_le_bytes())
+    }
 }
 
 impl<F: RichField> KVQSerializable for QHashOut<F> {

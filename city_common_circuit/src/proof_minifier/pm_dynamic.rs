@@ -11,7 +11,7 @@ use plonky2::{
             CircuitConfig, CircuitData, CommonCircuitData, VerifierCircuitTarget,
             VerifierOnlyCircuitData,
         },
-        config::{AlgebraicHasher, GenericConfig, Hasher},
+        config::{AlgebraicHasher, GenericConfig},
         proof::{ProofWithPublicInputs, ProofWithPublicInputsTarget},
     },
 };
@@ -29,8 +29,8 @@ pub struct OASProofMinifierDynamic<
     pub circuit_data: CircuitData<F, C, D>,
     pub circuit_fingerprint: HashOut<F>,
     pub proof_target: ProofWithPublicInputsTarget<D>,
-    pub verifier_data_target: VerifierCircuitTarget,
-    pub verifier_data: VerifierOnlyCircuitData<C, D>,
+    pub verifier_data_target: Option<VerifierCircuitTarget>,
+    pub verifier_data: Option<VerifierOnlyCircuitData<C, D>>,
 }
 
 impl<const D: usize, F: RichField + Extendable<D>, C: GenericConfig<D, F = F> + 'static>
@@ -48,6 +48,21 @@ where
             base_circuit_verifier_data,
             base_circuit_common_data,
             None,
+            false,
+        )
+    }
+    pub fn new_with_dynamic_constant_verifier(
+        base_circuit_verifier_data: &VerifierOnlyCircuitData<C, D>,
+        base_circuit_common_data: &CommonCircuitData<F, D>,
+        is_constant_verifier_data: bool,
+    ) -> Self {
+        let standard_config = CircuitConfig::standard_recursion_config();
+        Self::new_with_cfg(
+            standard_config,
+            base_circuit_verifier_data,
+            base_circuit_common_data,
+            None,
+            is_constant_verifier_data,
         )
     }
     pub fn new_with_cfg(
@@ -55,10 +70,15 @@ where
         base_circuit_verifier_data: &VerifierOnlyCircuitData<C, D>,
         base_circuit_common_data: &CommonCircuitData<F, D>,
         add_gates: Option<&[GateRef<F, D>]>,
+        is_constant_verifier_data: bool,
     ) -> Self {
         let mut builder = CircuitBuilder::<F, D>::new(config);
-        let verifier_data_target = builder
-            .add_virtual_verifier_data(base_circuit_verifier_data.constants_sigmas_cap.height());
+        let verifier_data_target = if is_constant_verifier_data {
+            builder.constant_verifier_data(base_circuit_verifier_data)
+        } else {
+            builder
+                .add_virtual_verifier_data(base_circuit_verifier_data.constants_sigmas_cap.height())
+        };
         let proof_target = builder.add_virtual_proof_with_pis(base_circuit_common_data);
 
         builder.register_public_inputs(&proof_target.public_inputs);
@@ -82,8 +102,16 @@ where
             circuit_data,
             circuit_fingerprint,
             proof_target,
-            verifier_data_target,
-            verifier_data: base_circuit_verifier_data.clone(),
+            verifier_data_target: if is_constant_verifier_data {
+                None
+            } else {
+                Some(verifier_data_target)
+            },
+            verifier_data: if is_constant_verifier_data {
+                None
+            } else {
+                Some(base_circuit_verifier_data.clone())
+            },
         }
     }
     pub fn new_with_cfg_customizer<PMCC: PMCircuitCustomizer<F, D>>(
@@ -92,10 +120,15 @@ where
         base_circuit_common_data: &CommonCircuitData<F, D>,
         add_gates: Option<&[GateRef<F, D>]>,
         customizer: Option<&PMCC>,
+        is_constant_verifier_data: bool,
     ) -> Self {
         let mut builder = CircuitBuilder::<F, D>::new(config);
-        let verifier_data_target = builder
-            .add_virtual_verifier_data(base_circuit_verifier_data.constants_sigmas_cap.height());
+        let verifier_data_target = if is_constant_verifier_data {
+            builder.constant_verifier_data(base_circuit_verifier_data)
+        } else {
+            builder
+                .add_virtual_verifier_data(base_circuit_verifier_data.constants_sigmas_cap.height())
+        };
         let proof_target = builder.add_virtual_proof_with_pis(base_circuit_common_data);
 
         builder.register_public_inputs(&proof_target.public_inputs);
@@ -122,8 +155,16 @@ where
             circuit_data,
             circuit_fingerprint,
             proof_target,
-            verifier_data_target,
-            verifier_data: base_circuit_verifier_data.clone(),
+            verifier_data_target: if is_constant_verifier_data {
+                None
+            } else {
+                Some(verifier_data_target)
+            },
+            verifier_data: if is_constant_verifier_data {
+                None
+            } else {
+                Some(base_circuit_verifier_data.clone())
+            },
         }
     }
     pub fn prove(
@@ -132,7 +173,12 @@ where
                                                      //proof: &ProofWithPublicInputs<F, C, D>,
     ) -> Result<ProofWithPublicInputs<F, C, D>> {
         let mut pw = PartialWitness::new();
-        pw.set_verifier_data_target(&self.verifier_data_target, &self.verifier_data);
+        if self.verifier_data_target.is_some() {
+            let verifier_data_target = self.verifier_data_target.as_ref().unwrap();
+            let verifier_data = self.verifier_data.as_ref().unwrap();
+
+            pw.set_verifier_data_target(verifier_data_target, verifier_data);
+        }
         pw.set_proof_with_pis_target(&self.proof_target, base_proof);
         let mut timer = DebugTimer::new("compress");
         let result = self.circuit_data.prove(pw);

@@ -1,6 +1,12 @@
+use std::fmt::format;
+
 use city_common_circuit::{
     builder::{core::CircuitBuilderHelpersCore, hash::core::CircuitBuilderHashCore},
-    hash::base_types::hash256bytes::Hash256BytesTarget,
+    debug::circuit_tracer::DebugCircuitTracer,
+    hash::{
+        base_types::hash256bytes::Hash256BytesTarget,
+        merkle::partial::compute_partial_merkle_root_from_leaves_algebraic_circuit,
+    },
 };
 use city_rollup_common::introspection::rollup::introspection_result::{
     BTCRollupIntrospectionResultDeposit, WITHDRAWAL_TYPE_P2PKH, WITHDRAWAL_TYPE_P2SH,
@@ -44,6 +50,23 @@ impl BTCRollupIntrospectionResultDepositGadget {
             .concat(),
         )
     }
+    pub fn get_hash_trace<H: AlgebraicHasher<F>, F: RichField + Extendable<D>, const D: usize>(
+        &self,
+        builder: &mut CircuitBuilder<F, D>,
+        deposit_index: usize,
+        tracer: &mut DebugCircuitTracer,
+    ) -> HashOutTarget {
+        let preimage = vec![
+            self.txid_224.elements.to_vec(),
+            vec![self.value],
+            self.public_key.to_vec(),
+        ]
+        .concat();
+        tracer.trace_vec_s(format!("deposit_{}_preimage", deposit_index), &preimage);
+        let hash = builder.hash_n_to_hash_no_pad::<H>(preimage);
+        tracer.trace_hash_s(format!("deposit_{}_hash", deposit_index), hash);
+        hash
+    }
     pub fn set_witness<W: Witness<F>, F: RichField>(
         &self,
         witness: &mut W,
@@ -81,7 +104,7 @@ impl BTCRollupIntrospectionResultWithdrawalGadget {
         };
         let first_56 = builder.le_bytes_to_u56_target(&self.script[2..9]);
         let mid_56 = builder.le_bytes_to_u56_target(&self.script[9..16]);
-        let last_48 = builder.le_bytes_to_u56_target(&self.script[16..22]);
+        let last_48 = builder.le_bytes_to_u48_target(&self.script[16..22]);
         let last_48_with_flag =
             builder.add_const(last_48, F::from_canonical_u64(withdrawal_type_flag));
 
@@ -114,11 +137,14 @@ pub fn get_introspection_events_hash_circuit<
     builder: &mut CircuitBuilder<F, D>,
     events: &[HashOutTarget],
 ) -> HashOutTarget {
-    let mut current_hash = builder.constant_hash(HashOut::ZERO);
-    for event in events {
-        current_hash = builder.hash_two_to_one::<H>(*event, current_hash);
+    if events.len() == 0 {
+        let zero = builder.zero();
+        HashOutTarget {
+            elements: [zero, zero, zero, zero],
+        }
+    } else {
+        compute_partial_merkle_root_from_leaves_algebraic_circuit::<H, F, D>(builder, events)
     }
-    current_hash
 }
 #[derive(Debug, Clone)]
 pub struct BTCRollupIntrospectionResultGadget {
@@ -137,6 +163,54 @@ pub struct BTCRollupIntrospectionResultGadget {
     pub sighash_felt252: HashOutTarget,
 }
 impl BTCRollupIntrospectionResultGadget {
+    pub fn get_finalized_result_trace<
+        H: AlgebraicHasher<F>,
+        F: RichField + Extendable<D>,
+        const D: usize,
+    >(
+        &self,
+        builder: &mut CircuitBuilder<F, D>,
+        tracer: &mut DebugCircuitTracer,
+    ) -> BTCRollupIntrospectionFinalizedResultGadget {
+        let total_withdrawals_count =
+            builder.constant(F::from_noncanonical_u64(self.withdrawals.len() as u64));
+        let total_deposits_count =
+            builder.constant(F::from_noncanonical_u64(self.deposits.len() as u64));
+        let d_events = self
+            .deposits
+            .iter()
+            .enumerate()
+            .map(|(i, deposit)| deposit.get_hash_trace::<H, F, D>(builder, i, tracer))
+            .collect::<Vec<_>>();
+        let deposits_hash = get_introspection_events_hash_circuit::<H, F, D>(builder, &d_events);
+        let w_events = self
+            .withdrawals
+            .iter()
+            .map(|withdrawal| withdrawal.get_hash::<H, F, D>(builder))
+            .collect::<Vec<_>>();
+        let withdrawals_hash = get_introspection_events_hash_circuit::<H, F, D>(builder, &w_events);
+        let mut total_withdrawals_value: Target = builder.zero();
+        for w in self.withdrawals.iter() {
+            total_withdrawals_value = builder.add(total_withdrawals_value, w.value);
+        }
+        let mut total_deposits_value: Target = builder.zero();
+        for w in self.deposits.iter() {
+            total_deposits_value = builder.add(total_deposits_value, w.value);
+        }
+
+        BTCRollupIntrospectionFinalizedResultGadget {
+            deposits_hash,
+            withdrawals_hash,
+            current_block_state_hash: self.current_block_state_hash,
+            next_block_state_hash: self.next_block_state_hash,
+            total_deposits_count,
+            total_withdrawals_count,
+            total_deposits_value,
+            total_withdrawals_value,
+            current_block_rollup_balance: self.current_block_rollup_balance,
+            next_block_rollup_balance: self.next_block_rollup_balance,
+        }
+    }
     pub fn get_finalized_result<
         H: AlgebraicHasher<F>,
         F: RichField + Extendable<D>,
@@ -202,6 +276,55 @@ pub struct BTCRollupIntrospectionFinalizedResultGadget {
 }
 
 impl BTCRollupIntrospectionFinalizedResultGadget {
+    pub fn trace_combined_hash<
+        H: AlgebraicHasher<F>,
+        F: RichField + Extendable<D>,
+        const D: usize,
+    >(
+        &self,
+        builder: &mut CircuitBuilder<F, D>,
+        tracer: &mut DebugCircuitTracer,
+    ) -> HashOutTarget {
+        let state_transition_hash =
+            builder.hash_two_to_one::<H>(self.current_block_state_hash, self.next_block_state_hash);
+        let deposits_withdrawals_hash =
+            builder.hash_two_to_one::<H>(self.deposits_hash, self.withdrawals_hash);
+
+        let combined_hash = builder.hash_n_to_hash_no_pad::<H>(vec![
+            state_transition_hash.elements[0],
+            state_transition_hash.elements[1],
+            state_transition_hash.elements[2],
+            state_transition_hash.elements[3],
+            deposits_withdrawals_hash.elements[0],
+            deposits_withdrawals_hash.elements[1],
+            deposits_withdrawals_hash.elements[2],
+            deposits_withdrawals_hash.elements[3],
+            self.total_deposits_value,
+            self.total_deposits_count,
+            self.total_withdrawals_value,
+            self.total_withdrawals_count,
+            self.current_block_rollup_balance,
+            self.next_block_rollup_balance,
+        ]);
+
+        tracer.trace_hash("current_block_state_hash", self.current_block_state_hash);
+        tracer.trace_hash("next_block_state_hash", self.next_block_state_hash);
+        tracer.trace_hash("state_transition_hash", state_transition_hash);
+        tracer.trace_hash("deposits_hash", self.deposits_hash);
+        tracer.trace_hash("withdrawals_hash", self.withdrawals_hash);
+        tracer.trace_hash("deposits_withdrawals_hash", deposits_withdrawals_hash);
+
+        tracer.trace("total_deposits_value", self.total_deposits_value);
+        tracer.trace("total_deposits_count", self.total_deposits_count);
+        tracer.trace("total_withdrawals_value", self.total_withdrawals_value);
+        tracer.trace("total_withdrawals_count", self.total_withdrawals_count);
+        tracer.trace(
+            "current_block_rollup_balance",
+            self.current_block_rollup_balance,
+        );
+        tracer.trace("next_block_rollup_balance", self.next_block_rollup_balance);
+        combined_hash
+    }
     pub fn get_combined_hash<
         H: AlgebraicHasher<F>,
         F: RichField + Extendable<D>,

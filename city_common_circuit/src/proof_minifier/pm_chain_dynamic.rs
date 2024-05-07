@@ -37,6 +37,7 @@ where
             base_circuit_verifier_data,
             base_circuit_common_data,
             None,
+            false,
         )];
         for i in 1..minifier_configs.len() {
             minifiers.push(OASProofMinifierDynamic::<D, F, C>::new_with_cfg(
@@ -44,6 +45,7 @@ where
                 &minifiers[i - 1].circuit_data.verifier_only,
                 &minifiers[i - 1].circuit_data.common,
                 None,
+                false,
             ));
         }
         /*
@@ -68,6 +70,7 @@ where
                 base_circuit_common_data,
                 None,
                 Some(customizer),
+                false,
             )
         } else {
             OASProofMinifierDynamic::<D, F, C>::new_with_cfg(
@@ -75,6 +78,7 @@ where
                 base_circuit_verifier_data,
                 base_circuit_common_data,
                 None,
+                false,
             )
         }];
         for i in 1..n_minifiers {
@@ -85,6 +89,7 @@ where
                     &minifiers[i - 1].circuit_data.common,
                     None,
                     Some(customizer),
+                    false,
                 ));
             } else {
                 minifiers.push(OASProofMinifierDynamic::<D, F, C>::new_with_cfg(
@@ -92,6 +97,7 @@ where
                     &minifiers[i - 1].circuit_data.verifier_only,
                     &minifiers[i - 1].circuit_data.common,
                     None,
+                    false,
                 ));
             }
         }
@@ -118,6 +124,7 @@ where
                 base_circuit_common_data,
                 add_gates,
                 customizer,
+                false,
             )
         } else {
             OASProofMinifierDynamic::<D, F, C>::new_with_cfg(
@@ -125,6 +132,7 @@ where
                 base_circuit_verifier_data,
                 base_circuit_common_data,
                 None,
+                false,
             )
         }];
         for i in 1..n_minifiers {
@@ -135,6 +143,7 @@ where
                     &minifiers[i - 1].circuit_data.common,
                     add_gates,
                     customizer,
+                    false,
                 ));
             } else {
                 minifiers.push(OASProofMinifierDynamic::<D, F, C>::new_with_cfg(
@@ -142,6 +151,7 @@ where
                     &minifiers[i - 1].circuit_data.verifier_only,
                     &minifiers[i - 1].circuit_data.common,
                     None,
+                    false,
                 ));
             }
         }
@@ -178,6 +188,38 @@ where
 
         Self { minifiers }
     }
+    pub fn new_with_dynamic_constant_verifier(
+        base_circuit_verifier_data: &VerifierOnlyCircuitData<C, D>,
+        base_circuit_common_data: &CommonCircuitData<F, D>,
+        constant_verifier_selection: &[bool],
+    ) -> Self {
+        let n_minifiers = constant_verifier_selection.len();
+        if n_minifiers == 0 {
+            return Self { minifiers: vec![] };
+        }
+        let mut minifiers = vec![
+            OASProofMinifierDynamic::<D, F, C>::new_with_dynamic_constant_verifier(
+                base_circuit_verifier_data,
+                base_circuit_common_data,
+                constant_verifier_selection[0],
+            ),
+        ];
+        for i in 1..n_minifiers {
+            minifiers.push(
+                OASProofMinifierDynamic::<D, F, C>::new_with_dynamic_constant_verifier(
+                    &minifiers[i - 1].circuit_data.verifier_only,
+                    &minifiers[i - 1].circuit_data.common,
+                    constant_verifier_selection[i],
+                ),
+            );
+        }
+        /*
+                for m in &minifiers {
+                    println!("deg_bits: {} ", m.circuit_data.common.degree_bits());
+                }
+        */
+        Self { minifiers }
+    }
     pub fn new_add_gates(
         base_circuit_verifier_data: &VerifierOnlyCircuitData<C, D>,
         base_circuit_common_data: &CommonCircuitData<F, D>,
@@ -190,6 +232,7 @@ where
                 base_circuit_verifier_data,
                 base_circuit_common_data,
                 add_gates,
+                false,
             )
         } else {
             OASProofMinifierDynamic::<D, F, C>::new_with_cfg(
@@ -197,6 +240,7 @@ where
                 base_circuit_verifier_data,
                 base_circuit_common_data,
                 None,
+                false,
             )
         }];
         for i in 1..n_minifiers {
@@ -206,6 +250,7 @@ where
                     &minifiers[i - 1].circuit_data.verifier_only,
                     &minifiers[i - 1].circuit_data.common,
                     add_gates,
+                    false,
                 ));
             } else {
                 minifiers.push(OASProofMinifierDynamic::<D, F, C>::new_with_cfg(
@@ -213,6 +258,7 @@ where
                     &minifiers[i - 1].circuit_data.verifier_only,
                     &minifiers[i - 1].circuit_data.common,
                     None,
+                    false,
                 ));
             }
         }
