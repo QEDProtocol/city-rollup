@@ -1,6 +1,6 @@
 use city_common::config::rollup_constants::GLOBAL_USER_TREE_HEIGHT;
 use city_common_circuit::{
-    builder::comparison::CircuitBuilderComparison,
+    builder::{comparison::CircuitBuilderComparison, hash::core::CircuitBuilderHashCore},
     hash::merkle::gadgets::delta_merkle_proof::DeltaMerkleProofGadget,
 };
 use city_crypto::hash::{merkle::core::DeltaMerkleProofCore, qhashout::QHashOut};
@@ -37,6 +37,13 @@ impl L2TransferStateUpdateGadget {
         let receiver_user_tree_delta_merkle_proof_gadget: DeltaMerkleProofGadget =
             DeltaMerkleProofGadget::add_virtual_to_u8h::<H, F, D>(builder, GLOBAL_USER_TREE_HEIGHT);
 
+        // ensure the receiver has a non-zero public key (i.e the receiver user already exists on the network)
+        builder.ensure_hash_is_non_zero(receiver_user_tree_delta_merkle_proof_gadget.siblings[0]);
+
+        // ensure the sender has a non-zero public key (i.e the receiver user already exists on the network)
+        builder.ensure_hash_is_non_zero(sender_user_tree_delta_merkle_proof_gadget.siblings[0]);
+
+        // ensure this is not a self transfer
         builder.ensure_not_equal(
             sender_user_tree_delta_merkle_proof_gadget.index,
             receiver_user_tree_delta_merkle_proof_gadget.index,

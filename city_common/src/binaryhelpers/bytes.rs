@@ -1,3 +1,66 @@
+use serde::de::{self, Visitor};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use std::fmt;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Ord, PartialOrd)]
+pub struct CompressedPublicKey(pub [u8; 33]);
+
+impl Serialize for CompressedPublicKey {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_bytes(&self.0)
+    }
+}
+
+struct ByteArrayVisitor;
+
+impl<'de> Visitor<'de> for ByteArrayVisitor {
+    type Value = [u8; 33];
+
+    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        formatter.write_str("an array of 33 bytes")
+    }
+
+    fn visit_bytes<E>(self, v: &[u8]) -> Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        if v.len() == 33 {
+            let mut arr = [0u8; 33];
+            arr.copy_from_slice(v);
+            Ok(arr)
+        } else {
+            Err(E::invalid_length(v.len(), &self))
+        }
+    }
+
+    fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
+    where
+        A: de::SeqAccess<'de>,
+    {
+        let mut arr = [0u8; 33];
+        for (i, place) in arr.iter_mut().enumerate() {
+            *place = seq
+                .next_element()?
+                .ok_or_else(|| de::Error::invalid_length(i, &self))?;
+        }
+        Ok(arr)
+    }
+}
+
+impl<'de> Deserialize<'de> for CompressedPublicKey {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        Ok(CompressedPublicKey(
+            deserializer.deserialize_bytes(ByteArrayVisitor)?,
+        ))
+    }
+}
+
 pub fn bytes_to_u32_vec_le(bytes: &[u8]) -> Vec<u32> {
     bytes
         .chunks_exact(4)

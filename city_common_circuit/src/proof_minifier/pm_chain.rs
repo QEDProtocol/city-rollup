@@ -9,7 +9,7 @@ use plonky2::{
     },
 };
 
-use super::pm_core::OASProofMinifier;
+use super::{pm_core::OASProofMinifier, pm_custom::PMCircuitCustomizer};
 
 #[derive(Debug)]
 pub struct OASProofMinifierChain<
@@ -45,6 +45,105 @@ where
                 &minifiers[i - 1].circuit_data.common,
                 None,
             ));
+        }
+        /*
+        for m in &minifiers {
+          println!("deg_bits: {} ",m.common_circuit_data.degree_bits());
+        }
+        */
+
+        Self { minifiers }
+    }
+
+    pub fn new_with_cfg_customizer<PMCC: PMCircuitCustomizer<F, D>>(
+        base_circuit_verifier_data: &VerifierOnlyCircuitData<C, D>,
+        base_circuit_common_data: &CommonCircuitData<F, D>,
+        n_minifiers: usize,
+        customizer: &PMCC,
+    ) -> Self {
+        let mut minifiers = vec![if n_minifiers == 1 {
+            OASProofMinifier::<D, F, C>::new_with_cfg_customizer(
+                CircuitConfig::standard_recursion_config(),
+                base_circuit_verifier_data,
+                base_circuit_common_data,
+                None,
+                Some(customizer),
+            )
+        } else {
+            OASProofMinifier::<D, F, C>::new_with_cfg(
+                CircuitConfig::standard_recursion_config(),
+                base_circuit_verifier_data,
+                base_circuit_common_data,
+                None,
+            )
+        }];
+        for i in 1..n_minifiers {
+            if i == (n_minifiers - 1) {
+                minifiers.push(OASProofMinifier::<D, F, C>::new_with_cfg_customizer(
+                    CircuitConfig::standard_recursion_config(),
+                    &minifiers[i - 1].circuit_data.verifier_only,
+                    &minifiers[i - 1].circuit_data.common,
+                    None,
+                    Some(customizer),
+                ));
+            } else {
+                minifiers.push(OASProofMinifier::<D, F, C>::new_with_cfg(
+                    CircuitConfig::standard_recursion_config(),
+                    &minifiers[i - 1].circuit_data.verifier_only,
+                    &minifiers[i - 1].circuit_data.common,
+                    None,
+                ));
+            }
+        }
+        /*
+        for m in &minifiers {
+          println!("deg_bits: {} ",m.common_circuit_data.degree_bits());
+        }
+        */
+
+        Self { minifiers }
+    }
+
+    pub fn new_with_cfg_customizer_add_gates<PMCC: PMCircuitCustomizer<F, D>>(
+        base_circuit_verifier_data: &VerifierOnlyCircuitData<C, D>,
+        base_circuit_common_data: &CommonCircuitData<F, D>,
+        n_minifiers: usize,
+        add_gates: Option<&[GateRef<F, D>]>,
+        customizer: Option<&PMCC>,
+    ) -> Self {
+        let mut minifiers = vec![if n_minifiers == 1 {
+            OASProofMinifier::<D, F, C>::new_with_cfg_customizer(
+                CircuitConfig::standard_recursion_config(),
+                base_circuit_verifier_data,
+                base_circuit_common_data,
+                add_gates,
+                customizer,
+            )
+        } else {
+            OASProofMinifier::<D, F, C>::new_with_cfg(
+                CircuitConfig::standard_recursion_config(),
+                base_circuit_verifier_data,
+                base_circuit_common_data,
+                None,
+            )
+        }];
+        for i in 1..n_minifiers {
+            if i == (n_minifiers - 1) {
+                minifiers.push(OASProofMinifier::<D, F, C>::new_with_cfg_customizer(
+                    CircuitConfig::standard_recursion_config(),
+                    &minifiers[i - 1].circuit_data.verifier_only,
+                    &minifiers[i - 1].circuit_data.common,
+                    add_gates,
+                    customizer,
+                ));
+            } else {
+                minifiers.push(OASProofMinifier::<D, F, C>::new_with_cfg(
+                    CircuitConfig::standard_recursion_config(),
+                    &minifiers[i - 1].circuit_data.verifier_only,
+                    &minifiers[i - 1].circuit_data.common,
+                    None,
+                ));
+            }
         }
         /*
         for m in &minifiers {

@@ -1,22 +1,22 @@
-use std::marker::PhantomData;
-
+use super::key::KVQMerkleNodeKey;
 use city_crypto::hash::merkle::core::DeltaMerkleProofCore;
 use city_crypto::hash::merkle::core::MerkleProofCore;
 use city_crypto::hash::traits::hasher::MerkleZeroHasherWithMarkedLeaf;
 use kvq::traits::KVQBinaryStore;
+use kvq::traits::KVQBinaryStoreReader;
 use kvq::traits::KVQPair;
 use kvq::traits::KVQSerializable;
 use kvq::traits::KVQStoreAdapter;
-use serde::Deserialize;
-use serde::Serialize;
+use kvq::traits::KVQStoreAdapterReader;
+use std::marker::PhantomData;
 
-use super::key::KVQMerkleNodeKey;
-const CHECKPOINT_SIZE: usize = 8;
-pub trait KVQMerkleTreeModelCore<
+pub const CHECKPOINT_ID_FUZZY_SIZE: usize = 8;
+
+pub trait KVQMerkleTreeModelReaderCore<
     const TABLE_TYPE: u16,
     const MARK_LEAVES: bool,
-    S: KVQBinaryStore,
-    KVA: KVQStoreAdapter<S, KVQMerkleNodeKey<TABLE_TYPE>, Hash>,
+    S: KVQBinaryStoreReader,
+    KVA: KVQStoreAdapterReader<S, KVQMerkleNodeKey<TABLE_TYPE>, Hash>,
     Hash: Copy + PartialEq + KVQSerializable,
     Hasher: MerkleZeroHasherWithMarkedLeaf<Hash>,
 >
@@ -34,14 +34,14 @@ pub trait KVQMerkleTreeModelCore<
         store: &S,
         key: &KVQMerkleNodeKey<TABLE_TYPE>,
     ) -> anyhow::Result<Option<KVQPair<KVQMerkleNodeKey<TABLE_TYPE>, Hash>>> {
-        KVA::get_leq_kv(store, key, CHECKPOINT_SIZE)
+        KVA::get_leq_kv(store, key, CHECKPOINT_ID_FUZZY_SIZE)
     }
     fn get_node(
         store: &S,
         tree_height: usize,
         key: &KVQMerkleNodeKey<TABLE_TYPE>,
     ) -> anyhow::Result<Hash> {
-        match KVA::get_leq(store, key, CHECKPOINT_SIZE)? {
+        match KVA::get_leq(store, key, CHECKPOINT_ID_FUZZY_SIZE)? {
             Some(v) => Ok(v),
             None => {
                 if MARK_LEAVES {
@@ -59,7 +59,7 @@ pub trait KVQMerkleTreeModelCore<
         tree_height: usize,
         keys: &[KVQMerkleNodeKey<TABLE_TYPE>],
     ) -> anyhow::Result<Vec<Hash>> {
-        let result = KVA::get_many_leq(store, keys, CHECKPOINT_SIZE)?;
+        let result = KVA::get_many_leq(store, keys, CHECKPOINT_ID_FUZZY_SIZE)?;
         Ok(result
             .iter()
             .enumerate()
@@ -69,6 +69,36 @@ pub trait KVQMerkleTreeModelCore<
             })
             .collect())
     }
+    fn get_leaf(
+        store: &S,
+        key: &KVQMerkleNodeKey<TABLE_TYPE>,
+    ) -> anyhow::Result<MerkleProofCore<Hash>> {
+        let nodes = Self::get_nodes(
+            store,
+            key.level as usize,
+            &vec![vec![*key], key.siblings(), vec![key.root()]].concat(),
+        )?;
+        let value = nodes[0];
+        let root_ind = nodes.len() - 1;
+        let siblings = nodes[1..root_ind].to_vec();
+        let root = nodes[root_ind];
+        Ok(MerkleProofCore::<Hash> {
+            root,
+            value,
+            siblings,
+            index: key.index,
+        })
+    }
+}
+pub trait KVQMerkleTreeModelCore<
+    const TABLE_TYPE: u16,
+    const MARK_LEAVES: bool,
+    S: KVQBinaryStore,
+    KVA: KVQStoreAdapter<S, KVQMerkleNodeKey<TABLE_TYPE>, Hash>,
+    Hash: Copy + PartialEq + KVQSerializable,
+    Hasher: MerkleZeroHasherWithMarkedLeaf<Hash>,
+>: KVQMerkleTreeModelReaderCore<TABLE_TYPE, MARK_LEAVES, S, KVA, Hash, Hasher>
+{
     fn set_node_kv(
         store: &mut S,
         kv: &KVQPair<KVQMerkleNodeKey<TABLE_TYPE>, Hash>,
@@ -94,27 +124,6 @@ pub trait KVQMerkleTreeModelCore<
     ) -> anyhow::Result<()> {
         KVA::set_many(store, nodes)
     }
-    fn get_leaf(
-        store: &S,
-        key: &KVQMerkleNodeKey<TABLE_TYPE>,
-    ) -> anyhow::Result<MerkleProofCore<Hash>> {
-        let nodes = Self::get_nodes(
-            store,
-            key.level as usize,
-            &vec![vec![*key], key.siblings(), vec![key.root()]].concat(),
-        )?;
-        let value = nodes[0];
-        let root_ind = nodes.len() - 1;
-        let siblings = nodes[1..root_ind].to_vec();
-        let root = nodes[root_ind];
-        Ok(MerkleProofCore::<Hash> {
-            root,
-            value,
-            siblings,
-            index: key.index,
-        })
-    }
-
     fn set_leaf(
         store: &mut S,
         key: &KVQMerkleNodeKey<TABLE_TYPE>,
@@ -182,18 +191,18 @@ pub trait KVQMerkleTreeModelCore<
         })
     }
 }
-pub trait KVQFixedConfigMerkleTreeModelCore<
+pub trait KVQFixedConfigMerkleTreeModelReaderCore<
     const TREE_ID: u8,
     const TREE_HEIGHT: u8,
     const PRIMARY_ID: u64,
     const SECONDARY_ID: u32,
     const TABLE_TYPE: u16,
     const MARK_LEAVES: bool,
-    S: KVQBinaryStore,
-    KVA: KVQStoreAdapter<S, KVQMerkleNodeKey<TABLE_TYPE>, Hash>,
+    S: KVQBinaryStoreReader,
+    KVA: KVQStoreAdapterReader<S, KVQMerkleNodeKey<TABLE_TYPE>, Hash>,
     Hash: Copy + PartialEq + KVQSerializable,
     Hasher: MerkleZeroHasherWithMarkedLeaf<Hash>,
->: KVQMerkleTreeModelCore<TABLE_TYPE, MARK_LEAVES, S, KVA, Hash, Hasher>
+>: KVQMerkleTreeModelReaderCore<TABLE_TYPE, MARK_LEAVES, S, KVA, Hash, Hasher>
 {
     fn new_node_key_fc(checkpoint_id: u64, level: u8, index: u64) -> KVQMerkleNodeKey<TABLE_TYPE> {
         KVQMerkleNodeKey::<TABLE_TYPE> {
@@ -215,14 +224,6 @@ pub trait KVQFixedConfigMerkleTreeModelCore<
             checkpoint_id,
         }
     }
-    fn set_leaf_fc(
-        store: &mut S,
-        checkpoint_id: u64,
-        index: u64,
-        value: Hash,
-    ) -> anyhow::Result<DeltaMerkleProofCore<Hash>> {
-        Self::set_leaf(store, &Self::new_leaf_key_fc(checkpoint_id, index), value)
-    }
     fn get_leaf_fc(
         store: &S,
         checkpoint_id: u64,
@@ -230,15 +231,26 @@ pub trait KVQFixedConfigMerkleTreeModelCore<
     ) -> anyhow::Result<MerkleProofCore<Hash>> {
         Self::get_leaf(store, &Self::new_leaf_key_fc(checkpoint_id, index))
     }
-    fn get_leaf_value_fc(store: &mut S, checkpoint_id: u64, index: u64) -> anyhow::Result<Hash> {
+    fn get_leaf_value_fc(store: &S, checkpoint_id: u64, index: u64) -> anyhow::Result<Hash> {
         Self::get_node(
             store,
             TREE_HEIGHT as usize,
             &Self::new_leaf_key_fc(checkpoint_id, index),
         )
     }
+    fn get_leaf_values_fc(
+        store: &S,
+        checkpoint_id: u64,
+        indexes: &[u64],
+    ) -> anyhow::Result<Vec<Hash>> {
+        let leaf_keys = indexes
+            .iter()
+            .map(|index| Self::new_leaf_key_fc(checkpoint_id, *index))
+            .collect::<Vec<_>>();
+        Self::get_nodes(store, TREE_HEIGHT as usize, &leaf_keys)
+    }
     fn get_node_value_fc(
-        store: &mut S,
+        store: &S,
         checkpoint_id: u64,
         level: u8,
         index: u64,
@@ -249,7 +261,7 @@ pub trait KVQFixedConfigMerkleTreeModelCore<
             &Self::new_node_key_fc(checkpoint_id, level, index),
         )
     }
-    fn get_root_fc(store: &mut S, checkpoint_id: u64) -> anyhow::Result<Hash> {
+    fn get_root_fc(store: &S, checkpoint_id: u64) -> anyhow::Result<Hash> {
         Self::get_node(
             store,
             TREE_HEIGHT as usize,
@@ -257,12 +269,47 @@ pub trait KVQFixedConfigMerkleTreeModelCore<
         )
     }
 }
-
-pub struct KVQMerkleTreeModel<
+pub trait KVQFixedConfigMerkleTreeModelCore<
+    const TREE_ID: u8,
+    const TREE_HEIGHT: u8,
+    const PRIMARY_ID: u64,
+    const SECONDARY_ID: u32,
     const TABLE_TYPE: u16,
     const MARK_LEAVES: bool,
     S: KVQBinaryStore,
     KVA: KVQStoreAdapter<S, KVQMerkleNodeKey<TABLE_TYPE>, Hash>,
+    Hash: Copy + PartialEq + KVQSerializable,
+    Hasher: MerkleZeroHasherWithMarkedLeaf<Hash>,
+>:
+    KVQMerkleTreeModelCore<TABLE_TYPE, MARK_LEAVES, S, KVA, Hash, Hasher>
+    + KVQFixedConfigMerkleTreeModelReaderCore<
+        TREE_ID,
+        TREE_HEIGHT,
+        PRIMARY_ID,
+        SECONDARY_ID,
+        TABLE_TYPE,
+        MARK_LEAVES,
+        S,
+        KVA,
+        Hash,
+        Hasher,
+    >
+{
+    fn set_leaf_fc(
+        store: &mut S,
+        checkpoint_id: u64,
+        index: u64,
+        value: Hash,
+    ) -> anyhow::Result<DeltaMerkleProofCore<Hash>> {
+        Self::set_leaf(store, &Self::new_leaf_key_fc(checkpoint_id, index), value)
+    }
+}
+
+pub struct KVQMerkleTreeModel<
+    const TABLE_TYPE: u16,
+    const MARK_LEAVES: bool,
+    S,
+    KVA,
     Hash: Copy + PartialEq + KVQSerializable,
     Hasher: MerkleZeroHasherWithMarkedLeaf<Hash>,
 > {
@@ -270,6 +317,17 @@ pub struct KVQMerkleTreeModel<
     _hash: PhantomData<Hash>,
     _s: PhantomData<S>,
     _kva: PhantomData<KVA>,
+}
+impl<
+        const TABLE_TYPE: u16,
+        const MARK_LEAVES: bool,
+        S: KVQBinaryStoreReader,
+        Hash: PartialEq + KVQSerializable + Copy,
+        Hasher: MerkleZeroHasherWithMarkedLeaf<Hash>,
+        KVA: KVQStoreAdapterReader<S, KVQMerkleNodeKey<TABLE_TYPE>, Hash>,
+    > KVQMerkleTreeModelReaderCore<TABLE_TYPE, MARK_LEAVES, S, KVA, Hash, Hasher>
+    for KVQMerkleTreeModel<TABLE_TYPE, MARK_LEAVES, S, KVA, Hash, Hasher>
+{
 }
 impl<
         const TABLE_TYPE: u16,
@@ -290,8 +348,8 @@ pub struct KVQFixedConfigMerkleTreeModel<
     const SECONDARY_ID: u32,
     const TABLE_TYPE: u16,
     const MARK_LEAVES: bool,
-    S: KVQBinaryStore,
-    KVA: KVQStoreAdapter<S, KVQMerkleNodeKey<TABLE_TYPE>, Hash>,
+    S,
+    KVA,
     Hash: Copy + PartialEq + KVQSerializable,
     Hasher: MerkleZeroHasherWithMarkedLeaf<Hash>,
 > {
@@ -308,11 +366,75 @@ impl<
         const SECONDARY_ID: u32,
         const TABLE_TYPE: u16,
         const MARK_LEAVES: bool,
+        S: KVQBinaryStoreReader,
+        KVA: KVQStoreAdapterReader<S, KVQMerkleNodeKey<TABLE_TYPE>, Hash>,
+        Hash: Copy + PartialEq + KVQSerializable,
+        Hasher: MerkleZeroHasherWithMarkedLeaf<Hash>,
+    > KVQMerkleTreeModelReaderCore<TABLE_TYPE, MARK_LEAVES, S, KVA, Hash, Hasher>
+    for KVQFixedConfigMerkleTreeModel<
+        TREE_ID,
+        TREE_HEIGHT,
+        PRIMARY_ID,
+        SECONDARY_ID,
+        TABLE_TYPE,
+        MARK_LEAVES,
+        S,
+        KVA,
+        Hash,
+        Hasher,
+    >
+{
+}
+impl<
+        const TREE_ID: u8,
+        const TREE_HEIGHT: u8,
+        const PRIMARY_ID: u64,
+        const SECONDARY_ID: u32,
+        const TABLE_TYPE: u16,
+        const MARK_LEAVES: bool,
         S: KVQBinaryStore,
         KVA: KVQStoreAdapter<S, KVQMerkleNodeKey<TABLE_TYPE>, Hash>,
         Hash: Copy + PartialEq + KVQSerializable,
         Hasher: MerkleZeroHasherWithMarkedLeaf<Hash>,
     > KVQMerkleTreeModelCore<TABLE_TYPE, MARK_LEAVES, S, KVA, Hash, Hasher>
+    for KVQFixedConfigMerkleTreeModel<
+        TREE_ID,
+        TREE_HEIGHT,
+        PRIMARY_ID,
+        SECONDARY_ID,
+        TABLE_TYPE,
+        MARK_LEAVES,
+        S,
+        KVA,
+        Hash,
+        Hasher,
+    >
+{
+}
+impl<
+        const TREE_ID: u8,
+        const TREE_HEIGHT: u8,
+        const PRIMARY_ID: u64,
+        const SECONDARY_ID: u32,
+        const TABLE_TYPE: u16,
+        const MARK_LEAVES: bool,
+        S: KVQBinaryStoreReader,
+        KVA: KVQStoreAdapterReader<S, KVQMerkleNodeKey<TABLE_TYPE>, Hash>,
+        Hash: Copy + PartialEq + KVQSerializable,
+        Hasher: MerkleZeroHasherWithMarkedLeaf<Hash>,
+    >
+    KVQFixedConfigMerkleTreeModelReaderCore<
+        TREE_ID,
+        TREE_HEIGHT,
+        PRIMARY_ID,
+        SECONDARY_ID,
+        TABLE_TYPE,
+        MARK_LEAVES,
+        S,
+        KVA,
+        Hash,
+        Hasher,
+    >
     for KVQFixedConfigMerkleTreeModel<
         TREE_ID,
         TREE_HEIGHT,

@@ -313,7 +313,7 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilderHelpersCore<F, 
     fn le_bytes_to_u64_u56_target(&mut self, bytes: &[Target]) -> Target {
         assert_eq!(
             bytes.len(),
-            6,
+            8,
             "le_bytes_to_u64_u56_target transforms 8 bytes to a u56 target"
         );
         let zero = self.zero();

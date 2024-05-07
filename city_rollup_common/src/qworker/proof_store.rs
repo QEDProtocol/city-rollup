@@ -1,5 +1,4 @@
 use async_trait::async_trait;
-use city_crypto::hash::base_types::hash256::Hash256;
 use plonky2::plonk::{config::GenericConfig, proof::ProofWithPublicInputs};
 
 use super::job_id::QProvingJobDataID;
@@ -9,6 +8,7 @@ pub trait QProofStoreReaderSync {
         &self,
         id: QProvingJobDataID,
     ) -> anyhow::Result<ProofWithPublicInputs<C::F, C, D>>;
+    fn get_bytes_by_id(&self, id: QProvingJobDataID) -> anyhow::Result<Vec<u8>>;
 }
 
 pub trait QProofStoreWriterSync {
@@ -17,6 +17,7 @@ pub trait QProofStoreWriterSync {
         id: QProvingJobDataID,
         proof: &ProofWithPublicInputs<C::F, C, D>,
     ) -> anyhow::Result<()>;
+    fn set_bytes_by_id(&mut self, id: QProvingJobDataID, data: &[u8]) -> anyhow::Result<()>;
 
     fn inc_counter_by_id<C: GenericConfig<D>, const D: usize>(
         &mut self,

@@ -1,7 +1,6 @@
 use std::marker::PhantomData;
 
 use city_crypto::hash::qhashout::QHashOut;
-use city_rollup_common::qworker::proof_store::QProofStoreReaderSync;
 use plonky2::plonk::{
     circuit_data::{CommonCircuitData, VerifierOnlyCircuitData},
     config::{AlgebraicHasher, GenericConfig},

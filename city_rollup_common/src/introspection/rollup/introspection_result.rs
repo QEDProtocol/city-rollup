@@ -1,13 +1,21 @@
 use city_common::binaryhelpers::bytes::{read_u48_from_bytes_le, read_u56_from_bytes_le};
-use city_crypto::hash::{
-    base_types::hash256::Hash256, merkle::core::compute_partial_merkle_root_from_leaves_algebraic,
-    qhashout::QHashOut,
+use city_crypto::{
+    field::conversions::bytes33_to_public_key,
+    hash::{
+        base_types::{hash160::Hash160, hash256::Hash256},
+        merkle::core::compute_partial_merkle_root_from_leaves_algebraic,
+        qhashout::QHashOut,
+    },
+    signature::secp256k1::core::hash256_to_hashout_u224,
 };
 use plonky2::{
     hash::hash_types::{HashOut, RichField},
     plonk::config::AlgebraicHasher,
 };
 use serde::{Deserialize, Serialize};
+
+pub const WITHDRAWAL_TYPE_BYTE_P2PKH: u8 = 0u8;
+pub const WITHDRAWAL_TYPE_BYTE_P2SH: u8 = 1u8;
 pub const WITHDRAWAL_TYPE_P2PKH: u64 = 0;
 pub const WITHDRAWAL_TYPE_P2SH: u64 = 1u64 << 48u64;
 
@@ -29,6 +37,16 @@ impl<F: RichField> BTCRollupIntrospectionResultDeposit<F> {
             .concat(),
         ))
     }
+    pub fn from_byte_representation(public_key: &[u8], txid: Hash256, value: u64) -> Self {
+        let public_key = bytes33_to_public_key(public_key);
+        let txid_224 = QHashOut(hash256_to_hashout_u224::<F>(txid));
+        let value = F::from_canonical_u64(value);
+        BTCRollupIntrospectionResultDeposit {
+            public_key,
+            txid_224,
+            value,
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Clone, Debug)]
@@ -45,6 +63,23 @@ impl<F: RichField> BTCRollupIntrospectionResultWithdrawal<F> {
             .map(|f| F::from_canonical_u8(*f))
             .collect::<Vec<F>>();
         BTCRollupIntrospectionResultWithdrawal { script, value }
+    }
+    pub fn hash_from_public_key_hash(
+        value: u64,
+        public_key_hash: Hash160,
+        script_type_flag: u8,
+    ) -> QHashOut<F> {
+        let last_48_bits_with_flag =
+            read_u48_from_bytes_le(&public_key_hash.0, 14) | ((script_type_flag as u64) << 48u64);
+
+        QHashOut(HashOut {
+            elements: [
+                F::from_noncanonical_u64(value),
+                F::from_noncanonical_u64(read_u56_from_bytes_le(&public_key_hash.0, 0)),
+                F::from_noncanonical_u64(read_u56_from_bytes_le(&public_key_hash.0, 7)),
+                F::from_noncanonical_u64(last_48_bits_with_flag),
+            ],
+        })
     }
     pub fn get_hash<H: AlgebraicHasher<F>>(&self) -> QHashOut<F> {
         /*

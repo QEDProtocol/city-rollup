@@ -35,7 +35,7 @@ use crate::{
 pub struct CRL2TransferCircuitInput<F: RichField> {
     pub sender_user_tree_delta_merkle_proof: DeltaMerkleProofCore<QHashOut<F>>,
     pub receiver_user_tree_delta_merkle_proof: DeltaMerkleProofCore<QHashOut<F>>,
-    pub allowed_circuit_hashes: QHashOut<F>,
+    pub allowed_circuit_hashes_root: QHashOut<F>,
     pub signature_proof_id: QProvingJobDataID,
 }
 impl<F: RichField> AggStateTrackableInput<F> for CRL2TransferCircuitInput<F> {
@@ -107,7 +107,7 @@ where
     pub l2_transfer_single_gadget: L2TransferSingleGadget,
     pub signature_proof_target: ProofWithPublicInputsTarget<D>,
 
-    pub allowed_circuit_hashes_target: HashOutTarget,
+    pub allowed_circuit_hashes_root_target: HashOutTarget,
     // end circuit targets
     pub circuit_data: CircuitData<C::F, C, D>,
     pub fingerprint: QHashOut<C::F>,
@@ -195,14 +195,14 @@ where
             &signature_circuit_common_data,
         );
 
-        let allowed_circuit_hashes_target = builder.add_virtual_hash();
+        let allowed_circuit_hashes_root_target = builder.add_virtual_hash();
 
         let state_transition_hash = builder.hash_two_to_one::<C::Hasher>(
             l2_transfer_single_gadget.old_user_tree_root,
             l2_transfer_single_gadget.new_user_tree_root,
         );
 
-        builder.register_public_inputs(&allowed_circuit_hashes_target.elements);
+        builder.register_public_inputs(&allowed_circuit_hashes_root_target.elements);
         builder.register_public_inputs(&state_transition_hash.elements);
 
         let circuit_data = builder.build::<C>();
@@ -212,7 +212,7 @@ where
         Self {
             l2_transfer_single_gadget,
             signature_proof_target,
-            allowed_circuit_hashes_target,
+            allowed_circuit_hashes_root_target,
             circuit_data,
             fingerprint,
             network_magic,
@@ -236,8 +236,8 @@ where
 
         pw.set_proof_with_pis_target(&self.signature_proof_target, signature_proof);
         pw.set_hash_target(
-            self.allowed_circuit_hashes_target,
-            input.allowed_circuit_hashes.0,
+            self.allowed_circuit_hashes_root_target,
+            input.allowed_circuit_hashes_root.0,
         );
 
         self.circuit_data.prove(pw)

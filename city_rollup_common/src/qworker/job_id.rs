@@ -8,6 +8,7 @@ use serde_repr::{Deserialize_repr, Serialize_repr};
 pub enum QJobTopic {
     GenerateStandardProof = 0,
     GenerateGroth16Proof = 1,
+    BlockUserSignatureProof = 2,
 }
 impl QJobTopic {
     pub fn to_u8(&self) -> u8 {
@@ -26,6 +27,7 @@ impl TryFrom<u8> for QJobTopic {
         match value {
             0 => Ok(QJobTopic::GenerateStandardProof),
             1 => Ok(QJobTopic::GenerateGroth16Proof),
+            2 => Ok(QJobTopic::BlockUserSignatureProof),
             _ => Err(anyhow::format_err!("Invalid QJobTopic value: {}", value)),
         }
     }
@@ -94,6 +96,9 @@ pub enum ProvingJobCircuitType {
     GenerateSigHashIntrospectionProof = 33,
     GenerateFinalSigHashProof = 34,
     GenerateFinalSigHashProofGroth16 = 35,
+
+    WrappedSignatureProof = 64,
+    Secp256K1SignatureProof = 65,
 }
 impl ProvingJobCircuitType {
     pub fn to_u8(&self) -> u8 {
@@ -121,6 +126,8 @@ impl TryFrom<u8> for ProvingJobCircuitType {
             33 => Ok(ProvingJobCircuitType::GenerateSigHashIntrospectionProof),
             34 => Ok(ProvingJobCircuitType::GenerateFinalSigHashProof),
             35 => Ok(ProvingJobCircuitType::GenerateFinalSigHashProofGroth16),
+            64 => Ok(ProvingJobCircuitType::WrappedSignatureProof),
+            65 => Ok(ProvingJobCircuitType::Secp256K1SignatureProof),
             _ => Err(anyhow::format_err!(
                 "Invalid ProvingJobCircuitType value: {}",
                 value
@@ -206,6 +213,46 @@ impl QProvingJobDataID {
             task_index,
             data_type,
             data_index,
+        }
+    }
+    pub fn transfer_signature_proof(rpc_node_id: u32, block_id: u64, transfer_id: u32) -> Self {
+        Self {
+            topic: QJobTopic::BlockUserSignatureProof,
+            goal_id: block_id,
+            group_id: 1,
+            circuit_type: ProvingJobCircuitType::WrappedSignatureProof,
+            sub_group_id: rpc_node_id,
+            task_index: transfer_id,
+            data_type: ProvingJobDataType::BaseInputProof,
+            data_index: 0,
+        }
+    }
+    pub fn withdrawal_signature_proof(rpc_node_id: u32, block_id: u64, withdrawal_id: u32) -> Self {
+        Self {
+            topic: QJobTopic::BlockUserSignatureProof,
+            goal_id: block_id,
+            group_id: 2,
+            circuit_type: ProvingJobCircuitType::WrappedSignatureProof,
+            sub_group_id: rpc_node_id,
+            task_index: withdrawal_id,
+            data_type: ProvingJobDataType::BaseInputProof,
+            data_index: 0,
+        }
+    }
+    pub fn claim_deposit_l1_signature_proof(
+        rpc_node_id: u32,
+        block_id: u64,
+        deposit_id: u32,
+    ) -> Self {
+        Self {
+            topic: QJobTopic::BlockUserSignatureProof,
+            goal_id: block_id,
+            group_id: 2,
+            circuit_type: ProvingJobCircuitType::Secp256K1SignatureProof,
+            sub_group_id: rpc_node_id,
+            task_index: deposit_id,
+            data_type: ProvingJobDataType::BaseInputProof,
+            data_index: 0,
         }
     }
     pub fn new_proof_job_id(

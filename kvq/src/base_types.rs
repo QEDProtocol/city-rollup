@@ -83,7 +83,7 @@ impl<F: RichField> KVQSerializable for HashOut<F> {
         buf.copy_from_slice(&bytes[24..32]);
         let d = F::from_noncanonical_u64(u64::from_le_bytes(buf));
         Ok(HashOut {
-            elements: [d, c, b, a],
+            elements: [a, b, c, d],
         })
     }
 }

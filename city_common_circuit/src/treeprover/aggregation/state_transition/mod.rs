@@ -1,6 +1,6 @@
 use city_crypto::hash::qhashout::QHashOut;
 use plonky2::{
-    field::extension::Extendable,
+    field::{extension::Extendable, types::Field},
     hash::{
         hash_types::{HashOutTarget, RichField},
         poseidon::PoseidonHash,
@@ -19,7 +19,10 @@ use plonky2::{
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    builder::{hash::core::CircuitBuilderHashCore, verify::CircuitBuilderVerifyProofHelpers},
+    builder::{
+        comparison::CircuitBuilderComparison, hash::core::CircuitBuilderHashCore,
+        verify::CircuitBuilderVerifyProofHelpers,
+    },
     circuits::traits::qstandard::QStandardCircuit,
     proof_minifier::pm_core::get_circuit_fingerprint_generic,
     treeprover::traits::{TPLeafAggregator, TreeProverAggCircuit},
@@ -79,6 +82,8 @@ pub struct AggStateTrackableCircuitHeaderGadget {
 
     // end inputs
     // start outputs
+    pub expected_left_child_transition_hash: HashOutTarget,
+    pub expected_right_child_transition_hash: HashOutTarget,
     pub allowed_circuit_hashes_root: HashOutTarget,
     pub state_transition_hash: HashOutTarget,
 }
@@ -95,6 +100,13 @@ impl AggStateTrackableCircuitHeaderGadget {
 
         let allowed_circuit_hashes_root =
             builder.hash_two_to_one::<H>(leaf_fingerprint, agg_fingerprint);
+
+        let expected_left_child_transition_hash =
+            builder.hash_two_to_one::<H>(left_state_transition_start, left_state_transition_end);
+
+        let expected_right_child_transition_hash =
+            builder.hash_two_to_one::<H>(right_state_transition_start, right_state_transition_end);
+
         let state_transition_hash =
             builder.hash_two_to_one::<H>(left_state_transition_start, right_state_transition_end);
 
@@ -110,6 +122,8 @@ impl AggStateTrackableCircuitHeaderGadget {
             leaf_fingerprint,
             agg_fingerprint,
 
+            expected_left_child_transition_hash,
+            expected_right_child_transition_hash,
             allowed_circuit_hashes_root,
             state_transition_hash,
         }
@@ -121,6 +135,7 @@ impl AggStateTrackableCircuitHeaderGadget {
         agg_fingerprint: QHashOut<F>,
         leaf_fingerprint: QHashOut<F>,
     ) {
+        println!("set_witness: {}", serde_json::to_string(input).unwrap());
         witness.set_hash_target(self.agg_fingerprint, agg_fingerprint.0);
         witness.set_hash_target(self.leaf_fingerprint, leaf_fingerprint.0);
 
@@ -193,6 +208,62 @@ where
         let right_proof = builder.add_virtual_proof_with_pis(child_common_data);
         let right_verifier_data = builder.add_virtual_verifier_data(verifier_cap_height);
 
+        let left_child_allowed_circuit_hashes_root = HashOutTarget {
+            elements: [
+                left_proof.public_inputs[0],
+                left_proof.public_inputs[1],
+                left_proof.public_inputs[2],
+                left_proof.public_inputs[3],
+            ],
+        };
+        let left_child_transition_hash = HashOutTarget {
+            elements: [
+                left_proof.public_inputs[4],
+                left_proof.public_inputs[5],
+                left_proof.public_inputs[6],
+                left_proof.public_inputs[7],
+            ],
+        };
+        let right_child_allowed_circuit_hashes_root = HashOutTarget {
+            elements: [
+                right_proof.public_inputs[0],
+                right_proof.public_inputs[1],
+                right_proof.public_inputs[2],
+                right_proof.public_inputs[3],
+            ],
+        };
+        let right_child_transition_hash = HashOutTarget {
+            elements: [
+                right_proof.public_inputs[4],
+                right_proof.public_inputs[5],
+                right_proof.public_inputs[6],
+                right_proof.public_inputs[7],
+            ],
+        };
+        builder.connect_hashes(
+            left_child_allowed_circuit_hashes_root,
+            header_gadget.allowed_circuit_hashes_root,
+        );
+        builder.connect_hashes(
+            right_child_allowed_circuit_hashes_root,
+            header_gadget.allowed_circuit_hashes_root,
+        );
+        builder.connect_hashes(
+            left_child_transition_hash,
+            header_gadget.expected_left_child_transition_hash,
+        );
+        builder.connect_hashes(
+            right_child_transition_hash,
+            header_gadget.expected_right_child_transition_hash,
+        );
+        /*
+        let x = builder.constant(C::F::ONE);
+        let y = builder.constant(C::F::ZERO);
+        let is_geq = builder.is_greater_than(32, x, y);
+        builder.connect(is_geq.target, x);*/
+        //builder.verify_proof::<C>(&left_proof, &left_verifier_data, &child_common_data);
+        //builder.verify_proof::<C>(&right_proof, &right_verifier_data, &child_common_data);
+
         builder.verify_proof_with_fingerprint_enum::<C>(
             &left_proof,
             &left_verifier_data,
@@ -211,6 +282,7 @@ where
                 header_gadget.leaf_fingerprint,
             ],
         );
+
         builder.register_public_inputs(&header_gadget.allowed_circuit_hashes_root.elements);
         builder.register_public_inputs(&header_gadget.state_transition_hash.elements);
 
@@ -239,6 +311,8 @@ where
         input: &AggStateTransitionInput<C::F>,
     ) -> anyhow::Result<ProofWithPublicInputs<C::F, C, D>> {
         let mut pw = PartialWitness::<C::F>::new();
+        //println!("agg_fingerprint: {}", agg_fingerprint.to_string());
+        //println!("leaf_fingerprint: {}", leaf_fingerprint.to_string());
         self.header_gadget
             .set_witness(&mut pw, input, agg_fingerprint, leaf_fingerprint);
 
@@ -282,10 +356,10 @@ impl<C: GenericConfig<D>, const D: usize> QStandardCircuit<C, D>
     }
 }
 
-pub struct AggWTTELeafAggregator;
+pub struct AggWTLeafAggregator;
 
 impl<IL: AggStateTrackableInput<F>, F: RichField> TPLeafAggregator<IL, AggStateTransitionInput<F>>
-    for AggWTTELeafAggregator
+    for AggWTLeafAggregator
 {
     fn get_output_from_inputs(
         left: &AggStateTransitionInput<F>,

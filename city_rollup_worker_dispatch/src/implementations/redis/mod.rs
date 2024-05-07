@@ -1,10 +1,8 @@
 use anyhow::Result;
 use async_trait::async_trait;
-use redis::{aio::MultiplexedConnection, AsyncCommands, FromRedisValue, RedisResult, ToRedisArgs};
+use redis::{aio::MultiplexedConnection, AsyncCommands, RedisResult};
 
-use crate::traits::proving_dispatcher::{
-    KeyValueStoreWithInc, ProvingDispatcher, ProvingWorkerListener,
-};
+use crate::traits::proving_dispatcher::{KeyValueStoreWithInc, ProvingDispatcher};
 #[derive(Clone)]
 pub struct RedisStore {
     connection: MultiplexedConnection,

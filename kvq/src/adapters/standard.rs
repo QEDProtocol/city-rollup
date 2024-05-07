@@ -146,4 +146,18 @@ impl<S: KVQBinaryStore, K: KVQSerializable, V: KVQSerializable> KVQStoreAdapter<
         }
         Ok(results)
     }
+
+    fn set_many_split_ref(s: &mut S, keys: &[K], values: &[V]) -> anyhow::Result<()> {
+        if keys.len() != values.len() {
+            return Err(anyhow::anyhow!("Keys and values must have the same length"));
+        }
+        let mut keys_bytes: Vec<Vec<u8>> = Vec::with_capacity(keys.len());
+        let mut values_bytes: Vec<Vec<u8>> = Vec::with_capacity(values.len());
+        for (k, v) in keys.iter().zip(values.iter()) {
+            keys_bytes.push(k.to_bytes()?);
+            values_bytes.push(v.to_bytes()?);
+        }
+
+        s.set_many_split_ref(&keys_bytes, &values_bytes)
+    }
 }

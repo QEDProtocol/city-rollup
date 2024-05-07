@@ -11,3 +11,4 @@ city_macros = { path = "../city_macros" }
 plonky2    = { workspace = true }
 serde      = { workspace = true }
 serde_with = { workspace = true }
+hex = { workspace = true }

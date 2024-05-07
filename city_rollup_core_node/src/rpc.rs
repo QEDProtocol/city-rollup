@@ -1,21 +1,16 @@
-use std::collections::HashMap;
-use std::future::{Future, IntoFuture};
-use std::io::Read;
+use std::future::Future;
 use std::net::SocketAddr;
 use std::pin::Pin;
-use std::sync::{Arc, Mutex};
 
 use bytes::{Buf, Bytes};
 use city_common::cli::args::RPCServerArgs;
-use city_rollup_worker_dispatch::implementations::redis::RedisStore;
 use http_body_util::{BodyExt, Full};
 use hyper::body::Incoming as IncomingBody;
 use hyper::server::conn::http1;
-use hyper::service::{service_fn, Service};
+use hyper::service::Service;
 use hyper::{Method, Request, Response, StatusCode};
 
 use hyper_util::rt::TokioIo;
-use serde::{Deserialize, Serialize};
 use tokio::net::TcpListener;
 
 use crate::handler::{CityRollupRPCServerHandler, RPCInputPayload};
@@ -25,7 +20,7 @@ type Result<T> = std::result::Result<T, GenericError>;
 type BoxBody = http_body_util::combinators::BoxBody<Bytes, hyper::Error>;
 
 static NOTFOUND: &[u8] = b"Not Found";
-static MUTEX_ERROR: &[u8] = b"{\"error\": \"error aquiriring lock\"}";
+//static MUTEX_ERROR: &[u8] = b"{\"error\": \"error aquiriring lock\"}";
 static INDEX_HTML: &str = include_str!("../public/index.html");
 
 #[derive(Clone)]
@@ -33,6 +28,7 @@ struct CityRollupRPCServer {
     store: CityRollupRPCServerHandler,
 }
 impl CityRollupRPCServer {
+    /*
     pub async fn handle_api_request(
         mut self,
         req: Request<hyper::body::Incoming>,
@@ -62,6 +58,7 @@ impl CityRollupRPCServer {
             _ => Ok(not_found()),
         }
     }
+    */
 }
 impl Service<Request<IncomingBody>> for CityRollupRPCServer {
     type Response = Response<BoxBody>;
@@ -70,7 +67,7 @@ impl Service<Request<IncomingBody>> for CityRollupRPCServer {
         Pin<Box<dyn Future<Output = std::result::Result<Self::Response, Self::Error>> + Send>>;
 
     fn call(&self, req: Request<IncomingBody>) -> Self::Future {
-        fn mutex_error_reply() -> std::result::Result<Response<BoxBody>, hyper::Error> {
+        /*fn mutex_error_reply() -> std::result::Result<Response<BoxBody>, hyper::Error> {
             Ok(Response::builder()
                 .status(StatusCode::INTERNAL_SERVER_ERROR)
                 .body(
@@ -79,7 +76,7 @@ impl Service<Request<IncomingBody>> for CityRollupRPCServer {
                         .boxed(),
                 )
                 .unwrap())
-        }
+        }*/
         /*
         let locked = self.store.lock().unwrap().handle_request(req).
         Box::pin(if locked.is_err() {

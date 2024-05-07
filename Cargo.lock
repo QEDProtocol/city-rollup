@@ -391,6 +391,36 @@ dependencies = [
 ]
 
 [[package]]
+name = "city-rollup-dev-cli"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bitcoincore-rpc",
+ "city_common",
+ "city_common_circuit",
+ "city_crypto",
+ "city_rollup_circuit",
+ "city_rollup_common",
+ "city_rollup_core_node",
+ "city_rollup_core_orchestrator",
+ "city_store",
+ "clap",
+ "dotenv",
+ "hex",
+ "k256",
+ "kvq",
+ "plonky2",
+ "rand",
+ "serde",
+ "serde_json",
+ "serde_with",
+ "shadow-rs",
+ "thiserror",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
 name = "city-rollup-user-cli"
 version = "0.1.0"
 dependencies = [
@@ -475,6 +505,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "bitflags 2.5.0",
+ "city_common",
  "hex",
  "itertools 0.10.5",
  "k256",
@@ -504,6 +535,7 @@ dependencies = [
  "city_crypto",
  "city_rollup_common",
  "criterion",
+ "hashbrown 0.14.5",
  "hex",
  "hex-literal",
  "plonky2",
@@ -528,6 +560,7 @@ dependencies = [
  "hex",
  "hex-literal",
  "k256",
+ "kvq",
  "plonky2",
  "rand",
  "rand_chacha",
@@ -581,10 +614,12 @@ dependencies = [
  "city_crypto",
  "city_rollup_common",
  "city_rollup_worker_dispatch",
+ "city_store",
  "criterion",
  "hex",
  "hex-literal",
  "k256",
+ "kvq",
  "plonky2",
  "rand",
  "rand_chacha",
@@ -654,7 +689,9 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "bitflags 2.5.0",
+ "city_common",
  "city_crypto",
+ "city_rollup_common",
  "criterion",
  "env_logger",
  "hashbrown 0.14.5",
@@ -1653,6 +1690,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "city_macros",
+ "hex",
  "plonky2",
  "serde",
  "serde_with",

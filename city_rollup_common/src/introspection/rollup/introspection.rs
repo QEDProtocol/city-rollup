@@ -1,6 +1,7 @@
 use city_crypto::{
     field::conversions::bytes33_to_public_key,
     hash::{base_types::felt252::hash256_le_to_felt252_hashout, qhashout::QHashOut},
+    signature::secp256k1::core::hash256_to_hashout_u224,
 };
 use plonky2::{hash::hash_types::RichField, plonk::config::AlgebraicHasher};
 use serde::{Deserialize, Serialize};
@@ -12,12 +13,9 @@ use crate::introspection::{
     transaction::{BTCTransaction, BTCTransactionConfig},
 };
 
-use super::{
-    introspection_result::{
-        BTCRollupIntrospectionResult, BTCRollupIntrospectionResultDeposit,
-        BTCRollupIntrospectionResultWithdrawal,
-    },
-    signature::hash256_to_hashout_u224,
+use super::introspection_result::{
+    BTCRollupIntrospectionResult, BTCRollupIntrospectionResultDeposit,
+    BTCRollupIntrospectionResultWithdrawal,
 };
 
 #[serde_as]
@@ -63,7 +61,7 @@ impl BlockSpendIntrospectionHint {
             if i as i32 != self.last_block_spend_index {
                 deposits.push(BTCRollupIntrospectionResultDeposit {
                     txid_224: QHashOut(hash256_to_hashout_u224(
-                        self.sighash_preimage.transaction.inputs[self.current_spend_index].hash,
+                        d.get_hash(), //self.sighash_preimage.transaction.inputs[self.current_spend_index].hash,
                     )),
                     public_key: bytes33_to_public_key::<F>(&d.inputs[0].script[73..106]),
                     value: F::from_noncanonical_u64(d.outputs[0].value),

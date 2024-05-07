@@ -2,6 +2,7 @@ use std::collections::BTreeMap;
 
 use crate::traits::KVQBinaryStore;
 use crate::traits::KVQBinaryStoreReader;
+use crate::traits::KVQBinaryStoreWriter;
 use crate::traits::KVQPair;
 
 pub struct KVQSimpleMemoryBackingStore {
@@ -42,11 +43,6 @@ impl KVQBinaryStoreReader for KVQSimpleMemoryBackingStore {
             ));
         }
 
-        let mut sum_end = 0u32;
-        for i in 0..fuzzy_bytes {
-            sum_end += key_end[key_len - i - 1] as u32;
-            base_key[key_len - i - 1] = 0;
-        }
         let mut sum_end = 0u32;
         for i in 0..fuzzy_bytes {
             sum_end += key_end[key_len - i - 1] as u32;
@@ -127,7 +123,7 @@ impl KVQBinaryStoreReader for KVQSimpleMemoryBackingStore {
     }
 }
 
-impl KVQBinaryStore for KVQSimpleMemoryBackingStore {
+impl KVQBinaryStoreWriter for KVQSimpleMemoryBackingStore {
     fn set(&mut self, key: Vec<u8>, value: Vec<u8>) -> anyhow::Result<()> {
         self.map.insert(key, value);
         Ok(())
@@ -170,4 +166,17 @@ impl KVQBinaryStore for KVQSimpleMemoryBackingStore {
         }
         Ok(result)
     }
+
+    fn set_many_split_ref(&mut self, keys: &[Vec<u8>], values: &[Vec<u8>]) -> anyhow::Result<()> {
+        if keys.len() != values.len() {
+            anyhow::bail!("Keys and values must have the same length");
+        } else {
+            for i in 0..keys.len() {
+                self.map.insert(keys[i].clone(), values[i].clone());
+            }
+            Ok(())
+        }
+    }
 }
+
+impl KVQBinaryStore for KVQSimpleMemoryBackingStore {}

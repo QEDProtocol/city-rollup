@@ -1,4 +1,4 @@
-use city_common::cli::args::{OrchestratorArgs, RPCServerArgs};
+use city_common::cli::args::OrchestratorArgs;
 
 use crate::build;
 use crate::error::Result;

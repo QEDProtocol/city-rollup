@@ -1,9 +1,6 @@
-use std::sync::{Arc, Mutex};
-
 use city_common::cli::args::RPCServerArgs;
 use city_rollup_worker_dispatch::{
-    implementations::redis::{RedisClient, RedisStore},
-    traits::proving_dispatcher::KeyValueStoreWithInc,
+    implementations::redis::RedisStore, traits::proving_dispatcher::KeyValueStoreWithInc,
 };
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;

@@ -10,3 +10,4 @@ pub mod treeprover;
 pub mod u32;
 pub mod vector_builder;
 pub mod verify_template;
+pub mod wallet;

@@ -13,6 +13,8 @@ use plonky2::{
     },
 };
 
+use super::pm_custom::PMCircuitCustomizer;
+
 pub fn get_circuit_fingerprint_generic<
     const D: usize,
     F: RichField + Extendable<D>,
@@ -89,6 +91,43 @@ where
             add_gates.unwrap().iter().for_each(|g| {
                 builder.add_gate_to_gate_set(g.clone());
             });
+        }
+
+        let circuit_data = builder.build::<C>();
+
+        let circuit_fingerprint = get_circuit_fingerprint_generic(&circuit_data.verifier_only);
+
+        Self {
+            circuit_data,
+            circuit_fingerprint,
+            proof_target,
+        }
+    }
+    pub fn new_with_cfg_customizer<PMCC: PMCircuitCustomizer<F, D>>(
+        config: CircuitConfig,
+        base_circuit_verifier_data: &VerifierOnlyCircuitData<C, D>,
+        base_circuit_common_data: &CommonCircuitData<F, D>,
+        add_gates: Option<&[GateRef<F, D>]>,
+        customizer: Option<&PMCC>,
+    ) -> Self {
+        let mut builder = CircuitBuilder::<F, D>::new(config);
+        let verifier_data_target = builder.constant_verifier_data(base_circuit_verifier_data);
+        let proof_target = builder.add_virtual_proof_with_pis(base_circuit_common_data);
+
+        builder.register_public_inputs(&proof_target.public_inputs);
+        builder.verify_proof::<C>(
+            &proof_target,
+            &verifier_data_target,
+            base_circuit_common_data,
+        );
+
+        if add_gates.is_some() {
+            add_gates.unwrap().iter().for_each(|g| {
+                builder.add_gate_to_gate_set(g.clone());
+            });
+        }
+        if customizer.is_some() {
+            customizer.unwrap().augment_circuit(&mut builder);
         }
 
         let circuit_data = builder.build::<C>();

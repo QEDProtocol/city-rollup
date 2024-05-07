@@ -97,6 +97,7 @@ pub trait KVQStoreAdapter<S, K: KVQSerializable, V: KVQSerializable>:
     fn set(s: &mut S, key: K, value: V) -> anyhow::Result<()>;
     fn set_ref(s: &mut S, key: &K, value: &V) -> anyhow::Result<()>;
     fn set_many_ref<'a>(s: &mut S, items: &[KVQPair<&'a K, &'a V>]) -> anyhow::Result<()>;
+    fn set_many_split_ref(s: &mut S, keys: &[K], values: &[V]) -> anyhow::Result<()>;
     fn set_many(s: &mut S, items: &[KVQPair<K, V>]) -> anyhow::Result<()>;
 
     fn delete(s: &mut S, key: &K) -> anyhow::Result<bool>;
@@ -177,7 +178,7 @@ pub trait KVQBinaryStoreReader {
     }
 }
 
-pub trait KVQBinaryStore: KVQBinaryStoreReader {
+pub trait KVQBinaryStoreWriter {
     fn set(&mut self, key: Vec<u8>, value: Vec<u8>) -> anyhow::Result<()>;
     fn set_ref(&mut self, key: &Vec<u8>, value: &Vec<u8>) -> anyhow::Result<()>;
     fn set_many_ref<'a>(
@@ -185,7 +186,10 @@ pub trait KVQBinaryStore: KVQBinaryStoreReader {
         items: &[KVQPair<&'a Vec<u8>, &'a Vec<u8>>],
     ) -> anyhow::Result<()>;
     fn set_many_vec(&mut self, items: Vec<KVQPair<Vec<u8>, Vec<u8>>>) -> anyhow::Result<()>;
+    fn set_many_split_ref(&mut self, keys: &[Vec<u8>], values: &[Vec<u8>]) -> anyhow::Result<()>;
 
     fn delete(&mut self, key: &Vec<u8>) -> anyhow::Result<bool>;
     fn delete_many(&mut self, keys: &[Vec<u8>]) -> anyhow::Result<Vec<bool>>;
 }
+
+pub trait KVQBinaryStore: KVQBinaryStoreReader + KVQBinaryStoreWriter {}

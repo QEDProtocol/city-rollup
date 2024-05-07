@@ -31,6 +31,14 @@ impl QProofStoreReaderSync for SimpleProofStoreMemory {
             .ok_or_else(|| anyhow::anyhow!("Proof not found"))?;
         Ok(bincode::deserialize(data)?)
     }
+
+    fn get_bytes_by_id(&self, id: QProvingJobDataID) -> anyhow::Result<Vec<u8>> {
+        let data = self
+            .proofs
+            .get(&id)
+            .ok_or_else(|| anyhow::anyhow!("Proof not found"))?;
+        Ok(data.to_vec())
+    }
 }
 
 impl QProofStoreWriterSync for SimpleProofStoreMemory {
@@ -51,5 +59,10 @@ impl QProofStoreWriterSync for SimpleProofStoreMemory {
         let new_value = 1 + *(self.counters.get(&id).unwrap_or(&zero));
         self.counters.insert(id, new_value);
         Ok(new_value)
+    }
+
+    fn set_bytes_by_id(&mut self, id: QProvingJobDataID, data: &[u8]) -> anyhow::Result<()> {
+        self.proofs.insert(id, data.to_vec());
+        Ok(())
     }
 }
