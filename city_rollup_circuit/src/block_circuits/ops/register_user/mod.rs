@@ -1,27 +1,22 @@
 use city_common::config::rollup_constants::GLOBAL_USER_TREE_HEIGHT;
 use city_common_circuit::{
-    builder::{
-        comparison::CircuitBuilderComparison, hash::core::CircuitBuilderHashCore,
-        pad_circuit::pad_circuit_degree,
-    },
+    builder::{hash::core::CircuitBuilderHashCore, pad_circuit::pad_circuit_degree},
     circuits::traits::qstandard::{
         provable::QStandardCircuitProvable, QStandardCircuit,
         QStandardCircuitProvableWithProofStoreSync, QStandardCircuitWithDefault,
     },
     hash::merkle::gadgets::delta_merkle_proof::DeltaMerkleProofGadget,
     proof_minifier::pm_core::get_circuit_fingerprint_generic,
-    treeprover::{
-        aggregation::state_transition::{AggStateTrackableInput, AggStateTransition},
-        wrapper::TreeProverLeafCircuitWrapper,
-    },
+    treeprover::wrapper::TreeProverLeafCircuitWrapper,
 };
 use city_crypto::hash::{
     merkle::core::DeltaMerkleProofCore, qhashout::QHashOut, traits::hasher::MerkleZeroHasher,
 };
-use city_rollup_common::qworker::proof_store::QProofStoreReaderSync;
+use city_rollup_common::qworker::{
+    job_witnesses::op::CRUserRegistrationCircuitInput, proof_store::QProofStoreReaderSync,
+};
 use plonky2::{
-    field::types::Field,
-    hash::hash_types::{HashOut, HashOutTarget, RichField},
+    hash::hash_types::{HashOut, HashOutTarget},
     iop::witness::{PartialWitness, WitnessWrite},
     plonk::{
         circuit_builder::CircuitBuilder,
@@ -30,22 +25,6 @@ use plonky2::{
         proof::ProofWithPublicInputs,
     },
 };
-use serde::{Deserialize, Serialize};
-
-#[derive(Debug, Clone, Deserialize, Serialize)]
-#[serde(bound = "")]
-pub struct CRUserRegistrationCircuitInput<F: RichField> {
-    pub user_tree_delta_merkle_proof: DeltaMerkleProofCore<QHashOut<F>>,
-    pub allowed_circuit_hashes_root: QHashOut<F>,
-}
-impl<F: RichField> AggStateTrackableInput<F> for CRUserRegistrationCircuitInput<F> {
-    fn get_state_transition(&self) -> AggStateTransition<F> {
-        AggStateTransition {
-            state_transition_start: self.user_tree_delta_merkle_proof.old_root,
-            state_transition_end: self.user_tree_delta_merkle_proof.new_root,
-        }
-    }
-}
 
 #[derive(Debug)]
 pub struct CRUserRegistrationCircuit<C: GenericConfig<D>, const D: usize>

@@ -32,6 +32,7 @@ pub const D: usize = 2;
 pub const TREE_TABLE_TYPE: u16 = 1;
 pub const L1_DEPOSITS_BY_ID_TABLE_TYPE: u16 = 2;
 pub const L1_DEPOSITS_BY_TXID_TABLE_TYPE: u16 = 3;
+pub const L2_BLOCK_STATE_TABLE_TYPE: u16 = 4;
 
 pub const GLOBAL_USER_TREE_ID: u8 = 1;
 pub const L1_DEPOSIT_TREE_ID: u8 = 2;

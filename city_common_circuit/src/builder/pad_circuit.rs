@@ -1,8 +1,6 @@
 use plonky2::{
-    field::extension::Extendable,
-    gates::noop::NoopGate,
-    hash::hash_types::RichField,
-    plonk::{circuit_builder::CircuitBuilder, config::GenericConfig},
+    field::extension::Extendable, gates::noop::NoopGate, hash::hash_types::RichField,
+    plonk::circuit_builder::CircuitBuilder,
 };
 
 pub fn pad_circuit_degree<F: RichField + Extendable<D>, const D: usize>(

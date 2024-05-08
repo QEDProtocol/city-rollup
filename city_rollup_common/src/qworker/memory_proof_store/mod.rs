@@ -4,7 +4,7 @@ use plonky2::plonk::{config::GenericConfig, proof::ProofWithPublicInputs};
 
 use super::{
     job_id::QProvingJobDataID,
-    proof_store::{QProofStoreReaderSync, QProofStoreWriterSync},
+    proof_store::{QProofStore, QProofStoreReaderSync, QProofStoreWriterSync},
 };
 
 pub struct SimpleProofStoreMemory {
@@ -66,3 +66,5 @@ impl QProofStoreWriterSync for SimpleProofStoreMemory {
         Ok(())
     }
 }
+
+impl QProofStore for SimpleProofStoreMemory {}

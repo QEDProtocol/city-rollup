@@ -1,11 +1,12 @@
 use city_common::tree_planner::{BinaryTreeJob, BinaryTreePlanner};
+use city_crypto::hash::merkle::treeprover::TPLeafAggregator;
 use city_rollup_common::qworker::proof_store::{QProofStoreReaderSync, QProofStoreWriterSync};
 use core::fmt::Debug;
 use itertools::Itertools;
 use plonky2::plonk::{config::GenericConfig, proof::ProofWithPublicInputs};
 use serde::{de::DeserializeOwned, Serialize};
 
-use super::traits::{TPLeafAggregator, TreeProverAggCircuit, TreeProverLeafCircuit};
+use super::traits::{TreeProverAggCircuit, TreeProverLeafCircuit};
 
 #[derive(Debug, Clone, Serialize)]
 pub struct TreeAggJob<IO: Serialize + Clone + Debug + Send> {

@@ -2,11 +2,12 @@ use city_common::logging::trace_timer::TraceTimer;
 use city_common_circuit::{
     circuits::traits::qstandard::{QStandardCircuit, QStandardCircuitWithDefaultMinified},
     treeprover::{
-        aggregation::state_transition::AggStateTransitionCircuit, data::TPCircuitFingerprintConfig,
-        traits::TreeProverAggCircuit,
+        aggregation::state_transition::AggStateTransitionCircuit, traits::TreeProverAggCircuit,
     },
 };
-use city_crypto::hash::traits::hasher::MerkleZeroHasher;
+use city_crypto::hash::{
+    merkle::treeprover::TPCircuitFingerprintConfig, traits::hasher::MerkleZeroHasher,
+};
 use plonky2::{
     hash::hash_types::HashOut,
     plonk::config::{AlgebraicHasher, GenericConfig},

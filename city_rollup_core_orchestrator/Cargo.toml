@@ -16,6 +16,7 @@ bitcoin = { workspace = true }
 reqwest = { workspace = true }
 url = { workspace = true }
 k256 = { workspace = true }
+bincode = { workspace = true }
 kvq           = { path = "../kvq" }
 city_store           = { path = "../city_store" }
 city_crypto           = { path = "../city_crypto" }

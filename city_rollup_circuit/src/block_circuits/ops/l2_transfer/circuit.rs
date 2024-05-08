@@ -5,12 +5,11 @@ use city_common_circuit::{
         zk_signature_wrapper::ZKSignatureWrapperCircuit,
     },
     proof_minifier::pm_core::get_circuit_fingerprint_generic,
-    treeprover::aggregation::state_transition::{AggStateTrackableInput, AggStateTransition},
 };
-use city_crypto::hash::{merkle::core::DeltaMerkleProofCore, qhashout::QHashOut};
+use city_crypto::hash::qhashout::QHashOut;
 use city_rollup_common::{
     introspection::rollup::constants::SIG_ACTION_TRANSFER_MAGIC,
-    qworker::{job_id::QProvingJobDataID, proof_store::QProofStoreReaderSync},
+    qworker::{job_witnesses::op::CRL2TransferCircuitInput, proof_store::QProofStoreReaderSync},
 };
 use plonky2::{
     field::extension::Extendable,
@@ -23,29 +22,11 @@ use plonky2::{
         proof::{ProofWithPublicInputs, ProofWithPublicInputsTarget},
     },
 };
-use serde::{Deserialize, Serialize};
 
 use crate::{
     introspection::gadgets::rollup::signature::compute_sig_action_hash_circuit,
     state::user::l2_transfer_state_update::L2TransferStateUpdateGadget,
 };
-
-#[derive(Debug, Clone, Deserialize, Serialize)]
-#[serde(bound = "")]
-pub struct CRL2TransferCircuitInput<F: RichField> {
-    pub sender_user_tree_delta_merkle_proof: DeltaMerkleProofCore<QHashOut<F>>,
-    pub receiver_user_tree_delta_merkle_proof: DeltaMerkleProofCore<QHashOut<F>>,
-    pub allowed_circuit_hashes_root: QHashOut<F>,
-    pub signature_proof_id: QProvingJobDataID,
-}
-impl<F: RichField> AggStateTrackableInput<F> for CRL2TransferCircuitInput<F> {
-    fn get_state_transition(&self) -> AggStateTransition<F> {
-        AggStateTransition {
-            state_transition_start: self.sender_user_tree_delta_merkle_proof.old_root,
-            state_transition_end: self.receiver_user_tree_delta_merkle_proof.new_root,
-        }
-    }
-}
 
 #[derive(Debug, Clone)]
 pub struct L2TransferSingleGadget {

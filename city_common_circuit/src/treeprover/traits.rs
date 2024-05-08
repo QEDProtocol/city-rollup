@@ -151,12 +151,6 @@ where
         self.minifier.prove(&inner_proof)
     }
 }
-pub trait TPLeafAggregator<IL, IO> {
-    fn get_output_from_inputs(left: &IO, right: &IO) -> IO;
-    fn get_output_from_left_leaf(left: &IL, right: &IO) -> IO;
-    fn get_output_from_right_leaf(left: &IO, right: &IL) -> IO;
-    fn get_output_from_leaves(left: &IL, right: &IL) -> IO;
-}
 pub trait TreeProverAggCircuit<
     IO: Serialize + Clone + Debug + Send,
     C: GenericConfig<D>,

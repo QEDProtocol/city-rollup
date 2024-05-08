@@ -64,6 +64,7 @@ pub fn unwrap_kv_result<T>(item_opt: Option<T>) -> anyhow::Result<T> {
 }
 
 pub trait KVQStoreAdapterReader<S, K: KVQSerializable, V: KVQSerializable> {
+    fn get_exact_if_exists(s: &S, key: &K) -> anyhow::Result<Option<V>>;
     fn get_exact(s: &S, key: &K) -> anyhow::Result<V>;
     fn get_many_exact(s: &S, keys: &[K]) -> anyhow::Result<Vec<V>>;
 
@@ -134,6 +135,7 @@ pub trait KVQStoreAdapterWithHelpers<S, K: KVQSerializable, V: KVQSerializable>:
 // KVQStoreAdapter<KVQBinaryStore, K, V>;
 
 pub trait KVQBinaryStoreReader {
+    fn get_exact_if_exists(&self, key: &Vec<u8>) -> anyhow::Result<Option<Vec<u8>>>;
     fn get_exact(&self, key: &Vec<u8>) -> anyhow::Result<Vec<u8>>;
     fn get_many_exact(&self, keys: &[Vec<u8>]) -> anyhow::Result<Vec<Vec<u8>>>;
 

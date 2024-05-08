@@ -148,6 +148,57 @@ impl DeltaMerkleProofGadget {
             option_flags: DeltaMerkleProofGadgetOptionFlags::none_value_placeholder,
         }
     }
+    pub fn add_virtual_to_push_sparse_list<
+        H: MerkleZeroHasher<HashOut<F>> + AlgebraicHasher<F>,
+        F: RichField + Extendable<D>,
+        const D: usize,
+    >(
+        builder: &mut CircuitBuilder<F, D>,
+        height: usize,
+    ) -> Self {
+        let index = builder.add_virtual_target();
+        let old_value = builder.add_virtual_hash();
+        let new_value = builder.add_virtual_hash();
+        let siblings = (0..height)
+            .map(|_| builder.add_virtual_hash())
+            .collect::<Vec<_>>();
+        //builder.range_check(index, height);
+        let index_bits = builder.split_le(index, height);
+        let z_hash_target = builder.constant_hash(HashOut {
+            elements: [F::ZERO, F::ZERO, F::ZERO, F::ZERO],
+        });
+        // ensure that the old value is zero
+        builder.connect_hashes(old_value, z_hash_target);
+
+        for i in 0..height {
+            let zero_hash_target = builder.constant_hash(H::get_zero_hash(i));
+            // we only really need to make sure the the leaves to the right of the tree are 0
+            // builder.ensure_hash_not_equal_if(index_bits[i], siblings[i], zero_hash_target);
+            builder.connect_hashes_if_false(index_bits[i], siblings[i], zero_hash_target);
+        }
+
+        let old_root = MerkleProofGadget::compute_root_bits::<H, F, D>(
+            builder,
+            &index_bits,
+            old_value,
+            &siblings,
+        );
+        let new_root = MerkleProofGadget::compute_root_bits::<H, F, D>(
+            builder,
+            &index_bits,
+            new_value,
+            &siblings,
+        );
+        Self {
+            old_root,
+            old_value,
+            new_root,
+            new_value,
+            index,
+            siblings,
+            option_flags: DeltaMerkleProofGadgetOptionFlags::none_value_placeholder,
+        }
+    }
     pub fn add_virtual_to_pop_right<
         H: MerkleZeroHasher<HashOut<F>> + AlgebraicHasher<F>,
         F: RichField + Extendable<D>,

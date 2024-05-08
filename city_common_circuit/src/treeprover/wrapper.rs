@@ -3,9 +3,7 @@ use crate::{
         QStandardCircuit, QStandardCircuitProvableWithProofStoreSync, QStandardCircuitWithDefault,
         QStandardCircuitWithDefaultMinified,
     },
-    proof_minifier::{
-        pm_chain::OASProofMinifierChain, pm_chain_dynamic::OASProofMinifierDynamicChain,
-    },
+    proof_minifier::pm_chain_dynamic::OASProofMinifierDynamicChain,
 };
 use city_crypto::hash::qhashout::QHashOut;
 use city_rollup_common::qworker::proof_store::QProofStoreReaderSync;

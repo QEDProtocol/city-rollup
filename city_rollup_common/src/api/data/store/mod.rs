@@ -15,6 +15,74 @@ use crate::introspection::rollup::introspection_result::BTCRollupIntrospectionRe
 type F = GoldilocksField;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Copy, Hash, Eq, PartialEq)]
+pub struct CityL2BlockState {
+    pub checkpoint_id: u64,
+
+    pub next_add_withdrawal_id: u64,
+    pub next_process_withdrawal_id: u64,
+
+    pub next_deposit_id: u64,
+    pub total_deposits_claimed_epoch: u64,
+
+    pub next_user_id: u64,
+
+    pub end_balance: u64,
+}
+impl KVQSerializable for CityL2BlockState {
+    fn to_bytes(&self) -> anyhow::Result<Vec<u8>> {
+        // 7 * 8 = 56 bytes
+        let mut result = Vec::with_capacity(48);
+        result.extend(self.checkpoint_id.to_be_bytes());
+        result.extend(self.next_add_withdrawal_id.to_le_bytes());
+        result.extend(self.next_process_withdrawal_id.to_le_bytes());
+        result.extend(self.next_deposit_id.to_le_bytes());
+        result.extend(self.total_deposits_claimed_epoch.to_le_bytes());
+        result.extend(self.next_user_id.to_le_bytes());
+        result.extend(self.end_balance.to_le_bytes());
+        Ok(result)
+    }
+
+    fn from_bytes(bytes: &[u8]) -> anyhow::Result<Self> {
+        if bytes.len() != 56 {
+            anyhow::bail!(
+                "expected 56 bytes for deserializing L2BlockState, got {} bytes",
+                bytes.len()
+            );
+        }
+        let checkpoint_id = u64::from_be_bytes([
+            bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7],
+        ]);
+        let next_add_withdrawal_id = u64::from_le_bytes([
+            bytes[8], bytes[9], bytes[10], bytes[11], bytes[12], bytes[13], bytes[14], bytes[15],
+        ]);
+        let next_process_withdrawal_id = u64::from_le_bytes([
+            bytes[16], bytes[17], bytes[18], bytes[19], bytes[20], bytes[21], bytes[22], bytes[23],
+        ]);
+        let next_deposit_id = u64::from_le_bytes([
+            bytes[24], bytes[25], bytes[26], bytes[27], bytes[28], bytes[29], bytes[30], bytes[31],
+        ]);
+        let total_deposits_claimed_epoch = u64::from_le_bytes([
+            bytes[32], bytes[33], bytes[34], bytes[35], bytes[36], bytes[37], bytes[38], bytes[39],
+        ]);
+        let next_user_id = u64::from_le_bytes([
+            bytes[40], bytes[41], bytes[42], bytes[43], bytes[44], bytes[45], bytes[46], bytes[47],
+        ]);
+        let end_balance = u64::from_le_bytes([
+            bytes[48], bytes[49], bytes[50], bytes[51], bytes[52], bytes[53], bytes[54], bytes[55],
+        ]);
+        Ok(Self {
+            checkpoint_id,
+            next_add_withdrawal_id,
+            next_process_withdrawal_id,
+            next_deposit_id,
+            total_deposits_claimed_epoch,
+            next_user_id,
+            end_balance,
+        })
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Copy, Hash, Eq, PartialEq)]
 pub struct CityUserState {
     pub user_id: u64,
     pub balance: u64,

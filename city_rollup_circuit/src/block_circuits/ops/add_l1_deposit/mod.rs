@@ -7,19 +7,16 @@ use city_common_circuit::{
     },
     hash::merkle::gadgets::delta_merkle_proof::DeltaMerkleProofGadget,
     proof_minifier::pm_core::get_circuit_fingerprint_generic,
-    treeprover::{
-        aggregation::state_transition_track_events::{
-            AggStateTrackableWithEventsInput, StateTransitionWithEvents,
-        },
-        wrapper::TreeProverLeafCircuitWrapper,
-    },
+    treeprover::wrapper::TreeProverLeafCircuitWrapper,
 };
 use city_crypto::hash::{
     merkle::core::DeltaMerkleProofCore, qhashout::QHashOut, traits::hasher::MerkleZeroHasher,
 };
-use city_rollup_common::qworker::proof_store::QProofStoreReaderSync;
+use city_rollup_common::qworker::{
+    job_witnesses::op::CRAddL1DepositCircuitInput, proof_store::QProofStoreReaderSync,
+};
 use plonky2::{
-    hash::hash_types::{HashOut, HashOutTarget, RichField},
+    hash::hash_types::{HashOut, HashOutTarget},
     iop::witness::{PartialWitness, WitnessWrite},
     plonk::{
         circuit_builder::CircuitBuilder,
@@ -28,24 +25,6 @@ use plonky2::{
         proof::ProofWithPublicInputs,
     },
 };
-use serde::{Deserialize, Serialize};
-
-#[derive(Debug, Clone, Deserialize, Serialize)]
-#[serde(bound = "")]
-pub struct CRAddL1DepositCircuitInput<F: RichField> {
-    pub deposit_tree_delta_merkle_proof: DeltaMerkleProofCore<QHashOut<F>>,
-    pub allowed_circuit_hashes_root: QHashOut<F>,
-}
-
-impl<F: RichField> AggStateTrackableWithEventsInput<F> for CRAddL1DepositCircuitInput<F> {
-    fn get_state_transition_with_events(&self) -> StateTransitionWithEvents<F> {
-        StateTransitionWithEvents {
-            state_transition_start: self.deposit_tree_delta_merkle_proof.old_root,
-            state_transition_end: self.deposit_tree_delta_merkle_proof.new_root,
-            event_hash: self.deposit_tree_delta_merkle_proof.new_value,
-        }
-    }
-}
 
 #[derive(Debug)]
 pub struct CRAddL1DepositCircuit<C: GenericConfig<D>, const D: usize>
@@ -74,7 +53,7 @@ where
         let config = CircuitConfig::standard_recursion_config();
         let mut builder = CircuitBuilder::<C::F, D>::new(config);
         let delta_merkle_proof_gadget: DeltaMerkleProofGadget =
-            DeltaMerkleProofGadget::add_virtual_to_append_only::<C::Hasher, C::F, D>(
+            DeltaMerkleProofGadget::add_virtual_to_push_sparse_list::<C::Hasher, C::F, D>(
                 &mut builder,
                 L1_DEPOSIT_TREE_HEIGHT as usize,
             );

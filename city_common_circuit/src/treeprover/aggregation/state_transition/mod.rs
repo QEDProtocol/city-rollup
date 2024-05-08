@@ -1,6 +1,6 @@
-use city_crypto::hash::qhashout::QHashOut;
+use city_crypto::hash::{merkle::treeprover::AggStateTransitionInput, qhashout::QHashOut};
 use plonky2::{
-    field::{extension::Extendable, types::Field},
+    field::extension::Extendable,
     hash::{
         hash_types::{HashOutTarget, RichField},
         poseidon::PoseidonHash,
@@ -16,60 +16,13 @@ use plonky2::{
         proof::{ProofWithPublicInputs, ProofWithPublicInputsTarget},
     },
 };
-use serde::{Deserialize, Serialize};
 
 use crate::{
-    builder::{
-        comparison::CircuitBuilderComparison, hash::core::CircuitBuilderHashCore,
-        verify::CircuitBuilderVerifyProofHelpers,
-    },
+    builder::{hash::core::CircuitBuilderHashCore, verify::CircuitBuilderVerifyProofHelpers},
     circuits::traits::qstandard::QStandardCircuit,
     proof_minifier::pm_core::get_circuit_fingerprint_generic,
-    treeprover::traits::{TPLeafAggregator, TreeProverAggCircuit},
+    treeprover::traits::TreeProverAggCircuit,
 };
-pub trait AggStateTrackableInput<F: RichField> {
-    fn get_state_transition(&self) -> AggStateTransition<F>;
-}
-
-#[derive(Debug, Clone, Copy, Deserialize, Serialize)]
-#[serde(bound = "")]
-pub struct AggStateTransition<F: RichField> {
-    pub state_transition_start: QHashOut<F>,
-    pub state_transition_end: QHashOut<F>,
-}
-
-#[derive(Debug, Clone, Copy, Deserialize, Serialize)]
-#[serde(bound = "")]
-pub struct AggStateTransitionInput<F: RichField> {
-    pub left_input: AggStateTransition<F>,
-    pub right_input: AggStateTransition<F>,
-    pub left_proof_is_leaf: bool,
-    pub right_proof_is_leaf: bool,
-}
-impl<F: RichField> AggStateTransitionInput<F> {
-    pub fn condense(&self) -> AggStateTransition<F> {
-        AggStateTransition {
-            state_transition_start: self.left_input.state_transition_start,
-            state_transition_end: self.right_input.state_transition_end,
-        }
-    }
-    pub fn combine_with_right_leaf<T: AggStateTrackableInput<F>>(&self, right: &T) -> Self {
-        Self {
-            left_input: self.condense(),
-            right_input: right.get_state_transition(),
-            left_proof_is_leaf: false,
-            right_proof_is_leaf: true,
-        }
-    }
-    pub fn combine_with_left_leaf<T: AggStateTrackableInput<F>>(&self, left: &T) -> Self {
-        Self {
-            left_input: left.get_state_transition(),
-            right_input: self.condense(),
-            left_proof_is_leaf: true,
-            right_proof_is_leaf: false,
-        }
-    }
-}
 
 #[derive(Debug, Clone)]
 pub struct AggStateTrackableCircuitHeaderGadget {
@@ -353,47 +306,6 @@ impl<C: GenericConfig<D>, const D: usize> QStandardCircuit<C, D>
     }
     fn get_common_circuit_data_ref(&self) -> &CommonCircuitData<C::F, D> {
         &self.circuit_data.common
-    }
-}
-
-pub struct AggWTLeafAggregator;
-
-impl<IL: AggStateTrackableInput<F>, F: RichField> TPLeafAggregator<IL, AggStateTransitionInput<F>>
-    for AggWTLeafAggregator
-{
-    fn get_output_from_inputs(
-        left: &AggStateTransitionInput<F>,
-        right: &AggStateTransitionInput<F>,
-    ) -> AggStateTransitionInput<F> {
-        AggStateTransitionInput {
-            left_input: left.condense(),
-            right_input: right.condense(),
-            left_proof_is_leaf: false,
-            right_proof_is_leaf: false,
-        }
-    }
-
-    fn get_output_from_left_leaf(
-        left: &IL,
-        right: &AggStateTransitionInput<F>,
-    ) -> AggStateTransitionInput<F> {
-        right.combine_with_left_leaf(left)
-    }
-
-    fn get_output_from_right_leaf(
-        left: &AggStateTransitionInput<F>,
-        right: &IL,
-    ) -> AggStateTransitionInput<F> {
-        left.combine_with_right_leaf(right)
-    }
-
-    fn get_output_from_leaves(left: &IL, right: &IL) -> AggStateTransitionInput<F> {
-        AggStateTransitionInput {
-            left_input: left.get_state_transition(),
-            right_input: right.get_state_transition(),
-            left_proof_is_leaf: true,
-            right_proof_is_leaf: true,
-        }
     }
 }
 

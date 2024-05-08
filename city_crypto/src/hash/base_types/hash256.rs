@@ -2,10 +2,7 @@ use std::fmt::Display;
 
 use hex::FromHexError;
 use kvq::traits::KVQSerializable;
-use plonky2::{
-    field::{secp256k1_scalar::Secp256K1Scalar, types::PrimeField},
-    hash::hash_types::RichField,
-};
+use plonky2::{field::secp256k1_scalar::Secp256K1Scalar, hash::hash_types::RichField};
 use rand::RngCore;
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;

@@ -1,10 +1,8 @@
 use city_crypto::hash::{qhashout::QHashOut, traits::hasher::MerkleZeroHasher};
-use city_rollup_common::introspection::rollup::signature::{
-    SimpleL2PrivateKey, PRIVATE_KEY_CONSTANTS,
-};
+use city_rollup_common::introspection::rollup::signature::PRIVATE_KEY_CONSTANTS;
 use plonky2::{
     field::types::Field,
-    hash::hash_types::{HashOut, HashOutTarget, RichField},
+    hash::hash_types::{HashOut, HashOutTarget},
     iop::witness::{PartialWitness, WitnessWrite},
     plonk::{
         circuit_builder::CircuitBuilder,
@@ -13,15 +11,9 @@ use plonky2::{
         proof::ProofWithPublicInputs,
     },
 };
-use serde::{Deserialize, Serialize};
 
 use crate::{
-    builder::hash::core::CircuitBuilderHashCore,
-    proof_minifier::{pm_chain::OASProofMinifierChain, pm_core::get_circuit_fingerprint_generic},
-    verify_template::{
-        circuit_template::QEDCircuitVerifyTemplate,
-        ser_data::{VTFriConfig, VTFriParams, VTFriReductionStrategy},
-    },
+    builder::hash::core::CircuitBuilderHashCore, proof_minifier::pm_chain::OASProofMinifierChain,
 };
 
 use super::{

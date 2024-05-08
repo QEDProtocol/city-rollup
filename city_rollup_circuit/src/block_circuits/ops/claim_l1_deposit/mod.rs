@@ -4,53 +4,23 @@ use city_common_circuit::{
         traits::qstandard::{QStandardCircuit, QStandardCircuitProvableWithProofStoreSync},
     },
     proof_minifier::pm_core::get_circuit_fingerprint_generic,
-    treeprover::aggregation::state_transition::{AggStateTrackableInput, AggStateTransition},
 };
-use city_crypto::hash::{merkle::core::DeltaMerkleProofCore, qhashout::QHashOut};
-use city_rollup_common::{
-    introspection::rollup::introspection_result::BTCRollupIntrospectionResultDeposit,
-    qworker::{job_id::QProvingJobDataID, proof_store::QProofStoreReaderSync},
+use city_crypto::hash::qhashout::QHashOut;
+use city_rollup_common::qworker::{
+    job_witnesses::op::CRClaimL1DepositCircuitInput, proof_store::QProofStoreReaderSync,
 };
 use plonky2::{
-    hash::{
-        hash_types::{HashOutTarget, RichField},
-        poseidon::PoseidonHash,
-    },
+    hash::hash_types::HashOutTarget,
     iop::witness::{PartialWitness, WitnessWrite},
     plonk::{
         circuit_builder::CircuitBuilder,
         circuit_data::{CircuitConfig, CircuitData, CommonCircuitData, VerifierOnlyCircuitData},
-        config::{AlgebraicHasher, GenericConfig, Hasher},
+        config::{AlgebraicHasher, GenericConfig},
         proof::{ProofWithPublicInputs, ProofWithPublicInputsTarget},
     },
 };
-use serde::{Deserialize, Serialize};
 
 use crate::state::user::claim_l1_deposit::ClaimL1DepositSingleGadget;
-
-#[derive(Debug, Clone, Deserialize, Serialize)]
-#[serde(bound = "")]
-pub struct CRClaimL1DepositCircuitInput<F: RichField> {
-    pub deposit: BTCRollupIntrospectionResultDeposit<F>,
-    pub user_tree_delta_merkle_proof: DeltaMerkleProofCore<QHashOut<F>>,
-    pub deposit_tree_delta_merkle_proof: DeltaMerkleProofCore<QHashOut<F>>,
-    pub allowed_circuit_hashes_root: QHashOut<F>,
-    pub signature_proof_id: QProvingJobDataID,
-}
-impl<F: RichField> AggStateTrackableInput<F> for CRClaimL1DepositCircuitInput<F> {
-    fn get_state_transition(&self) -> AggStateTransition<F> {
-        AggStateTransition {
-            state_transition_start: QHashOut(PoseidonHash::two_to_one(
-                self.user_tree_delta_merkle_proof.old_root.0,
-                self.deposit_tree_delta_merkle_proof.old_root.0,
-            )),
-            state_transition_end: QHashOut(PoseidonHash::two_to_one(
-                self.user_tree_delta_merkle_proof.new_root.0,
-                self.deposit_tree_delta_merkle_proof.new_root.0,
-            )),
-        }
-    }
-}
 
 #[derive(Debug)]
 pub struct CRClaimL1DepositCircuit<C: GenericConfig<D> + 'static, const D: usize>

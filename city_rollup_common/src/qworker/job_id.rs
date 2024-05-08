@@ -97,12 +97,22 @@ pub enum ProvingJobCircuitType {
     GenerateFinalSigHashProof = 34,
     GenerateFinalSigHashProofGroth16 = 35,
 
+    DummyRegisterUserAggregate = 48,
+    DummyAddL1DepositAggregate = 49,
+    DummyClaimL1DepositAggregate = 50,
+    DummyTransferTokensL2Aggregate = 51,
+    DummyAddL1WithdrawalAggregate = 52,
+    DummyProcessL1WithdrawalAggregate = 53,
+
     WrappedSignatureProof = 64,
     Secp256K1SignatureProof = 65,
 }
 impl ProvingJobCircuitType {
     pub fn to_u8(&self) -> u8 {
         *self as u8
+    }
+    pub fn to_circuit_group_id(&self) -> u32 {
+        (self.to_u8() as u32) + 0xCF00u32
     }
 }
 
@@ -126,6 +136,12 @@ impl TryFrom<u8> for ProvingJobCircuitType {
             33 => Ok(ProvingJobCircuitType::GenerateSigHashIntrospectionProof),
             34 => Ok(ProvingJobCircuitType::GenerateFinalSigHashProof),
             35 => Ok(ProvingJobCircuitType::GenerateFinalSigHashProofGroth16),
+            48 => Ok(ProvingJobCircuitType::DummyRegisterUserAggregate),
+            49 => Ok(ProvingJobCircuitType::DummyAddL1DepositAggregate),
+            50 => Ok(ProvingJobCircuitType::DummyClaimL1DepositAggregate),
+            51 => Ok(ProvingJobCircuitType::DummyTransferTokensL2Aggregate),
+            52 => Ok(ProvingJobCircuitType::DummyAddL1WithdrawalAggregate),
+            53 => Ok(ProvingJobCircuitType::DummyProcessL1WithdrawalAggregate),
             64 => Ok(ProvingJobCircuitType::WrappedSignatureProof),
             65 => Ok(ProvingJobCircuitType::Secp256K1SignatureProof),
             _ => Err(anyhow::format_err!(
@@ -295,6 +311,15 @@ impl QProvingJobDataID {
         Self {
             data_type: ProvingJobDataType::BaseInputProof,
             data_index,
+            ..*self
+        }
+    }
+    pub fn get_tree_parent_proof_input_id(&self) -> Self {
+        Self {
+            data_type: ProvingJobDataType::InputWitness,
+            data_index: 0,
+            sub_group_id: self.sub_group_id + 1,
+            task_index: self.sub_group_id >> 1u32,
             ..*self
         }
     }

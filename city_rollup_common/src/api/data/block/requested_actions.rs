@@ -6,9 +6,9 @@ use city_crypto::hash::{
 use plonky2::hash::hash_types::RichField;
 use serde::{Deserialize, Serialize};
 
-use crate::qworker::job_id::QProvingJobDataID;
+use crate::{introspection::transaction::BTCTransaction, qworker::job_id::QProvingJobDataID};
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Hash, Copy, PartialEq, Eq)]
 pub struct CityTokenTransferRequest {
     request_type: u8,
     pub user_id: u64,
@@ -85,6 +85,31 @@ impl CityAddDepositRequest {
             value,
             txid,
             public_key: CompressedPublicKey(public_key),
+        }
+    }
+    pub fn new_from_transaction(funding_tx: &BTCTransaction) -> Self {
+        assert_eq!(
+            funding_tx.inputs.len(),
+            1,
+            "deposits should only have one input (p2pkh)"
+        );
+        assert_eq!(
+            funding_tx.outputs.len(),
+            1,
+            "deposits should only have one output (send to layer 2)"
+        );
+        assert_eq!(
+            funding_tx.inputs[0].script.len(),
+            106,
+            "the input script for a deposit should be a p2pkh signature + public key reveal"
+        );
+
+        let public_key = CompressedPublicKey::new_from_slice(&funding_tx.inputs[0].script[73..106]);
+        Self {
+            request_type: 2,
+            value: funding_tx.outputs[0].value,
+            txid: funding_tx.get_hash(),
+            public_key: public_key,
         }
     }
 }

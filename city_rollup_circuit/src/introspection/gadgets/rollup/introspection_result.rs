@@ -1,5 +1,3 @@
-use std::fmt::format;
-
 use city_common_circuit::{
     builder::{core::CircuitBuilderHelpersCore, hash::core::CircuitBuilderHashCore},
     debug::circuit_tracer::DebugCircuitTracer,
@@ -13,7 +11,7 @@ use city_rollup_common::introspection::rollup::introspection_result::{
 };
 use plonky2::{
     field::extension::Extendable,
-    hash::hash_types::{HashOut, HashOutTarget, RichField},
+    hash::hash_types::{HashOutTarget, RichField},
     iop::{target::Target, witness::Witness},
     plonk::{circuit_builder::CircuitBuilder, config::AlgebraicHasher},
 };

@@ -1,75 +1,54 @@
-use std::marker::PhantomData;
-
 use city_rollup_common::{
     api::data::block::{
         requested_actions::{
-            CityAddDepositRequest, CityAddWithdrawalRequest, CityClaimDepositRequest,
-            CityProcessWithdrawalRequest, CityRegisterUserRequest, CityTokenTransferRequest,
+            CityAddWithdrawalRequest, CityClaimDepositRequest, CityRegisterUserRequest,
+            CityTokenTransferRequest,
         },
         rpc_request::{
             CityAddWithdrawalRPCRequest, CityClaimDepositRPCRequest, CityRegisterUserRPCRequest,
             CityTokenTransferRPCRequest,
         },
     },
-    introspection::transaction::BTCTransaction,
-    qworker::{
-        job_id::{ProvingJobCircuitType, QJobTopic, QProvingJobDataID},
-        proof_store::{QProofStoreReaderAsync, QProofStoreReaderSync, QProofStoreWriterSync},
-    },
+    qworker::{job_id::QProvingJobDataID, proof_store::QProofStore},
 };
-use kvq::traits::KVQBinaryStore;
-use plonky2::{
-    field::{extension::Extendable, goldilocks_field::GoldilocksField},
-    hash::hash_types::RichField,
-    plonk::config::{AlgebraicHasher, GenericConfig, PoseidonGoldilocksConfig},
-};
+
+use plonky2::{field::extension::Extendable, hash::hash_types::RichField};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(bound = "")]
-pub struct DebugScenarioRequestedActionsFromRPC<F: RichField> {
+pub struct CityScenarioRequestedActionsFromRPC<F: RichField> {
     pub token_transfers: Vec<CityTokenTransferRequest>,
     pub register_users: Vec<CityRegisterUserRequest<F>>,
     pub claim_l1_deposits: Vec<CityClaimDepositRequest>,
-    pub withdrawals: Vec<CityAddWithdrawalRequest>,
+    pub add_withdrawals: Vec<CityAddWithdrawalRequest>,
 }
-impl<F: RichField> DebugScenarioRequestedActionsFromRPC<F> {
+impl<F: RichField> CityScenarioRequestedActionsFromRPC<F> {
     pub fn new() -> Self {
         Self {
             token_transfers: Vec::new(),
             register_users: Vec::new(),
             claim_l1_deposits: Vec::new(),
-            withdrawals: Vec::new(),
+            add_withdrawals: Vec::new(),
         }
     }
 }
 
-pub struct DebugRPCProcessor<
-    PS: QProofStoreWriterSync + QProofStoreReaderSync,
-    F: RichField + Extendable<D>,
-    const D: usize,
-> {
-    _ps: PhantomData<PS>,
+pub struct DebugRPCProcessor<F: RichField + Extendable<D>, const D: usize> {
     pub checkpoint_id: u64,
     pub rpc_node_id: u32,
-    pub output: DebugScenarioRequestedActionsFromRPC<F>,
+    pub output: CityScenarioRequestedActionsFromRPC<F>,
 }
 
-impl<
-        PS: QProofStoreWriterSync + QProofStoreReaderSync,
-        F: RichField + Extendable<D>,
-        const D: usize,
-    > DebugRPCProcessor<PS, F, D>
-{
+impl<F: RichField + Extendable<D>, const D: usize> DebugRPCProcessor<F, D> {
     pub fn new() -> Self {
         Self {
-            _ps: PhantomData,
             checkpoint_id: 1,
             rpc_node_id: 0,
-            output: DebugScenarioRequestedActionsFromRPC::new(),
+            output: CityScenarioRequestedActionsFromRPC::new(),
         }
     }
-    pub fn injest_rpc_claim_deposit(
+    pub fn injest_rpc_claim_deposit<PS: QProofStore>(
         &self,
         ps: &mut PS,
         req: &CityClaimDepositRPCRequest,
@@ -98,7 +77,7 @@ impl<
     ) -> anyhow::Result<CityRegisterUserRequest<F>> {
         Ok(CityRegisterUserRequest::new(req.public_key))
     }
-    pub fn injest_rpc_token_transfer(
+    pub fn injest_rpc_token_transfer<PS: QProofStore>(
         &self,
         ps: &mut PS,
         req: &CityTokenTransferRPCRequest,
@@ -119,12 +98,12 @@ impl<
             signature_proof_id,
         ))
     }
-    pub fn injest_rpc_add_withdrawal(
+    pub fn injest_rpc_add_withdrawal<PS: QProofStore>(
         &self,
         ps: &mut PS,
         req: &CityAddWithdrawalRPCRequest,
     ) -> anyhow::Result<CityAddWithdrawalRequest> {
-        let count = self.output.withdrawals.len() as u32;
+        let count = self.output.add_withdrawals.len() as u32;
         let signature_proof_id = QProvingJobDataID::transfer_signature_proof(
             self.rpc_node_id,
             self.checkpoint_id,
@@ -141,18 +120,18 @@ impl<
             signature_proof_id,
         ))
     }
-    pub fn process_withdrawals(
+    pub fn process_withdrawals<PS: QProofStore>(
         &mut self,
         ps: &mut PS,
         reqs: &[CityAddWithdrawalRPCRequest],
     ) -> anyhow::Result<()> {
         for req in reqs {
             let withdrawal = self.injest_rpc_add_withdrawal(ps, req)?;
-            self.output.withdrawals.push(withdrawal);
+            self.output.add_withdrawals.push(withdrawal);
         }
         Ok(())
     }
-    pub fn process_deposits(
+    pub fn process_deposits<PS: QProofStore>(
         &mut self,
         ps: &mut PS,
         reqs: &[CityClaimDepositRPCRequest],
@@ -163,7 +142,7 @@ impl<
         }
         Ok(())
     }
-    pub fn process_transfers(
+    pub fn process_transfers<PS: QProofStore>(
         &mut self,
         ps: &mut PS,
         reqs: &[CityTokenTransferRPCRequest],

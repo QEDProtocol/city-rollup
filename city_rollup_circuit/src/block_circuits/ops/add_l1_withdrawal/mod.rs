@@ -4,55 +4,24 @@ use city_common_circuit::{
         zk_signature_wrapper::ZKSignatureWrapperCircuit,
     },
     proof_minifier::pm_core::get_circuit_fingerprint_generic,
-    treeprover::aggregation::state_transition_track_events::{
-        AggStateTrackableWithEventsInput, StateTransitionWithEvents,
-    },
 };
-use city_crypto::hash::{
-    merkle::core::DeltaMerkleProofCore, qhashout::QHashOut, traits::hasher::MerkleZeroHasher,
-};
+use city_crypto::hash::{qhashout::QHashOut, traits::hasher::MerkleZeroHasher};
 
-use city_rollup_common::qworker::{job_id::QProvingJobDataID, proof_store::QProofStoreReaderSync};
+use city_rollup_common::qworker::{
+    job_witnesses::op::CRAddL1WithdrawalCircuitInput, proof_store::QProofStoreReaderSync,
+};
 use plonky2::{
-    hash::{
-        hash_types::{HashOut, HashOutTarget, RichField},
-        poseidon::PoseidonHash,
-    },
+    hash::hash_types::{HashOut, HashOutTarget},
     iop::witness::{PartialWitness, WitnessWrite},
     plonk::{
         circuit_builder::CircuitBuilder,
         circuit_data::{CircuitConfig, CircuitData, CommonCircuitData, VerifierOnlyCircuitData},
-        config::{AlgebraicHasher, GenericConfig, Hasher},
+        config::{AlgebraicHasher, GenericConfig},
         proof::{ProofWithPublicInputs, ProofWithPublicInputsTarget},
     },
 };
-use serde::{Deserialize, Serialize};
 
 use crate::state::user::add_l1_withdrawal::AddL1WithdrawalSingleGadget;
-
-#[derive(Debug, Clone, Deserialize, Serialize)]
-#[serde(bound = "")]
-pub struct CRAddL1WithdrawalCircuitInput<F: RichField> {
-    pub user_tree_delta_merkle_proof: DeltaMerkleProofCore<QHashOut<F>>,
-    pub withdrawal_tree_delta_merkle_proof: DeltaMerkleProofCore<QHashOut<F>>,
-    pub allowed_circuit_hashes_root: QHashOut<F>,
-    pub signature_proof_id: QProvingJobDataID,
-}
-impl<F: RichField> AggStateTrackableWithEventsInput<F> for CRAddL1WithdrawalCircuitInput<F> {
-    fn get_state_transition_with_events(&self) -> StateTransitionWithEvents<F> {
-        StateTransitionWithEvents {
-            state_transition_start: QHashOut(PoseidonHash::two_to_one(
-                self.user_tree_delta_merkle_proof.old_root.0,
-                self.withdrawal_tree_delta_merkle_proof.old_root.0,
-            )),
-            state_transition_end: QHashOut(PoseidonHash::two_to_one(
-                self.user_tree_delta_merkle_proof.new_root.0,
-                self.withdrawal_tree_delta_merkle_proof.new_root.0,
-            )),
-            event_hash: self.withdrawal_tree_delta_merkle_proof.new_value,
-        }
-    }
-}
 
 #[derive(Debug)]
 pub struct CRAddL1WithdrawalCircuit<C: GenericConfig<D> + 'static, const D: usize>
