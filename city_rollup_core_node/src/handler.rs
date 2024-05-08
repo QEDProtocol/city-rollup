@@ -1,40 +1,50 @@
 use std::net::SocketAddr;
 
-use bytes::{Buf, Bytes};
+use bytes::Buf;
+use bytes::Bytes;
 use city_common::cli::args::RPCServerArgs;
 use city_common_circuit::circuits::zk_signature::verify_standard_wrapped_zk_signature_proof;
-use city_rollup_common::{
-    api::data::block::requested_actions::{
-        CityAddWithdrawalRequest, CityClaimDepositRequest, CityRegisterUserRequest,
-        CityTokenTransferRequest,
-    },
-    qworker::{job_id::QProvingJobDataID, proof_store::QProofStoreWriterAsync},
-};
-use city_rollup_worker_dispatch::{
-    implementations::redis::{
-        rollup_key::{
-            LAST_BLOCK_ID, TOKEN_TRANSFER_COUNTER, USER_COUNTER, USER_ID, USER_PUBKEY,
-            WITHDRWAL_COUNTER,
-        },
-        RedisStore, Q_DEBUG, Q_TX,
-    },
-    traits::{
-        proving_dispatcher::{KeyValueStoreWithInc, ProvingDispatcher},
-        proving_worker::ProvingWorkerListener,
-    },
-};
-use city_store::config::{C, D};
-use http_body_util::{BodyExt, Full};
-use hyper::{
-    body::Incoming, header, server::conn::http1, service::service_fn, Method, Request, Response,
-    StatusCode,
-};
+use city_rollup_common::api::data::block::requested_actions::CityAddWithdrawalRequest;
+use city_rollup_common::api::data::block::requested_actions::CityClaimDepositRequest;
+use city_rollup_common::api::data::block::requested_actions::CityRegisterUserRequest;
+use city_rollup_common::api::data::block::requested_actions::CityTokenTransferRequest;
+use city_rollup_common::qworker::job_id::QProvingJobDataID;
+use city_rollup_common::qworker::proof_store::QProofStoreWriterAsync;
+use city_rollup_worker_dispatch::implementations::redis::rollup_key::LAST_BLOCK_ID;
+use city_rollup_worker_dispatch::implementations::redis::rollup_key::TOKEN_TRANSFER_COUNTER;
+use city_rollup_worker_dispatch::implementations::redis::rollup_key::USER_COUNTER;
+use city_rollup_worker_dispatch::implementations::redis::rollup_key::USER_ID;
+use city_rollup_worker_dispatch::implementations::redis::rollup_key::USER_PUBKEY;
+use city_rollup_worker_dispatch::implementations::redis::rollup_key::WITHDRWAL_COUNTER;
+use city_rollup_worker_dispatch::implementations::redis::RedisStore;
+use city_rollup_worker_dispatch::implementations::redis::Q_DEBUG;
+use city_rollup_worker_dispatch::implementations::redis::Q_TX;
+use city_rollup_worker_dispatch::traits::proving_dispatcher::KeyValueStoreWithInc;
+use city_rollup_worker_dispatch::traits::proving_dispatcher::ProvingDispatcher;
+use city_rollup_worker_dispatch::traits::proving_worker::ProvingWorkerListener;
+use city_store::config::C;
+use city_store::config::D;
+use http_body_util::BodyExt;
+use http_body_util::Full;
+use hyper::body::Incoming;
+use hyper::header;
+use hyper::server::conn::http1;
+use hyper::service::service_fn;
+use hyper::Method;
+use hyper::Request;
+use hyper::Response;
+use hyper::StatusCode;
 use hyper_util::rt::TokioIo;
 use plonky2::plonk::config::GenericHashOut;
 use redis::AsyncCommands;
-use tokio::{net::TcpListener, task::spawn_blocking};
+use tokio::net::TcpListener;
+use tokio::task::spawn_blocking;
 
-use crate::rpc::{RequestParams, ResponseResult, RpcRequest, RpcResponse, Version};
+use crate::rpc::RequestParams;
+use crate::rpc::ResponseResult;
+use crate::rpc::RpcRequest;
+use crate::rpc::RpcResponse;
+use crate::rpc::Version;
 
 type BoxBody = http_body_util::combinators::BoxBody<Bytes, hyper::Error>;
 

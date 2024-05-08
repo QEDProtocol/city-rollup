@@ -1,5 +1,6 @@
 use city_macros::impl_kvq_serialize;
-use plonky2::hash::hash_types::{HashOut, RichField};
+use plonky2::hash::hash_types::HashOut;
+use plonky2::hash::hash_types::RichField;
 
 use super::traits::KVQSerializable;
 

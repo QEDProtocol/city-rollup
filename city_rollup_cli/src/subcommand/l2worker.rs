@@ -7,7 +7,7 @@ pub async fn run(args: L2WorkerArgs) -> Result<()> {
     println!(
         "
 ----------------------------------------
-|           CityRollup v{}             |
+|           CityRollup v{}          |
 ----------------------------------------
 ",
         build::PKG_VERSION

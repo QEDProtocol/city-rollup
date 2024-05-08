@@ -1,22 +1,18 @@
-use std::fmt::format;
-
-use city_common_circuit::{
-    builder::{core::CircuitBuilderHelpersCore, hash::core::CircuitBuilderHashCore},
-    debug::circuit_tracer::DebugCircuitTracer,
-    hash::{
-        base_types::hash256bytes::Hash256BytesTarget,
-        merkle::partial::compute_partial_merkle_root_from_leaves_algebraic_circuit,
-    },
-};
-use city_rollup_common::introspection::rollup::introspection_result::{
-    BTCRollupIntrospectionResultDeposit, WITHDRAWAL_TYPE_P2PKH, WITHDRAWAL_TYPE_P2SH,
-};
-use plonky2::{
-    field::extension::Extendable,
-    hash::hash_types::{HashOut, HashOutTarget, RichField},
-    iop::{target::Target, witness::Witness},
-    plonk::{circuit_builder::CircuitBuilder, config::AlgebraicHasher},
-};
+use city_common_circuit::builder::core::CircuitBuilderHelpersCore;
+use city_common_circuit::builder::hash::core::CircuitBuilderHashCore;
+use city_common_circuit::debug::circuit_tracer::DebugCircuitTracer;
+use city_common_circuit::hash::base_types::hash256bytes::Hash256BytesTarget;
+use city_common_circuit::hash::merkle::partial::compute_partial_merkle_root_from_leaves_algebraic_circuit;
+use city_rollup_common::introspection::rollup::introspection_result::BTCRollupIntrospectionResultDeposit;
+use city_rollup_common::introspection::rollup::introspection_result::WITHDRAWAL_TYPE_P2PKH;
+use city_rollup_common::introspection::rollup::introspection_result::WITHDRAWAL_TYPE_P2SH;
+use plonky2::field::extension::Extendable;
+use plonky2::hash::hash_types::HashOutTarget;
+use plonky2::hash::hash_types::RichField;
+use plonky2::iop::target::Target;
+use plonky2::iop::witness::Witness;
+use plonky2::plonk::circuit_builder::CircuitBuilder;
+use plonky2::plonk::config::AlgebraicHasher;
 
 #[derive(Debug, Clone)]
 pub struct BTCRollupIntrospectionResultDepositGadget {
@@ -90,7 +86,8 @@ impl BTCRollupIntrospectionResultWithdrawalGadget {
         &self,
         builder: &mut CircuitBuilder<F, D>,
     ) -> HashOutTarget {
-        //builder.hash_n_to_hash_no_pad::<H>([vec![self.value], self.script.to_vec()].concat())
+        //builder.hash_n_to_hash_no_pad::<H>([vec![self.value],
+        // self.script.to_vec()].concat())
         let script_length = self.script.len();
         assert!(
             script_length == 23 || script_length == 25,
@@ -123,7 +120,8 @@ impl BTCRollupIntrospectionResultWithdrawalGadget {
         builder.range_check(first_56, 56);
         builder.range_check(mid_56, 56);
         // disable p2sh withdrawals for now
-        // in the future we can add support by changing n_log in the range check below from 48 to 49
+        // in the future we can add support by changing n_log in the range check below
+        // from 48 to 49
         builder.range_check(last_48_with_flag, 48);
         value
     }

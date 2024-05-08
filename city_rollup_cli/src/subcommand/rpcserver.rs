@@ -7,7 +7,7 @@ pub async fn run(args: RPCServerArgs) -> Result<()> {
     println!(
         "
 ----------------------------------------
-|           CityRollup v{}             |
+|           CityRollup v{}          |
 ----------------------------------------
 ",
         build::PKG_VERSION

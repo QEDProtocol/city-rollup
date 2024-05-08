@@ -1,19 +1,16 @@
 use city_crypto::hash::qhashout::QHashOut;
 use city_rollup_common::introspection::rollup::signature::SimpleL2PrivateKey;
 use hashbrown::HashMap;
-use plonky2::plonk::{
-    circuit_data::{CommonCircuitData, VerifierOnlyCircuitData},
-    config::{AlgebraicHasher, GenericConfig},
-    proof::ProofWithPublicInputs,
-};
+use plonky2::plonk::circuit_data::CommonCircuitData;
+use plonky2::plonk::circuit_data::VerifierOnlyCircuitData;
+use plonky2::plonk::config::AlgebraicHasher;
+use plonky2::plonk::config::GenericConfig;
+use plonky2::plonk::proof::ProofWithPublicInputs;
 
-use crate::circuits::{
-    traits::qstandard::QStandardCircuit,
-    zk_signature::{
-        fixed_public_key::ZKSignatureCircuitSimpleFixedPublicKey, inner::ZKSignatureCircuitInner,
-    },
-    zk_signature_wrapper::ZKSignatureWrapperCircuit,
-};
+use crate::circuits::traits::qstandard::QStandardCircuit;
+use crate::circuits::zk_signature::fixed_public_key::ZKSignatureCircuitSimpleFixedPublicKey;
+use crate::circuits::zk_signature::inner::ZKSignatureCircuitInner;
+use crate::circuits::zk_signature_wrapper::ZKSignatureWrapperCircuit;
 
 #[derive(Debug)]
 pub struct SimpleZKSignatureWalletKey<C: GenericConfig<D> + 'static, const D: usize>

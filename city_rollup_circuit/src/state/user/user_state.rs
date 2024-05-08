@@ -1,16 +1,14 @@
-use city_common::config::rollup_constants::{
-    BALANCE_BIT_SIZE, GLOBAL_USER_TREE_HEIGHT, NONCE_BIT_SIZE,
-};
-use city_common_circuit::{
-    builder::{comparison::CircuitBuilderComparison, hash::core::CircuitBuilderHashCore},
-    hash::merkle::gadgets::delta_merkle_proof::DeltaMerkleProofGadget,
-};
-use plonky2::{
-    field::extension::Extendable,
-    hash::hash_types::{HashOutTarget, RichField},
-    iop::target::Target,
-    plonk::circuit_builder::CircuitBuilder,
-};
+use city_common::config::rollup_constants::BALANCE_BIT_SIZE;
+use city_common::config::rollup_constants::GLOBAL_USER_TREE_HEIGHT;
+use city_common::config::rollup_constants::NONCE_BIT_SIZE;
+use city_common_circuit::builder::comparison::CircuitBuilderComparison;
+use city_common_circuit::builder::hash::core::CircuitBuilderHashCore;
+use city_common_circuit::hash::merkle::gadgets::delta_merkle_proof::DeltaMerkleProofGadget;
+use plonky2::field::extension::Extendable;
+use plonky2::hash::hash_types::HashOutTarget;
+use plonky2::hash::hash_types::RichField;
+use plonky2::iop::target::Target;
+use plonky2::plonk::circuit_builder::CircuitBuilder;
 #[derive(Debug, Clone, Copy)]
 pub struct UserStateGadget {
     pub user_id: Target,
@@ -74,10 +72,12 @@ impl UserStateGadget {
             // user_id = index >> 1
             let user_id = builder.le_sum(leaf_index_bits[1..].iter());
             if is_left_leaf_index {
-                // if it is a left leaf, then the least significant bit of the index should be 0 (index = even number)
+                // if it is a left leaf, then the least significant bit of the index should be 0
+                // (index = even number)
                 builder.connect(is_right_leaf.target, zero)
             } else {
-                // if it is a right leaf, then the least significant bit of the index should be 1 (index = odd number)
+                // if it is a right leaf, then the least significant bit of the index should be
+                // 1 (index = odd number)
                 builder.connect(is_right_leaf.target, one)
             }
             user_id
@@ -163,10 +163,12 @@ impl UserStateGadget {
         let new_alt_user_state_slot_a = new_left_leaf.elements[2];
         let new_alt_user_state_slot_b = new_left_leaf.elements[3];
 
-        // the amount to decrease the balance by is the difference between the old balance and the new balance
+        // the amount to decrease the balance by is the difference between the old
+        // balance and the new balance
         let amount = builder.sub(self.balance, new_balance);
 
-        // ensure that the user can afford to decrease the balance (i.e that (balance - amount) does not underflow)
+        // ensure that the user can afford to decrease the balance (i.e that (balance -
+        // amount) does not underflow)
         builder.ensure_is_greater_than_or_equal(BALANCE_BIT_SIZE, self.balance, amount);
 
         // ensure that alt_user_state_slot_a did not change
@@ -176,10 +178,12 @@ impl UserStateGadget {
         builder.connect(new_alt_user_state_slot_b, self.alt_user_state_slot_b);
 
         if requires_nonce_update {
-            // if the update requires a nonce update, ensure the new nonce is greater than the old nonce
+            // if the update requires a nonce update, ensure the new nonce is greater than
+            // the old nonce
             builder.ensure_is_greater_than(NONCE_BIT_SIZE, new_nonce, self.nonce)
         } else {
-            // if the update does not require a nonce update, ensure the new nonce is the same as the old nonce
+            // if the update does not require a nonce update, ensure the new nonce is the
+            // same as the old nonce
             builder.connect(new_nonce, self.nonce);
         }
         let new_user_state = Self {
@@ -228,10 +232,12 @@ impl UserStateGadget {
         builder.connect(new_alt_user_state_slot_b, self.alt_user_state_slot_b);
 
         if requires_nonce_update {
-            // if the update requires a nonce update, ensure the new nonce is greater than the old nonce
+            // if the update requires a nonce update, ensure the new nonce is greater than
+            // the old nonce
             builder.ensure_is_greater_than(NONCE_BIT_SIZE, new_nonce, self.nonce)
         } else {
-            // if the update does not require a nonce update, ensure the new nonce is the same as the old nonce
+            // if the update does not require a nonce update, ensure the new nonce is the
+            // same as the old nonce
             builder.connect(new_nonce, self.nonce);
         }
 
@@ -268,9 +274,11 @@ impl UserStateGadget {
         // new users should have a alt_user_state_slot_b of 0
         builder.connect(self.alt_user_state_slot_b, zero);
 
-        // the previous public key should be 0, otherwise the user has already been registered
+        // the previous public key should be 0, otherwise the user has already been
+        // registered
         builder.ensure_hash_is_zero(new_public_key);
-        // the new public key should be non-zero, otherwise the user registration is invalid
+        // the new public key should be non-zero, otherwise the user registration is
+        // invalid
         builder.ensure_hash_is_non_zero(new_public_key);
 
         Self {

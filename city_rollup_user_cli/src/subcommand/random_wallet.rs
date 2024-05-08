@@ -1,4 +1,3 @@
-use crate::error::Result;
 use city_common::cli::user_args::RandomWalletArgs;
 use city_common_circuit::circuits::zk_signature::ZKSignatureCircuit;
 use city_crypto::hash::qhashout::QHashOut;
@@ -6,7 +5,10 @@ use city_rollup_common::introspection::rollup::signature::SimpleL2PrivateKey;
 use plonky2::field::goldilocks_field::GoldilocksField;
 use plonky2::hash::poseidon::PoseidonHash;
 use plonky2::plonk::config::PoseidonGoldilocksConfig;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use serde::Serialize;
+
+use crate::error::Result;
 
 #[derive(Serialize, Deserialize)]
 struct RandomWalletOutputJSON {

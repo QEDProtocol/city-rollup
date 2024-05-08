@@ -1,18 +1,18 @@
 use std::sync::Arc;
 
-use plonky2::field::types::{Field, PrimeField64};
+use plonky2::field::types::Field;
+use plonky2::field::types::PrimeField64;
 use plonky2::plonk::circuit_builder::CircuitBuilder;
-
-use plonky2::plonk::{
-    circuit_data::{CircuitConfig, CommonCircuitData, VerifierOnlyCircuitData},
-    config::GenericConfig,
-    plonk_common::salt_size,
-};
-use serde::{Deserialize, Serialize};
-
-use crate::circuits::traits::qstandard::QStandardCircuit;
+use plonky2::plonk::circuit_data::CircuitConfig;
+use plonky2::plonk::circuit_data::CommonCircuitData;
+use plonky2::plonk::circuit_data::VerifierOnlyCircuitData;
+use plonky2::plonk::config::GenericConfig;
+use plonky2::plonk::plonk_common::salt_size;
+use serde::Deserialize;
+use serde::Serialize;
 
 use super::ser_data::VTFriParams;
+use crate::circuits::traits::qstandard::QStandardCircuit;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct QEDCircuitVerifyTemplate {

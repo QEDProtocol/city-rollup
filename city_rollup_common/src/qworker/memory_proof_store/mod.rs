@@ -1,11 +1,11 @@
 use std::collections::HashMap;
 
-use plonky2::plonk::{config::GenericConfig, proof::ProofWithPublicInputs};
+use plonky2::plonk::config::GenericConfig;
+use plonky2::plonk::proof::ProofWithPublicInputs;
 
-use super::{
-    job_id::QProvingJobDataID,
-    proof_store::{QProofStoreReaderSync, QProofStoreWriterSync},
-};
+use super::job_id::QProvingJobDataID;
+use super::proof_store::QProofStoreReaderSync;
+use super::proof_store::QProofStoreWriterSync;
 
 pub struct SimpleProofStoreMemory {
     pub proofs: HashMap<QProvingJobDataID, Vec<u8>>,

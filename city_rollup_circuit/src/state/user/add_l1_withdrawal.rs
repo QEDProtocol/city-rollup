@@ -1,30 +1,26 @@
-use city_common::config::rollup_constants::{
-    GLOBAL_USER_TREE_HEIGHT, L1_WITHDRAWAL_TREE_HEIGHT, WITHDRAWAL_FEE_AMOUNT,
-};
-use city_common_circuit::{
-    builder::{
-        comparison::CircuitBuilderComparison, core::CircuitBuilderHelpersCore,
-        hash::core::CircuitBuilderHashCore,
-    },
-    hash::merkle::gadgets::delta_merkle_proof::DeltaMerkleProofGadget,
-};
-use city_crypto::hash::{
-    merkle::core::DeltaMerkleProofCore, qhashout::QHashOut, traits::hasher::MerkleZeroHasher,
-};
+use city_common::config::rollup_constants::GLOBAL_USER_TREE_HEIGHT;
+use city_common::config::rollup_constants::L1_WITHDRAWAL_TREE_HEIGHT;
+use city_common::config::rollup_constants::WITHDRAWAL_FEE_AMOUNT;
+use city_common_circuit::builder::comparison::CircuitBuilderComparison;
+use city_common_circuit::builder::core::CircuitBuilderHelpersCore;
+use city_common_circuit::builder::hash::core::CircuitBuilderHashCore;
+use city_common_circuit::hash::merkle::gadgets::delta_merkle_proof::DeltaMerkleProofGadget;
+use city_crypto::hash::merkle::core::DeltaMerkleProofCore;
+use city_crypto::hash::qhashout::QHashOut;
+use city_crypto::hash::traits::hasher::MerkleZeroHasher;
 use city_rollup_common::introspection::rollup::constants::SIG_ACTION_WITHDRAW_MAGIC;
-use plonky2::{
-    field::extension::Extendable,
-    hash::hash_types::{HashOut, HashOutTarget, RichField},
-    iop::{target::Target, witness::Witness},
-    plonk::{circuit_builder::CircuitBuilder, config::AlgebraicHasher},
-};
-
-use crate::introspection::gadgets::rollup::{
-    introspection_result::BTCRollupIntrospectionResultWithdrawalGadget,
-    signature::compute_sig_action_hash_circuit,
-};
+use plonky2::field::extension::Extendable;
+use plonky2::hash::hash_types::HashOut;
+use plonky2::hash::hash_types::HashOutTarget;
+use plonky2::hash::hash_types::RichField;
+use plonky2::iop::target::Target;
+use plonky2::iop::witness::Witness;
+use plonky2::plonk::circuit_builder::CircuitBuilder;
+use plonky2::plonk::config::AlgebraicHasher;
 
 use super::user_state::UserStateGadget;
+use crate::introspection::gadgets::rollup::introspection_result::BTCRollupIntrospectionResultWithdrawalGadget;
+use crate::introspection::gadgets::rollup::signature::compute_sig_action_hash_circuit;
 
 #[derive(Debug, Clone)]
 pub struct AddL1WithdrawalGadget {
@@ -55,12 +51,14 @@ impl AddL1WithdrawalGadget {
                 L1_WITHDRAWAL_TREE_HEIGHT as usize,
             );
 
-        // ensure that the old value of the leaf is empty (make sure it does not overwrite an existing withdrawal)
+        // ensure that the old value of the leaf is empty (make sure it does not
+        // overwrite an existing withdrawal)
         builder.ensure_hash_is_zero(withdrawal_tree_delta_merkle_proof_gadget.old_value);
 
         let withdrawal_hash = withdrawal_tree_delta_merkle_proof_gadget.new_value;
 
-        // validate the withdrawal hash to make sure it can be processed and get the amount
+        // validate the withdrawal hash to make sure it can be processed and get the
+        // amount
         let withdrawal_amount =
             BTCRollupIntrospectionResultWithdrawalGadget::validate_withdrawal_hash_get_amount(
                 builder,
@@ -90,7 +88,8 @@ impl AddL1WithdrawalGadget {
                 true,
             );
 
-        // ensure the amount paid by the user is equal to withdrawal_amount + WITHDRAWAL_FEE_AMOUNT
+        // ensure the amount paid by the user is equal to withdrawal_amount +
+        // WITHDRAWAL_FEE_AMOUNT
         builder.connect(expected_user_paid_amount, actual_user_paid_amount);
 
         Self {

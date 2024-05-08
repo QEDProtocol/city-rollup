@@ -1,4 +1,5 @@
-use super::key::KVQMerkleNodeKey;
+use std::marker::PhantomData;
+
 use city_crypto::hash::merkle::core::DeltaMerkleProofCore;
 use city_crypto::hash::merkle::core::MerkleProofCore;
 use city_crypto::hash::traits::hasher::MerkleZeroHasherWithMarkedLeaf;
@@ -8,7 +9,8 @@ use kvq::traits::KVQPair;
 use kvq::traits::KVQSerializable;
 use kvq::traits::KVQStoreAdapter;
 use kvq::traits::KVQStoreAdapterReader;
-use std::marker::PhantomData;
+
+use super::key::KVQMerkleNodeKey;
 
 pub const CHECKPOINT_ID_FUZZY_SIZE: usize = 8;
 

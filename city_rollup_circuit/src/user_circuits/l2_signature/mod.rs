@@ -1,21 +1,25 @@
-use city_common_circuit::{
-    circuits::traits::qstandard::{provable::QStandardCircuitProvable, QStandardCircuit},
-    proof_minifier::pm_chain::OASProofMinifierChain,
-};
-use city_crypto::hash::{qhashout::QHashOut, traits::hasher::MerkleZeroHasher};
+use city_common_circuit::circuits::traits::qstandard::provable::QStandardCircuitProvable;
+use city_common_circuit::circuits::traits::qstandard::QStandardCircuit;
+use city_common_circuit::proof_minifier::pm_chain::OASProofMinifierChain;
+use city_crypto::hash::qhashout::QHashOut;
+use city_crypto::hash::traits::hasher::MerkleZeroHasher;
 use city_rollup_common::introspection::rollup::signature::PRIVATE_KEY_CONSTANTS;
-use plonky2::{
-    field::types::Field,
-    hash::hash_types::{HashOut, HashOutTarget, RichField},
-    iop::witness::{PartialWitness, WitnessWrite},
-    plonk::{
-        circuit_builder::CircuitBuilder,
-        circuit_data::{CircuitConfig, CircuitData, CommonCircuitData, VerifierOnlyCircuitData},
-        config::{AlgebraicHasher, GenericConfig},
-        proof::ProofWithPublicInputs,
-    },
-};
-use serde::{Deserialize, Serialize};
+use plonky2::field::types::Field;
+use plonky2::hash::hash_types::HashOut;
+use plonky2::hash::hash_types::HashOutTarget;
+use plonky2::hash::hash_types::RichField;
+use plonky2::iop::witness::PartialWitness;
+use plonky2::iop::witness::WitnessWrite;
+use plonky2::plonk::circuit_builder::CircuitBuilder;
+use plonky2::plonk::circuit_data::CircuitConfig;
+use plonky2::plonk::circuit_data::CircuitData;
+use plonky2::plonk::circuit_data::CommonCircuitData;
+use plonky2::plonk::circuit_data::VerifierOnlyCircuitData;
+use plonky2::plonk::config::AlgebraicHasher;
+use plonky2::plonk::config::GenericConfig;
+use plonky2::plonk::proof::ProofWithPublicInputs;
+use serde::Deserialize;
+use serde::Serialize;
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(bound = "")]

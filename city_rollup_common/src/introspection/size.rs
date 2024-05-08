@@ -1,5 +1,6 @@
 use city_common::data::varuint::varuint_size;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use serde::Serialize;
 
 pub fn varslice_size(len: usize) -> usize {
     varuint_size(len as u64) + len

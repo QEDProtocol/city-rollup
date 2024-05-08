@@ -1,16 +1,18 @@
-use std::{fmt::Display, str::FromStr};
+use std::fmt::Display;
+use std::str::FromStr;
 
 use anyhow::ensure;
 use kvq::traits::KVQSerializable;
-use plonky2::{
-    field::{
-        goldilocks_field::GoldilocksField,
-        types::{Field, Sample},
-    },
-    hash::hash_types::{HashOut, RichField},
-    plonk::config::GenericHashOut,
-};
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use plonky2::field::goldilocks_field::GoldilocksField;
+use plonky2::field::types::Field;
+use plonky2::field::types::Sample;
+use plonky2::hash::hash_types::HashOut;
+use plonky2::hash::hash_types::RichField;
+use plonky2::plonk::config::GenericHashOut;
+use serde::Deserialize;
+use serde::Deserializer;
+use serde::Serialize;
+use serde::Serializer;
 use serde_with::serde_as;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]

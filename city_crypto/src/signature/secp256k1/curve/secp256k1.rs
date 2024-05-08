@@ -1,9 +1,11 @@
 use plonky2::field::secp256k1_base::Secp256K1Base;
 use plonky2::field::secp256k1_scalar::Secp256K1Scalar;
 use plonky2::field::types::Field;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use serde::Serialize;
 
-use super::curve_types::{AffinePoint, Curve};
+use super::curve_types::AffinePoint;
+use super::curve_types::Curve;
 
 #[derive(Debug, Copy, Clone, Deserialize, Eq, Hash, PartialEq, Serialize)]
 pub struct Secp256K1;
@@ -41,9 +43,12 @@ const SECP256K1_GENERATOR_Y: Secp256K1Base = Secp256K1Base([
 mod tests {
     use num::BigUint;
     use plonky2::field::secp256k1_scalar::Secp256K1Scalar;
-    use plonky2::field::types::{Field, PrimeField};
+    use plonky2::field::types::Field;
+    use plonky2::field::types::PrimeField;
 
-    use super::super::curve_types::{AffinePoint, Curve, ProjectivePoint};
+    use super::super::curve_types::AffinePoint;
+    use super::super::curve_types::Curve;
+    use super::super::curve_types::ProjectivePoint;
     use super::super::secp256k1::Secp256K1;
 
     #[test]
@@ -79,8 +84,8 @@ mod tests {
         );
     }
 
-    /// A simple, somewhat inefficient implementation of multiplication which is used as a reference
-    /// for correctness.
+    /// A simple, somewhat inefficient implementation of multiplication which is
+    /// used as a reference for correctness.
     fn mul_naive(
         lhs: Secp256K1Scalar,
         rhs: ProjectivePoint<Secp256K1>,

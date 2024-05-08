@@ -1,28 +1,24 @@
 use city_common::config::rollup_constants::NONCE_BIT_SIZE;
-use city_common_circuit::{
-    builder::{
-        comparison::CircuitBuilderComparison, core::CircuitBuilderHelpersCore,
-        hash::core::CircuitBuilderHashCore,
-    },
-    crypto::secp256k1::gadget::DogeQEDSignatureCombinedHashGadget,
-    hash::merkle::gadgets::delta_merkle_proof::DeltaMerkleProofGadget,
-};
-use city_crypto::hash::{merkle::core::DeltaMerkleProof, traits::hasher::MerkleZeroHasher};
-use city_rollup_common::introspection::rollup::{
-    constants::SIG_ACTION_CLAIM_DEPOSIT_MAGIC,
-    introspection_result::BTCRollupIntrospectionResultDeposit,
-};
-use plonky2::{
-    field::extension::Extendable,
-    hash::hash_types::{HashOut, HashOutTarget, RichField},
-    iop::{target::Target, witness::Witness},
-    plonk::{circuit_builder::CircuitBuilder, config::AlgebraicHasher},
-};
+use city_common_circuit::builder::comparison::CircuitBuilderComparison;
+use city_common_circuit::builder::core::CircuitBuilderHelpersCore;
+use city_common_circuit::builder::hash::core::CircuitBuilderHashCore;
+use city_common_circuit::crypto::secp256k1::gadget::DogeQEDSignatureCombinedHashGadget;
+use city_common_circuit::hash::merkle::gadgets::delta_merkle_proof::DeltaMerkleProofGadget;
+use city_crypto::hash::merkle::core::DeltaMerkleProof;
+use city_crypto::hash::traits::hasher::MerkleZeroHasher;
+use city_rollup_common::introspection::rollup::constants::SIG_ACTION_CLAIM_DEPOSIT_MAGIC;
+use city_rollup_common::introspection::rollup::introspection_result::BTCRollupIntrospectionResultDeposit;
+use plonky2::field::extension::Extendable;
+use plonky2::hash::hash_types::HashOut;
+use plonky2::hash::hash_types::HashOutTarget;
+use plonky2::hash::hash_types::RichField;
+use plonky2::iop::target::Target;
+use plonky2::iop::witness::Witness;
+use plonky2::plonk::circuit_builder::CircuitBuilder;
+use plonky2::plonk::config::AlgebraicHasher;
 
-use super::{
-    introspection_result::BTCRollupIntrospectionResultDepositGadget,
-    signature::compute_sig_action_hash_circuit,
-};
+use super::introspection_result::BTCRollupIntrospectionResultDepositGadget;
+use super::signature::compute_sig_action_hash_circuit;
 
 #[derive(Clone, Debug)]
 pub struct AddDepositGadget {

@@ -1,16 +1,15 @@
-use city_rollup_common::api::data::{
-    block::requested_actions::CityAddWithdrawalRequest, store::CityL1Withdrawal,
-};
-use kvq::traits::{KVQBinaryStore, KVQBinaryStoreReader};
-
-use crate::{
-    config::{CityDeltaMerkleProof, CityHash, CityMerkleProof, L1WithdrawalTreeStore},
-    models::kvq_merkle::model::{
-        KVQFixedConfigMerkleTreeModelCore, KVQFixedConfigMerkleTreeModelReaderCore,
-    },
-};
+use city_rollup_common::api::data::block::requested_actions::CityAddWithdrawalRequest;
+use city_rollup_common::api::data::store::CityL1Withdrawal;
+use kvq::traits::KVQBinaryStore;
+use kvq::traits::KVQBinaryStoreReader;
 
 use super::base::CityStore;
+use crate::config::CityDeltaMerkleProof;
+use crate::config::CityHash;
+use crate::config::CityMerkleProof;
+use crate::config::L1WithdrawalTreeStore;
+use crate::models::kvq_merkle::model::KVQFixedConfigMerkleTreeModelCore;
+use crate::models::kvq_merkle::model::KVQFixedConfigMerkleTreeModelReaderCore;
 
 impl<S: KVQBinaryStoreReader> CityStore<S> {
     pub fn get_withdrawal_by_id(

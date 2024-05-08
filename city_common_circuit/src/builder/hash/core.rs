@@ -1,12 +1,12 @@
 use city_crypto::hash::qhashout::QHashOut;
+use plonky2::field::extension::Extendable;
 use plonky2::hash::hash_types::HashOut;
+use plonky2::hash::hash_types::HashOutTarget;
+use plonky2::hash::hash_types::RichField;
 use plonky2::hash::hashing::PlonkyPermutation;
-use plonky2::{
-    field::extension::Extendable,
-    hash::hash_types::{HashOutTarget, RichField},
-    iop::target::BoolTarget,
-    plonk::{circuit_builder::CircuitBuilder, config::AlgebraicHasher},
-};
+use plonky2::iop::target::BoolTarget;
+use plonky2::plonk::circuit_builder::CircuitBuilder;
+use plonky2::plonk::config::AlgebraicHasher;
 
 use crate::builder::select::CircuitBuilderSelectHelpers;
 use crate::hash::base_types::hash256::Hash256Target;

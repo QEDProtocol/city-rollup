@@ -1,16 +1,17 @@
 use city_common::math::ceil_div_usize;
-use plonky2::{
-    field::extension::Extendable,
-    gates::base_sum::BaseSumGate,
-    hash::hash_types::RichField,
-    iop::{
-        generator::{GeneratedValues, SimpleGenerator},
-        target::{BoolTarget, Target},
-        witness::{PartitionWitness, Witness, WitnessWrite},
-    },
-    plonk::circuit_builder::CircuitBuilder,
-    util::serialization::{Read, Write},
-};
+use plonky2::field::extension::Extendable;
+use plonky2::gates::base_sum::BaseSumGate;
+use plonky2::hash::hash_types::RichField;
+use plonky2::iop::generator::GeneratedValues;
+use plonky2::iop::generator::SimpleGenerator;
+use plonky2::iop::target::BoolTarget;
+use plonky2::iop::target::Target;
+use plonky2::iop::witness::PartitionWitness;
+use plonky2::iop::witness::Witness;
+use plonky2::iop::witness::WitnessWrite;
+use plonky2::plonk::circuit_builder::CircuitBuilder;
+use plonky2::util::serialization::Read;
+use plonky2::util::serialization::Write;
 
 use crate::u32::arithmetic_u32::U32Target;
 
@@ -97,7 +98,8 @@ pub fn split_le_no_drain<F: RichField + Extendable<D>, const D: usize>(
         // for limb_column in gate_type.limbs() {
         let limbs_range = 1..1 + gate_type.num_limbs;
         for limb_column in limbs_range {
-            // `new_unsafe` is safe here because BaseSumGate::<2> forces it to be in `{0, 1}`.
+            // `new_unsafe` is safe here because BaseSumGate::<2> forces it to be in `{0,
+            // 1}`.
             bits.push(BoolTarget::new_unsafe(Target::wire(gate, limb_column)));
         }
     }
@@ -145,8 +147,9 @@ impl<F: RichField + Extendable<D>, const D: usize> SimpleGenerator<F, D> for Wir
             //BaseSumGate::<2>::WIRE_SUM = 0
             let sum = Target::wire(gate, 0);
 
-            // If num_limbs >= 64, we don't need to truncate since `integer_value` is already
-            // limited to 64 bits, and trying to do so would cause overflow. Hence the conditional.
+            // If num_limbs >= 64, we don't need to truncate since `integer_value` is
+            // already limited to 64 bits, and trying to do so would cause
+            // overflow. Hence the conditional.
             let mut truncated_value = integer_value;
             if self.num_limbs < 64 {
                 truncated_value = integer_value & ((1 << self.num_limbs) - 1);

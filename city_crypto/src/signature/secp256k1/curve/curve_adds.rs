@@ -3,7 +3,9 @@ use std::ops::Add;
 use plonky2::field::ops::Square;
 use plonky2::field::types::Field;
 
-use super::curve_types::{AffinePoint, Curve, ProjectivePoint};
+use super::curve_types::AffinePoint;
+use super::curve_types::Curve;
+use super::curve_types::ProjectivePoint;
 
 impl<C: Curve> Add<ProjectivePoint<C>> for ProjectivePoint<C> {
     type Output = ProjectivePoint<C>;

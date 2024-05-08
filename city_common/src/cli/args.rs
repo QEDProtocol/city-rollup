@@ -13,17 +13,12 @@ pub struct RPCServerArgs {
     pub bitcoin_rpc: String,
     #[clap(env, long, default_value = "http://localhost:1337/api", env)]
     pub electrs_api: String,
-    #[clap(
-        env,
-        long,
-        default_value = "redis://localhost:6379/0",
-        env
-    )]
+    #[clap(env, long, default_value = "redis://localhost:6379/0", env)]
     pub redis_uri: String,
     #[clap(short, env, long, default_value = "db", env)]
     pub db_path: String,
     #[clap(short, env, long, default_value = "0", env)]
-    pub rpc_node_id: u32
+    pub rpc_node_id: u32,
 }
 
 #[derive(Clone, Args)]
@@ -39,12 +34,7 @@ pub struct OrchestratorArgs {
     pub bitcoin_rpc: String,
     #[clap(env, long, default_value = "http://localhost:1337/api", env)]
     pub electrs_api: String,
-    #[clap(
-        env,
-        long,
-        default_value = "redis://localhost:6379/0",
-        env
-    )]
+    #[clap(env, long, default_value = "redis://localhost:6379/0", env)]
     pub redis_uri: String,
     #[clap(short, env, long, default_value = "db", env)]
     pub db_path: String,
@@ -63,12 +53,7 @@ pub struct L2WorkerArgs {
     pub bitcoin_rpc: String,
     #[clap(env, long, default_value = "http://localhost:1337/api", env)]
     pub electrs_api: String,
-    #[clap(
-        env,
-        long,
-        default_value = "redis://localhost:6379/0",
-        env
-    )]
+    #[clap(env, long, default_value = "redis://localhost:6379/0", env)]
     pub redis_uri: String,
     #[clap(short, env, long, default_value = "db", env)]
     pub db_path: String,

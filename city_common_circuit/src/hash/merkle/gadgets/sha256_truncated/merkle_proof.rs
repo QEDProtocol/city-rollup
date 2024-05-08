@@ -1,10 +1,13 @@
 use city_crypto::field::qfield::QRichField;
 use plonky2::field::extension::Extendable;
-use plonky2::iop::target::{BoolTarget, Target};
+use plonky2::iop::target::BoolTarget;
+use plonky2::iop::target::Target;
 use plonky2::plonk::circuit_builder::CircuitBuilder;
 
 use crate::builder::hash::sha256_truncated::CircuitBuilderTruncatedSha256;
-use crate::hash::base_types::hash192::{CircuitBuilderHash192, Hash192Target, WitnessHash192};
+use crate::hash::base_types::hash192::CircuitBuilderHash192;
+use crate::hash::base_types::hash192::Hash192Target;
+use crate::hash::base_types::hash192::WitnessHash192;
 
 pub fn compute_merkle_root<F: QRichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
@@ -91,9 +94,11 @@ mod tests {
     use plonky2::iop::witness::PartialWitness;
     use plonky2::plonk::circuit_builder::CircuitBuilder;
     use plonky2::plonk::circuit_data::CircuitConfig;
-    use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
+    use plonky2::plonk::config::GenericConfig;
+    use plonky2::plonk::config::PoseidonGoldilocksConfig;
 
-    use crate::hash::base_types::hash192::{CircuitBuilderHash192, WitnessHash192};
+    use crate::hash::base_types::hash192::CircuitBuilderHash192;
+    use crate::hash::base_types::hash192::WitnessHash192;
     use crate::hash::merkle::gadgets::sha256_truncated::merkle_proof::MerkleProofTruncatedSha256Gadget;
 
     const SMALL_MERKLE_PROOFS: &str = r#"

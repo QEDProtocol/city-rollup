@@ -1,36 +1,31 @@
-use hashbrown::HashMap;
-
-use city_common_circuit::{
-    circuits::traits::qstandard::{
-        provable::QStandardCircuitProvable, QStandardCircuit,
-        QStandardCircuitProvableWithProofStoreSync,
-    },
-    field::cubic::CubicExtendable,
-    hash::accelerator::sha256::{
-        planner::{Sha256AcceleratorDomainPlanner, SmartSha256AcceleratorGadgetWithDomain},
-        smartgadget::Sha256AirParametersStandard,
-        Sha256Acc,
-    },
-    proof_minifier::pm_chain_dynamic::OASProofMinifierDynamicChain,
-};
+use city_common_circuit::circuits::traits::qstandard::provable::QStandardCircuitProvable;
+use city_common_circuit::circuits::traits::qstandard::QStandardCircuit;
+use city_common_circuit::circuits::traits::qstandard::QStandardCircuitProvableWithProofStoreSync;
+use city_common_circuit::field::cubic::CubicExtendable;
+use city_common_circuit::hash::accelerator::sha256::planner::Sha256AcceleratorDomainPlanner;
+use city_common_circuit::hash::accelerator::sha256::planner::SmartSha256AcceleratorGadgetWithDomain;
+use city_common_circuit::hash::accelerator::sha256::smartgadget::Sha256AirParametersStandard;
+use city_common_circuit::hash::accelerator::sha256::Sha256Acc;
+use city_common_circuit::proof_minifier::pm_chain_dynamic::OASProofMinifierDynamicChain;
 use city_crypto::hash::qhashout::QHashOut;
-use city_rollup_common::{
-    introspection::rollup::introspection::{
-        BlockSpendIntrospectionGadgetConfig, BlockSpendIntrospectionHint,
-    },
-    qworker::proof_store::QProofStoreReaderSync,
-};
-use plonky2::{
-    hash::{hash_types::RichField, poseidon::PoseidonHash},
-    iop::{target::Target, witness::PartialWitness},
-    plonk::{
-        circuit_builder::CircuitBuilder,
-        circuit_data::{CircuitConfig, CircuitData, CommonCircuitData, VerifierOnlyCircuitData},
-        config::{AlgebraicHasher, GenericConfig},
-        proof::ProofWithPublicInputs,
-    },
-};
-use serde::{Deserialize, Serialize};
+use city_rollup_common::introspection::rollup::introspection::BlockSpendIntrospectionGadgetConfig;
+use city_rollup_common::introspection::rollup::introspection::BlockSpendIntrospectionHint;
+use city_rollup_common::qworker::proof_store::QProofStoreReaderSync;
+use hashbrown::HashMap;
+use plonky2::hash::hash_types::RichField;
+use plonky2::hash::poseidon::PoseidonHash;
+use plonky2::iop::target::Target;
+use plonky2::iop::witness::PartialWitness;
+use plonky2::plonk::circuit_builder::CircuitBuilder;
+use plonky2::plonk::circuit_data::CircuitConfig;
+use plonky2::plonk::circuit_data::CircuitData;
+use plonky2::plonk::circuit_data::CommonCircuitData;
+use plonky2::plonk::circuit_data::VerifierOnlyCircuitData;
+use plonky2::plonk::config::AlgebraicHasher;
+use plonky2::plonk::config::GenericConfig;
+use plonky2::plonk::proof::ProofWithPublicInputs;
+use serde::Deserialize;
+use serde::Serialize;
 
 use crate::introspection::gadgets::rollup::introspection::BTCRollupIntrospectionGadget;
 
@@ -134,7 +129,8 @@ where
         introspection_hint: &BlockSpendIntrospectionHint,
     ) -> anyhow::Result<ProofWithPublicInputs<C::F, C, D>> {
         let mut pw = PartialWitness::new();
-        //todo, refactor sha256_acceleration_gadget to separate mutable state in a separate struct
+        //todo, refactor sha256_acceleration_gadget to separate mutable state in a
+        // separate struct
         let mut g = self.sha256_acceleration_gadget.clone();
 
         self.introspection_gadget

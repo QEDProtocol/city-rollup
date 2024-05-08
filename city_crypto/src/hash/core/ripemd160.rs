@@ -1,6 +1,8 @@
-use ripemd::{Digest, Ripemd160};
+use ripemd::Digest;
+use ripemd::Ripemd160;
 
-use crate::hash::{base_types::hash160::Hash160, traits::hasher::MerkleHasher};
+use crate::hash::base_types::hash160::Hash160;
+use crate::hash::traits::hasher::MerkleHasher;
 
 #[derive(Debug, Clone)]
 pub struct CoreRipemd160Hasher {

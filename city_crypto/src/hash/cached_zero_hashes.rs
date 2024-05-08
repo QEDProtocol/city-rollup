@@ -1,11 +1,10 @@
-use plonky2::{field::goldilocks_field::GoldilocksField, hash::hash_types::HashOut};
+use plonky2::field::goldilocks_field::GoldilocksField;
+use plonky2::hash::hash_types::HashOut;
 
-use super::{
-    qhashout::QHashOut,
-    traits::hasher::{
-        MerkleZeroHasherWithCache, MerkleZeroHasherWithCacheMarkedLeaf, PoseidonHasher,
-    },
-};
+use super::qhashout::QHashOut;
+use super::traits::hasher::MerkleZeroHasherWithCache;
+use super::traits::hasher::MerkleZeroHasherWithCacheMarkedLeaf;
+use super::traits::hasher::PoseidonHasher;
 
 impl MerkleZeroHasherWithCache<HashOut<GoldilocksField>> for PoseidonHasher {
     const CACHED_ZERO_HASHES: [HashOut<GoldilocksField>; 128] = [

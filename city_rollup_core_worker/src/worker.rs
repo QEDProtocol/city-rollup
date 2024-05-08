@@ -1,23 +1,20 @@
 use std::time::Duration;
 
-use city_common::{cli::args::L2WorkerArgs, logging::trace_timer::TraceTimer};
+use city_common::cli::args::L2WorkerArgs;
+use city_common::logging::trace_timer::TraceTimer;
 use city_common_circuit::circuits::traits::qstandard::QStandardCircuitProvableWithProofStoreSync;
 use city_common_circuit::circuits::traits::qstandard::QStandardCircuitWithDefaultMinified;
 use city_macros::async_infinite_loop;
-use city_rollup_circuit::block_circuits::ops::{
-    add_l1_withdrawal::WCRAddL1WithdrawalCircuit,
-    claim_l1_deposit::WCRClaimL1DepositCircuit,
-    register_user::{CRUserRegistrationCircuitInput, WCRUserRegistrationCircuit},
-};
-use city_rollup_common::{
-    introspection::rollup::constants::get_network_magic_for_str, qworker::job_id::QJobTopic,
-};
-use city_rollup_worker_dispatch::{
-    implementations::redis::{RedisStore, Q_JOB},
-    traits::proving_worker::ProvingWorkerListener,
-};
-use city_store::config::{C, D, F};
-use tokio::task::spawn_blocking;
+use city_rollup_circuit::block_circuits::ops::register_user::CRUserRegistrationCircuitInput;
+use city_rollup_circuit::block_circuits::ops::register_user::WCRUserRegistrationCircuit;
+use city_rollup_common::introspection::rollup::constants::get_network_magic_for_str;
+use city_rollup_common::qworker::job_id::QJobTopic;
+use city_rollup_worker_dispatch::implementations::redis::RedisStore;
+use city_rollup_worker_dispatch::implementations::redis::Q_JOB;
+use city_rollup_worker_dispatch::traits::proving_worker::ProvingWorkerListener;
+use city_store::config::C;
+use city_store::config::D;
+use city_store::config::F;
 
 use crate::proof_store::SyncRedisProofStore;
 

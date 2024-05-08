@@ -1,7 +1,8 @@
 use city_common_circuit::treeprover::data::TPCircuitFingerprintConfig;
 use city_crypto::hash::qhashout::QHashOut;
 use plonky2::hash::hash_types::RichField;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use serde::Serialize;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(bound = "")]

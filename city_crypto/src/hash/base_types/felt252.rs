@@ -1,4 +1,5 @@
-use plonky2::hash::hash_types::{HashOut, RichField};
+use plonky2::hash::hash_types::HashOut;
+use plonky2::hash::hash_types::RichField;
 
 use super::hash256::Hash256;
 
@@ -53,10 +54,9 @@ pub fn felt252_hashout_to_hash256_le<F: RichField>(hash: HashOut<F>) -> Hash256 
 }
 #[cfg(test)]
 mod test {
-    use plonky2::{
-        field::{goldilocks_field::GoldilocksField, types::Field},
-        hash::hash_types::HashOut,
-    };
+    use plonky2::field::goldilocks_field::GoldilocksField;
+    use plonky2::field::types::Field;
+    use plonky2::hash::hash_types::HashOut;
 
     use crate::hash::base_types::felt252::felt252_hashout_to_hash256_le;
 

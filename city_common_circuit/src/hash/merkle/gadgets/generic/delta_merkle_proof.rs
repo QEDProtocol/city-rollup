@@ -6,12 +6,11 @@ use plonky2::iop::target::Target;
 use plonky2::iop::witness::Witness;
 use plonky2::plonk::circuit_builder::CircuitBuilder;
 
+use super::merkle_proof::compute_merkle_root;
+use super::merkle_proof::compute_merkle_root_marked_leaves;
 use crate::traits::GenericCircuitMerkleHasher;
 use crate::traits::GenericHashTarget;
 use crate::traits::WitnessValueFor;
-
-use super::merkle_proof::compute_merkle_root;
-use super::merkle_proof::compute_merkle_root_marked_leaves;
 pub struct GenericDeltaMerkleProofVecGadget<
     H: GenericHashTarget,
     Hasher: GenericCircuitMerkleHasher<H>,

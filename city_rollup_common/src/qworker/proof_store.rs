@@ -1,5 +1,6 @@
 use async_trait::async_trait;
-use plonky2::plonk::{config::GenericConfig, proof::ProofWithPublicInputs};
+use plonky2::plonk::config::GenericConfig;
+use plonky2::plonk::proof::ProofWithPublicInputs;
 
 use super::job_id::QProvingJobDataID;
 

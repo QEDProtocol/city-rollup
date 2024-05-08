@@ -1,32 +1,34 @@
 use core::fmt::Debug;
-use plonky2::field::types::PrimeField64;
 
+use city_crypto::hash::core::sha256::CoreSha256Hasher;
+use plonky2::field::extension::Extendable;
 use plonky2::field::types::Field;
-use plonky2::{
-    field::extension::Extendable,
-    hash::hash_types::RichField,
-    iop::{target::Target, witness::Witness},
-    plonk::{
-        circuit_builder::CircuitBuilder,
-        config::{AlgebraicHasher, GenericConfig},
-    },
-};
+use plonky2::field::types::PrimeField64;
+use plonky2::hash::hash_types::RichField;
+use plonky2::iop::target::Target;
+use plonky2::iop::witness::Witness;
+use plonky2::plonk::circuit_builder::CircuitBuilder;
+use plonky2::plonk::config::AlgebraicHasher;
+use plonky2::plonk::config::GenericConfig;
+use serde::Deserialize;
+use serde::Serialize;
+use starkyx::chip::uint::operations::instruction::UintInstructions;
+use starkyx::chip::AirParameters;
+use starkyx::chip::Chip;
+use starkyx::machine::bytes::builder::BytesBuilder;
+use starkyx::machine::hash::sha::algorithm::SHAir;
+use starkyx::math::extension::CubicParameters;
+use starkyx::plonky2::Plonky2Air;
 
-use super::smartgadget::{PlannedHash256BytesTarget, SmartSha256AcceleratorGadget};
+use super::smartgadget::PlannedHash256BytesTarget;
+use super::smartgadget::SmartSha256AcceleratorGadget;
 use crate::builder::core::TargetResolverCore;
 use crate::builder::core::WitnessHelpersCore;
 use crate::builder::hash::ripemd160::CircuitBuilderHashRipemd160;
+use crate::hash::base_types::hash160bytes::Hash160BytesTarget;
 use crate::hash::base_types::hash256bytes::CircuitBuilderHash256Bytes;
+use crate::hash::base_types::hash256bytes::Hash256BytesTarget;
 use crate::hash::base_types::hash256bytes::WitnessHash256Bytes;
-use crate::hash::base_types::{hash160bytes::Hash160BytesTarget, hash256bytes::Hash256BytesTarget};
-use city_crypto::hash::core::sha256::CoreSha256Hasher;
-use serde::{Deserialize, Serialize};
-use starkyx::{
-    chip::{uint::operations::instruction::UintInstructions, AirParameters, Chip},
-    machine::{bytes::builder::BytesBuilder, hash::sha::algorithm::SHAir},
-    math::extension::CubicParameters,
-    plonky2::Plonky2Air,
-};
 pub type Sha256AcceleratorDomainID = usize;
 
 pub trait Sha256AcceleratorDomainResolver {

@@ -1,4 +1,5 @@
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use serde::Serialize;
 
 #[derive(Serialize, Deserialize, PartialEq, Clone, Debug)]
 pub struct HashAcceleratorConfig {

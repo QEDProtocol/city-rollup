@@ -1,22 +1,19 @@
 use city_common::logging::trace_timer::TraceTimer;
-use city_common_circuit::{
-    circuits::traits::qstandard::{QStandardCircuit, QStandardCircuitWithDefaultMinified},
-    treeprover::{
-        aggregation::state_transition::AggStateTransitionCircuit, data::TPCircuitFingerprintConfig,
-        traits::TreeProverAggCircuit,
-    },
-};
+use city_common_circuit::circuits::traits::qstandard::QStandardCircuit;
+use city_common_circuit::circuits::traits::qstandard::QStandardCircuitWithDefaultMinified;
+use city_common_circuit::treeprover::aggregation::state_transition::AggStateTransitionCircuit;
+use city_common_circuit::treeprover::data::TPCircuitFingerprintConfig;
+use city_common_circuit::treeprover::traits::TreeProverAggCircuit;
+use city_crypto::hash::qhashout::QHashOut;
 use city_crypto::hash::traits::hasher::MerkleZeroHasher;
-use plonky2::{
-    hash::hash_types::HashOut,
-    plonk::config::{AlgebraicHasher, GenericConfig},
-};
+use plonky2::hash::hash_types::HashOut;
+use plonky2::hash::hash_types::RichField;
+use plonky2::plonk::config::AlgebraicHasher;
+use plonky2::plonk::config::GenericConfig;
+use serde::Deserialize;
+use serde::Serialize;
 
 use crate::block_circuits::ops::register_user::WCRUserRegistrationCircuit;
-
-use city_crypto::hash::qhashout::QHashOut;
-use plonky2::hash::hash_types::RichField;
-use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(bound = "")]

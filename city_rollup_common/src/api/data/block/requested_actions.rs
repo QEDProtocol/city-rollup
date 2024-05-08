@@ -1,10 +1,10 @@
 use city_common::binaryhelpers::bytes::CompressedPublicKey;
-use city_crypto::hash::{
-    base_types::{hash160::Hash160, hash256::Hash256},
-    qhashout::QHashOut,
-};
+use city_crypto::hash::base_types::hash160::Hash160;
+use city_crypto::hash::base_types::hash256::Hash256;
+use city_crypto::hash::qhashout::QHashOut;
 use plonky2::hash::hash_types::RichField;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use serde::Serialize;
 
 use crate::qworker::job_id::QProvingJobDataID;
 
@@ -156,7 +156,7 @@ impl<F: RichField> CityRegisterUserRequest<F> {
             request_type: 5,
             user_id,
             public_key,
-            rpc_node_id
+            rpc_node_id,
         }
     }
 }

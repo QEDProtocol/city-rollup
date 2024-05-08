@@ -1,15 +1,17 @@
-use plonky2::{
-    field::extension::Extendable,
-    gates::gate::GateRef,
-    hash::hash_types::{HashOut, RichField},
-    plonk::{
-        circuit_data::{CircuitConfig, CircuitData, CommonCircuitData, VerifierOnlyCircuitData},
-        config::{AlgebraicHasher, GenericConfig},
-        proof::ProofWithPublicInputs,
-    },
-};
+use plonky2::field::extension::Extendable;
+use plonky2::gates::gate::GateRef;
+use plonky2::hash::hash_types::HashOut;
+use plonky2::hash::hash_types::RichField;
+use plonky2::plonk::circuit_data::CircuitConfig;
+use plonky2::plonk::circuit_data::CircuitData;
+use plonky2::plonk::circuit_data::CommonCircuitData;
+use plonky2::plonk::circuit_data::VerifierOnlyCircuitData;
+use plonky2::plonk::config::AlgebraicHasher;
+use plonky2::plonk::config::GenericConfig;
+use plonky2::plonk::proof::ProofWithPublicInputs;
 
-use super::{pm_custom::PMCircuitCustomizer, pm_dynamic::OASProofMinifierDynamic};
+use super::pm_custom::PMCircuitCustomizer;
+use super::pm_dynamic::OASProofMinifierDynamic;
 
 #[derive(Debug)]
 pub struct OASProofMinifierDynamicChain<
@@ -272,8 +274,9 @@ where
     }
     pub fn prove(
         &self,
-        base_proof: &ProofWithPublicInputs<F, C, D>, //verifier_data: &VerifierOnlyCircuitData<C, D>,
-                                                     //proof: &ProofWithPublicInputs<F, C, D>,
+        base_proof: &ProofWithPublicInputs<F, C, D>, /*verifier_data:
+                                                      * &VerifierOnlyCircuitData<C, D>,
+                                                      * proof: &ProofWithPublicInputs<F, C, D>, */
     ) -> anyhow::Result<ProofWithPublicInputs<F, C, D>> {
         if self.minifiers.len() == 0 {
             return Ok(base_proof.clone());

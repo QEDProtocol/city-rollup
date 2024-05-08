@@ -1,5 +1,4 @@
 use core::marker::PhantomData;
-use plonky2::util::serialization::{Buffer, IoResult, Read, Write};
 
 use plonky2::field::extension::Extendable;
 use plonky2::field::packed::PackedField;
@@ -9,19 +8,30 @@ use plonky2::gates::packed_util::PackedEvaluableBase;
 use plonky2::gates::util::StridedConstraintConsumer;
 use plonky2::hash::hash_types::RichField;
 use plonky2::iop::ext_target::ExtensionTarget;
-use plonky2::iop::generator::{GeneratedValues, SimpleGenerator, WitnessGeneratorRef};
+use plonky2::iop::generator::GeneratedValues;
+use plonky2::iop::generator::SimpleGenerator;
+use plonky2::iop::generator::WitnessGeneratorRef;
 use plonky2::iop::target::Target;
 use plonky2::iop::wire::Wire;
-use plonky2::iop::witness::{PartitionWitness, Witness, WitnessWrite};
+use plonky2::iop::witness::PartitionWitness;
+use plonky2::iop::witness::Witness;
+use plonky2::iop::witness::WitnessWrite;
 use plonky2::plonk::circuit_builder::CircuitBuilder;
-use plonky2::plonk::circuit_data::{CircuitConfig, CommonCircuitData};
-use plonky2::plonk::vars::{
-    EvaluationTargets, EvaluationVars, EvaluationVarsBase, EvaluationVarsBaseBatch,
-    EvaluationVarsBasePacked,
-};
+use plonky2::plonk::circuit_data::CircuitConfig;
+use plonky2::plonk::circuit_data::CommonCircuitData;
+use plonky2::plonk::vars::EvaluationTargets;
+use plonky2::plonk::vars::EvaluationVars;
+use plonky2::plonk::vars::EvaluationVarsBase;
+use plonky2::plonk::vars::EvaluationVarsBaseBatch;
+use plonky2::plonk::vars::EvaluationVarsBasePacked;
+use plonky2::util::serialization::Buffer;
+use plonky2::util::serialization::IoResult;
+use plonky2::util::serialization::Read;
+use plonky2::util::serialization::Write;
 
-/// A gate to perform a subtraction on 32-bit limbs: given `x`, `y`, and `borrow`, it returns
-/// the result `x - y - borrow` and, if this underflows, a new `borrow`. Inputs are not range-checked.
+/// A gate to perform a subtraction on 32-bit limbs: given `x`, `y`, and
+/// `borrow`, it returns the result `x - y - borrow` and, if this underflows, a
+/// new `borrow`. Inputs are not range-checked.
 #[derive(Copy, Clone, Debug)]
 pub struct U32SubtractionGate<F: RichField + Extendable<D>, const D: usize> {
     pub num_ops: usize,
@@ -183,10 +193,10 @@ impl<F: RichField + Extendable<D>, const D: usize> Gate<F, D> for U32Subtraction
         constraints
     }
 
-    fn generators(&self, row: usize, _local_constants: &[F]) -> Vec<WitnessGeneratorRef<F,D>> {
+    fn generators(&self, row: usize, _local_constants: &[F]) -> Vec<WitnessGeneratorRef<F, D>> {
         (0..self.num_ops)
             .map(|i| {
-                let g = WitnessGeneratorRef::<F,D>::new(
+                let g = WitnessGeneratorRef::<F, D>::new(
                     U32SubtractionGenerator {
                         gate: *self,
                         row,
@@ -216,11 +226,11 @@ impl<F: RichField + Extendable<D>, const D: usize> Gate<F, D> for U32Subtraction
         self.num_ops * (3 + Self::num_limbs())
     }
 
-    fn serialize(&self, dst: &mut Vec<u8>, _common_data: &CommonCircuitData<F, D>) -> IoResult<()>{
+    fn serialize(&self, dst: &mut Vec<u8>, _common_data: &CommonCircuitData<F, D>) -> IoResult<()> {
         dst.write_usize(self.num_ops)
     }
 
-    fn deserialize(src: &mut Buffer, _common_data: &CommonCircuitData<F, D> ) -> IoResult<Self>
+    fn deserialize(src: &mut Buffer, _common_data: &CommonCircuitData<F, D>) -> IoResult<Self>
     where
         Self: Sized,
     {
@@ -282,7 +292,7 @@ struct U32SubtractionGenerator<F: RichField + Extendable<D>, const D: usize> {
     _phantom: PhantomData<F>,
 }
 
-impl<F: RichField + Extendable<D>, const D: usize> SimpleGenerator<F,D>
+impl<F: RichField + Extendable<D>, const D: usize> SimpleGenerator<F, D>
     for U32SubtractionGenerator<F, D>
 {
     fn dependencies(&self) -> Vec<Target> {
@@ -346,13 +356,13 @@ impl<F: RichField + Extendable<D>, const D: usize> SimpleGenerator<F,D>
         "U32SubtractionGenerator".to_string()
     }
 
-    fn serialize(&self, dst: &mut Vec<u8>, common_data: &CommonCircuitData<F, D>) -> IoResult<()>{
+    fn serialize(&self, dst: &mut Vec<u8>, common_data: &CommonCircuitData<F, D>) -> IoResult<()> {
         self.gate.serialize(dst, common_data)?;
         dst.write_usize(self.row)?;
         dst.write_usize(self.i)
     }
 
-    fn deserialize(src: &mut Buffer, common_data: &CommonCircuitData<F, D> ) -> IoResult<Self>
+    fn deserialize(src: &mut Buffer, common_data: &CommonCircuitData<F, D>) -> IoResult<Self>
     where
         Self: Sized,
     {
@@ -373,10 +383,13 @@ mod tests {
     use anyhow::Result;
     use plonky2::field::extension::quartic::QuarticExtension;
     use plonky2::field::goldilocks_field::GoldilocksField;
-    use plonky2::field::types::{PrimeField64, Sample};
-    use plonky2::gates::gate_testing::{test_eval_fns, test_low_degree};
+    use plonky2::field::types::PrimeField64;
+    use plonky2::field::types::Sample;
+    use plonky2::gates::gate_testing::test_eval_fns;
+    use plonky2::gates::gate_testing::test_low_degree;
     use plonky2::hash::hash_types::HashOut;
-    use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
+    use plonky2::plonk::config::GenericConfig;
+    use plonky2::plonk::config::PoseidonGoldilocksConfig;
     use rand::rngs::OsRng;
     use rand::Rng;
 
