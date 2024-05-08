@@ -12,6 +12,6 @@ pub async fn run(args: RPCServerArgs) -> Result<()> {
 ",
         build::PKG_VERSION
     );
-    city_rollup_core_node::handler::start_city_rollup_rpc_server(args).await?;
+    city_rollup_core_node::handler::run(args).await?;
     Ok(())
 }

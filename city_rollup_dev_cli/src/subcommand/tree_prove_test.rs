@@ -46,6 +46,7 @@ fn gen_user_registration_proofs<S: KVQBinaryStore>(
         .collect()
 }
 
+#[allow(dead_code)]
 fn test_basic(args: &TreeProveTestArgs) -> Result<()> {
     const D: usize = 2;
     type C = PoseidonGoldilocksConfig;
