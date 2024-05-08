@@ -4,9 +4,9 @@ use city_common_circuit::{
         zk_signature_wrapper::ZKSignatureWrapperCircuit,
     },
     proof_minifier::pm_core::get_circuit_fingerprint_generic,
-    treeprover::aggregation::state_transition_track_events::{
+    treeprover::{aggregation::state_transition_track_events::{
         AggStateTrackableWithEventsInput, StateTransitionWithEvents,
-    },
+    }, wrapper::TreeProverLeafCircuitWrapper},
 };
 use city_crypto::hash::{
     merkle::core::DeltaMerkleProofCore, qhashout::QHashOut, traits::hasher::MerkleZeroHasher,
@@ -217,3 +217,6 @@ where
         self.prove_base(input, &signature_proof)
     }
 }
+
+pub type WCRAddL1WithdrawalCircuit<C, const D: usize> =
+    TreeProverLeafCircuitWrapper<CRAddL1WithdrawalCircuit<C, D>, C, D>;

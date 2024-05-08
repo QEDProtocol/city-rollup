@@ -38,6 +38,7 @@ pub trait QProofStoreWriterAsync {
     async fn set_proof_by_id<C: GenericConfig<D>, const D: usize>(
         &mut self,
         id: QProvingJobDataID,
+        proof: &ProofWithPublicInputs<C::F, C, D>,
     ) -> anyhow::Result<()>;
 
     async fn inc_counter_by_id<C: GenericConfig<D>, const D: usize>(

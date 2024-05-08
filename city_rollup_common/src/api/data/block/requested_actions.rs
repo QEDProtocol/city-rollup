@@ -96,6 +96,8 @@ pub struct CityAddWithdrawalRequest {
     pub value: u64,
     pub nonce: u64,
 
+    pub withdrawal_id: u64,
+
     pub destination_type: u8,
     pub destination: Hash160,
     pub signature_proof_id: QProvingJobDataID,
@@ -106,6 +108,7 @@ impl CityAddWithdrawalRequest {
         user_id: u64,
         value: u64,
         nonce: u64,
+        withdrawal_id: u64,
         destination_type: u8,
         destination: Hash160,
         signature_proof_id: QProvingJobDataID,
@@ -115,6 +118,7 @@ impl CityAddWithdrawalRequest {
             user_id,
             value,
             nonce,
+            withdrawal_id,
             destination_type,
             destination,
             signature_proof_id,
@@ -141,14 +145,18 @@ impl CityProcessWithdrawalRequest {
 #[serde(bound = "")]
 pub struct CityRegisterUserRequest<F: RichField> {
     request_type: u8,
+    pub user_id: u64,
     pub public_key: QHashOut<F>,
+    pub rpc_node_id: u64,
 }
 
 impl<F: RichField> CityRegisterUserRequest<F> {
-    pub fn new(public_key: QHashOut<F>) -> Self {
+    pub fn new(user_id: u64, rpc_node_id: u64, public_key: QHashOut<F>) -> Self {
         Self {
             request_type: 5,
+            user_id,
             public_key,
+            rpc_node_id
         }
     }
 }
