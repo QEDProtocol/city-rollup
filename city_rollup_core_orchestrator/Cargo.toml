@@ -22,10 +22,13 @@ city_crypto           = { path = "../city_crypto" }
 city_common_circuit   = { path = "../city_common_circuit" }
 city_common           = { path = "../city_common" }
 city_rollup_common    = { path = "../city_rollup_common" }
+city_rollup_circuit    = { path = "../city_rollup_circuit" }
 city_macros    = { path = "../city_macros" }
 city_rollup_worker_dispatch    = { path = "../city_rollup_worker_dispatch" }
+kvq_store_redb    = { path = "../kvq_store_redb" }
 tokio                 = { workspace = true }
 redis                 = { workspace = true }
+redb = {workspace = true}
 
 [dev-dependencies]
 criterion = "0.5.1"

@@ -5,7 +5,7 @@ use city_common_circuit::{
         zk_signature_wrapper::ZKSignatureWrapperCircuit,
     },
     proof_minifier::pm_core::get_circuit_fingerprint_generic,
-    treeprover::aggregation::state_transition::{AggStateTrackableInput, AggStateTransition},
+    treeprover::{aggregation::state_transition::{AggStateTrackableInput, AggStateTransition}, wrapper::TreeProverLeafCircuitWrapper},
 };
 use city_crypto::hash::{merkle::core::DeltaMerkleProofCore, qhashout::QHashOut};
 use city_rollup_common::{
@@ -276,3 +276,6 @@ where
         self.prove_base(input, &signature_proof)
     }
 }
+
+pub type WCRL2TransferCircuit<C, const D: usize> =
+    TreeProverLeafCircuitWrapper<CRL2TransferCircuit<C, D>, C, D>;

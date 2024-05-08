@@ -23,7 +23,7 @@ use city_rollup_circuit::{
 };
 use city_rollup_common::{
     introspection::rollup::constants::{
-        NETWORK_MAGIC_DOGE_MAINNET, NETWORK_MAGIC_DOGE_REGTEST, NETWORK_MAGIC_DOGE_TESTNET,
+        get_network_magic_for_str, NETWORK_MAGIC_DOGE_MAINNET, NETWORK_MAGIC_DOGE_REGTEST, NETWORK_MAGIC_DOGE_TESTNET
     },
     qworker::memory_proof_store::SimpleProofStoreMemory,
 };
@@ -35,14 +35,6 @@ use plonky2::{
     plonk::{config::PoseidonGoldilocksConfig, proof::ProofWithPublicInputs},
 };
 
-fn get_network_magic_for_str(network: String) -> anyhow::Result<u64> {
-    match network.as_str() {
-        "dogeregtest" => Ok(NETWORK_MAGIC_DOGE_REGTEST),
-        "dogetestnet" => Ok(NETWORK_MAGIC_DOGE_TESTNET),
-        "dogemainnet" => Ok(NETWORK_MAGIC_DOGE_MAINNET),
-        _ => Err(anyhow::anyhow!("Invalid network {}", network)),
-    }
-}
 
 fn gen_user_registration_proofs<S: KVQBinaryStore>(
     store: &mut S,

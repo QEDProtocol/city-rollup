@@ -12,7 +12,6 @@ pub async fn run(args: L2WorkerArgs) -> Result<()> {
 ",
         build::PKG_VERSION
     );
-
     city_rollup_core_worker::worker::run(args).await?;
     Ok(())
 }

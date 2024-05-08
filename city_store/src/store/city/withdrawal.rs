@@ -68,11 +68,10 @@ impl<S: KVQBinaryStore> CityStore<S> {
     pub fn add_withdrawal_to_tree_from_request(
         store: &mut S,
         checkpoint_id: u64,
-        withdrawal_id: u64,
         req: &CityAddWithdrawalRequest,
     ) -> anyhow::Result<CityDeltaMerkleProof> {
         let withdrawal = CityL1Withdrawal {
-            withdrawal_id,
+            withdrawal_id: req.withdrawal_id,
             address: req.destination,
             address_type: req.destination_type,
             value: req.value,

@@ -15,6 +15,6 @@ pub trait KeyValueStoreWithInc {
 }
 #[async_trait]
 pub trait ProvingDispatcher: KeyValueStoreWithInc {
-    async fn dispatch(&mut self, topic: impl Into<u64> + Send + 'static, key: &[u8]) -> anyhow::Result<()>;
+    async fn dispatch<const Q_KIND: u8>(&mut self, topic: impl Into<u64> + Send + 'static, key: &[u8]) -> anyhow::Result<()>;
 }
 

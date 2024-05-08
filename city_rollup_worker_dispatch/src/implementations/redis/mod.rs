@@ -2,12 +2,20 @@ use std::{fmt::Display, time::Duration};
 
 use anyhow::Result;
 use async_trait::async_trait;
+use city_rollup_common::qworker::{
+    job_id::QProvingJobDataID,
+    proof_store::{QProofStoreReaderAsync, QProofStoreWriterAsync},
+};
+use plonky2::plonk::proof::ProofWithPublicInputs;
 use redis::{AsyncCommands, RedisResult, ToRedisArgs};
 use rsmq_async::{PooledRsmq, RedisConnectionManager, RsmqConnection, RsmqMessage};
 
-use crate::traits::{
-    proving_dispatcher::{KeyValueStoreWithInc, ProvingDispatcher},
-    proving_worker::ProvingWorkerListener,
+use crate::{
+    implementations::redis::rollup_key::{PROOFS, PROOF_COUNTERS},
+    traits::{
+        proving_dispatcher::{KeyValueStoreWithInc, ProvingDispatcher},
+        proving_worker::ProvingWorkerListener,
+    },
 };
 use bb8_redis::bb8::{self, PooledConnection};
 
@@ -20,14 +28,13 @@ pub struct RedisStore {
     queue: PooledRsmq,
 }
 
-pub const Q_PREFIX: &'static str = "tasks";
 pub const Q_HIDDEN: Option<Duration> = Some(Duration::from_secs(600));
 pub const Q_DELAY: Option<u32> = None;
 pub const Q_CAP: Option<i32> = Some(-1);
 
-pub fn get_qname(topic: impl Into<u64>) -> String {
-    format!("{}:{}", Q_PREFIX, topic.into())
-}
+pub const Q_TX: u8 = 0;
+pub const Q_JOB: u8 = 1;
+pub const Q_DEBUG: u8 = 2;
 
 pub fn get_topic_from_qname(qname: &str) -> u32 {
     qname.split(":").next().unwrap_or("").parse().unwrap()
@@ -106,8 +113,12 @@ impl KeyValueStoreWithInc for RedisStore {
 
 #[async_trait]
 impl ProvingDispatcher for RedisStore {
-    async fn dispatch(&mut self, topic: impl Into<u64> + Send + 'static, value: &[u8]) -> Result<()> {
-        let qname = get_qname(topic);
+    async fn dispatch<const Q_KIND: u8>(
+        &mut self,
+        topic: impl Into<u64> + Send + 'static,
+        value: &[u8],
+    ) -> Result<()> {
+        let qname = format!("{}:{}", Q_KIND, topic.into());
         if matches!(
             self.queue.get_queue_attributes(&qname).await,
             Err(rsmq_async::RsmqError::QueueNotFound)
@@ -125,12 +136,18 @@ impl ProvingDispatcher for RedisStore {
 
 #[async_trait]
 impl ProvingWorkerListener for RedisStore {
-    async fn subscribe(&mut self, _topic: u32) -> anyhow::Result<()> {
+    async fn subscribe<const Q_KIND: u8>(
+        &mut self,
+        _topic: impl Into<u64> + Send + 'static,
+    ) -> anyhow::Result<()> {
         Ok(())
     }
 
-    async fn get_next_message(&mut self, topic: u32) -> anyhow::Result<Vec<u8>> {
-        let qname = get_qname(topic);
+    async fn get_next_message<const Q_KIND: u8>(
+        &mut self,
+        topic: impl Into<u64> + Send + 'static,
+    ) -> anyhow::Result<Vec<u8>> {
+        let qname = format!("{}:{}", Q_KIND, topic.into());
         match self
             .queue
             .receive_message::<Vec<u8>>(&qname, Q_HIDDEN)
@@ -139,5 +156,39 @@ impl ProvingWorkerListener for RedisStore {
             Some(RsmqMessage { message, .. }) => Ok(message),
             None => Err(anyhow::anyhow!("No message")),
         }
+    }
+}
+
+#[async_trait]
+impl QProofStoreReaderAsync for RedisStore {
+    async fn get_proof_by_id<C: plonky2::plonk::config::GenericConfig<D>, const D: usize>(
+        &self,
+        id: QProvingJobDataID,
+    ) -> anyhow::Result<ProofWithPublicInputs<C::F, C, D>> {
+        let mut conn = self.get_connection().await?;
+        let data: Vec<u8> = conn.hget(PROOFS, <[u8; 24]>::from(&id).to_vec()).await?;
+        Ok(bincode::deserialize(&data)?)
+    }
+}
+
+#[async_trait]
+impl QProofStoreWriterAsync for RedisStore {
+    async fn set_proof_by_id<C: plonky2::plonk::config::GenericConfig<D>, const D: usize>(
+        &mut self,
+        id: QProvingJobDataID,
+        proof: &ProofWithPublicInputs<C::F, C, D>
+    ) -> anyhow::Result<()> {
+        let mut conn = self.get_connection().await?;
+        conn.hset_nx(PROOFS, <[u8; 24]>::from(&id).to_vec(), bincode::serialize(&proof)?).await?;
+        Ok(())
+    }
+
+    async fn inc_counter_by_id<C: plonky2::plonk::config::GenericConfig<D>, const D: usize>(
+        &mut self,
+        id: QProvingJobDataID,
+    ) -> anyhow::Result<u32> {
+        let mut conn = self.get_connection().await?;
+        let value: u32 = conn.hincr(PROOF_COUNTERS, <[u8; 24]>::from(&id).to_vec(), 1).await?;
+        Ok(value)
     }
 }

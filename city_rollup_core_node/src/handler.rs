@@ -5,17 +5,18 @@ use city_common::cli::args::RPCServerArgs;
 use city_common_circuit::circuits::zk_signature::verify_standard_wrapped_zk_signature_proof;
 use city_rollup_common::{
     api::data::block::requested_actions::{
-        CityAddWithdrawalRequest, CityClaimDepositRequest, CityTokenTransferRequest,
+        CityAddWithdrawalRequest, CityClaimDepositRequest, CityRegisterUserRequest,
+        CityTokenTransferRequest,
     },
-    qworker::job_id::QProvingJobDataID,
+    qworker::{job_id::QProvingJobDataID, proof_store::QProofStoreWriterAsync},
 };
 use city_rollup_worker_dispatch::{
     implementations::redis::{
         rollup_key::{
-            LAST_BLOCK_ID, SIGNATURE_PROOF, TOKEN_TRANSFER_COUNTER, USER_COUNTER, USER_ID,
-            USER_PUBKEY, WITHDRWAL_COUNTER,
+            LAST_BLOCK_ID, TOKEN_TRANSFER_COUNTER, USER_COUNTER, USER_ID, USER_PUBKEY,
+            WITHDRWAL_COUNTER,
         },
-        RedisStore,
+        RedisStore, Q_DEBUG, Q_TX,
     },
     traits::{
         proving_dispatcher::{KeyValueStoreWithInc, ProvingDispatcher},
@@ -78,23 +79,24 @@ impl CityRollupRPCServerHandler {
                 String::new()
             }
             RequestParams::Push((topic, value)) => {
-                self.store.dispatch(topic, &value).await?;
+                self.store.dispatch::<Q_DEBUG>(topic, &value).await?;
                 String::new()
             }
-            RequestParams::Pull(topic) => hex::encode(self.store.get_next_message(topic).await?),
+            RequestParams::Pull(topic) => {
+                hex::encode(self.store.get_next_message::<Q_DEBUG>(topic).await?)
+            }
 
             // User
             RequestParams::TokenTransfer(req) => {
                 let mut pubkey_bytes: Vec<u8> = self.store.hget(USER_PUBKEY, req.user_id).await?;
                 pubkey_bytes.reverse();
 
-                let signature_proof = req.signature_proof.clone();
-                spawn_blocking(move || {
-                    verify_standard_wrapped_zk_signature_proof::<C, D>(
+                let signature_proof = spawn_blocking(move || {
+                    let proof = verify_standard_wrapped_zk_signature_proof::<C, D>(
                         pubkey_bytes,
-                        signature_proof,
+                        req.signature_proof,
                     )?;
-                    Ok::<_, anyhow::Error>(())
+                    Ok::<_, anyhow::Error>(proof)
                 })
                 .await??;
 
@@ -110,18 +112,15 @@ impl CityRollupRPCServerHandler {
                         transfer_counter - 1,
                     );
 
-                    conn.hset(
-                        SIGNATURE_PROOF,
-                        <[u8; 24]>::from(&signature_proof_id).to_vec(),
-                        &req.signature_proof,
-                    )
-                    .await?;
-
                     (signature_proof_id, block_id)
                 };
 
                 self.store
-                    .dispatch(
+                    .set_proof_by_id(signature_proof_id, &signature_proof)
+                    .await?;
+
+                self.store
+                    .dispatch::<Q_TX>(
                         block_id,
                         &serde_json::to_vec(&CityTokenTransferRequest::new(
                             req.user_id,
@@ -139,13 +138,12 @@ impl CityRollupRPCServerHandler {
                 let mut pubkey_bytes: Vec<u8> = self.store.hget(USER_PUBKEY, req.user_id).await?;
                 pubkey_bytes.reverse();
 
-                let signature_proof = req.signature_proof.clone();
-                spawn_blocking(move || {
-                    verify_standard_wrapped_zk_signature_proof::<C, D>(
+                let signature_proof = spawn_blocking(move || {
+                    let proof = verify_standard_wrapped_zk_signature_proof::<C, D>(
                         pubkey_bytes,
-                        signature_proof,
+                        req.signature_proof,
                     )?;
-                    Ok::<_, anyhow::Error>(())
+                    Ok::<_, anyhow::Error>(proof)
                 })
                 .await??;
 
@@ -159,18 +157,15 @@ impl CityRollupRPCServerHandler {
                         req.deposit_id,
                     );
 
-                    conn.hset(
-                        SIGNATURE_PROOF,
-                        <[u8; 24]>::from(&signature_proof_id).to_vec(),
-                        &req.signature_proof,
-                    )
-                    .await?;
-
                     (signature_proof_id, block_id)
                 };
 
                 self.store
-                    .dispatch(
+                    .set_proof_by_id(signature_proof_id, &signature_proof)
+                    .await?;
+
+                self.store
+                    .dispatch::<Q_TX>(
                         block_id,
                         &serde_json::to_vec(&CityClaimDepositRequest::new(
                             req.user_id,
@@ -190,45 +185,42 @@ impl CityRollupRPCServerHandler {
                 let mut pubkey_bytes: Vec<u8> = self.store.hget(USER_PUBKEY, req.user_id).await?;
                 pubkey_bytes.reverse();
 
-                let signature_proof = req.signature_proof.clone();
-                spawn_blocking(move || {
-                    verify_standard_wrapped_zk_signature_proof::<C, D>(
+                let signature_proof = spawn_blocking(move || {
+                    let proof = verify_standard_wrapped_zk_signature_proof::<C, D>(
                         pubkey_bytes,
-                        signature_proof,
+                        req.signature_proof,
                     )?;
-                    Ok::<_, anyhow::Error>(())
+                    Ok::<_, anyhow::Error>(proof)
                 })
                 .await??;
 
-                let (signature_proof_id, block_id) = {
+                let (signature_proof_id, block_id, withdrawal_id) = {
                     let mut conn = self.store.get_connection().await?;
                     let block_id: u64 = conn.get(LAST_BLOCK_ID).await.unwrap_or(0);
                     let withdrawal_counter: u32 =
                         conn.incr(WITHDRWAL_COUNTER, 1).await.unwrap_or(1);
+                    let withdrawal_id = withdrawal_counter - 1;
 
                     let signature_proof_id = QProvingJobDataID::withdrawal_signature_proof(
                         self.args.rpc_node_id,
                         block_id,
-                        withdrawal_counter - 1,
+                        withdrawal_id,
                     );
 
-                    conn.hset(
-                        SIGNATURE_PROOF,
-                        <[u8; 24]>::from(&signature_proof_id).to_vec(),
-                        &req.signature_proof,
-                    )
+                    (signature_proof_id, block_id, withdrawal_id)
+                };
+                self.store
+                    .set_proof_by_id(signature_proof_id, &signature_proof)
                     .await?;
 
-                    (signature_proof_id, block_id)
-                };
-
                 self.store
-                    .dispatch(
+                    .dispatch::<Q_TX>(
                         block_id,
                         &serde_json::to_vec(&CityAddWithdrawalRequest::new(
                             req.user_id,
                             req.value,
                             req.nonce,
+                            withdrawal_id.into(),
                             req.destination_type,
                             req.destination,
                             signature_proof_id,
@@ -241,29 +233,47 @@ impl CityRollupRPCServerHandler {
                 let mut pubkey_bytes = req.public_key.0.to_bytes();
                 pubkey_bytes.reverse();
 
-                let mut pipeline = redis::pipe();
-                pipeline.atomic();
+                let (user_id, block_id) = {
+                    let mut pipeline = redis::pipe();
+                    pipeline.atomic();
 
-                let mut conn = self.store.get_connection().await?;
-                let count: u64 = conn.get(USER_COUNTER).await.unwrap_or(0);
-                let user_id: Option<u64> = conn.hget(USER_ID, &pubkey_bytes).await?;
-                let [user_id]: [u64; 1] = if user_id.is_none() {
-                    pipeline
-                        .hset(USER_ID, &pubkey_bytes, count)
-                        .ignore()
-                        .hset(USER_PUBKEY, count, &pubkey_bytes)
-                        .ignore()
-                        .incr(USER_COUNTER, 1)
-                        .ignore()
-                        .hget(USER_ID, &pubkey_bytes)
-                        .query_async(&mut *conn)
-                        .await?
-                } else {
-                    pipeline
-                        .hget(USER_ID, &pubkey_bytes)
-                        .query_async(&mut *conn)
-                        .await?
+                    let mut conn = self.store.get_connection().await?;
+                    let count: u64 = conn.get(USER_COUNTER).await.unwrap_or(0);
+                    let user_id: Option<u64> = conn.hget(USER_ID, &pubkey_bytes).await?;
+                    let [user_id]: [u64; 1] = if user_id.is_none() {
+                        pipeline
+                            .hset(USER_ID, &pubkey_bytes, count)
+                            .ignore()
+                            .hset(USER_PUBKEY, count, &pubkey_bytes)
+                            .ignore()
+                            .incr(USER_COUNTER, 1)
+                            .ignore()
+                            .hget(USER_ID, &pubkey_bytes)
+                            .query_async(&mut *conn)
+                            .await?
+                    } else {
+                        pipeline
+                            .hget(USER_ID, &pubkey_bytes)
+                            .query_async(&mut *conn)
+                            .await?
+                    };
+
+                    let block_id: u64 = conn.get(LAST_BLOCK_ID).await.unwrap_or(0);
+
+                    (user_id, block_id)
                 };
+
+                self.store
+                    .dispatch::<Q_TX>(
+                        block_id,
+                        &serde_json::to_vec(&CityRegisterUserRequest::new(
+                            user_id,
+                            self.args.rpc_node_id.into(),
+                            req.public_key,
+                        ))?,
+                    )
+                    .await?;
+
                 user_id.to_string()
             }
         };

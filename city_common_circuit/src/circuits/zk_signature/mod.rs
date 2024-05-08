@@ -126,7 +126,7 @@ where
 pub fn verify_standard_wrapped_zk_signature_proof<C: GenericConfig<D> + 'static, const D: usize>(
     public_key: Vec<u8>,
     signature_proof: Vec<u8>,
-) -> anyhow::Result<()>
+) -> anyhow::Result<ProofWithPublicInputs::<C::F, C, D>>
 where
     C::Hasher: AlgebraicHasher<C::F>,
 {
@@ -137,9 +137,9 @@ where
         verifier_only: circuit.get_verifier_config_ref().clone(),
         common: circuit.get_common_circuit_data_ref().clone(),
     };
-    verifier.verify(proof)?;
+    verifier.verify(proof.clone())?;
 
-    Ok(())
+    Ok(proof)
 }
 
 pub fn verify_l1_signature_proof<C: GenericConfig<D> + 'static, const D: usize>(

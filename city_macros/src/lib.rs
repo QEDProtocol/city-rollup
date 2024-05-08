@@ -134,8 +134,23 @@ macro_rules! impl_kvq_serialize {
 }
 
 #[macro_export]
+macro_rules! define_table {
+    ($name:ident, $key:ty, $value:ty) => {
+        pub const $name: TableDefinition<$key, $value> = TableDefinition::new(stringify!($name));
+    };
+}
+
+#[macro_export]
+macro_rules! define_multimap_table {
+    ($name:ident, $key:ty, $value:ty) => {
+        pub const $name: MultimapTableDefinition<$key, $value> =
+            MultimapTableDefinition::new(stringify!($name));
+    };
+}
+
+#[macro_export]
 macro_rules! async_infinite_loop {
-    ($($body:tt)*) => {
+    ($interval:expr, $($body:tt)*) => {
         loop {
             if let Err(err) = (|| async {
                 $($body)*
@@ -144,13 +159,15 @@ macro_rules! async_infinite_loop {
             })().await {
                 println!("Error: {:?}", err);
             }
+
+            tokio::time::sleep(Duration::from_millis($interval)).await;
         }
     };
 }
 
 #[macro_export]
 macro_rules! spawn_async_infinite_loop {
-    ($($body:tt)*) => {
+    ($interval:expr, $($body:tt)*) => {
         std::thread::spawn(move || {
           let rt = tokio::runtime::Builder::new_multi_thread()
             .enable_all()
@@ -166,6 +183,7 @@ macro_rules! spawn_async_infinite_loop {
                     })().await {
                         println!("Error: {:?}", err);
                     }
+                    tokio::time::sleep(Duration::from_millis($interval)).await;
                 }
             });
         })
