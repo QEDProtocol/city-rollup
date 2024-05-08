@@ -32,7 +32,7 @@ pub struct RedisStore {
 }
 
 pub const Q_HIDDEN: Option<Duration> = Some(Duration::from_secs(600));
-pub const Q_DELAY: Option<u32> = None;
+pub const Q_DELAY: Option<Duration> = None;
 pub const Q_CAP: Option<i32> = Some(-1);
 
 pub const Q_TX: u8 = 0;
@@ -121,7 +121,7 @@ impl ProvingDispatcher for RedisStore {
         topic: impl Into<u64> + Send + 'static,
         value: &[u8],
     ) -> Result<()> {
-        let qname = format!("{}:{}", Q_KIND, topic.into());
+        let qname = format!("{}_{}", Q_KIND, topic.into());
         if matches!(
             self.queue.get_queue_attributes(&qname).await,
             Err(rsmq_async::RsmqError::QueueNotFound)
@@ -129,9 +129,10 @@ impl ProvingDispatcher for RedisStore {
             // worker should be able to finish in 10 minutes, otherwise
             // other worker will pick up the task
             self.queue
-                .create_queue(&qname, Q_HIDDEN, Q_HIDDEN, Q_CAP)
+                .create_queue(&qname, Q_HIDDEN, Q_DELAY, Q_CAP)
                 .await?;
         }
+        println!("dispatching message to queue: {}", qname);
         self.queue.send_message(&qname, value, None).await?;
         Ok(())
     }
@@ -150,12 +151,8 @@ impl ProvingWorkerListener for RedisStore {
         &mut self,
         topic: impl Into<u64> + Send + 'static,
     ) -> anyhow::Result<Vec<u8>> {
-        let qname = format!("{}:{}", Q_KIND, topic.into());
-        match self
-            .queue
-            .receive_message::<Vec<u8>>(&qname, Q_HIDDEN)
-            .await?
-        {
+        let qname = format!("{}_{}", Q_KIND, topic.into());
+        match self.queue.pop_message(&qname).await? {
             Some(RsmqMessage { message, .. }) => Ok(message),
             None => Err(anyhow::anyhow!("No message")),
         }

@@ -250,7 +250,7 @@ impl CityRollupRPCServerHandler {
                     let mut conn = self.store.get_connection().await?;
                     let count: u64 = conn.get(USER_COUNTER).await.unwrap_or(0);
                     let user_id: Option<u64> = conn.hget(USER_ID, &pubkey_bytes).await?;
-                    let [user_id]: [u64; 1] = if user_id.is_none() {
+                    let (user_id, block_id): (u64, u64) = if user_id.is_none() {
                         pipeline
                             .hset(USER_ID, &pubkey_bytes, count)
                             .ignore()
@@ -259,16 +259,16 @@ impl CityRollupRPCServerHandler {
                             .incr(USER_COUNTER, 1)
                             .ignore()
                             .hget(USER_ID, &pubkey_bytes)
+                            .get(LAST_BLOCK_ID)
                             .query_async(&mut *conn)
                             .await?
                     } else {
                         pipeline
                             .hget(USER_ID, &pubkey_bytes)
+                            .get(LAST_BLOCK_ID)
                             .query_async(&mut *conn)
                             .await?
                     };
-
-                    let block_id: u64 = conn.get(LAST_BLOCK_ID).await.unwrap_or(0);
 
                     (user_id, block_id)
                 };
@@ -302,7 +302,7 @@ impl CityRollupRPCServerHandler {
     }
 }
 
-pub async fn start_city_rollup_rpc_server(args: RPCServerArgs) -> anyhow::Result<()> {
+pub async fn run(args: RPCServerArgs) -> anyhow::Result<()> {
     let addr: SocketAddr = args.rollup_rpc_address.parse()?;
 
     let listener = TcpListener::bind(addr).await?;

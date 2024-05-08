@@ -9,12 +9,15 @@ use city_rollup_circuit::block_circuits::ops::register_user::CRUserRegistrationC
 use city_rollup_circuit::block_circuits::ops::register_user::WCRUserRegistrationCircuit;
 use city_rollup_common::introspection::rollup::constants::get_network_magic_for_str;
 use city_rollup_common::qworker::job_id::QJobTopic;
+use city_rollup_common::qworker::job_id::QProvingJobDataID;
+use city_rollup_common::qworker::proof_store::QProofStoreWriterSync;
 use city_rollup_worker_dispatch::implementations::redis::RedisStore;
 use city_rollup_worker_dispatch::implementations::redis::Q_JOB;
 use city_rollup_worker_dispatch::traits::proving_worker::ProvingWorkerListener;
 use city_store::config::C;
 use city_store::config::D;
 use city_store::config::F;
+use tokio::task::spawn_blocking;
 
 use crate::proof_store::SyncRedisProofStore;
 
@@ -40,11 +43,23 @@ pub async fn run(args: L2WorkerArgs) -> anyhow::Result<()> {
             .get_next_message::<Q_JOB>(QJobTopic::GenerateStandardProof as u32)
             .await
         {
-            if let Ok(register_user) =
-                serde_json::from_slice::<CRUserRegistrationCircuitInput<F>>(&message)
+            println!("new job");
+            let mut proof_store = proof_store.clone();
+            if let Ok((job_id, register_user)) = serde_json::from_slice::<(
+                QProvingJobDataID,
+                CRUserRegistrationCircuitInput<F>,
+            )>(&message)
             {
-                // TODO: spawn blocking
-                op_register_user.prove_with_proof_store_sync(&proof_store, &register_user)?;
+                let op_register_user = op_register_user.clone();
+                spawn_blocking(move || {
+                    let proof = op_register_user
+                        .prove_with_proof_store_sync(&proof_store, &register_user)?;
+                    println!("register_user proof generated");
+                    proof_store.set_proof_by_id(job_id, &proof)?;
+                    println!("register_user proof stored");
+                    Ok::<_, anyhow::Error>(())
+                })
+                .await??;
             }
         }
     });

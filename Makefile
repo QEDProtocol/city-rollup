@@ -24,6 +24,9 @@ test:
 dedup:
 	@cargo machete --fix
 
+.PHONY: run
+run: run-orchestrator run-rpc-server run-l2-worker
+
 .PHONY: run-rpc-server
 run-rpc-server:
 	@RUST_BACKTRACE=${TRACE_ENABLED} cargo run --package city-rollup-cli rpc-server
@@ -80,6 +83,7 @@ shutdown:
 		--remove-orphans > /dev/null 2>&1 || true
 	@sudo rm -fr chaindata || true
 	@sudo rm -fr redis-data || true
+	@sudo rm -fr db || true
 
 .PHONY: relaunch
 relaunch: shutdown launch
