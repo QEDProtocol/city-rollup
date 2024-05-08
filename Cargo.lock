@@ -166,12 +166,6 @@ checksum = "4c7f02d4ea65f2c1853089ffd8d2787bdbc63de2f0d29dedbcf8ccdfa0ccd4cf"
 
 [[package]]
 name = "base64"
-version = "0.13.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9e1b586273c5702936fe7b7d6896644d8be71e6314cfe09d3167c95f712589e8"
-
-[[package]]
-name = "base64"
 version = "0.21.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9d297deb1925b89f2ccc13d7635fa0714f12c87adce1c75356b39ca9b7178567"
@@ -260,30 +254,6 @@ dependencies = [
  "bitcoin-internals",
  "hex-conservative",
  "serde",
-]
-
-[[package]]
-name = "bitcoincore-rpc"
-version = "0.18.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8eb70725a621848c83b3809913d5314c0d20ca84877d99dd909504b564edab00"
-dependencies = [
- "bitcoincore-rpc-json",
- "jsonrpc",
- "log",
- "serde",
- "serde_json",
-]
-
-[[package]]
-name = "bitcoincore-rpc-json"
-version = "0.18.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "856ffbee2e492c23bca715d72ea34aae80d58400f2bda26a82015d6bc2ec3662"
-dependencies = [
- "bitcoin",
- "serde",
- "serde_json",
 ]
 
 [[package]]
@@ -393,27 +363,15 @@ name = "city-rollup-cli"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "bitcoincore-rpc",
  "city_common",
- "city_common_circuit",
- "city_crypto",
- "city_rollup_common",
  "city_rollup_core_node",
  "city_rollup_core_orchestrator",
  "city_rollup_core_worker",
  "clap",
  "dotenv",
- "hex",
- "k256",
- "plonky2",
- "rand",
- "serde",
- "serde_json",
- "serde_with",
  "shadow-rs",
  "thiserror",
  "tokio",
- "tracing",
 ]
 
 [[package]]
@@ -421,29 +379,20 @@ name = "city-rollup-dev-cli"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "bitcoincore-rpc",
  "city_common",
  "city_common_circuit",
  "city_crypto",
  "city_rollup_circuit",
  "city_rollup_common",
- "city_rollup_core_node",
- "city_rollup_core_orchestrator",
  "city_store",
  "clap",
  "dotenv",
- "hex",
- "k256",
  "kvq",
  "plonky2",
- "rand",
- "serde",
  "serde_json",
- "serde_with",
  "shadow-rs",
  "thiserror",
  "tokio",
- "tracing",
 ]
 
 [[package]]
@@ -451,33 +400,24 @@ name = "city-rollup-user-cli"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "bitcoincore-rpc",
  "city_common",
  "city_common_circuit",
  "city_crypto",
- "city_rollup_circuit",
  "city_rollup_common",
- "city_rollup_core_node",
  "clap",
  "dotenv",
- "hex",
- "k256",
  "plonky2",
- "rand",
  "serde",
  "serde_json",
- "serde_with",
  "shadow-rs",
  "thiserror",
  "tokio",
- "tracing",
 ]
 
 [[package]]
 name = "city_common"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "clap",
  "hex",
  "rand",
@@ -492,7 +432,6 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "async-trait",
- "bitcoin",
  "bitflags 2.5.0",
  "city_common",
  "city_crypto",
@@ -503,26 +442,15 @@ dependencies = [
  "hex",
  "hex-literal",
  "itertools 0.10.5",
- "k256",
- "kvq",
- "lazy_static",
  "log",
  "num",
  "plonky2",
- "postcard",
  "rand",
  "rand_chacha",
  "rayon",
- "reqwest",
- "ripemd",
  "serde",
  "serde_json",
- "serde_with",
- "sha2",
  "starkyx",
- "tokio",
- "unroll",
- "url",
 ]
 
 [[package]]
@@ -530,7 +458,6 @@ name = "city_crypto"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "bitflags 2.5.0",
  "city_common",
  "hex",
  "itertools 0.10.5",
@@ -562,14 +489,11 @@ dependencies = [
  "city_rollup_common",
  "criterion",
  "hashbrown 0.14.5",
- "hex",
  "hex-literal",
  "plonky2",
- "rand",
  "rand_chacha",
  "serde",
  "serde_json",
- "serde_with",
 ]
 
 [[package]]
@@ -585,10 +509,8 @@ dependencies = [
  "criterion",
  "hex",
  "hex-literal",
- "k256",
  "kvq",
  "plonky2",
- "rand",
  "rand_chacha",
  "reqwest",
  "serde",
@@ -603,33 +525,25 @@ name = "city_rollup_core_node"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "bitcoin",
  "bytes",
  "city_common",
  "city_common_circuit",
- "city_crypto",
- "city_rollup_circuit",
  "city_rollup_common",
  "city_rollup_worker_dispatch",
  "city_store",
  "criterion",
  "hex",
  "hex-literal",
- "http 0.2.12",
  "http-body-util",
  "hyper 1.3.1",
  "hyper-util",
- "k256",
  "plonky2",
- "rand",
  "rand_chacha",
  "redis",
- "reqwest",
  "serde",
  "serde_json",
  "serde_with",
  "tokio",
- "url",
 ]
 
 [[package]]
@@ -637,7 +551,6 @@ name = "city_rollup_core_orchestrator"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "bitcoin",
  "city_common",
  "city_common_circuit",
  "city_crypto",
@@ -647,22 +560,16 @@ dependencies = [
  "city_rollup_worker_dispatch",
  "city_store",
  "criterion",
- "hex",
  "hex-literal",
- "k256",
  "kvq",
  "kvq_store_redb",
  "plonky2",
- "rand",
  "rand_chacha",
  "redb",
  "redis",
- "reqwest",
  "serde",
  "serde_json",
- "serde_with",
  "tokio",
- "url",
 ]
 
 [[package]]
@@ -671,31 +578,22 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "bincode",
- "bitcoin",
  "city_common",
  "city_common_circuit",
- "city_crypto",
  "city_macros",
  "city_rollup_circuit",
  "city_rollup_common",
  "city_rollup_worker_dispatch",
  "city_store",
  "criterion",
- "hex",
  "hex-literal",
- "k256",
  "plonky2",
  "r2d2",
  "r2d2_redis",
- "rand",
  "rand_chacha",
  "redis",
- "reqwest",
- "serde",
  "serde_json",
- "serde_with",
  "tokio",
- "url",
 ]
 
 [[package]]
@@ -706,26 +604,17 @@ dependencies = [
  "async-trait",
  "bb8-redis",
  "bincode",
- "city_common",
- "city_crypto",
  "city_rollup_common",
  "criterion",
  "hex",
  "hex-literal",
- "k256",
  "plonky2",
  "postcard",
- "rand",
  "rand_chacha",
  "redis",
- "reqwest",
  "rsmq_async",
  "serde",
- "serde_json",
  "serde_repr",
- "serde_with",
- "tokio",
- "url",
 ]
 
 [[package]]
@@ -733,30 +622,15 @@ name = "city_store"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "bitflags 2.5.0",
  "city_common",
  "city_crypto",
  "city_rollup_common",
  "criterion",
- "env_logger",
- "hashbrown 0.14.5",
- "hex",
  "hex-literal",
- "itertools 0.10.5",
  "kvq",
- "kvq_store_redb",
- "lazy_static",
- "log",
- "num",
  "plonky2",
- "rand",
  "rand_chacha",
  "serde",
- "serde_json",
- "serde_with",
- "tokio",
- "unroll",
- "url",
 ]
 
 [[package]]
@@ -1701,17 +1575,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "jsonrpc"
-version = "0.14.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8128f36b47411cd3f044be8c1f5cc0c9e24d1d1bfdc45f0a57897b32513053f2"
-dependencies = [
- "base64 0.13.1",
- "serde",
- "serde_json",
-]
-
-[[package]]
 name = "k256"
 version = "0.13.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1742,7 +1605,6 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "city_macros",
- "hex",
  "plonky2",
  "serde",
  "serde_with",
@@ -2977,19 +2839,7 @@ checksum = "c3523ab5a71916ccf420eebdf5521fcef02141234bbc0b8a49f2fdc4544364ef"
 dependencies = [
  "log",
  "pin-project-lite",
- "tracing-attributes",
  "tracing-core",
-]
-
-[[package]]
-name = "tracing-attributes"
-version = "0.1.27"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "34704c8d6ebcbc939824180af020566b01a7c01f80641264eba0999f6c2b6be7"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.60",
 ]
 
 [[package]]
