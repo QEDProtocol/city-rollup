@@ -21,8 +21,9 @@ async-trait = { workspace = true }
 city_crypto           = { path = "../city_crypto" }
 city_common           = { path = "../city_common" }
 tokio                 = { workspace = true }
-redis = { version = "0.25.3", features = ["tokio-comp"] }
-
+redis                 = { workspace = true }
+rsmq_async            = { workspace = true }
+bb8-redis = {workspace = true}
 
 [dev-dependencies]
 criterion = "0.5.1"

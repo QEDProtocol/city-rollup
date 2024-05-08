@@ -16,12 +16,14 @@ pub struct RPCServerArgs {
     #[clap(
         env,
         long,
-        default_value = "redis://default:city@localhost:6379/0",
+        default_value = "redis://localhost:6379/0",
         env
     )]
     pub redis_uri: String,
     #[clap(short, env, long, default_value = "db", env)]
     pub db_path: String,
+    #[clap(short, env, long, default_value = "0", env)]
+    pub rpc_node_id: u32
 }
 
 #[derive(Clone, Args)]
@@ -40,7 +42,7 @@ pub struct OrchestratorArgs {
     #[clap(
         env,
         long,
-        default_value = "redis://default:city@localhost:6379/0",
+        default_value = "redis://localhost:6379/0",
         env
     )]
     pub redis_uri: String,
@@ -64,7 +66,7 @@ pub struct L2WorkerArgs {
     #[clap(
         env,
         long,
-        default_value = "redis://default:city@localhost:6379/0",
+        default_value = "redis://localhost:6379/0",
         env
     )]
     pub redis_uri: String,

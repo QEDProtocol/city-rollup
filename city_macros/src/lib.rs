@@ -134,16 +134,40 @@ macro_rules! impl_kvq_serialize {
 }
 
 #[macro_export]
-macro_rules! define_table {
-    ($name:ident, $key:ty, $value:ty) => {
-        pub const $name: TableDefinition<$key, $value> = TableDefinition::new(stringify!($name));
+macro_rules! async_infinite_loop {
+    ($($body:tt)*) => {
+        loop {
+            if let Err(err) = (|| async {
+                $($body)*
+
+                Ok::<_, anyhow::Error>(())
+            })().await {
+                println!("Error: {:?}", err);
+            }
+        }
     };
 }
 
 #[macro_export]
-macro_rules! define_multimap_table {
-    ($name:ident, $key:ty, $value:ty) => {
-        pub const $name: MultimapTableDefinition<$key, $value> =
-            MultimapTableDefinition::new(stringify!($name));
+macro_rules! spawn_async_infinite_loop {
+    ($($body:tt)*) => {
+        std::thread::spawn(move || {
+          let rt = tokio::runtime::Builder::new_multi_thread()
+            .enable_all()
+            .build()
+            .unwrap();
+
+            rt.block_on(async move {
+                loop {
+                    if let Err(err) = (|| async {
+                        $($body)*
+
+                        Ok::<_, anyhow::Error>(())
+                    })().await {
+                        println!("Error: {:?}", err);
+                    }
+                }
+            });
+        })
     };
 }

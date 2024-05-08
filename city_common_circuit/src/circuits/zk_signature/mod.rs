@@ -5,12 +5,14 @@ use city_rollup_common::introspection::rollup::signature::SimpleL2PrivateKey;
 use plonky2::{
     hash::hash_types::{HashOut, RichField},
     plonk::{
-        circuit_data::{CommonCircuitData, VerifierOnlyCircuitData},
-        config::{AlgebraicHasher, GenericConfig},
+        circuit_data::{CommonCircuitData, VerifierCircuitData, VerifierOnlyCircuitData},
+        config::{AlgebraicHasher, GenericConfig, GenericHashOut},
         proof::ProofWithPublicInputs,
     },
 };
 use serde::{Deserialize, Serialize};
+
+use crate::circuits::l1_secp256k1_signature::L1Secp256K1SignatureCircuit;
 
 use self::{
     fixed_public_key::ZKSignatureCircuitSimpleFixedPublicKey, inner::ZKSignatureCircuitInner,
@@ -119,4 +121,40 @@ where
     let public_key = SimpleL2PrivateKey::new(private_key).get_public_key::<C::Hasher>();
     let sig_circuit = ZKSignatureCircuit::<C, D>::new(public_key);
     sig_circuit.prove_base(private_key, action_hash)
+}
+
+pub fn verify_standard_wrapped_zk_signature_proof<C: GenericConfig<D> + 'static, const D: usize>(
+    public_key: Vec<u8>,
+    signature_proof: Vec<u8>,
+) -> anyhow::Result<()>
+where
+    C::Hasher: AlgebraicHasher<C::F>,
+{
+    let public_key = QHashOut::<C::F>::from_bytes(&public_key);
+    let circuit = ZKSignatureCircuit::<C, D>::new(public_key);
+    let proof = ProofWithPublicInputs::<C::F, C, D>::from_bytes(signature_proof, circuit.get_common_circuit_data_ref())?;
+    let verifier = VerifierCircuitData {
+        verifier_only: circuit.get_verifier_config_ref().clone(),
+        common: circuit.get_common_circuit_data_ref().clone(),
+    };
+    verifier.verify(proof)?;
+
+    Ok(())
+}
+
+pub fn verify_l1_signature_proof<C: GenericConfig<D> + 'static, const D: usize>(
+    signature_proof: Vec<u8>,
+) -> anyhow::Result<()>
+where
+    C::Hasher: AlgebraicHasher<C::F>,
+{
+    let circuit = L1Secp256K1SignatureCircuit::<C, D>::new();
+    let proof = ProofWithPublicInputs::<C::F, C, D>::from_bytes(signature_proof, circuit.get_common_circuit_data_ref())?;
+    let verifier = VerifierCircuitData {
+        verifier_only: circuit.get_verifier_config_ref().clone(),
+        common: circuit.get_common_circuit_data_ref().clone(),
+    };
+    verifier.verify(proof)?;
+
+    Ok(())
 }

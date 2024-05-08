@@ -19,6 +19,7 @@ pub type GoldilocksHashOut = QHashOut<GoldilocksField>;
 
 #[serde_as]
 #[derive(Serialize, Deserialize, PartialEq, Clone)]
+#[serde(transparent)]
 pub struct SerializableHashOut(#[serde_as(as = "serde_with::hex::Hex")] pub Vec<u8>);
 
 impl<F: RichField> Serialize for QHashOut<F> {
