@@ -1,4 +1,4 @@
-use std::time::Duration;
+use std::{fmt::Display, time::Duration};
 
 use anyhow::Result;
 use async_trait::async_trait;
@@ -25,8 +25,8 @@ pub const Q_HIDDEN: Option<Duration> = Some(Duration::from_secs(600));
 pub const Q_DELAY: Option<u32> = None;
 pub const Q_CAP: Option<i32> = Some(-1);
 
-pub fn get_qname(topic: u32) -> String {
-    format!("{}:{}", Q_PREFIX, topic)
+pub fn get_qname(topic: impl Into<u64>) -> String {
+    format!("{}:{}", Q_PREFIX, topic.into())
 }
 
 pub fn get_topic_from_qname(qname: &str) -> u32 {
@@ -106,7 +106,7 @@ impl KeyValueStoreWithInc for RedisStore {
 
 #[async_trait]
 impl ProvingDispatcher for RedisStore {
-    async fn dispatch(&mut self, topic: u32, value: &[u8]) -> Result<()> {
+    async fn dispatch(&mut self, topic: impl Into<u64> + Send + 'static, value: &[u8]) -> Result<()> {
         let qname = get_qname(topic);
         if matches!(
             self.queue.get_queue_attributes(&qname).await,

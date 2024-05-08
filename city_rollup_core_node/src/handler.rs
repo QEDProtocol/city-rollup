@@ -2,20 +2,18 @@ use std::net::SocketAddr;
 
 use bytes::{Buf, Bytes};
 use city_common::cli::args::RPCServerArgs;
-use city_common_circuit::circuits::zk_signature::{
-    verify_l1_signature_proof, verify_standard_wrapped_zk_signature_proof,
-};
+use city_common_circuit::circuits::zk_signature::verify_standard_wrapped_zk_signature_proof;
 use city_rollup_common::{
     api::data::block::requested_actions::{
         CityAddWithdrawalRequest, CityClaimDepositRequest, CityTokenTransferRequest,
     },
-    qworker::job_id::{QJobTopic, QProvingJobDataID},
+    qworker::job_id::QProvingJobDataID,
 };
 use city_rollup_worker_dispatch::{
     implementations::redis::{
         rollup_key::{
-            DEPOSIT_COUNTER, LAST_BLOCK_ID, SIGNATURE_PROOF, TOKEN_TRANSFER_COUNTER, USER_COUNTER,
-            USER_ID, USER_PUBKEY, WITHDRWAL_COUNTER,
+            LAST_BLOCK_ID, SIGNATURE_PROOF, TOKEN_TRANSFER_COUNTER, USER_COUNTER, USER_ID,
+            USER_PUBKEY, WITHDRWAL_COUNTER,
         },
         RedisStore,
     },
@@ -100,7 +98,7 @@ impl CityRollupRPCServerHandler {
                 })
                 .await??;
 
-                let signature_proof_id = {
+                let (signature_proof_id, block_id) = {
                     let mut conn = self.store.get_connection().await?;
                     let block_id: u64 = conn.get(LAST_BLOCK_ID).await.unwrap_or(0);
                     let transfer_counter: u32 =
@@ -119,12 +117,12 @@ impl CityRollupRPCServerHandler {
                     )
                     .await?;
 
-                    signature_proof_id
+                    (signature_proof_id, block_id)
                 };
 
                 self.store
                     .dispatch(
-                        QJobTopic::BlockUserSignatureProof as u32,
+                        block_id,
                         &serde_json::to_vec(&CityTokenTransferRequest::new(
                             req.user_id,
                             req.to,
@@ -138,18 +136,20 @@ impl CityRollupRPCServerHandler {
                 String::new()
             }
             RequestParams::ClaimDeposit(req) => {
-                // let mut pubkey_bytes: Vec<u8> = self.store.hget(USER_PUBKEY, req.user_id).await?;
-                // pubkey_bytes.reverse();
+                let mut pubkey_bytes: Vec<u8> = self.store.hget(USER_PUBKEY, req.user_id).await?;
+                pubkey_bytes.reverse();
 
-                // TODO: why no public_key
                 let signature_proof = req.signature_proof.clone();
                 spawn_blocking(move || {
-                    verify_l1_signature_proof::<C, D>(signature_proof)?;
+                    verify_standard_wrapped_zk_signature_proof::<C, D>(
+                        pubkey_bytes,
+                        signature_proof,
+                    )?;
                     Ok::<_, anyhow::Error>(())
                 })
                 .await??;
 
-                let signature_proof_id = {
+                let (signature_proof_id, block_id) = {
                     let mut conn = self.store.get_connection().await?;
                     let block_id: u64 = conn.get(LAST_BLOCK_ID).await.unwrap_or(0);
 
@@ -166,12 +166,12 @@ impl CityRollupRPCServerHandler {
                     )
                     .await?;
 
-                    signature_proof_id
+                    (signature_proof_id, block_id)
                 };
 
                 self.store
                     .dispatch(
-                        QJobTopic::BlockUserSignatureProof as u32,
+                        block_id,
                         &serde_json::to_vec(&CityClaimDepositRequest::new(
                             req.user_id,
                             req.nonce,
@@ -200,7 +200,7 @@ impl CityRollupRPCServerHandler {
                 })
                 .await??;
 
-                let signature_proof_id = {
+                let (signature_proof_id, block_id) = {
                     let mut conn = self.store.get_connection().await?;
                     let block_id: u64 = conn.get(LAST_BLOCK_ID).await.unwrap_or(0);
                     let withdrawal_counter: u32 =
@@ -219,12 +219,12 @@ impl CityRollupRPCServerHandler {
                     )
                     .await?;
 
-                    signature_proof_id
+                    (signature_proof_id, block_id)
                 };
 
                 self.store
                     .dispatch(
-                        QJobTopic::BlockUserSignatureProof as u32,
+                        block_id,
                         &serde_json::to_vec(&CityAddWithdrawalRequest::new(
                             req.user_id,
                             req.value,
