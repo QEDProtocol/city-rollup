@@ -1,8 +1,11 @@
 use core::ops::Mul;
 
-use plonky2::field::types::{Field, PrimeField};
+use plonky2::field::types::Field;
+use plonky2::field::types::PrimeField;
 
-use super::curve_types::{Curve, CurveScalar, ProjectivePoint};
+use super::curve_types::Curve;
+use super::curve_types::CurveScalar;
+use super::curve_types::ProjectivePoint;
 
 const WINDOW_BITS: usize = 4;
 const BASE: usize = 1 << WINDOW_BITS;

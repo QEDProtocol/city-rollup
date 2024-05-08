@@ -1,14 +1,17 @@
-use city_crypto::signature::secp256k1::curve::curve_types::{AffinePoint, Curve, CurveScalar};
+use city_crypto::signature::secp256k1::curve::curve_types::AffinePoint;
+use city_crypto::signature::secp256k1::curve::curve_types::Curve;
+use city_crypto::signature::secp256k1::curve::curve_types::CurveScalar;
 use plonky2::field::extension::Extendable;
 use plonky2::field::types::Sample;
 use plonky2::hash::hash_types::RichField;
 use plonky2::iop::target::BoolTarget;
 use plonky2::plonk::circuit_builder::CircuitBuilder;
 
-use super::nonnative::{CircuitBuilderNonNative, NonNativeTarget};
+use super::nonnative::CircuitBuilderNonNative;
+use super::nonnative::NonNativeTarget;
 
-/// A Target representing an affine point on the curve `C`. We use incomplete arithmetic for efficiency,
-/// so we assume these points are not zero.
+/// A Target representing an affine point on the curve `C`. We use incomplete
+/// arithmetic for efficiency, so we assume these points are not zero.
 #[derive(Clone, Debug)]
 pub struct AffinePointTarget<C: Curve> {
     pub x: NonNativeTarget<C::BaseField>,
@@ -219,7 +222,8 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilderCurve<F, D>
 
         let rando = (CurveScalar(C::ScalarField::rand()) * C::GENERATOR_PROJECTIVE).to_affine();
         let randot = self.constant_affine_point(rando);
-        // Result starts at `rando`, which is later subtracted, because we don't support arithmetic with the zero point.
+        // Result starts at `rando`, which is later subtracted, because we don't support
+        // arithmetic with the zero point.
         let mut result = self.add_virtual_affine_point_target();
         self.connect_affine_point(&randot, &result);
 
@@ -257,15 +261,19 @@ mod tests {
     use core::ops::Neg;
 
     use anyhow::Result;
-    use city_crypto::signature::secp256k1::curve::curve_types::{AffinePoint, Curve, CurveScalar};
+    use city_crypto::signature::secp256k1::curve::curve_types::AffinePoint;
+    use city_crypto::signature::secp256k1::curve::curve_types::Curve;
+    use city_crypto::signature::secp256k1::curve::curve_types::CurveScalar;
     use city_crypto::signature::secp256k1::curve::secp256k1::Secp256K1;
     use plonky2::field::secp256k1_base::Secp256K1Base;
     use plonky2::field::secp256k1_scalar::Secp256K1Scalar;
-    use plonky2::field::types::{Field, Sample};
+    use plonky2::field::types::Field;
+    use plonky2::field::types::Sample;
     use plonky2::iop::witness::PartialWitness;
     use plonky2::plonk::circuit_builder::CircuitBuilder;
     use plonky2::plonk::circuit_data::CircuitConfig;
-    use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
+    use plonky2::plonk::config::GenericConfig;
+    use plonky2::plonk::config::PoseidonGoldilocksConfig;
 
     use super::super::super::gadgets::curve::CircuitBuilderCurve;
     use super::super::super::gadgets::nonnative::CircuitBuilderNonNative;

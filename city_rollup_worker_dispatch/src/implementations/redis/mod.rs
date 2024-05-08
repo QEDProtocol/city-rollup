@@ -1,23 +1,26 @@
-use std::{fmt::Display, time::Duration};
+use std::time::Duration;
 
 use anyhow::Result;
 use async_trait::async_trait;
-use city_rollup_common::qworker::{
-    job_id::QProvingJobDataID,
-    proof_store::{QProofStoreReaderAsync, QProofStoreWriterAsync},
-};
+use bb8_redis::bb8::PooledConnection;
+use bb8_redis::bb8::{self};
+use city_rollup_common::qworker::job_id::QProvingJobDataID;
+use city_rollup_common::qworker::proof_store::QProofStoreReaderAsync;
+use city_rollup_common::qworker::proof_store::QProofStoreWriterAsync;
 use plonky2::plonk::proof::ProofWithPublicInputs;
-use redis::{AsyncCommands, RedisResult, ToRedisArgs};
-use rsmq_async::{PooledRsmq, RedisConnectionManager, RsmqConnection, RsmqMessage};
+use redis::AsyncCommands;
+use redis::RedisResult;
+use redis::ToRedisArgs;
+use rsmq_async::PooledRsmq;
+use rsmq_async::RedisConnectionManager;
+use rsmq_async::RsmqConnection;
+use rsmq_async::RsmqMessage;
 
-use crate::{
-    implementations::redis::rollup_key::{PROOFS, PROOF_COUNTERS},
-    traits::{
-        proving_dispatcher::{KeyValueStoreWithInc, ProvingDispatcher},
-        proving_worker::ProvingWorkerListener,
-    },
-};
-use bb8_redis::bb8::{self, PooledConnection};
+use crate::implementations::redis::rollup_key::PROOFS;
+use crate::implementations::redis::rollup_key::PROOF_COUNTERS;
+use crate::traits::proving_dispatcher::KeyValueStoreWithInc;
+use crate::traits::proving_dispatcher::ProvingDispatcher;
+use crate::traits::proving_worker::ProvingWorkerListener;
 
 pub mod rollup_key;
 
@@ -176,10 +179,15 @@ impl QProofStoreWriterAsync for RedisStore {
     async fn set_proof_by_id<C: plonky2::plonk::config::GenericConfig<D>, const D: usize>(
         &mut self,
         id: QProvingJobDataID,
-        proof: &ProofWithPublicInputs<C::F, C, D>
+        proof: &ProofWithPublicInputs<C::F, C, D>,
     ) -> anyhow::Result<()> {
         let mut conn = self.get_connection().await?;
-        conn.hset_nx(PROOFS, <[u8; 24]>::from(&id).to_vec(), bincode::serialize(&proof)?).await?;
+        conn.hset_nx(
+            PROOFS,
+            <[u8; 24]>::from(&id).to_vec(),
+            bincode::serialize(&proof)?,
+        )
+        .await?;
         Ok(())
     }
 
@@ -188,7 +196,9 @@ impl QProofStoreWriterAsync for RedisStore {
         id: QProvingJobDataID,
     ) -> anyhow::Result<u32> {
         let mut conn = self.get_connection().await?;
-        let value: u32 = conn.hincr(PROOF_COUNTERS, <[u8; 24]>::from(&id).to_vec(), 1).await?;
+        let value: u32 = conn
+            .hincr(PROOF_COUNTERS, <[u8; 24]>::from(&id).to_vec(), 1)
+            .await?;
         Ok(value)
     }
 }

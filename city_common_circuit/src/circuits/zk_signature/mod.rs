@@ -1,24 +1,25 @@
 pub mod fixed_public_key;
 pub mod inner;
-use city_crypto::hash::{qhashout::QHashOut, traits::hasher::MerkleZeroHasher};
+use city_crypto::hash::qhashout::QHashOut;
+use city_crypto::hash::traits::hasher::MerkleZeroHasher;
 use city_rollup_common::introspection::rollup::signature::SimpleL2PrivateKey;
-use plonky2::{
-    hash::hash_types::{HashOut, RichField},
-    plonk::{
-        circuit_data::{CommonCircuitData, VerifierCircuitData, VerifierOnlyCircuitData},
-        config::{AlgebraicHasher, GenericConfig, GenericHashOut},
-        proof::ProofWithPublicInputs,
-    },
-};
-use serde::{Deserialize, Serialize};
+use plonky2::hash::hash_types::HashOut;
+use plonky2::hash::hash_types::RichField;
+use plonky2::plonk::circuit_data::CommonCircuitData;
+use plonky2::plonk::circuit_data::VerifierCircuitData;
+use plonky2::plonk::circuit_data::VerifierOnlyCircuitData;
+use plonky2::plonk::config::AlgebraicHasher;
+use plonky2::plonk::config::GenericConfig;
+use plonky2::plonk::config::GenericHashOut;
+use plonky2::plonk::proof::ProofWithPublicInputs;
+use serde::Deserialize;
+use serde::Serialize;
 
+use self::fixed_public_key::ZKSignatureCircuitSimpleFixedPublicKey;
+use self::inner::ZKSignatureCircuitInner;
+use super::traits::qstandard::provable::QStandardCircuitProvable;
+use super::traits::qstandard::QStandardCircuit;
 use crate::circuits::l1_secp256k1_signature::L1Secp256K1SignatureCircuit;
-
-use self::{
-    fixed_public_key::ZKSignatureCircuitSimpleFixedPublicKey, inner::ZKSignatureCircuitInner,
-};
-
-use super::traits::qstandard::{provable::QStandardCircuitProvable, QStandardCircuit};
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(bound = "")]
 pub struct ZKSignatureCircuitInput<F: RichField> {
@@ -126,13 +127,16 @@ where
 pub fn verify_standard_wrapped_zk_signature_proof<C: GenericConfig<D> + 'static, const D: usize>(
     public_key: Vec<u8>,
     signature_proof: Vec<u8>,
-) -> anyhow::Result<ProofWithPublicInputs::<C::F, C, D>>
+) -> anyhow::Result<ProofWithPublicInputs<C::F, C, D>>
 where
     C::Hasher: AlgebraicHasher<C::F>,
 {
     let public_key = QHashOut::<C::F>::from_bytes(&public_key);
     let circuit = ZKSignatureCircuit::<C, D>::new(public_key);
-    let proof = ProofWithPublicInputs::<C::F, C, D>::from_bytes(signature_proof, circuit.get_common_circuit_data_ref())?;
+    let proof = ProofWithPublicInputs::<C::F, C, D>::from_bytes(
+        signature_proof,
+        circuit.get_common_circuit_data_ref(),
+    )?;
     let verifier = VerifierCircuitData {
         verifier_only: circuit.get_verifier_config_ref().clone(),
         common: circuit.get_common_circuit_data_ref().clone(),
@@ -149,7 +153,10 @@ where
     C::Hasher: AlgebraicHasher<C::F>,
 {
     let circuit = L1Secp256K1SignatureCircuit::<C, D>::new();
-    let proof = ProofWithPublicInputs::<C::F, C, D>::from_bytes(signature_proof, circuit.get_common_circuit_data_ref())?;
+    let proof = ProofWithPublicInputs::<C::F, C, D>::from_bytes(
+        signature_proof,
+        circuit.get_common_circuit_data_ref(),
+    )?;
     let verifier = VerifierCircuitData {
         verifier_only: circuit.get_verifier_config_ref().clone(),
         common: circuit.get_common_circuit_data_ref().clone(),

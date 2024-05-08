@@ -3,9 +3,10 @@ use plonky2::field::extension::Extendable;
 use plonky2::iop::target::Target;
 use plonky2::plonk::circuit_builder::CircuitBuilder;
 
-use crate::hash::base_types::hash192::{CircuitBuilderHash192, Hash192Target, WitnessHash192};
-
 use super::merkle_proof::compute_merkle_root;
+use crate::hash::base_types::hash192::CircuitBuilderHash192;
+use crate::hash::base_types::hash192::Hash192Target;
+use crate::hash::base_types::hash192::WitnessHash192;
 pub struct DeltaMerkleProofTruncatedSha256Gadget {
     pub old_root: Hash192Target,
     pub old_value: Hash192Target,
@@ -66,9 +67,11 @@ mod tests {
     use plonky2::iop::witness::PartialWitness;
     use plonky2::plonk::circuit_builder::CircuitBuilder;
     use plonky2::plonk::circuit_data::CircuitConfig;
-    use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
+    use plonky2::plonk::config::GenericConfig;
+    use plonky2::plonk::config::PoseidonGoldilocksConfig;
 
-    use crate::hash::base_types::hash192::{CircuitBuilderHash192, WitnessHash192};
+    use crate::hash::base_types::hash192::CircuitBuilderHash192;
+    use crate::hash::base_types::hash192::WitnessHash192;
     use crate::hash::merkle::gadgets::sha256_truncated::delta_merkle_proof::DeltaMerkleProofTruncatedSha256Gadget;
 
     const SMALL_DELTA_MERKLE_PROOFS: &str = r#"

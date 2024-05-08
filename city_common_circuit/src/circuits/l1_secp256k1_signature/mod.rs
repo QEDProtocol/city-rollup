@@ -1,24 +1,20 @@
 use city_common::logging::debug_timer::DebugTimer;
-use city_crypto::{
-    hash::qhashout::QHashOut,
-    signature::secp256k1::core::{QEDCompressedSecp256K1Signature, QEDPreparedSecp256K1Signature},
-};
-use plonky2::{
-    iop::witness::PartialWitness,
-    plonk::{
-        circuit_builder::CircuitBuilder,
-        circuit_data::{CircuitConfig, CircuitData, CommonCircuitData, VerifierOnlyCircuitData},
-        config::{AlgebraicHasher, GenericConfig},
-        proof::ProofWithPublicInputs,
-    },
-};
-
-use crate::{
-    crypto::secp256k1::gadget::DogeQEDSignatureGadget,
-    proof_minifier::pm_chain::OASProofMinifierChain,
-};
+use city_crypto::hash::qhashout::QHashOut;
+use city_crypto::signature::secp256k1::core::QEDCompressedSecp256K1Signature;
+use city_crypto::signature::secp256k1::core::QEDPreparedSecp256K1Signature;
+use plonky2::iop::witness::PartialWitness;
+use plonky2::plonk::circuit_builder::CircuitBuilder;
+use plonky2::plonk::circuit_data::CircuitConfig;
+use plonky2::plonk::circuit_data::CircuitData;
+use plonky2::plonk::circuit_data::CommonCircuitData;
+use plonky2::plonk::circuit_data::VerifierOnlyCircuitData;
+use plonky2::plonk::config::AlgebraicHasher;
+use plonky2::plonk::config::GenericConfig;
+use plonky2::plonk::proof::ProofWithPublicInputs;
 
 use super::traits::qstandard::QStandardCircuit;
+use crate::crypto::secp256k1::gadget::DogeQEDSignatureGadget;
+use crate::proof_minifier::pm_chain::OASProofMinifierChain;
 
 #[derive(Debug)]
 pub struct L1Secp256K1SignatureCircuit<C: GenericConfig<D> + 'static, const D: usize>

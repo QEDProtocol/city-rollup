@@ -1,7 +1,11 @@
-use city_crypto::hash::{base_types::hash256::Hash256, core::sha256::CoreSha256Hasher};
-use plonky2::field::{goldilocks_field::GoldilocksField, types::PrimeField64};
-use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
+
+use city_crypto::hash::base_types::hash256::Hash256;
+use city_crypto::hash::core::sha256::CoreSha256Hasher;
+use plonky2::field::goldilocks_field::GoldilocksField;
+use plonky2::field::types::PrimeField64;
+use serde::Deserialize;
+use serde::Serialize;
 
 use super::utils::get_pad_length_sha256_bytes;
 

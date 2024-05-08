@@ -1,25 +1,34 @@
 use core::marker::PhantomData;
 
-use city_crypto::signature::secp256k1::curve::glv::{decompose_secp256k1_scalar, GLV_BETA, GLV_S};
+use city_crypto::signature::secp256k1::curve::glv::decompose_secp256k1_scalar;
+use city_crypto::signature::secp256k1::curve::glv::GLV_BETA;
+use city_crypto::signature::secp256k1::curve::glv::GLV_S;
 use city_crypto::signature::secp256k1::curve::secp256k1::Secp256K1;
 use plonky2::field::extension::Extendable;
 use plonky2::field::secp256k1_base::Secp256K1Base;
 use plonky2::field::secp256k1_scalar::Secp256K1Scalar;
-use plonky2::field::types::{Field, PrimeField};
+use plonky2::field::types::Field;
+use plonky2::field::types::PrimeField;
 use plonky2::hash::hash_types::RichField;
-use plonky2::iop::generator::{GeneratedValues, SimpleGenerator};
-use plonky2::iop::target::{BoolTarget, Target};
-use plonky2::iop::witness::{PartitionWitness, WitnessWrite};
+use plonky2::iop::generator::GeneratedValues;
+use plonky2::iop::generator::SimpleGenerator;
+use plonky2::iop::target::BoolTarget;
+use plonky2::iop::target::Target;
+use plonky2::iop::witness::PartitionWitness;
+use plonky2::iop::witness::WitnessWrite;
 use plonky2::plonk::circuit_builder::CircuitBuilder;
-use plonky2::util::serialization::{Read, Write};
+use plonky2::util::serialization::Read;
+use plonky2::util::serialization::Write;
 
-use crate::u32::arithmetic_u32::U32Target;
-
-use super::super::gadgets::biguint::{GeneratedValuesBigUint, WitnessBigUint};
-use super::super::gadgets::curve::{AffinePointTarget, CircuitBuilderCurve};
+use super::super::gadgets::biguint::GeneratedValuesBigUint;
+use super::super::gadgets::biguint::WitnessBigUint;
+use super::super::gadgets::curve::AffinePointTarget;
+use super::super::gadgets::curve::CircuitBuilderCurve;
 use super::super::gadgets::curve_msm::curve_msm_circuit;
-use super::super::gadgets::nonnative::{CircuitBuilderNonNative, NonNativeTarget};
+use super::super::gadgets::nonnative::CircuitBuilderNonNative;
+use super::super::gadgets::nonnative::NonNativeTarget;
 use super::biguint::BigUintTarget;
+use crate::u32::arithmetic_u32::U32Target;
 
 pub trait CircuitBuilderGlv<F: RichField + Extendable<D>, const D: usize> {
     fn secp256k1_glv_beta(&mut self) -> NonNativeTarget<Secp256K1Base>;
@@ -215,7 +224,8 @@ impl<F: RichField + Extendable<D>, const D: usize> SimpleGenerator<F, D>
 #[cfg(test)]
 mod tests {
     use anyhow::Result;
-    use city_crypto::signature::secp256k1::curve::curve_types::{Curve, CurveScalar};
+    use city_crypto::signature::secp256k1::curve::curve_types::Curve;
+    use city_crypto::signature::secp256k1::curve::curve_types::CurveScalar;
     use city_crypto::signature::secp256k1::curve::glv::glv_mul;
     use city_crypto::signature::secp256k1::curve::secp256k1::Secp256K1;
     use plonky2::field::secp256k1_scalar::Secp256K1Scalar;
@@ -223,7 +233,8 @@ mod tests {
     use plonky2::iop::witness::PartialWitness;
     use plonky2::plonk::circuit_builder::CircuitBuilder;
     use plonky2::plonk::circuit_data::CircuitConfig;
-    use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
+    use plonky2::plonk::config::GenericConfig;
+    use plonky2::plonk::config::PoseidonGoldilocksConfig;
 
     use super::super::super::gadgets::curve::CircuitBuilderCurve;
     use super::super::super::gadgets::glv::CircuitBuilderGlv;

@@ -1,17 +1,18 @@
-use city_common::data::varuint::encode_varuint;
-use plonky2::{
-    field::extension::Extendable, hash::hash_types::RichField, iop::target::Target,
-    plonk::circuit_builder::CircuitBuilder,
-};
-use serde::{Deserialize, Serialize};
-
-use crate::{
-    builder::core::CircuitBuilderHelpersCore,
-    hash::base_types::{hash160bytes::Hash160BytesTarget, hash256bytes::Hash256BytesTarget},
-};
-
-use super::u32::arithmetic_u32::{CircuitBuilderU32, U32Target};
 use core::fmt::Debug;
+
+use city_common::data::varuint::encode_varuint;
+use plonky2::field::extension::Extendable;
+use plonky2::hash::hash_types::RichField;
+use plonky2::iop::target::Target;
+use plonky2::plonk::circuit_builder::CircuitBuilder;
+use serde::Deserialize;
+use serde::Serialize;
+
+use super::u32::arithmetic_u32::CircuitBuilderU32;
+use super::u32::arithmetic_u32::U32Target;
+use crate::builder::core::CircuitBuilderHelpersCore;
+use crate::hash::base_types::hash160bytes::Hash160BytesTarget;
+use crate::hash::base_types::hash256bytes::Hash256BytesTarget;
 pub trait VectorBuilderConfig {
     type TElement: Sized + Copy + Debug + Clone;
     type TU32: Sized + Copy + Debug + Clone;

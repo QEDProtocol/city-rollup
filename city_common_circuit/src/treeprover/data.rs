@@ -1,6 +1,8 @@
 use city_crypto::hash::qhashout::QHashOut;
-use plonky2::{hash::hash_types::RichField, plonk::config::AlgebraicHasher};
-use serde::{Deserialize, Serialize};
+use plonky2::hash::hash_types::RichField;
+use plonky2::plonk::config::AlgebraicHasher;
+use serde::Deserialize;
+use serde::Serialize;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(bound = "")]

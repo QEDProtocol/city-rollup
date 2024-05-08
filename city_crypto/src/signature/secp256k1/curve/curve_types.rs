@@ -1,10 +1,13 @@
 use std::fmt::Debug;
-use std::hash::{Hash, Hasher};
+use std::hash::Hash;
+use std::hash::Hasher;
 use std::ops::Neg;
 
 use plonky2::field::ops::Square;
-use plonky2::field::types::{Field, PrimeField};
-use serde::{Deserialize, Serialize};
+use plonky2::field::types::Field;
+use plonky2::field::types::PrimeField;
+use serde::Deserialize;
+use serde::Serialize;
 
 // To avoid implementation conflicts from associated types,
 // see https://github.com/rust-lang/rust/issues/20400
@@ -31,7 +34,8 @@ pub trait Curve: 'static + Sync + Sized + Copy + Debug {
     }
 
     fn is_safe_curve() -> bool {
-        // Added additional check to prevent using vulnerabilties in case a discriminant is equal to 0.
+        // Added additional check to prevent using vulnerabilties in case a discriminant
+        // is equal to 0.
         (Self::A.cube().double().double() + Self::B.square().triple().triple().triple())
             .is_nonzero()
     }
@@ -251,7 +255,8 @@ impl<C: Curve> PartialEq for ProjectivePoint<C> {
         }
 
         // We want to compare (x1/z1, y1/z1) == (x2/z2, y2/z2).
-        // But to avoid field division, it is better to compare (x1*z2, y1*z2) == (x2*z1, y2*z1).
+        // But to avoid field division, it is better to compare (x1*z2, y1*z2) ==
+        // (x2*z1, y2*z1).
         x1 * z2 == x2 * z1 && y1 * z2 == y2 * z1
     }
 }

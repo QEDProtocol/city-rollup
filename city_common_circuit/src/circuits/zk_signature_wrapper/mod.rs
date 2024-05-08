@@ -1,25 +1,22 @@
 use city_crypto::hash::qhashout::QHashOut;
+use plonky2::hash::hash_types::HashOutTarget;
+use plonky2::iop::witness::PartialWitness;
+use plonky2::iop::witness::WitnessWrite;
+use plonky2::plonk::circuit_builder::CircuitBuilder;
+use plonky2::plonk::circuit_data::CircuitConfig;
+use plonky2::plonk::circuit_data::CircuitData;
+use plonky2::plonk::circuit_data::CommonCircuitData;
+use plonky2::plonk::circuit_data::VerifierCircuitTarget;
+use plonky2::plonk::circuit_data::VerifierOnlyCircuitData;
+use plonky2::plonk::config::AlgebraicHasher;
+use plonky2::plonk::config::GenericConfig;
+use plonky2::plonk::proof::ProofWithPublicInputs;
+use plonky2::plonk::proof::ProofWithPublicInputsTarget;
 
-use plonky2::{
-    hash::hash_types::HashOutTarget,
-    iop::witness::{PartialWitness, WitnessWrite},
-    plonk::{
-        circuit_builder::CircuitBuilder,
-        circuit_data::{
-            CircuitConfig, CircuitData, CommonCircuitData, VerifierCircuitTarget,
-            VerifierOnlyCircuitData,
-        },
-        config::{AlgebraicHasher, GenericConfig},
-        proof::{ProofWithPublicInputs, ProofWithPublicInputsTarget},
-    },
-};
-
-use crate::{
-    builder::verify::CircuitBuilderVerifyProofHelpers,
-    proof_minifier::pm_core::get_circuit_fingerprint_generic,
-};
-
-use super::{traits::qstandard::QStandardCircuit, zk_signature::ZKSignatureCircuit};
+use super::traits::qstandard::QStandardCircuit;
+use super::zk_signature::ZKSignatureCircuit;
+use crate::builder::verify::CircuitBuilderVerifyProofHelpers;
+use crate::proof_minifier::pm_core::get_circuit_fingerprint_generic;
 
 #[derive(Debug)]
 pub struct ZKSignatureWrapperCircuit<C: GenericConfig<D> + 'static, const D: usize>

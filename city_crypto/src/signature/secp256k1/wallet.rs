@@ -1,16 +1,12 @@
 use std::collections::HashMap;
 
 use city_common::binaryhelpers::bytes::CompressedPublicKey;
-use k256::ecdsa::signature::SignerMut;
-use k256::ecdsa::signature::{hazmat::PrehashSigner, Keypair};
+use k256::ecdsa::signature::hazmat::PrehashSigner;
 use plonky2::hash::hash_types::RichField;
 
-use crate::hash::{base_types::hash256::Hash256, qhashout::QHashOut};
-
-use super::{
-    core::QEDCompressedSecp256K1Signature,
-    curve::{ecdsa::ECDSASecretKey, secp256k1::Secp256K1},
-};
+use super::core::QEDCompressedSecp256K1Signature;
+use crate::hash::base_types::hash256::Hash256;
+use crate::hash::qhashout::QHashOut;
 
 pub trait Secp256K1WalletProvider {
     fn sign(

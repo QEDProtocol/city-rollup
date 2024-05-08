@@ -1,20 +1,23 @@
+use city_crypto::signature::secp256k1::curve::curve_types::Curve;
+use city_crypto::signature::secp256k1::curve::curve_types::CurveScalar;
 use num::BigUint;
 use plonky2::field::extension::Extendable;
 use plonky2::field::types::Field;
 use plonky2::hash::hash_types::RichField;
 use plonky2::hash::keccak::KeccakHash;
 use plonky2::plonk::circuit_builder::CircuitBuilder;
-use plonky2::plonk::config::{GenericHashOut, Hasher};
+use plonky2::plonk::config::GenericHashOut;
+use plonky2::plonk::config::Hasher;
 
-use super::super::gadgets::curve::{AffinePointTarget, CircuitBuilderCurve};
+use super::super::gadgets::curve::AffinePointTarget;
+use super::super::gadgets::curve::CircuitBuilderCurve;
 use super::super::gadgets::curve_windowed_mul::CircuitBuilderWindowedMul;
 use super::super::gadgets::nonnative::NonNativeTarget;
 use super::super::gadgets::split_nonnative::CircuitBuilderSplit;
-use city_crypto::signature::secp256k1::curve::curve_types::{Curve, CurveScalar};
 
 /// Computes `n*p + m*q` using windowed MSM, with a 2-bit window.
-/// See Algorithm 9.23 in Handbook of Elliptic and Hyperelliptic Curve Cryptography for a
-/// description.
+/// See Algorithm 9.23 in Handbook of Elliptic and Hyperelliptic Curve
+/// Cryptography for a description.
 /// Note: Doesn't work if `p == q`.
 pub fn curve_msm_circuit<C: Curve, F: RichField + Extendable<D>, const D: usize>(
     builder: &mut CircuitBuilder<F, D>,
@@ -79,18 +82,20 @@ pub fn curve_msm_circuit<C: Curve, F: RichField + Extendable<D>, const D: usize>
 #[cfg(test)]
 mod tests {
     use anyhow::Result;
+    use city_crypto::signature::secp256k1::curve::curve_types::Curve;
+    use city_crypto::signature::secp256k1::curve::curve_types::CurveScalar;
+    use city_crypto::signature::secp256k1::curve::secp256k1::Secp256K1;
     use plonky2::field::secp256k1_scalar::Secp256K1Scalar;
     use plonky2::field::types::Sample;
     use plonky2::iop::witness::PartialWitness;
     use plonky2::plonk::circuit_builder::CircuitBuilder;
     use plonky2::plonk::circuit_data::CircuitConfig;
-    use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
+    use plonky2::plonk::config::GenericConfig;
+    use plonky2::plonk::config::PoseidonGoldilocksConfig;
 
     use super::super::super::gadgets::curve::CircuitBuilderCurve;
     use super::super::super::gadgets::curve_msm::curve_msm_circuit;
     use super::super::super::gadgets::nonnative::CircuitBuilderNonNative;
-    use city_crypto::signature::secp256k1::curve::curve_types::{Curve, CurveScalar};
-    use city_crypto::signature::secp256k1::curve::secp256k1::Secp256K1;
 
     #[test]
     #[ignore]

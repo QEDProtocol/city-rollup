@@ -1,24 +1,35 @@
 use core::marker::PhantomData;
 
-use num::{BigUint, Integer, One, Zero};
+use city_common::math::ceil_div_usize;
+use num::BigUint;
+use num::Integer;
+use num::One;
+use num::Zero;
 use plonky2::field::extension::Extendable;
-use plonky2::field::types::{Field, PrimeField};
+use plonky2::field::types::Field;
+use plonky2::field::types::PrimeField;
 use plonky2::hash::hash_types::RichField;
-use plonky2::iop::generator::{GeneratedValues, SimpleGenerator};
-use plonky2::iop::target::{BoolTarget, Target};
-use plonky2::iop::witness::{PartitionWitness, WitnessWrite};
+use plonky2::iop::generator::GeneratedValues;
+use plonky2::iop::generator::SimpleGenerator;
+use plonky2::iop::target::BoolTarget;
+use plonky2::iop::target::Target;
+use plonky2::iop::witness::PartitionWitness;
+use plonky2::iop::witness::WitnessWrite;
 use plonky2::plonk::circuit_builder::CircuitBuilder;
 use plonky2::plonk::circuit_data::CommonCircuitData;
-use plonky2::util::serialization::{Buffer, IoResult, Read, Write};
+use plonky2::util::serialization::Buffer;
+use plonky2::util::serialization::IoResult;
+use plonky2::util::serialization::Read;
+use plonky2::util::serialization::Write;
 
-use crate::u32::arithmetic_u32::{CircuitBuilderU32, U32Target};
+use super::super::gadgets::biguint::BigUintTarget;
+use super::super::gadgets::biguint::CircuitBuilderBiguint;
+use super::super::gadgets::biguint::GeneratedValuesBigUint;
+use super::super::gadgets::biguint::WitnessBigUint;
+use crate::u32::arithmetic_u32::CircuitBuilderU32;
+use crate::u32::arithmetic_u32::U32Target;
 use crate::u32::range_check::range_check_u32_circuit;
 use crate::u32::witness::GeneratedValuesU32;
-use city_common::math::ceil_div_usize;
-
-use super::super::gadgets::biguint::{
-    BigUintTarget, CircuitBuilderBiguint, GeneratedValuesBigUint, WitnessBigUint,
-};
 
 #[derive(Clone, Debug)]
 pub struct NonNativeTarget<FF: Field> {
@@ -42,7 +53,8 @@ pub trait CircuitBuilderNonNative<F: RichField + Extendable<D>, const D: usize> 
 
     fn zero_nonnative<FF: PrimeField>(&mut self) -> NonNativeTarget<FF>;
 
-    // Assert that two NonNativeTarget's, both assumed to be in reduced form, are equal.
+    // Assert that two NonNativeTarget's, both assumed to be in reduced form, are
+    // equal.
     fn connect_nonnative<FF: Field>(
         &mut self,
         lhs: &NonNativeTarget<FF>,
@@ -149,7 +161,8 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilderNonNative<F, D>
         self.constant_nonnative(FF::ZERO)
     }
 
-    // Assert that two NonNativeTarget's, both assumed to be in reduced form, are equal.
+    // Assert that two NonNativeTarget's, both assumed to be in reduced form, are
+    // equal.
     fn connect_nonnative<FF: Field>(
         &mut self,
         lhs: &NonNativeTarget<FF>,
@@ -204,7 +217,8 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilderNonNative<F, D>
         self.connect_biguint(&sum_expected, &sum_actual);
 
         // Range-check result.
-        // TODO: can potentially leave unreduced until necessary (e.g. when connecting values).
+        // TODO: can potentially leave unreduced until necessary (e.g. when connecting
+        // values).
         let cmp = self.cmp_biguint(&sum.value, &modulus);
         let one = self.one();
         self.connect(cmp.target, one);
@@ -270,7 +284,8 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilderNonNative<F, D>
         self.connect_biguint(&sum_expected, &sum_actual);
 
         // Range-check result.
-        // TODO: can potentially leave unreduced until necessary (e.g. when connecting values).
+        // TODO: can potentially leave unreduced until necessary (e.g. when connecting
+        // values).
         let cmp = self.cmp_biguint(&sum.value, &modulus);
         let one = self.one();
         self.connect(cmp.target, one);
@@ -1038,11 +1053,14 @@ impl<F: RichField + Extendable<D>, const D: usize, FF: PrimeField> SimpleGenerat
 mod tests {
     use anyhow::Result;
     use plonky2::field::secp256k1_base::Secp256K1Base;
-    use plonky2::field::types::{Field, PrimeField, Sample};
+    use plonky2::field::types::Field;
+    use plonky2::field::types::PrimeField;
+    use plonky2::field::types::Sample;
     use plonky2::iop::witness::PartialWitness;
     use plonky2::plonk::circuit_builder::CircuitBuilder;
     use plonky2::plonk::circuit_data::CircuitConfig;
-    use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
+    use plonky2::plonk::config::GenericConfig;
+    use plonky2::plonk::config::PoseidonGoldilocksConfig;
 
     use crate::crypto::secp256k1::ecdsa::gadgets::nonnative::CircuitBuilderNonNative;
 

@@ -1,29 +1,36 @@
-use std::{sync::Arc, time::Duration};
+use std::sync::Arc;
+use std::time::Duration;
 
 use city_common::cli::args::OrchestratorArgs;
 use city_crypto::hash::qhashout::QHashOut;
-use city_macros::{async_infinite_loop, define_table, spawn_async_infinite_loop};
-use city_rollup_circuit::block_circuits::ops::{
-    claim_l1_deposit::CRClaimL1DepositCircuitInput, l2_transfer::circuit::CRL2TransferCircuitInput,
-    process_l1_withdrawal::CRProcessL1WithdrawalCircuitInput,
-    register_user::CRUserRegistrationCircuitInput,
-};
-use city_rollup_common::{
-    api::data::block::requested_actions::{
-        CityAddWithdrawalRequest, CityClaimDepositRequest, CityRegisterUserRequest,
-        CityTokenTransferRequest,
-    },
-    qworker::job_id::{ProvingJobCircuitType, QJobTopic, QProvingJobDataID},
-};
-use city_rollup_worker_dispatch::{
-    implementations::redis::{
-        rollup_key::{LAST_BLOCK_ID, LAST_BLOCK_TIMESTAMP, LAST_ORCHESTOR_ID, PROVING_JOB_COUNTER}, RedisStore, Q_JOB, Q_TX
-    },
-    traits::{proving_dispatcher::ProvingDispatcher, proving_worker::ProvingWorkerListener},
-};
-use city_store::{config::F, store::city::base::CityStore};
+use city_macros::async_infinite_loop;
+use city_macros::define_table;
+use city_macros::spawn_async_infinite_loop;
+use city_rollup_circuit::block_circuits::ops::claim_l1_deposit::CRClaimL1DepositCircuitInput;
+use city_rollup_circuit::block_circuits::ops::l2_transfer::circuit::CRL2TransferCircuitInput;
+use city_rollup_circuit::block_circuits::ops::process_l1_withdrawal::CRProcessL1WithdrawalCircuitInput;
+use city_rollup_circuit::block_circuits::ops::register_user::CRUserRegistrationCircuitInput;
+use city_rollup_common::api::data::block::requested_actions::CityAddWithdrawalRequest;
+use city_rollup_common::api::data::block::requested_actions::CityClaimDepositRequest;
+use city_rollup_common::api::data::block::requested_actions::CityRegisterUserRequest;
+use city_rollup_common::api::data::block::requested_actions::CityTokenTransferRequest;
+use city_rollup_common::qworker::job_id::ProvingJobCircuitType;
+use city_rollup_common::qworker::job_id::QJobTopic;
+use city_rollup_common::qworker::job_id::QProvingJobDataID;
+use city_rollup_worker_dispatch::implementations::redis::rollup_key::LAST_BLOCK_ID;
+use city_rollup_worker_dispatch::implementations::redis::rollup_key::LAST_BLOCK_TIMESTAMP;
+use city_rollup_worker_dispatch::implementations::redis::rollup_key::LAST_ORCHESTOR_ID;
+use city_rollup_worker_dispatch::implementations::redis::rollup_key::PROVING_JOB_COUNTER;
+use city_rollup_worker_dispatch::implementations::redis::RedisStore;
+use city_rollup_worker_dispatch::implementations::redis::Q_JOB;
+use city_rollup_worker_dispatch::implementations::redis::Q_TX;
+use city_rollup_worker_dispatch::traits::proving_dispatcher::ProvingDispatcher;
+use city_rollup_worker_dispatch::traits::proving_worker::ProvingWorkerListener;
+use city_store::config::F;
+use city_store::store::city::base::CityStore;
 use kvq_store_redb::KVQReDBStore;
-use redb::{Database, TableDefinition};
+use redb::Database;
+use redb::TableDefinition;
 use redis::AsyncCommands;
 
 pub const DEFAULT_BLOCK_TIME_IN_SECS: u32 = 4;
@@ -79,10 +86,15 @@ pub async fn run(args: OrchestratorArgs) -> anyhow::Result<()> {
             .get(LAST_ORCHESTOR_ID)
             .await
             .unwrap_or(0);
-        let last_block_id: u64 = redis_store.get_connection().await?.get(LAST_BLOCK_ID).await.unwrap_or(0);
+        let last_block_id: u64 = redis_store
+            .get_connection()
+            .await?
+            .get(LAST_BLOCK_ID)
+            .await
+            .unwrap_or(0);
 
-        // keep us to be 2 blocks before the latest block to ensure the queue is filled with
-        // all block transactions
+        // keep us to be 2 blocks before the latest block to ensure the queue is filled
+        // with all block transactions
         if last_orchestrator_block_id + 2 >= last_block_id {
             return Ok(());
         }
@@ -222,31 +234,39 @@ pub async fn run(args: OrchestratorArgs) -> anyhow::Result<()> {
         wxn.commit()?;
 
         for token_transfer in token_transfers {
-            redis_store.dispatch::<Q_JOB>(
-                QJobTopic::GenerateStandardProof as u64,
-                &serde_json::to_vec(&token_transfer.1)?,
-            ).await?;
+            redis_store
+                .dispatch::<Q_JOB>(
+                    QJobTopic::GenerateStandardProof as u64,
+                    &serde_json::to_vec(&token_transfer.1)?,
+                )
+                .await?;
         }
 
         for register_user in register_users {
-            redis_store.dispatch::<Q_JOB>(
-                QJobTopic::GenerateStandardProof as u64,
-                &serde_json::to_vec(&register_user.1)?,
-            ).await?;
+            redis_store
+                .dispatch::<Q_JOB>(
+                    QJobTopic::GenerateStandardProof as u64,
+                    &serde_json::to_vec(&register_user.1)?,
+                )
+                .await?;
         }
 
         for claim_l1_deposit in claim_l1_deposits {
-            redis_store.dispatch::<Q_JOB>(
-                QJobTopic::GenerateStandardProof as u64,
-                &serde_json::to_vec(&claim_l1_deposit.1)?,
-            ).await?;
+            redis_store
+                .dispatch::<Q_JOB>(
+                    QJobTopic::GenerateStandardProof as u64,
+                    &serde_json::to_vec(&claim_l1_deposit.1)?,
+                )
+                .await?;
         }
 
         for withdrawal in withdrawals {
-            redis_store.dispatch::<Q_JOB>(
-                QJobTopic::GenerateStandardProof as u64,
-                &serde_json::to_vec(&withdrawal.1)?,
-            ).await?;
+            redis_store
+                .dispatch::<Q_JOB>(
+                    QJobTopic::GenerateStandardProof as u64,
+                    &serde_json::to_vec(&withdrawal.1)?,
+                )
+                .await?;
         }
 
         redis_store

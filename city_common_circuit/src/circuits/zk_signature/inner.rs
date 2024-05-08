@@ -1,33 +1,25 @@
-use city_crypto::hash::{qhashout::QHashOut, traits::hasher::MerkleZeroHasher};
-use city_rollup_common::introspection::rollup::signature::{
-    SimpleL2PrivateKey, PRIVATE_KEY_CONSTANTS,
-};
-use plonky2::{
-    field::types::Field,
-    hash::hash_types::{HashOut, HashOutTarget, RichField},
-    iop::witness::{PartialWitness, WitnessWrite},
-    plonk::{
-        circuit_builder::CircuitBuilder,
-        circuit_data::{CircuitConfig, CircuitData, CommonCircuitData, VerifierOnlyCircuitData},
-        config::{AlgebraicHasher, GenericConfig},
-        proof::ProofWithPublicInputs,
-    },
-};
-use serde::{Deserialize, Serialize};
+use city_crypto::hash::qhashout::QHashOut;
+use city_crypto::hash::traits::hasher::MerkleZeroHasher;
+use city_rollup_common::introspection::rollup::signature::PRIVATE_KEY_CONSTANTS;
+use plonky2::field::types::Field;
+use plonky2::hash::hash_types::HashOut;
+use plonky2::hash::hash_types::HashOutTarget;
+use plonky2::iop::witness::PartialWitness;
+use plonky2::iop::witness::WitnessWrite;
+use plonky2::plonk::circuit_builder::CircuitBuilder;
+use plonky2::plonk::circuit_data::CircuitConfig;
+use plonky2::plonk::circuit_data::CircuitData;
+use plonky2::plonk::circuit_data::CommonCircuitData;
+use plonky2::plonk::circuit_data::VerifierOnlyCircuitData;
+use plonky2::plonk::config::AlgebraicHasher;
+use plonky2::plonk::config::GenericConfig;
+use plonky2::plonk::proof::ProofWithPublicInputs;
 
-use crate::{
-    builder::hash::core::CircuitBuilderHashCore,
-    proof_minifier::{pm_chain::OASProofMinifierChain, pm_core::get_circuit_fingerprint_generic},
-    verify_template::{
-        circuit_template::QEDCircuitVerifyTemplate,
-        ser_data::{VTFriConfig, VTFriParams, VTFriReductionStrategy},
-    },
-};
-
-use super::{
-    super::traits::qstandard::{provable::QStandardCircuitProvable, QStandardCircuit},
-    ZKSignatureCircuitInput,
-};
+use super::super::traits::qstandard::provable::QStandardCircuitProvable;
+use super::super::traits::qstandard::QStandardCircuit;
+use super::ZKSignatureCircuitInput;
+use crate::builder::hash::core::CircuitBuilderHashCore;
+use crate::proof_minifier::pm_chain::OASProofMinifierChain;
 #[derive(Debug)]
 pub struct ZKSignatureCircuitInner<C: GenericConfig<D> + 'static, const D: usize>
 where

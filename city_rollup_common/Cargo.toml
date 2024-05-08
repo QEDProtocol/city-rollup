@@ -11,11 +11,9 @@ serde_json = { workspace = true }
 serde = { workspace = true }
 serde_with = { workspace = true }
 hex = { workspace = true }
-rand = { workspace = true }
 bitcoin = { workspace = true }
 reqwest = { workspace = true }
 url = { workspace = true }
-k256 = { workspace = true }
 city_crypto           = { path = "../city_crypto" }
 city_common           = { path = "../city_common" }
 kvq           = { path = "../kvq" }

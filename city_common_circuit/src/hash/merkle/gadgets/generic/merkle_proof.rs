@@ -3,11 +3,14 @@ use std::marker::PhantomData;
 use city_common::tree_planner::BinaryTreePlanner;
 use city_crypto::field::qfield::QRichField;
 use plonky2::field::extension::Extendable;
-use plonky2::iop::target::{BoolTarget, Target};
+use plonky2::iop::target::BoolTarget;
+use plonky2::iop::target::Target;
 use plonky2::iop::witness::Witness;
 use plonky2::plonk::circuit_builder::CircuitBuilder;
 
-use crate::traits::{GenericCircuitMerkleHasher, GenericHashTarget, WitnessValueFor};
+use crate::traits::GenericCircuitMerkleHasher;
+use crate::traits::GenericHashTarget;
+use crate::traits::WitnessValueFor;
 
 pub struct GenericDeltaMerkleProofVecGadget<
     H: GenericHashTarget,

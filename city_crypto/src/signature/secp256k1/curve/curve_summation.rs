@@ -3,7 +3,9 @@ use core::iter::Sum;
 use plonky2::field::ops::Square;
 use plonky2::field::types::Field;
 
-use super::curve_types::{AffinePoint, Curve, ProjectivePoint};
+use super::curve_types::AffinePoint;
+use super::curve_types::Curve;
+use super::curve_types::ProjectivePoint;
 
 impl<C: Curve> Sum<AffinePoint<C>> for ProjectivePoint<C> {
     fn sum<I: Iterator<Item = AffinePoint<C>>>(iter: I) -> ProjectivePoint<C> {
@@ -37,8 +39,8 @@ pub fn affine_multisummation_best<C: Curve>(
     }
 }
 
-/// Adds each pair of points using an affine + affine = projective formula, then adds up the
-/// intermediate sums using a projective formula.
+/// Adds each pair of points using an affine + affine = projective formula, then
+/// adds up the intermediate sums using a projective formula.
 pub fn affine_multisummation_pairwise<C: Curve>(
     summations: Vec<Vec<AffinePoint<C>>>,
 ) -> Vec<ProjectivePoint<C>> {
@@ -48,8 +50,8 @@ pub fn affine_multisummation_pairwise<C: Curve>(
         .collect()
 }
 
-/// Adds each pair of points using an affine + affine = projective formula, then adds up the
-/// intermediate sums using a projective formula.
+/// Adds each pair of points using an affine + affine = projective formula, then
+/// adds up the intermediate sums using a projective formula.
 pub fn affine_summation_pairwise<C: Curve>(points: Vec<AffinePoint<C>>) -> ProjectivePoint<C> {
     let mut reduced_points: Vec<ProjectivePoint<C>> = Vec::new();
     for chunk in points.chunks(2) {
@@ -65,8 +67,8 @@ pub fn affine_summation_pairwise<C: Curve>(points: Vec<AffinePoint<C>>) -> Proje
         .fold(ProjectivePoint::ZERO, |sum, x| sum + *x)
 }
 
-/// Computes several summations of affine points by applying an affine group law, except that the
-/// divisions are batched via Montgomery's trick.
+/// Computes several summations of affine points by applying an affine group
+/// law, except that the divisions are batched via Montgomery's trick.
 pub fn affine_summation_batch_inversion<C: Curve>(
     summation: Vec<AffinePoint<C>>,
 ) -> ProjectivePoint<C> {
@@ -75,15 +77,16 @@ pub fn affine_summation_batch_inversion<C: Curve>(
     result[0]
 }
 
-/// Computes several summations of affine points by applying an affine group law, except that the
-/// divisions are batched via Montgomery's trick.
+/// Computes several summations of affine points by applying an affine group
+/// law, except that the divisions are batched via Montgomery's trick.
 pub fn affine_multisummation_batch_inversion<C: Curve>(
     summations: Vec<Vec<AffinePoint<C>>>,
 ) -> Vec<ProjectivePoint<C>> {
     let mut elements_to_invert = Vec::new();
 
-    // For each pair of points, (x1, y1) and (x2, y2), that we're going to add later, we want to
-    // invert either y (if the points are equal) or x1 - x2 (otherwise). We will use these later.
+    // For each pair of points, (x1, y1) and (x2, y2), that we're going to add
+    // later, we want to invert either y (if the points are equal) or x1 - x2
+    // (otherwise). We will use these later.
     for summation in &summations {
         let n = summation.len();
         // The special case for n=0 is to avoid underflow.
@@ -146,7 +149,8 @@ pub fn affine_multisummation_batch_inversion<C: Curve>(
             } else if p1 == -p2 {
                 AffinePoint::ZERO
             } else {
-                // It's a non-trivial case where we need one of the inverses we computed earlier.
+                // It's a non-trivial case where we need one of the inverses we computed
+                // earlier.
                 let inverse = inverses[inverse_index];
                 inverse_index += 1;
 
@@ -161,7 +165,8 @@ pub fn affine_multisummation_batch_inversion<C: Curve>(
                     let y3 = quotient * (x1 - x3) - y1;
                     AffinePoint::nonzero(x3, y3)
                 } else {
-                    // This is the general case. We use the incomplete addition formulas 4.3 and 4.4.
+                    // This is the general case. We use the incomplete addition formulas 4.3 and
+                    // 4.4.
                     let quotient = (y1 - y2) * inverse;
                     let x3 = quotient.square() - x1 - x2;
                     let y3 = quotient * (x1 - x3) - y1;

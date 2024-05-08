@@ -1,14 +1,14 @@
 use kvq::traits::KVQSerializable;
-use plonky2::{
-    hash::hash_types::{HashOut, RichField},
-    plonk::config::AlgebraicHasher,
-};
-use serde::{Deserialize, Serialize};
+use plonky2::hash::hash_types::HashOut;
+use plonky2::hash::hash_types::RichField;
+use plonky2::plonk::config::AlgebraicHasher;
+use serde::Deserialize;
+use serde::Serialize;
 
-use crate::hash::{
-    qhashout::QHashOut,
-    traits::hasher::{MerkleHasher, MerkleHasherWithMarkedLeaf, QHasher},
-};
+use crate::hash::qhashout::QHashOut;
+use crate::hash::traits::hasher::MerkleHasher;
+use crate::hash::traits::hasher::MerkleHasherWithMarkedLeaf;
+use crate::hash::traits::hasher::QHasher;
 
 pub fn compute_partial_merkle_root_from_leaves_algebraic<F: RichField, H: AlgebraicHasher<F>>(
     leaves: &[HashOut<F>],

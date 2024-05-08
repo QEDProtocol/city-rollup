@@ -1,14 +1,11 @@
 use async_trait::async_trait;
-use city_crypto::hash::{core::sha256::CoreSha256Hasher, qhashout::QHashOut};
-use city_rollup_common::qworker::proof_store::{QProofStoreReaderAsync, QProofStoreReaderSync};
-use plonky2::{
-    plonk::{
-        circuit_data::{CommonCircuitData, VerifierOnlyCircuitData},
-        config::GenericConfig,
-        proof::ProofWithPublicInputs,
-    },
-    util::serialization::DefaultGateSerializer,
-};
+use city_crypto::hash::qhashout::QHashOut;
+use city_rollup_common::qworker::proof_store::QProofStoreReaderAsync;
+use city_rollup_common::qworker::proof_store::QProofStoreReaderSync;
+use plonky2::plonk::circuit_data::CommonCircuitData;
+use plonky2::plonk::circuit_data::VerifierOnlyCircuitData;
+use plonky2::plonk::config::GenericConfig;
+use plonky2::plonk::proof::ProofWithPublicInputs;
 use serde::Serialize;
 
 pub mod provable;

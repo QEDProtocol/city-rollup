@@ -1,19 +1,20 @@
 use city_crypto::hash::qhashout::QHashOut;
 use city_rollup_common::api::data::store::CityUserState;
-use kvq::traits::{KVQBinaryStore, KVQBinaryStoreReader};
-use plonky2::{
-    field::types::{Field, Field64, PrimeField64},
-    hash::hash_types::HashOut,
-};
-
-use crate::{
-    config::{CityDeltaMerkleProof, CityHash, CityMerkleProof, GlobalUserTreeStore, F},
-    models::kvq_merkle::model::{
-        KVQFixedConfigMerkleTreeModelCore, KVQFixedConfigMerkleTreeModelReaderCore,
-    },
-};
+use kvq::traits::KVQBinaryStore;
+use kvq::traits::KVQBinaryStoreReader;
+use plonky2::field::types::Field;
+use plonky2::field::types::Field64;
+use plonky2::field::types::PrimeField64;
+use plonky2::hash::hash_types::HashOut;
 
 use super::base::CityStore;
+use crate::config::CityDeltaMerkleProof;
+use crate::config::CityHash;
+use crate::config::CityMerkleProof;
+use crate::config::GlobalUserTreeStore;
+use crate::config::F;
+use crate::models::kvq_merkle::model::KVQFixedConfigMerkleTreeModelCore;
+use crate::models::kvq_merkle::model::KVQFixedConfigMerkleTreeModelReaderCore;
 
 impl<S: KVQBinaryStoreReader> CityStore<S> {
     pub fn get_user_by_id(

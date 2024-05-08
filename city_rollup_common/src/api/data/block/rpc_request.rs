@@ -1,9 +1,9 @@
-use city_crypto::hash::{
-    base_types::{hash160::Hash160, hash256::Hash256},
-    qhashout::QHashOut,
-};
+use city_crypto::hash::base_types::hash160::Hash160;
+use city_crypto::hash::base_types::hash256::Hash256;
+use city_crypto::hash::qhashout::QHashOut;
 use plonky2::hash::hash_types::RichField;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use serde::Serialize;
 use serde_with::serde_as;
 
 #[serde_as]

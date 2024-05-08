@@ -1,21 +1,19 @@
-use city_crypto::{field::qfield::QRichField, hash::qhashout::QHashOut};
-use plonky2::{
-    field::extension::Extendable,
-    hash::{
-        hash_types::{HashOut, HashOutTarget, RichField},
-        poseidon::PoseidonHash,
-    },
-    iop::{
-        target::{BoolTarget, Target},
-        witness::Witness,
-    },
-    plonk::circuit_builder::CircuitBuilder,
-};
+use city_crypto::field::qfield::QRichField;
+use city_crypto::hash::qhashout::QHashOut;
+use plonky2::field::extension::Extendable;
+use plonky2::hash::hash_types::HashOut;
+use plonky2::hash::hash_types::HashOutTarget;
+use plonky2::hash::hash_types::RichField;
+use plonky2::hash::poseidon::PoseidonHash;
+use plonky2::iop::target::BoolTarget;
+use plonky2::iop::target::Target;
+use plonky2::iop::witness::Witness;
+use plonky2::plonk::circuit_builder::CircuitBuilder;
 
-use crate::{
-    builder::{hash::core::CircuitBuilderHashCore, select::CircuitBuilderSelectHelpers},
-    u32::{arithmetic_u32::U32Target, witness::WitnessU32},
-};
+use crate::builder::hash::core::CircuitBuilderHashCore;
+use crate::builder::select::CircuitBuilderSelectHelpers;
+use crate::u32::arithmetic_u32::U32Target;
+use crate::u32::witness::WitnessU32;
 
 pub trait SwappableTarget {
     fn swap<F: RichField + Extendable<D>, const D: usize>(

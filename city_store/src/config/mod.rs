@@ -1,24 +1,20 @@
-use city_common::config::rollup_constants::{
-    GLOBAL_USER_TREE_HEIGHT, L1_DEPOSIT_TREE_HEIGHT, L1_WITHDRAWAL_TREE_HEIGHT,
-};
-use city_crypto::hash::{
-    merkle::core::{DeltaMerkleProofCore, MerkleProofCore},
-    qhashout::QHashOut,
-};
+use city_common::config::rollup_constants::GLOBAL_USER_TREE_HEIGHT;
+use city_common::config::rollup_constants::L1_DEPOSIT_TREE_HEIGHT;
+use city_common::config::rollup_constants::L1_WITHDRAWAL_TREE_HEIGHT;
+use city_crypto::hash::merkle::core::DeltaMerkleProofCore;
+use city_crypto::hash::merkle::core::MerkleProofCore;
+use city_crypto::hash::qhashout::QHashOut;
 use city_rollup_common::api::data::store::CityL1Deposit;
 use kvq::adapters::standard::KVQStandardAdapter;
-use plonky2::{
-    field::goldilocks_field::GoldilocksField, hash::poseidon::PoseidonHash,
-    plonk::config::PoseidonGoldilocksConfig,
-};
+use plonky2::field::goldilocks_field::GoldilocksField;
+use plonky2::hash::poseidon::PoseidonHash;
+use plonky2::plonk::config::PoseidonGoldilocksConfig;
 
-use crate::models::{
-    kvq_merkle::{key::KVQMerkleNodeKey, model::KVQFixedConfigMerkleTreeModel},
-    l1_deposits::{
-        data::{L1DepositKeyByDepositIdCore, L1DepositKeyByTransactionIdCore},
-        model::L1DepositsModel,
-    },
-};
+use crate::models::kvq_merkle::key::KVQMerkleNodeKey;
+use crate::models::kvq_merkle::model::KVQFixedConfigMerkleTreeModel;
+use crate::models::l1_deposits::data::L1DepositKeyByDepositIdCore;
+use crate::models::l1_deposits::data::L1DepositKeyByTransactionIdCore;
+use crate::models::l1_deposits::model::L1DepositsModel;
 
 pub type F = GoldilocksField;
 pub type C = PoseidonGoldilocksConfig;

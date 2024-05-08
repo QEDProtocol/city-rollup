@@ -1,7 +1,7 @@
-use plonky2::{
-    field::extension::Extendable, hash::hash_types::RichField, iop::target::Target,
-    plonk::circuit_builder::CircuitBuilder,
-};
+use plonky2::field::extension::Extendable;
+use plonky2::hash::hash_types::RichField;
+use plonky2::iop::target::Target;
+use plonky2::plonk::circuit_builder::CircuitBuilder;
 
 /*pub fn get_pad_length_sha256_bytes(msg_length: usize) -> usize {
     let mut pad_length = msg_length + 1; // +1 for 0x80
@@ -126,7 +126,8 @@ pub fn reconstruct_preimages_sha256_constrain_padding_length<
 
             let total_pad_length = get_pad_length_sha256_bytes(len);
 
-            // we won't be hashing anything larger than 512mb, so we can safely assume that the length will fit in 4 bytes (instead of 8)
+            // we won't be hashing anything larger than 512mb, so we can safely assume that
+            // the length will fit in 4 bytes (instead of 8)
             let final_pos = pos + total_pad_length - 4;
 
             (end_pos..final_pos).for_each(|i| {

@@ -1,12 +1,11 @@
-use city_crypto::hash::{
-    merkle::core::{DeltaMerkleProof, DeltaMerkleProofCore},
-    qhashout::QHashOut,
-};
-use plonky2::{
-    hash::hash_types::RichField,
-    plonk::{config::GenericConfig, proof::ProofWithPublicInputs},
-};
-use serde::{Deserialize, Serialize};
+use city_crypto::hash::merkle::core::DeltaMerkleProof;
+use city_crypto::hash::merkle::core::DeltaMerkleProofCore;
+use city_crypto::hash::qhashout::QHashOut;
+use plonky2::hash::hash_types::RichField;
+use plonky2::plonk::config::GenericConfig;
+use plonky2::plonk::proof::ProofWithPublicInputs;
+use serde::Deserialize;
+use serde::Serialize;
 use serde_with::serde_as;
 
 use crate::introspection::rollup::introspection_result::BTCRollupIntrospectionResultDeposit;

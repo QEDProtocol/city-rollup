@@ -1,7 +1,8 @@
 use city_crypto::hash::base_types::hash256::Hash256;
 use city_rollup_common::api::data::store::CityL1Deposit;
 use kvq::traits::KVQSerializable;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use serde::Serialize;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct L1DepositKeyByTransactionIdCore<const TABLE_TYPE: u16>(pub [u8; 32]);

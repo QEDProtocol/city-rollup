@@ -1,9 +1,15 @@
 use std::borrow::Cow;
 
-use city_rollup_common::api::data::block::rpc_request::{CityAddWithdrawalRPCRequest, CityClaimDepositRPCRequest, CityRegisterUserRPCRequest, CityTokenTransferRPCRequest};
+use city_rollup_common::api::data::block::rpc_request::CityAddWithdrawalRPCRequest;
+use city_rollup_common::api::data::block::rpc_request::CityClaimDepositRPCRequest;
+use city_rollup_common::api::data::block::rpc_request::CityRegisterUserRPCRequest;
+use city_rollup_common::api::data::block::rpc_request::CityTokenTransferRPCRequest;
 use city_store::config::F;
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use serde_with::{serde_as};
+use serde::Deserialize;
+use serde::Deserializer;
+use serde::Serialize;
+use serde::Serializer;
+use serde_with::serde_as;
 
 /// Represents the version of the RPC protocol
 #[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]
@@ -42,7 +48,7 @@ pub enum RequestParams {
     #[serde(rename = "cr_add_withdrawal")]
     AddWithdrawal(CityAddWithdrawalRPCRequest),
     #[serde(rename = "cr_register_user")]
-    RegisterUser(CityRegisterUserRPCRequest<F>)
+    RegisterUser(CityRegisterUserRPCRequest<F>),
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]

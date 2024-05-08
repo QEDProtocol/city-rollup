@@ -1,21 +1,16 @@
-use std::{fs, path::PathBuf};
+use std::fs;
+use std::path::PathBuf;
 
 use city_common::logging::debug_timer::DebugTimer;
-use city_common_circuit::{
-    circuits::traits::qstandard::QStandardCircuit, field::cubic::CubicExtendable,
-};
+use city_common_circuit::field::cubic::CubicExtendable;
 use city_crypto::hash::qhashout::QHashOut;
 use city_rollup_circuit::sighash_circuits::sighash::CRSigHashCircuit;
-use city_rollup_common::introspection::rollup::introspection::{
-    BlockSpendIntrospectionGadgetConfig, BlockSpendIntrospectionHint,
-};
-use plonky2::{
-    field::types::PrimeField64,
-    plonk::{
-        config::{AlgebraicHasher, GenericConfig, PoseidonGoldilocksConfig},
-        proof::ProofWithPublicInputs,
-    },
-};
+use city_rollup_common::introspection::rollup::introspection::BlockSpendIntrospectionGadgetConfig;
+use city_rollup_common::introspection::rollup::introspection::BlockSpendIntrospectionHint;
+use plonky2::plonk::config::AlgebraicHasher;
+use plonky2::plonk::config::GenericConfig;
+use plonky2::plonk::config::PoseidonGoldilocksConfig;
+use plonky2::plonk::proof::ProofWithPublicInputs;
 
 fn generate_circuit<C: GenericConfig<D> + 'static, const D: usize>(
     introspection_config: BlockSpendIntrospectionGadgetConfig,

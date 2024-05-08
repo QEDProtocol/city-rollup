@@ -1,10 +1,11 @@
-use std::{fs, str::FromStr};
+use std::fs;
+use std::str::FromStr;
 
 use city_common::cli::user_args::SignHashArgs;
 use city_common_circuit::circuits::zk_signature::gen_standard_wrapped_zk_signature_proof;
 use city_crypto::hash::qhashout::QHashOut;
-
-use plonky2::{field::goldilocks_field::GoldilocksField, plonk::config::PoseidonGoldilocksConfig};
+use plonky2::field::goldilocks_field::GoldilocksField;
+use plonky2::plonk::config::PoseidonGoldilocksConfig;
 
 use crate::error::Result;
 

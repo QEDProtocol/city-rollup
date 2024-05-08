@@ -1,26 +1,27 @@
-use crate::{
-    hash::merkle::gadgets::sha256_truncated::{
-        delta_merkle_proof::DeltaMerkleProofTruncatedSha256Gadget,
-        merkle_proof::MerkleProofTruncatedSha256Gadget,
-    },
-    traits::{ConnectableTarget, CreatableTarget, SwappableTarget, ToTargets, WitnessValueFor},
-    u32::{
-        arithmetic_u32::{CircuitBuilderU32, U32Target},
-        witness::WitnessU32,
-    },
-};
-use city_common::binaryhelpers::bytes::{read_u32_be_at, read_u32_le_at};
-use city_crypto::hash::base_types::hash192::{DeltaMerkleProof192, Hash192, MerkleProof192};
+use city_common::binaryhelpers::bytes::read_u32_be_at;
+use city_common::binaryhelpers::bytes::read_u32_le_at;
+use city_crypto::hash::base_types::hash192::DeltaMerkleProof192;
+use city_crypto::hash::base_types::hash192::Hash192;
+use city_crypto::hash::base_types::hash192::MerkleProof192;
+use plonky2::field::extension::Extendable;
+use plonky2::field::types::PrimeField64;
+use plonky2::hash::hash_types::HashOutTarget;
+use plonky2::hash::hash_types::RichField;
+use plonky2::iop::target::BoolTarget;
+use plonky2::iop::target::Target;
+use plonky2::iop::witness::Witness;
+use plonky2::plonk::circuit_builder::CircuitBuilder;
 
-use plonky2::{
-    field::{extension::Extendable, types::PrimeField64},
-    hash::hash_types::{HashOutTarget, RichField},
-    iop::{
-        target::{BoolTarget, Target},
-        witness::Witness,
-    },
-    plonk::circuit_builder::CircuitBuilder,
-};
+use crate::hash::merkle::gadgets::sha256_truncated::delta_merkle_proof::DeltaMerkleProofTruncatedSha256Gadget;
+use crate::hash::merkle::gadgets::sha256_truncated::merkle_proof::MerkleProofTruncatedSha256Gadget;
+use crate::traits::ConnectableTarget;
+use crate::traits::CreatableTarget;
+use crate::traits::SwappableTarget;
+use crate::traits::ToTargets;
+use crate::traits::WitnessValueFor;
+use crate::u32::arithmetic_u32::CircuitBuilderU32;
+use crate::u32::arithmetic_u32::U32Target;
+use crate::u32::witness::WitnessU32;
 
 pub type Hash192Target = [U32Target; 6];
 impl ToTargets for Hash192Target {

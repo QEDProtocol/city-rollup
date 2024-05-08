@@ -1,20 +1,27 @@
-use city_crypto::signature::secp256k1::curve::curve_types::{Curve, CurveScalar};
 use core::marker::PhantomData;
+
+use city_crypto::signature::secp256k1::curve::curve_types::Curve;
+use city_crypto::signature::secp256k1::curve::curve_types::CurveScalar;
 use num::BigUint;
 use plonky2::field::extension::Extendable;
-use plonky2::field::types::{Field, Sample};
+use plonky2::field::types::Field;
+use plonky2::field::types::Sample;
 use plonky2::hash::hash_types::RichField;
 use plonky2::hash::keccak::KeccakHash;
-use plonky2::iop::target::{BoolTarget, Target};
+use plonky2::iop::target::BoolTarget;
+use plonky2::iop::target::Target;
 use plonky2::plonk::circuit_builder::CircuitBuilder;
-use plonky2::plonk::config::{GenericHashOut, Hasher};
-
-use crate::u32::arithmetic_u32::{CircuitBuilderU32, U32Target};
+use plonky2::plonk::config::GenericHashOut;
+use plonky2::plonk::config::Hasher;
 
 use super::biguint::BigUintTarget;
-use super::curve::{AffinePointTarget, CircuitBuilderCurve};
-use super::nonnative::{CircuitBuilderNonNative, NonNativeTarget};
+use super::curve::AffinePointTarget;
+use super::curve::CircuitBuilderCurve;
+use super::nonnative::CircuitBuilderNonNative;
+use super::nonnative::NonNativeTarget;
 use super::split_nonnative::CircuitBuilderSplit;
+use crate::u32::arithmetic_u32::CircuitBuilderU32;
+use crate::u32::arithmetic_u32::U32Target;
 
 const WINDOW_SIZE: usize = 4;
 
@@ -176,7 +183,8 @@ mod tests {
     use plonky2::field::secp256k1_scalar::Secp256K1Scalar;
     use plonky2::iop::witness::PartialWitness;
     use plonky2::plonk::circuit_data::CircuitConfig;
-    use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
+    use plonky2::plonk::config::GenericConfig;
+    use plonky2::plonk::config::PoseidonGoldilocksConfig;
     use rand::rngs::OsRng;
     use rand::Rng;
 

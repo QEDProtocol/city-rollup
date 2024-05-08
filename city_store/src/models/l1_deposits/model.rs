@@ -1,10 +1,13 @@
 use city_crypto::hash::base_types::hash256::Hash256;
 use city_rollup_common::api::data::store::CityL1Deposit;
-use kvq::traits::{KVQBinaryStore, KVQBinaryStoreReader, KVQStoreAdapter, KVQStoreAdapterReader};
+use kvq::traits::KVQBinaryStore;
+use kvq::traits::KVQBinaryStoreReader;
+use kvq::traits::KVQStoreAdapter;
+use kvq::traits::KVQStoreAdapterReader;
 
+use super::data::L1DepositKeyByDepositIdCore;
+use super::data::L1DepositKeyByTransactionIdCore;
 use crate::models::kvq_merkle::model::CHECKPOINT_ID_FUZZY_SIZE;
-
-use super::data::{L1DepositKeyByDepositIdCore, L1DepositKeyByTransactionIdCore};
 
 pub trait L1DepositsModelReaderCore<
     const L1_DEPOSITS_BY_ID_TABLE_TYPE: u16,
