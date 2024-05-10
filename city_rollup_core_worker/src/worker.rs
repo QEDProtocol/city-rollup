@@ -5,13 +5,14 @@ use city_common::logging::trace_timer::TraceTimer;
 use city_common_circuit::circuits::traits::qstandard::QStandardCircuitProvableWithProofStoreSync;
 use city_common_circuit::circuits::traits::qstandard::QStandardCircuitWithDefaultMinified;
 use city_macros::async_infinite_loop;
-use city_rollup_circuit::block_circuits::ops::register_user::CRUserRegistrationCircuitInput;
 use city_rollup_circuit::block_circuits::ops::register_user::WCRUserRegistrationCircuit;
 use city_rollup_common::introspection::rollup::constants::get_network_magic_for_str;
 use city_rollup_common::qworker::job_id::QJobTopic;
 use city_rollup_common::qworker::job_id::QProvingJobDataID;
+use city_rollup_common::qworker::job_witnesses::op::CRUserRegistrationCircuitInput;
 use city_rollup_common::qworker::proof_store::QProofStoreWriterSync;
-use city_rollup_worker_dispatch::implementations::redis::RedisStore;
+use city_rollup_common::qworker::redis_proof_store::SyncRedisProofStore;
+use city_rollup_worker_dispatch::implementations::redis::RedisDispatcher;
 use city_rollup_worker_dispatch::implementations::redis::Q_JOB;
 use city_rollup_worker_dispatch::traits::proving_worker::ProvingWorkerListener;
 use city_store::config::C;
@@ -19,14 +20,12 @@ use city_store::config::D;
 use city_store::config::F;
 use tokio::task::spawn_blocking;
 
-use crate::proof_store::SyncRedisProofStore;
-
 // CRL2TransferCircuitInput
 // CRUserRegistrationCircuitInput
 // CRClaimL1DepositCircuitInput
 // CRProcessL1WithdrawalCircuitInput
 pub async fn run(args: L2WorkerArgs) -> anyhow::Result<()> {
-    let redis_store = RedisStore::new(&args.redis_uri).await?;
+    let redis_dispatcher = RedisDispatcher::new(&args.redis_uri).await?;
     let proof_store = SyncRedisProofStore::new(&args.redis_uri)?;
     let network_magic = get_network_magic_for_str(args.network.to_string())?;
 
@@ -38,12 +37,11 @@ pub async fn run(args: L2WorkerArgs) -> anyhow::Result<()> {
     trace_timer.lap("built op_register_user");
     async_infinite_loop!(1000, {
         let proof_store = proof_store.clone();
-        let mut redis_store = redis_store.clone();
-        while let Ok(message) = redis_store
-            .get_next_message::<Q_JOB>(QJobTopic::GenerateStandardProof as u32)
-            .await
+        let mut redis_dispatcher = redis_dispatcher.clone();
+        while let Some((id, message)) = redis_dispatcher
+            .receive_one::<Q_JOB>(QJobTopic::GenerateStandardProof as u32)
+            .await?
         {
-            println!("new job");
             let mut proof_store = proof_store.clone();
             if let Ok((job_id, register_user)) = serde_json::from_slice::<(
                 QProvingJobDataID,

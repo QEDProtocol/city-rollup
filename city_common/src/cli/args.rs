@@ -38,6 +38,8 @@ pub struct OrchestratorArgs {
     pub redis_uri: String,
     #[clap(short, env, long, default_value = "db", env)]
     pub db_path: String,
+    #[clap(short, long, default_value = "dogeregtest", env)]
+    pub network: String,
 }
 
 #[derive(Clone, Args)]

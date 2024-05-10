@@ -479,6 +479,27 @@ name = "city_macros"
 version = "0.1.0"
 
 [[package]]
+name = "city_redis_store"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "bb8-redis",
+ "bincode",
+ "city_rollup_common",
+ "criterion",
+ "hex",
+ "hex-literal",
+ "plonky2",
+ "postcard",
+ "rand_chacha",
+ "redis",
+ "rsmq_async",
+ "serde",
+ "serde_repr",
+]
+
+[[package]]
 name = "city_rollup_circuit"
 version = "0.1.0"
 dependencies = [
@@ -511,7 +532,10 @@ dependencies = [
  "hex-literal",
  "kvq",
  "plonky2",
+ "r2d2",
+ "r2d2_redis",
  "rand_chacha",
+ "redis",
  "reqwest",
  "serde",
  "serde_json",
@@ -528,6 +552,7 @@ dependencies = [
  "bytes",
  "city_common",
  "city_common_circuit",
+ "city_redis_store",
  "city_rollup_common",
  "city_rollup_worker_dispatch",
  "city_store",
@@ -551,25 +576,34 @@ name = "city_rollup_core_orchestrator"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "bincode",
+ "bitcoin",
  "city_common",
  "city_common_circuit",
  "city_crypto",
  "city_macros",
+ "city_redis_store",
  "city_rollup_circuit",
  "city_rollup_common",
  "city_rollup_worker_dispatch",
  "city_store",
  "criterion",
+ "hex",
  "hex-literal",
+ "k256",
  "kvq",
  "kvq_store_redb",
  "plonky2",
+ "rand",
  "rand_chacha",
  "redb",
  "redis",
+ "reqwest",
  "serde",
  "serde_json",
+ "serde_with",
  "tokio",
+ "url",
 ]
 
 [[package]]
@@ -614,6 +648,7 @@ dependencies = [
  "redis",
  "rsmq_async",
  "serde",
+ "serde_json",
  "serde_repr",
 ]
 

@@ -1,83 +1,30 @@
-use city_crypto::hash::qhashout::QHashOut;
-use plonky2::field::extension::Extendable;
-use plonky2::hash::hash_types::HashOutTarget;
-use plonky2::hash::hash_types::RichField;
-use plonky2::hash::poseidon::PoseidonHash;
-use plonky2::iop::witness::PartialWitness;
-use plonky2::iop::witness::Witness;
-use plonky2::iop::witness::WitnessWrite;
-use plonky2::plonk::circuit_builder::CircuitBuilder;
-use plonky2::plonk::circuit_data::CircuitConfig;
-use plonky2::plonk::circuit_data::CircuitData;
-use plonky2::plonk::circuit_data::CommonCircuitData;
-use plonky2::plonk::circuit_data::VerifierCircuitTarget;
-use plonky2::plonk::circuit_data::VerifierOnlyCircuitData;
-use plonky2::plonk::config::AlgebraicHasher;
-use plonky2::plonk::config::GenericConfig;
-use plonky2::plonk::config::Hasher;
-use plonky2::plonk::proof::ProofWithPublicInputs;
-use plonky2::plonk::proof::ProofWithPublicInputsTarget;
-use serde::Deserialize;
-use serde::Serialize;
+use city_crypto::hash::{
+    merkle::treeprover::AggStateTransitionWithEventsInput, qhashout::QHashOut,
+};
+use plonky2::{
+    field::extension::Extendable,
+    hash::{
+        hash_types::{HashOutTarget, RichField},
+        poseidon::PoseidonHash,
+    },
+    iop::witness::{PartialWitness, Witness, WitnessWrite},
+    plonk::{
+        circuit_builder::CircuitBuilder,
+        circuit_data::{
+            CircuitConfig, CircuitData, CommonCircuitData, VerifierCircuitTarget,
+            VerifierOnlyCircuitData,
+        },
+        config::{AlgebraicHasher, GenericConfig},
+        proof::{ProofWithPublicInputs, ProofWithPublicInputsTarget},
+    },
+};
 
-use crate::builder::hash::core::CircuitBuilderHashCore;
-use crate::builder::verify::CircuitBuilderVerifyProofHelpers;
-use crate::circuits::traits::qstandard::QStandardCircuit;
-use crate::proof_minifier::pm_core::get_circuit_fingerprint_generic;
-use crate::treeprover::traits::TPLeafAggregator;
-use crate::treeprover::traits::TreeProverAggCircuit;
-
-pub trait AggStateTrackableWithEventsInput<F: RichField> {
-    fn get_state_transition_with_events(&self) -> StateTransitionWithEvents<F>;
-}
-
-#[derive(Debug, Clone, Copy, Deserialize, Serialize)]
-#[serde(bound = "")]
-pub struct StateTransitionWithEvents<F: RichField> {
-    pub state_transition_start: QHashOut<F>,
-    pub state_transition_end: QHashOut<F>,
-    pub event_hash: QHashOut<F>,
-}
-
-#[derive(Debug, Clone, Copy, Deserialize, Serialize)]
-#[serde(bound = "")]
-pub struct AggStateTransitionWithEventsInput<F: RichField> {
-    pub left_input: StateTransitionWithEvents<F>,
-    pub right_input: StateTransitionWithEvents<F>,
-    pub left_proof_is_leaf: bool,
-    pub right_proof_is_leaf: bool,
-}
-impl<F: RichField> AggStateTransitionWithEventsInput<F> {
-    pub fn condense(&self) -> StateTransitionWithEvents<F> {
-        StateTransitionWithEvents {
-            state_transition_start: self.left_input.state_transition_start,
-            state_transition_end: self.right_input.state_transition_end,
-            event_hash: QHashOut(PoseidonHash::two_to_one(
-                self.left_input.event_hash.0,
-                self.right_input.event_hash.0,
-            )),
-        }
-    }
-    pub fn combine_with_right_leaf<T: AggStateTrackableWithEventsInput<F>>(
-        &self,
-        right: &T,
-    ) -> Self {
-        Self {
-            left_input: self.condense(),
-            right_input: right.get_state_transition_with_events(),
-            left_proof_is_leaf: false,
-            right_proof_is_leaf: true,
-        }
-    }
-    pub fn combine_with_left_leaf<T: AggStateTrackableWithEventsInput<F>>(&self, left: &T) -> Self {
-        Self {
-            left_input: left.get_state_transition_with_events(),
-            right_input: self.condense(),
-            left_proof_is_leaf: true,
-            right_proof_is_leaf: false,
-        }
-    }
-}
+use crate::{
+    builder::{hash::core::CircuitBuilderHashCore, verify::CircuitBuilderVerifyProofHelpers},
+    circuits::traits::qstandard::QStandardCircuit,
+    proof_minifier::pm_core::get_circuit_fingerprint_generic,
+    treeprover::traits::TreeProverAggCircuit,
+};
 
 #[derive(Debug, Clone)]
 pub struct AggStateTrackableWithEventsCircuitHeaderGadget {
@@ -305,47 +252,6 @@ impl<C: GenericConfig<D>, const D: usize> QStandardCircuit<C, D>
     }
     fn get_common_circuit_data_ref(&self) -> &CommonCircuitData<C::F, D> {
         &self.circuit_data.common
-    }
-}
-
-pub struct AggWTTELeafAggregator;
-
-impl<IL: AggStateTrackableWithEventsInput<F>, F: RichField>
-    TPLeafAggregator<IL, AggStateTransitionWithEventsInput<F>> for AggWTTELeafAggregator
-{
-    fn get_output_from_inputs(
-        left: &AggStateTransitionWithEventsInput<F>,
-        right: &AggStateTransitionWithEventsInput<F>,
-    ) -> AggStateTransitionWithEventsInput<F> {
-        AggStateTransitionWithEventsInput {
-            left_input: left.condense(),
-            right_input: right.condense(),
-            left_proof_is_leaf: false,
-            right_proof_is_leaf: false,
-        }
-    }
-
-    fn get_output_from_left_leaf(
-        left: &IL,
-        right: &AggStateTransitionWithEventsInput<F>,
-    ) -> AggStateTransitionWithEventsInput<F> {
-        right.combine_with_left_leaf(left)
-    }
-
-    fn get_output_from_right_leaf(
-        left: &AggStateTransitionWithEventsInput<F>,
-        right: &IL,
-    ) -> AggStateTransitionWithEventsInput<F> {
-        left.combine_with_right_leaf(right)
-    }
-
-    fn get_output_from_leaves(left: &IL, right: &IL) -> AggStateTransitionWithEventsInput<F> {
-        AggStateTransitionWithEventsInput {
-            left_input: left.get_state_transition_with_events(),
-            right_input: right.get_state_transition_with_events(),
-            left_proof_is_leaf: true,
-            right_proof_is_leaf: true,
-        }
     }
 }
 

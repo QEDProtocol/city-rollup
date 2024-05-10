@@ -2,299 +2,527 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use city_common::cli::args::OrchestratorArgs;
-use city_crypto::hash::qhashout::QHashOut;
 use city_macros::async_infinite_loop;
 use city_macros::define_table;
 use city_macros::spawn_async_infinite_loop;
-use city_rollup_circuit::block_circuits::ops::claim_l1_deposit::CRClaimL1DepositCircuitInput;
-use city_rollup_circuit::block_circuits::ops::l2_transfer::circuit::CRL2TransferCircuitInput;
-use city_rollup_circuit::block_circuits::ops::process_l1_withdrawal::CRProcessL1WithdrawalCircuitInput;
-use city_rollup_circuit::block_circuits::ops::register_user::CRUserRegistrationCircuitInput;
+use city_redis_store::ChainState;
+use city_redis_store::RedisStore;
+use city_redis_store::DEPOSIT_COUNTER;
+use city_redis_store::TASK_COUNTER;
+use city_rollup_circuit::worker::toolbox::circuits::CRWorkerToolboxCoreCircuits;
+use city_rollup_common::api::data::block::requested_actions::CityAddDepositRequest;
 use city_rollup_common::api::data::block::requested_actions::CityAddWithdrawalRequest;
 use city_rollup_common::api::data::block::requested_actions::CityClaimDepositRequest;
+use city_rollup_common::api::data::block::requested_actions::CityProcessWithdrawalRequest;
 use city_rollup_common::api::data::block::requested_actions::CityRegisterUserRequest;
+use city_rollup_common::api::data::block::requested_actions::CityRequest;
 use city_rollup_common::api::data::block::requested_actions::CityTokenTransferRequest;
+use city_rollup_common::introspection::rollup::constants::get_network_magic_for_str;
+use city_rollup_common::introspection::rollup::introspection_result::BTCRollupIntrospectionResultDeposit;
 use city_rollup_common::qworker::job_id::ProvingJobCircuitType;
+use city_rollup_common::qworker::job_id::ProvingJobDataType;
 use city_rollup_common::qworker::job_id::QJobTopic;
 use city_rollup_common::qworker::job_id::QProvingJobDataID;
-use city_rollup_worker_dispatch::implementations::redis::rollup_key::LAST_BLOCK_ID;
-use city_rollup_worker_dispatch::implementations::redis::rollup_key::LAST_BLOCK_TIMESTAMP;
-use city_rollup_worker_dispatch::implementations::redis::rollup_key::LAST_ORCHESTOR_BLOCK_ID;
-use city_rollup_worker_dispatch::implementations::redis::rollup_key::PROVING_JOB_COUNTER;
-use city_rollup_worker_dispatch::implementations::redis::RedisStore;
+use city_rollup_common::qworker::job_witnesses::op::CRAddL1DepositCircuitInput;
+use city_rollup_common::qworker::job_witnesses::op::CRAddL1WithdrawalCircuitInput;
+use city_rollup_common::qworker::job_witnesses::op::CRClaimL1DepositCircuitInput;
+use city_rollup_common::qworker::job_witnesses::op::CRL2TransferCircuitInput;
+use city_rollup_common::qworker::job_witnesses::op::CRProcessL1WithdrawalCircuitInput;
+use city_rollup_common::qworker::job_witnesses::op::CRUserRegistrationCircuitInput;
+use city_rollup_common::qworker::job_witnesses::op::CircuitInputWithJobId;
+use city_rollup_worker_dispatch::implementations::redis::RedisDispatcher;
 use city_rollup_worker_dispatch::implementations::redis::Q_JOB;
 use city_rollup_worker_dispatch::implementations::redis::Q_TX;
 use city_rollup_worker_dispatch::traits::proving_dispatcher::ProvingDispatcher;
 use city_rollup_worker_dispatch::traits::proving_worker::ProvingWorkerListener;
+use city_store::config::C;
+use city_store::config::D;
 use city_store::config::F;
 use city_store::store::city::base::CityStore;
+use kvq::traits::KVQBinaryStore;
+use kvq::traits::KVQSerializable;
 use kvq_store_redb::KVQReDBStore;
 use redb::Database;
 use redb::TableDefinition;
-use redis::AsyncCommands;
 
 pub const DEFAULT_BLOCK_TIME_IN_SECS: u32 = 4;
+pub const SEQUENCING_TICK: u64 = 100;
+pub const BLOCK_BUILDING_INTERVAL: u64 = 1000;
 
 define_table! { KV, &[u8], &[u8] }
 
-pub async fn run(args: OrchestratorArgs) -> anyhow::Result<()> {
-    let redis_store = RedisStore::new(&args.redis_uri).await?;
-    let redis_storec = redis_store.clone();
-    let db = Arc::new(Database::create(args.db_path)?);
+#[derive(Clone)]
+pub struct Orchestrator {
+    pub store: RedisStore,
+    pub db: Arc<Database>,
+    pub dispatcher: RedisDispatcher,
+    pub toolbox: Arc<CRWorkerToolboxCoreCircuits<C, D>>,
+}
 
-    // sequence new block
-    spawn_async_infinite_loop!(100, {
-        let redis_storec = redis_storec.clone();
-        let mut conn = redis_storec.get_connection().await?;
+impl Orchestrator {
+    pub async fn new(args: OrchestratorArgs) -> anyhow::Result<Self> {
+        let store = RedisStore::new(&args.redis_uri).await?;
+        let dispatcher = RedisDispatcher::new_with_pool(store.get_pool())?;
+        let db = Arc::new(Database::create(args.db_path)?);
 
-        let last_block_id: u64 = conn.get(LAST_BLOCK_ID).await.unwrap_or(0);
-        let last_block_timestamp: u32 = conn.get(LAST_BLOCK_TIMESTAMP).await.unwrap_or(0);
-        let (timestamp, _): (u32, u32) = redis::cmd("time").query_async(&mut *conn).await?;
+        let orchestrator = Self {
+            store,
+            db,
+            dispatcher,
+            toolbox: Arc::new(CRWorkerToolboxCoreCircuits::new(get_network_magic_for_str(
+                args.network.to_string(),
+            )?)),
+        };
 
-        let mut pipeline = redis::pipe();
-        pipeline.atomic();
+        orchestrator.sequence_block();
 
-        if last_block_timestamp == 0 {
-            pipeline
-                .set(LAST_BLOCK_ID, 0)
-                .ignore()
-                .set(LAST_BLOCK_TIMESTAMP, timestamp)
-                .ignore()
-                .query_async(&mut *conn)
-                .await?;
-        } else if timestamp - last_block_timestamp >= DEFAULT_BLOCK_TIME_IN_SECS {
-            let nblocks = ((timestamp - last_block_timestamp) / DEFAULT_BLOCK_TIME_IN_SECS) as u64;
-            let block_id: u64 = last_block_id + nblocks;
-            pipeline
-                .set(LAST_BLOCK_ID, block_id)
-                .ignore()
-                .set(LAST_BLOCK_TIMESTAMP, timestamp)
-                .ignore()
-                .query_async(&mut *conn)
-                .await?;
-        }
-    });
+        Ok(orchestrator)
+    }
 
-    async_infinite_loop!(1000, {
-        let db = db.clone();
-        let mut redis_store = redis_store.clone();
+    pub fn sequence_block(&self) {
+        let redis_store = self.store.clone();
 
+        spawn_async_infinite_loop!(SEQUENCING_TICK, {
+            redis_store.try_sequence_block().await?;
+        });
+    }
+
+    pub async fn run(self) {
+        async_infinite_loop!(BLOCK_BUILDING_INTERVAL, {
+            let mut this = self.clone();
+            this.build_block().await?;
+        })
+    }
+
+    pub async fn build_block(&mut self) -> anyhow::Result<()> {
+        let db = self.db.clone();
         let wxn = db.begin_write()?;
 
-        let last_orchestrator_block_id: u64 = redis_store
-            .get_connection()
-            .await?
-            .get(LAST_ORCHESTOR_BLOCK_ID)
-            .await
-            .unwrap_or(0);
-        let last_block_id: u64 = redis_store
-            .get_connection()
-            .await?
-            .get(LAST_BLOCK_ID)
-            .await
-            .unwrap_or(0);
+        let chain_state = self.store.get_block_state().await?;
 
         // keep us to be 2 blocks before the latest block to ensure the queue is filled
         // with all block transactions
-        if last_orchestrator_block_id + 2 >= last_block_id {
+        if chain_state.last_orchestrator_block_id + 2 >= chain_state.last_block_id {
             println!("wait new blocks");
             return Ok(());
         }
 
         println!(
             "block height: {}, current building block: {}",
-            last_block_id, last_orchestrator_block_id
+            chain_state.last_block_id, chain_state.last_orchestrator_block_id
         );
 
-        let mut token_transfers: Vec<(QProvingJobDataID, CRL2TransferCircuitInput<F>)> = vec![];
-        let mut register_users: Vec<(QProvingJobDataID, CRUserRegistrationCircuitInput<F>)> =
-            vec![];
-        let mut claim_l1_deposits: Vec<(QProvingJobDataID, CRClaimL1DepositCircuitInput<F>)> =
-            vec![];
-        let mut withdrawals: Vec<(QProvingJobDataID, CRProcessL1WithdrawalCircuitInput<F>)> =
-            vec![];
+        let messages = self
+            .dispatcher
+            .receive_all::<Q_TX>(chain_state.last_orchestrator_block_id)
+            .await?
+            .into_iter()
+            .map(|(id, message)| (id, serde_json::from_slice::<CityRequest<F>>(&message)))
+            .collect::<Vec<_>>();
 
         {
             let mut store = KVQReDBStore::new(wxn.open_table(KV)?);
 
-            while let Ok(message) = redis_store
-                .get_next_message::<Q_TX>(last_orchestrator_block_id)
-                .await
-            {
-                let task_index: u32 = redis_store
-                    .get_connection()
-                    .await?
-                    .incr(PROVING_JOB_COUNTER, 1)
-                    .await
-                    .unwrap_or(1)
-                    - 1;
-
-                if let Ok(add_withdrawal) =
-                    serde_json::from_slice::<CityAddWithdrawalRequest>(&message)
-                {
-                    let delta_merkle_proof = CityStore::add_withdrawal_to_tree_from_request(
-                        &mut store,
-                        last_orchestrator_block_id,
-                        &add_withdrawal,
-                    )?;
-                    withdrawals.push((
-                        QProvingJobDataID::new_proof_job_id(
-                            last_orchestrator_block_id,
-                            ProvingJobCircuitType::AddL1Withdrawal,
-                            add_withdrawal.signature_proof_id.group_id,
-                            add_withdrawal.signature_proof_id.sub_group_id,
-                            task_index,
-                        ),
-                        CRProcessL1WithdrawalCircuitInput {
-                            withdrawal_tree_delta_merkle_proof: delta_merkle_proof,
-                            allowed_circuit_hashes_root: QHashOut::from_values(1, 2, 3, 4),
-                        },
-                    ))
-                } else if let Ok(claim_l1_deposit) =
-                    serde_json::from_slice::<CityClaimDepositRequest>(&message)
-                {
-                    let user_tree_delta_merkle_proof = CityStore::increment_user_balance(
-                        &mut store,
-                        last_orchestrator_block_id,
-                        claim_l1_deposit.user_id,
-                        claim_l1_deposit.value,
-                        None,
-                    )?;
-                    let deposit_tree_delta_merkle_proof = CityStore::mark_deposit_as_claimed(
-                        &mut store,
-                        last_orchestrator_block_id,
-                        claim_l1_deposit.deposit_id.into(),
-                    )?;
-                    claim_l1_deposits.push((
-                        QProvingJobDataID::new_proof_job_id(
-                            last_orchestrator_block_id,
-                            ProvingJobCircuitType::ClaimL1Deposit,
-                            claim_l1_deposit.signature_proof_id.group_id,
-                            claim_l1_deposit.signature_proof_id.sub_group_id,
-                            task_index,
-                        ),
-                        CRClaimL1DepositCircuitInput {
-                            deposit: todo!(),
-                            user_tree_delta_merkle_proof,
-                            deposit_tree_delta_merkle_proof,
-                            allowed_circuit_hashes_root: QHashOut::from_values(1, 2, 3, 4),
-                            signature_proof_id: claim_l1_deposit.signature_proof_id,
-                        },
-                    ));
-                } else if let Ok(register_user) =
-                    serde_json::from_slice::<CityRegisterUserRequest<F>>(&message)
-                {
-                    let delta_merkle_proof = CityStore::register_user(
-                        &mut store,
-                        last_orchestrator_block_id,
-                        register_user.user_id,
-                        register_user.public_key,
-                    )?;
-                    register_users.push((
-                        QProvingJobDataID::new_proof_job_id(
-                            last_orchestrator_block_id,
-                            ProvingJobCircuitType::RegisterUser,
-                            1,
-                            register_user.rpc_node_id as u32,
-                            task_index,
-                        ),
-                        CRUserRegistrationCircuitInput {
-                            user_tree_delta_merkle_proof: delta_merkle_proof,
-                            allowed_circuit_hashes_root: QHashOut::from_values(1, 2, 3, 4),
-                        },
-                    ))
-                } else if let Ok(token_transfer) =
-                    serde_json::from_slice::<CityTokenTransferRequest>(&message)
-                {
-                    let sender_user_tree_delta_merkle_proof = CityStore::decrement_user_balance(
-                        &mut store,
-                        last_orchestrator_block_id,
-                        token_transfer.user_id,
-                        token_transfer.value,
-                        None,
-                    )?;
-                    let receiver_user_tree_delta_merkle_proof = CityStore::increment_user_balance(
-                        &mut store,
-                        last_orchestrator_block_id,
-                        token_transfer.to,
-                        token_transfer.value,
-                        None,
-                    )?;
-                    token_transfers.push((
-                        QProvingJobDataID::new_proof_job_id(
-                            last_orchestrator_block_id,
-                            ProvingJobCircuitType::TransferTokensL2,
-                            token_transfer.signature_proof_id.group_id,
-                            token_transfer.signature_proof_id.sub_group_id,
-                            task_index,
-                        ),
-                        CRL2TransferCircuitInput {
-                            sender_user_tree_delta_merkle_proof,
-                            receiver_user_tree_delta_merkle_proof,
-                            allowed_circuit_hashes_root: QHashOut::from_values(1, 2, 3, 4),
-                            signature_proof_id: token_transfer.signature_proof_id,
-                        },
-                    ))
-                } else {
-                    println!("unknown tx");
+            for (id, message) in messages {
+                match message? {
+                    CityRequest::CityTokenTransferRequest((rpc_node_id, req)) => {
+                        self.process_l2_transfer_request(
+                            &mut store,
+                            &chain_state,
+                            rpc_node_id,
+                            id,
+                            &req,
+                        )
+                        .await?;
+                    }
+                    CityRequest::CityClaimDepositRequest((rpc_node_id, req)) => {
+                        self.process_claim_deposit_request(
+                            &mut store,
+                            &chain_state,
+                            rpc_node_id,
+                            id,
+                            &req,
+                        )
+                        .await?;
+                    }
+                    CityRequest::CityAddWithdrawalRequest((rpc_node_id, req)) => {
+                        self.process_add_withdrawal_request(
+                            &mut store,
+                            &chain_state,
+                            rpc_node_id,
+                            id,
+                            &req,
+                        )
+                        .await?;
+                    }
+                    CityRequest::CityRegisterUserRequest((rpc_node_id, req)) => {
+                        self.process_register_user_request(
+                            &mut store,
+                            &chain_state,
+                            rpc_node_id,
+                            id,
+                            &req,
+                        )
+                        .await?;
+                    }
+                    CityRequest::CityAddDepositRequest((rpc_node_id, req)) => {
+                        self.process_add_deposit_request(
+                            &mut store,
+                            &chain_state,
+                            rpc_node_id,
+                            id,
+                            &req,
+                        )
+                        .await?;
+                    }
+                    CityRequest::CityProcessWithdrawalRequest((rpc_node_id, req)) => {
+                        self.process_complete_l1_withdrawal_request(
+                            &mut store,
+                            &chain_state,
+                            rpc_node_id,
+                            id,
+                            &req,
+                        )
+                        .await?;
+                    }
                 }
             }
         }
 
-        println!(
-            "{} token_transfers, {} registered_users, {} claim_l1_deposits, {} withdrawals",
-            token_transfers.len(),
-            register_users.len(),
-            claim_l1_deposits.len(),
-            withdrawals.len()
+        wxn.commit()?;
+        Ok(())
+    }
+
+    pub async fn process_add_deposit_request<S: KVQBinaryStore>(
+        &mut self,
+        store: &mut S,
+        chain_state: &ChainState,
+        rpc_node_id: u32,
+        message_id: String,
+        req: &CityAddDepositRequest,
+    ) -> anyhow::Result<CircuitInputWithJobId<CRAddL1DepositCircuitInput<F>>> {
+        let (deposit_id, _) = self.store.incr_block_state_counter(DEPOSIT_COUNTER).await?;
+        let (task_index, _) = self.store.incr_block_state_counter(TASK_COUNTER).await?;
+
+        let deposit_tree_delta_merkle_proof = CityStore::<S>::add_deposit_from_request(
+            store,
+            chain_state.last_orchestrator_block_id,
+            deposit_id,
+            req,
+        )?;
+
+        let witness = CRAddL1DepositCircuitInput {
+            deposit_tree_delta_merkle_proof,
+            allowed_circuit_hashes_root: self
+                .toolbox
+                .get_fingerprint_config()
+                .op_add_l1_deposit
+                .allowed_circuit_hashes_root,
+        };
+
+        let job_id = QProvingJobDataID::new(
+            QJobTopic::GenerateStandardProof,
+            chain_state.last_orchestrator_block_id,
+            ProvingJobCircuitType::AddL1Deposit.to_circuit_group_id(),
+            rpc_node_id,
+            task_index as u32,
+            ProvingJobCircuitType::AddL1Deposit,
+            ProvingJobDataType::InputWitness,
+            0,
         );
 
-        wxn.commit()?;
-
-        println!("assign token transfers proving jobs to workers");
-        for token_transfer in token_transfers {
-            redis_store
-                .dispatch::<Q_JOB>(
-                    QJobTopic::GenerateStandardProof as u64,
-                    &serde_json::to_vec(&token_transfer)?,
-                )
-                .await?;
-        }
-
-        println!("assign register users proving jobs to workers");
-        for register_user in register_users {
-            redis_store
-                .dispatch::<Q_JOB>(
-                    QJobTopic::GenerateStandardProof as u64,
-                    &serde_json::to_vec(&register_user)?,
-                )
-                .await?;
-        }
-
-        println!("assign claim l1 deposits proving jobs to workers");
-        for claim_l1_deposit in claim_l1_deposits {
-            redis_store
-                .dispatch::<Q_JOB>(
-                    QJobTopic::GenerateStandardProof as u64,
-                    &serde_json::to_vec(&claim_l1_deposit)?,
-                )
-                .await?;
-        }
-
-        println!("assign withdrawals proving jobs to workers\n");
-        for withdrawal in withdrawals {
-            redis_store
-                .dispatch::<Q_JOB>(
-                    QJobTopic::GenerateStandardProof as u64,
-                    &serde_json::to_vec(&withdrawal)?,
-                )
-                .await?;
-        }
-
-        redis_store
-            .get_connection()
-            .await?
-            .incr(LAST_ORCHESTOR_BLOCK_ID, 1)
+        self.store
+            .set_bytes_by_id(job_id, &witness.to_bytes()?)
             .await?;
-    });
+
+        self.dispatcher
+            .delete_message::<Q_TX>(chain_state.last_orchestrator_block_id, message_id)
+            .await?;
+        self.dispatcher
+            .dispatch::<Q_JOB>(job_id.topic as u64, job_id)
+            .await?;
+
+        Ok(CircuitInputWithJobId::new(witness, job_id))
+    }
+
+    pub async fn process_add_withdrawal_request<S: KVQBinaryStore>(
+        &mut self,
+        store: &mut S,
+        chain_state: &ChainState,
+        rpc_node_id: u32,
+        message_id: String,
+        req: &CityAddWithdrawalRequest,
+    ) -> anyhow::Result<CircuitInputWithJobId<CRAddL1WithdrawalCircuitInput<F>>> {
+        let (task_index, _) = self.store.incr_block_state_counter(TASK_COUNTER).await?;
+        let user_tree_delta_merkle_proof = CityStore::<S>::decrement_user_balance(
+            store,
+            chain_state.last_orchestrator_block_id,
+            req.user_id,
+            req.value,
+            None,
+        )?;
+        let withdrawal_tree_delta_merkle_proof =
+            CityStore::<S>::add_withdrawal_to_tree_from_request(
+                store,
+                chain_state.last_orchestrator_block_id,
+                req,
+            )?;
+
+        let witness = CRAddL1WithdrawalCircuitInput {
+            allowed_circuit_hashes_root: self
+                .toolbox
+                .get_fingerprint_config()
+                .op_add_l1_withdrawal
+                .allowed_circuit_hashes_root,
+            user_tree_delta_merkle_proof,
+            withdrawal_tree_delta_merkle_proof,
+            signature_proof_id: req.signature_proof_id,
+        };
+
+        let job_id = QProvingJobDataID::new(
+            QJobTopic::GenerateStandardProof,
+            chain_state.last_orchestrator_block_id,
+            ProvingJobCircuitType::AddL1Withdrawal.to_circuit_group_id(),
+            rpc_node_id,
+            task_index as u32,
+            ProvingJobCircuitType::AddL1Withdrawal,
+            ProvingJobDataType::InputWitness,
+            0,
+        );
+
+        self.store
+            .set_bytes_by_id(job_id, &witness.to_bytes()?)
+            .await?;
+
+        self.dispatcher
+            .delete_message::<Q_TX>(chain_state.last_orchestrator_block_id, message_id)
+            .await?;
+        self.dispatcher
+            .dispatch::<Q_JOB>(job_id.topic as u64, job_id)
+            .await?;
+
+        Ok(CircuitInputWithJobId::new(witness, job_id))
+    }
+    pub async fn process_claim_deposit_request<S: KVQBinaryStore>(
+        &mut self,
+        store: &mut S,
+        chain_state: &ChainState,
+        rpc_node_id: u32,
+        message_id: String,
+        req: &CityClaimDepositRequest,
+    ) -> anyhow::Result<CircuitInputWithJobId<CRClaimL1DepositCircuitInput<F>>> {
+        let (task_index, _) = self.store.incr_block_state_counter(TASK_COUNTER).await?;
+        let deposit_tree_delta_merkle_proof = CityStore::<S>::mark_deposit_as_claimed(
+            store,
+            chain_state.last_orchestrator_block_id,
+            req.deposit_id,
+        )?;
+        let user_tree_delta_merkle_proof = CityStore::<S>::increment_user_balance(
+            store,
+            chain_state.last_orchestrator_block_id,
+            req.user_id,
+            req.value,
+            None,
+        )?;
+        let deposit = BTCRollupIntrospectionResultDeposit::from_byte_representation(
+            &req.public_key.0,
+            req.txid,
+            req.value,
+        );
+
+        let witness = CRClaimL1DepositCircuitInput {
+            deposit_tree_delta_merkle_proof,
+            allowed_circuit_hashes_root: self
+                .toolbox
+                .get_fingerprint_config()
+                .op_claim_l1_deposit
+                .allowed_circuit_hashes_root,
+            deposit,
+            user_tree_delta_merkle_proof,
+            signature_proof_id: req.signature_proof_id,
+        };
+
+        let job_id = QProvingJobDataID::new(
+            QJobTopic::GenerateStandardProof,
+            chain_state.last_orchestrator_block_id,
+            ProvingJobCircuitType::ClaimL1Deposit.to_circuit_group_id(),
+            rpc_node_id,
+            task_index as u32,
+            ProvingJobCircuitType::ClaimL1Deposit,
+            ProvingJobDataType::InputWitness,
+            0,
+        );
+
+        self.store
+            .set_bytes_by_id(job_id, &witness.to_bytes()?)
+            .await?;
+
+        self.dispatcher
+            .delete_message::<Q_TX>(chain_state.last_orchestrator_block_id, message_id)
+            .await?;
+        self.dispatcher
+            .dispatch::<Q_JOB>(job_id.topic as u64, job_id)
+            .await?;
+
+        Ok(CircuitInputWithJobId::new(witness, job_id))
+    }
+
+    pub async fn process_l2_transfer_request<S: KVQBinaryStore>(
+        &mut self,
+        store: &mut S,
+        chain_state: &ChainState,
+        rpc_node_id: u32,
+        message_id: String,
+        req: &CityTokenTransferRequest,
+    ) -> anyhow::Result<CircuitInputWithJobId<CRL2TransferCircuitInput<F>>> {
+        let (task_index, _) = self.store.incr_block_state_counter(TASK_COUNTER).await?;
+        let sender_user_tree_delta_merkle_proof = CityStore::<S>::decrement_user_balance(
+            store,
+            chain_state.last_orchestrator_block_id,
+            req.user_id,
+            req.value,
+            None,
+        )?;
+
+        let receiver_user_tree_delta_merkle_proof = CityStore::<S>::increment_user_balance(
+            store,
+            chain_state.last_orchestrator_block_id,
+            req.to,
+            req.value,
+            None,
+        )?;
+
+        let witness = CRL2TransferCircuitInput {
+            sender_user_tree_delta_merkle_proof,
+            receiver_user_tree_delta_merkle_proof,
+            allowed_circuit_hashes_root: self
+                .toolbox
+                .get_fingerprint_config()
+                .op_l2_transfer
+                .allowed_circuit_hashes_root,
+            signature_proof_id: req.signature_proof_id,
+        };
+
+        let job_id = QProvingJobDataID::new(
+            QJobTopic::GenerateStandardProof,
+            chain_state.last_orchestrator_block_id,
+            ProvingJobCircuitType::TransferTokensL2.to_circuit_group_id(),
+            rpc_node_id,
+            task_index as u32,
+            ProvingJobCircuitType::TransferTokensL2,
+            ProvingJobDataType::InputWitness,
+            0,
+        );
+
+        self.store
+            .set_bytes_by_id(job_id, &witness.to_bytes()?)
+            .await?;
+
+        self.dispatcher
+            .delete_message::<Q_TX>(chain_state.last_orchestrator_block_id, message_id)
+            .await?;
+        self.dispatcher
+            .dispatch::<Q_JOB>(job_id.topic as u64, job_id)
+            .await?;
+
+        Ok(CircuitInputWithJobId::new(witness, job_id))
+    }
+
+    pub async fn process_complete_l1_withdrawal_request<S: KVQBinaryStore>(
+        &mut self,
+        store: &mut S,
+        chain_state: &ChainState,
+        rpc_node_id: u32,
+        message_id: String,
+        req: &CityProcessWithdrawalRequest,
+    ) -> anyhow::Result<CircuitInputWithJobId<CRProcessL1WithdrawalCircuitInput<F>>> {
+        let (task_index, _) = self.store.incr_block_state_counter(TASK_COUNTER).await?;
+        let withdrawal_tree_delta_merkle_proof = CityStore::<S>::mark_withdrawal_as_completed(
+            store,
+            chain_state.last_orchestrator_block_id,
+            req.withdrawal_id,
+        )?;
+        let witness = CRProcessL1WithdrawalCircuitInput {
+            withdrawal_tree_delta_merkle_proof,
+            allowed_circuit_hashes_root: self
+                .toolbox
+                .get_fingerprint_config()
+                .op_process_l1_withdrawal
+                .allowed_circuit_hashes_root,
+        };
+
+        let job_id = QProvingJobDataID::new(
+            QJobTopic::GenerateStandardProof,
+            chain_state.last_orchestrator_block_id,
+            ProvingJobCircuitType::ProcessL1Withdrawal.to_circuit_group_id(),
+            rpc_node_id,
+            task_index as u32,
+            ProvingJobCircuitType::ProcessL1Withdrawal,
+            ProvingJobDataType::InputWitness,
+            0,
+        );
+
+        self.store
+            .set_bytes_by_id(job_id, &witness.to_bytes()?)
+            .await?;
+
+        self.dispatcher
+            .delete_message::<Q_TX>(chain_state.last_orchestrator_block_id, message_id)
+            .await?;
+        self.dispatcher
+            .dispatch::<Q_JOB>(job_id.topic as u64, job_id)
+            .await?;
+
+        Ok(CircuitInputWithJobId::new(witness, job_id))
+    }
+
+    pub async fn process_register_user_request<S: KVQBinaryStore>(
+        &mut self,
+        store: &mut S,
+        chain_state: &ChainState,
+        rpc_node_id: u32,
+        message_id: String,
+        req: &CityRegisterUserRequest<F>,
+    ) -> anyhow::Result<CircuitInputWithJobId<CRUserRegistrationCircuitInput<F>>> {
+        let (task_index, _) = self.store.incr_block_state_counter(TASK_COUNTER).await?;
+
+        let user_tree_delta_merkle_proof = CityStore::<S>::register_user(
+            store,
+            chain_state.last_orchestrator_block_id,
+            req.user_id,
+            req.public_key,
+        )?;
+        let witness = CRUserRegistrationCircuitInput {
+            user_tree_delta_merkle_proof,
+            allowed_circuit_hashes_root: self
+                .toolbox
+                .get_fingerprint_config()
+                .op_register_user
+                .allowed_circuit_hashes_root,
+        };
+
+        let job_id = QProvingJobDataID::new(
+            QJobTopic::GenerateStandardProof,
+            chain_state.last_orchestrator_block_id,
+            ProvingJobCircuitType::RegisterUser.to_circuit_group_id(),
+            rpc_node_id,
+            task_index as u32,
+            ProvingJobCircuitType::RegisterUser,
+            ProvingJobDataType::InputWitness,
+            0,
+        );
+
+        self.store
+            .set_bytes_by_id(job_id, &witness.to_bytes()?)
+            .await?;
+
+        self.dispatcher
+            .delete_message::<Q_TX>(chain_state.last_orchestrator_block_id, message_id)
+            .await?;
+        self.dispatcher
+            .dispatch::<Q_JOB>(job_id.topic as u64, job_id)
+            .await?;
+
+        Ok(CircuitInputWithJobId::new(witness, job_id))
+    }
 }

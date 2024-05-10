@@ -4,16 +4,16 @@ use city_common_circuit::circuits::traits::qstandard::QStandardCircuit;
 use city_common_circuit::circuits::traits::qstandard::QStandardCircuitProvableWithProofStoreSync;
 use city_common_circuit::circuits::traits::qstandard::QStandardCircuitWithDefaultMinified;
 use city_common_circuit::treeprover::aggregation::state_transition::AggStateTransitionCircuit;
-use city_common_circuit::treeprover::aggregation::state_transition::AggStateTransitionInput;
-use city_common_circuit::treeprover::aggregation::state_transition::AggWTLeafAggregator;
 use city_common_circuit::treeprover::prover::prove_tree_serial;
-use city_common_circuit::treeprover::traits::TPLeafAggregator;
 use city_common_circuit::treeprover::traits::TreeProverAggCircuit;
+use city_crypto::hash::merkle::treeprover::AggStateTransitionInput;
+use city_crypto::hash::merkle::treeprover::AggWTLeafAggregator;
+use city_crypto::hash::merkle::treeprover::TPLeafAggregator;
 use city_crypto::hash::qhashout::QHashOut;
-use city_rollup_circuit::block_circuits::ops::register_user::CRUserRegistrationCircuitInput;
 use city_rollup_circuit::block_circuits::ops::register_user::WCRUserRegistrationCircuit;
 use city_rollup_circuit::worker::toolbox::test_circ::CRWorkerTestToolboxCoreCircuits;
 use city_rollup_common::introspection::rollup::constants::get_network_magic_for_str;
+use city_rollup_common::qworker::job_witnesses::op::CRUserRegistrationCircuitInput;
 use city_rollup_common::qworker::memory_proof_store::SimpleProofStoreMemory;
 use city_store::store::city::base::CityStore;
 use kvq::memory::simple::KVQSimpleMemoryBackingStore;
@@ -25,11 +25,15 @@ use plonky2::plonk::proof::ProofWithPublicInputs;
 use crate::build;
 use crate::error::Result;
 
+
 fn gen_user_registration_proofs<S: KVQBinaryStore>(
     store: &mut S,
     n: usize,
     allowed_circuit_hashes_root: QHashOut<GoldilocksField>,
 ) -> Vec<CRUserRegistrationCircuitInput<GoldilocksField>> {
+    const _D: usize = 2;
+    type _C = PoseidonGoldilocksConfig;
+    type _F = GoldilocksField;
     let checkpoint_id = 0u64;
     (0..n)
         .map(|i| {
@@ -46,8 +50,7 @@ fn gen_user_registration_proofs<S: KVQBinaryStore>(
         .collect()
 }
 
-#[allow(dead_code)]
-fn test_basic(args: &TreeProveTestArgs) -> Result<()> {
+fn _test_basic(args: &TreeProveTestArgs) -> Result<()> {
     const D: usize = 2;
     type C = PoseidonGoldilocksConfig;
     type F = GoldilocksField;

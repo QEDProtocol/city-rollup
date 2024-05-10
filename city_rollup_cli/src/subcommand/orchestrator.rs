@@ -12,6 +12,7 @@ pub async fn run(args: OrchestratorArgs) -> Result<()> {
 ",
         build::PKG_VERSION
     );
-    city_rollup_core_orchestrator::orchestrator::run(args).await?;
+    let orchestrator = city_rollup_core_orchestrator::orchestrator::Orchestrator::new(args).await?;
+    orchestrator.run().await;
     Ok(())
 }

@@ -16,6 +16,7 @@ city_common_circuit   = { path = "../city_common_circuit" }
 city_common           = { path = "../city_common" }
 city_rollup_common    = { path = "../city_rollup_common" }
 city_rollup_worker_dispatch    = { path = "../city_rollup_worker_dispatch" }
+city_redis_store    = { path = "../city_redis_store" }
 tokio                 = { workspace = true }
 http-body-util  = { workspace = true }
 hyper  = { workspace = true }

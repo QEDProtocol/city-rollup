@@ -16,6 +16,15 @@ pub struct KVQStandardAdapter<S, K: KVQSerializable, V: KVQSerializable> {
 impl<S: KVQBinaryStoreReader, K: KVQSerializable, V: KVQSerializable> KVQStoreAdapterReader<S, K, V>
     for KVQStandardAdapter<S, K, V>
 {
+    fn get_exact_if_exists(s: &S, key: &K) -> anyhow::Result<Option<V>> {
+        let r = s.get_exact_if_exists(&key.to_bytes()?)?;
+        if r.is_some() {
+            let result = V::from_bytes(&r.unwrap())?;
+            Ok(Some(result))
+        } else {
+            Ok(None)
+        }
+    }
     fn get_exact(s: &S, key: &K) -> anyhow::Result<V> {
         let r = s.get_exact(&key.to_bytes()?)?;
         Ok(V::from_bytes(&r)?)

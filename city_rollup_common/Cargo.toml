@@ -20,6 +20,9 @@ kvq           = { path = "../kvq" }
 async-trait = { workspace = true }
 serde_repr = { workspace = true }
 bincode = { workspace = true }
+r2d2 = { workspace = true }
+r2d2_redis = { workspace = true }
+redis = { workspace = true }
 
 [dev-dependencies]
 criterion = "0.5.1"
