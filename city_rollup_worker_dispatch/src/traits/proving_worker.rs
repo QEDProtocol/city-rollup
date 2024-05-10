@@ -8,8 +8,20 @@ pub trait ProvingWorkerListener: ProvingDispatcher {
         &mut self,
         topic: impl Into<u64> + Send + 'static,
     ) -> anyhow::Result<()>;
-    async fn get_next_message<const Q_KIND: u8>(
+
+    async fn receive_one<const Q_KIND: u8>(
         &mut self,
         topic: impl Into<u64> + Send + 'static,
-    ) -> anyhow::Result<Vec<u8>>;
+    ) -> anyhow::Result<Option<(String, Vec<u8>)>>;
+
+    async fn receive_all<const Q_KIND: u8>(
+        &mut self,
+        topic: impl Into<u64> + Send + 'static,
+    ) -> anyhow::Result<Vec<(String, Vec<u8>)>>;
+
+    async fn delete_message<const Q_KIND: u8>(
+        &mut self,
+        topic: impl Into<u64> + Send + 'static,
+        id: String,
+    ) -> anyhow::Result<bool>;
 }

@@ -127,32 +127,12 @@ where
 pub fn verify_standard_wrapped_zk_signature_proof<C: GenericConfig<D> + 'static, const D: usize>(
     public_key: Vec<u8>,
     signature_proof: Vec<u8>,
-) -> anyhow::Result<ProofWithPublicInputs<C::F, C, D>>
+) -> anyhow::Result<()>
 where
     C::Hasher: AlgebraicHasher<C::F>,
 {
     let public_key = QHashOut::<C::F>::from_bytes(&public_key);
     let circuit = ZKSignatureCircuit::<C, D>::new(public_key);
-    let proof = ProofWithPublicInputs::<C::F, C, D>::from_bytes(
-        signature_proof,
-        circuit.get_common_circuit_data_ref(),
-    )?;
-    let verifier = VerifierCircuitData {
-        verifier_only: circuit.get_verifier_config_ref().clone(),
-        common: circuit.get_common_circuit_data_ref().clone(),
-    };
-    verifier.verify(proof.clone())?;
-
-    Ok(proof)
-}
-
-pub fn verify_l1_signature_proof<C: GenericConfig<D> + 'static, const D: usize>(
-    signature_proof: Vec<u8>,
-) -> anyhow::Result<()>
-where
-    C::Hasher: AlgebraicHasher<C::F>,
-{
-    let circuit = L1Secp256K1SignatureCircuit::<C, D>::new();
     let proof = ProofWithPublicInputs::<C::F, C, D>::from_bytes(
         signature_proof,
         circuit.get_common_circuit_data_ref(),

@@ -1,18 +1,20 @@
-use city_common_circuit::builder::core::CircuitBuilderHelpersCore;
-use city_common_circuit::builder::hash::core::CircuitBuilderHashCore;
-use city_common_circuit::debug::circuit_tracer::DebugCircuitTracer;
-use city_common_circuit::hash::base_types::hash256bytes::Hash256BytesTarget;
-use city_common_circuit::hash::merkle::partial::compute_partial_merkle_root_from_leaves_algebraic_circuit;
-use city_rollup_common::introspection::rollup::introspection_result::BTCRollupIntrospectionResultDeposit;
-use city_rollup_common::introspection::rollup::introspection_result::WITHDRAWAL_TYPE_P2PKH;
-use city_rollup_common::introspection::rollup::introspection_result::WITHDRAWAL_TYPE_P2SH;
-use plonky2::field::extension::Extendable;
-use plonky2::hash::hash_types::HashOutTarget;
-use plonky2::hash::hash_types::RichField;
-use plonky2::iop::target::Target;
-use plonky2::iop::witness::Witness;
-use plonky2::plonk::circuit_builder::CircuitBuilder;
-use plonky2::plonk::config::AlgebraicHasher;
+use city_common_circuit::{
+    builder::{core::CircuitBuilderHelpersCore, hash::core::CircuitBuilderHashCore},
+    debug::circuit_tracer::DebugCircuitTracer,
+    hash::{
+        base_types::hash256bytes::Hash256BytesTarget,
+        merkle::partial::compute_partial_merkle_root_from_leaves_algebraic_circuit,
+    },
+};
+use city_rollup_common::introspection::rollup::introspection_result::{
+    BTCRollupIntrospectionResultDeposit, WITHDRAWAL_TYPE_P2PKH, WITHDRAWAL_TYPE_P2SH,
+};
+use plonky2::{
+    field::extension::Extendable,
+    hash::hash_types::{HashOutTarget, RichField},
+    iop::{target::Target, witness::Witness},
+    plonk::{circuit_builder::CircuitBuilder, config::AlgebraicHasher},
+};
 
 #[derive(Debug, Clone)]
 pub struct BTCRollupIntrospectionResultDepositGadget {

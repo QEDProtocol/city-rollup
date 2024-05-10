@@ -1,6 +1,4 @@
-use async_trait::async_trait;
 use city_crypto::hash::qhashout::QHashOut;
-use city_rollup_common::qworker::proof_store::QProofStoreReaderAsync;
 use city_rollup_common::qworker::proof_store::QProofStoreReaderSync;
 use plonky2::plonk::circuit_data::CommonCircuitData;
 use plonky2::plonk::circuit_data::VerifierOnlyCircuitData;
@@ -65,20 +63,6 @@ pub trait QStandardCircuitProvableWithProofStoreSync<
 >: QStandardCircuit<C, D>
 {
     fn prove_with_proof_store_sync(
-        &self,
-        store: &S,
-        input: &I,
-    ) -> anyhow::Result<ProofWithPublicInputs<C::F, C, D>>;
-}
-#[async_trait]
-pub trait QStandardCircuitProvableWithProofStoreAsync<
-    S: QProofStoreReaderAsync,
-    I: Serialize + Clone,
-    C: GenericConfig<D>,
-    const D: usize,
->: QStandardCircuit<C, D>
-{
-    async fn prove_with_proof_store_async(
         &self,
         store: &S,
         input: &I,

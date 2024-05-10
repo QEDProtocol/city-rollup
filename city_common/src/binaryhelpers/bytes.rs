@@ -65,7 +65,13 @@ impl<'de> Deserialize<'de> for CompressedPublicKey {
         ))
     }
 }
-
+impl CompressedPublicKey {
+    pub fn new_from_slice(slice: &[u8]) -> Self {
+        let mut arr = [0u8; 33];
+        arr.copy_from_slice(slice);
+        CompressedPublicKey(arr)
+    }
+}
 pub fn bytes_to_u32_vec_le(bytes: &[u8]) -> Vec<u32> {
     bytes
         .chunks_exact(4)

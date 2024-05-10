@@ -1,5 +1,4 @@
-use city_common_circuit::treeprover::data::TPCircuitFingerprintConfig;
-use city_crypto::hash::qhashout::QHashOut;
+use city_crypto::hash::{merkle::treeprover::TPCircuitFingerprintConfig, qhashout::QHashOut};
 use plonky2::hash::hash_types::RichField;
 use serde::Deserialize;
 use serde::Serialize;

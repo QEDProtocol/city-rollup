@@ -6,9 +6,9 @@ use plonky2::hash::hash_types::RichField;
 use serde::Deserialize;
 use serde::Serialize;
 
-use crate::qworker::job_id::QProvingJobDataID;
+use crate::{introspection::transaction::BTCTransaction, qworker::job_id::QProvingJobDataID};
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Hash, Copy, PartialEq, Eq)]
 pub struct CityTokenTransferRequest {
     request_type: u8,
     pub user_id: u64,
@@ -41,7 +41,7 @@ pub struct CityClaimDepositRequest {
     request_type: u8,
     pub user_id: u64,
     pub nonce: u64,
-    pub deposit_id: u32,
+    pub deposit_id: u64,
     pub value: u64,
 
     pub txid: Hash256,
@@ -52,7 +52,7 @@ impl CityClaimDepositRequest {
     pub fn new(
         user_id: u64,
         nonce: u64,
-        deposit_id: u32,
+        deposit_id: u64,
         value: u64,
         txid: Hash256,
         public_key: [u8; 33],
@@ -85,6 +85,31 @@ impl CityAddDepositRequest {
             value,
             txid,
             public_key: CompressedPublicKey(public_key),
+        }
+    }
+    pub fn new_from_transaction(funding_tx: &BTCTransaction) -> Self {
+        assert_eq!(
+            funding_tx.inputs.len(),
+            1,
+            "deposits should only have one input (p2pkh)"
+        );
+        assert_eq!(
+            funding_tx.outputs.len(),
+            1,
+            "deposits should only have one output (send to layer 2)"
+        );
+        assert_eq!(
+            funding_tx.inputs[0].script.len(),
+            106,
+            "the input script for a deposit should be a p2pkh signature + public key reveal"
+        );
+
+        let public_key = CompressedPublicKey::new_from_slice(&funding_tx.inputs[0].script[73..106]);
+        Self {
+            request_type: 2,
+            value: funding_tx.outputs[0].value,
+            txid: funding_tx.get_hash(),
+            public_key: public_key,
         }
     }
 }
@@ -147,16 +172,26 @@ pub struct CityRegisterUserRequest<F: RichField> {
     request_type: u8,
     pub user_id: u64,
     pub public_key: QHashOut<F>,
-    pub rpc_node_id: u64,
 }
 
 impl<F: RichField> CityRegisterUserRequest<F> {
-    pub fn new(user_id: u64, rpc_node_id: u64, public_key: QHashOut<F>) -> Self {
+    pub fn new(user_id: u64, public_key: QHashOut<F>) -> Self {
         Self {
             request_type: 5,
             user_id,
             public_key,
-            rpc_node_id,
         }
     }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(bound = "")]
+#[serde(untagged)]
+pub enum CityRequest<F: RichField> {
+    CityTokenTransferRequest((u32, CityTokenTransferRequest)),
+    CityClaimDepositRequest((u32, CityClaimDepositRequest)),
+    CityAddWithdrawalRequest((u32, CityAddWithdrawalRequest)),
+    CityRegisterUserRequest((u32, CityRegisterUserRequest<F>)),
+    CityAddDepositRequest((u32, CityAddDepositRequest)),
+    CityProcessWithdrawalRequest((u32, CityProcessWithdrawalRequest)),
 }

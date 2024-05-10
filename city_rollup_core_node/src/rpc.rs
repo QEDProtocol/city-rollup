@@ -30,16 +30,6 @@ pub enum Id {
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(tag = "method", content = "params")]
 pub enum RequestParams {
-    // Dev
-    #[serde(rename = "cr_get")]
-    Get(#[serde_as(as = "serde_with::hex::Hex")] Vec<u8>),
-    #[serde(rename = "cr_set")]
-    Set(#[serde_as(as = "(serde_with::hex::Hex,serde_with::hex::Hex)")] (Vec<u8>, Vec<u8>)),
-    #[serde(rename = "cr_push")]
-    Push(#[serde_as(as = "(_,serde_with::hex::Hex)")] (u32, Vec<u8>)),
-    #[serde(rename = "cr_pull")]
-    Pull(u32),
-
     // User
     #[serde(rename = "cr_token_transfer")]
     TokenTransfer(CityTokenTransferRPCRequest),

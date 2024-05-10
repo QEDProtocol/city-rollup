@@ -1,59 +1,27 @@
-use city_common_circuit::circuits::traits::qstandard::QStandardCircuit;
-use city_common_circuit::circuits::traits::qstandard::QStandardCircuitProvableWithProofStoreSync;
-use city_common_circuit::circuits::zk_signature_wrapper::ZKSignatureWrapperCircuit;
-use city_common_circuit::proof_minifier::pm_core::get_circuit_fingerprint_generic;
-use city_common_circuit::treeprover::aggregation::state_transition_track_events::AggStateTrackableWithEventsInput;
-use city_common_circuit::treeprover::aggregation::state_transition_track_events::StateTransitionWithEvents;
-use city_common_circuit::treeprover::wrapper::TreeProverLeafCircuitWrapper;
-use city_crypto::hash::merkle::core::DeltaMerkleProofCore;
-use city_crypto::hash::qhashout::QHashOut;
-use city_crypto::hash::traits::hasher::MerkleZeroHasher;
-use city_rollup_common::qworker::job_id::QProvingJobDataID;
-use city_rollup_common::qworker::proof_store::QProofStoreReaderSync;
-use plonky2::hash::hash_types::HashOut;
-use plonky2::hash::hash_types::HashOutTarget;
-use plonky2::hash::hash_types::RichField;
-use plonky2::hash::poseidon::PoseidonHash;
-use plonky2::iop::witness::PartialWitness;
-use plonky2::iop::witness::WitnessWrite;
-use plonky2::plonk::circuit_builder::CircuitBuilder;
-use plonky2::plonk::circuit_data::CircuitConfig;
-use plonky2::plonk::circuit_data::CircuitData;
-use plonky2::plonk::circuit_data::CommonCircuitData;
-use plonky2::plonk::circuit_data::VerifierOnlyCircuitData;
-use plonky2::plonk::config::AlgebraicHasher;
-use plonky2::plonk::config::GenericConfig;
-use plonky2::plonk::config::Hasher;
-use plonky2::plonk::proof::ProofWithPublicInputs;
-use plonky2::plonk::proof::ProofWithPublicInputsTarget;
-use serde::Deserialize;
-use serde::Serialize;
+use city_common_circuit::{
+    circuits::{
+        traits::qstandard::{QStandardCircuit, QStandardCircuitProvableWithProofStoreSync},
+        zk_signature_wrapper::ZKSignatureWrapperCircuit,
+    },
+    proof_minifier::pm_core::get_circuit_fingerprint_generic, treeprover::wrapper::TreeProverLeafCircuitWrapper,
+};
+use city_crypto::hash::{qhashout::QHashOut, traits::hasher::MerkleZeroHasher};
+
+use city_rollup_common::qworker::{
+    job_witnesses::op::CRAddL1WithdrawalCircuitInput, proof_store::QProofStoreReaderSync,
+};
+use plonky2::{
+    hash::hash_types::{HashOut, HashOutTarget},
+    iop::witness::{PartialWitness, WitnessWrite},
+    plonk::{
+        circuit_builder::CircuitBuilder,
+        circuit_data::{CircuitConfig, CircuitData, CommonCircuitData, VerifierOnlyCircuitData},
+        config::{AlgebraicHasher, GenericConfig},
+        proof::{ProofWithPublicInputs, ProofWithPublicInputsTarget},
+    },
+};
 
 use crate::state::user::add_l1_withdrawal::AddL1WithdrawalSingleGadget;
-
-#[derive(Debug, Clone, Deserialize, Serialize)]
-#[serde(bound = "")]
-pub struct CRAddL1WithdrawalCircuitInput<F: RichField> {
-    pub user_tree_delta_merkle_proof: DeltaMerkleProofCore<QHashOut<F>>,
-    pub withdrawal_tree_delta_merkle_proof: DeltaMerkleProofCore<QHashOut<F>>,
-    pub allowed_circuit_hashes_root: QHashOut<F>,
-    pub signature_proof_id: QProvingJobDataID,
-}
-impl<F: RichField> AggStateTrackableWithEventsInput<F> for CRAddL1WithdrawalCircuitInput<F> {
-    fn get_state_transition_with_events(&self) -> StateTransitionWithEvents<F> {
-        StateTransitionWithEvents {
-            state_transition_start: QHashOut(PoseidonHash::two_to_one(
-                self.user_tree_delta_merkle_proof.old_root.0,
-                self.withdrawal_tree_delta_merkle_proof.old_root.0,
-            )),
-            state_transition_end: QHashOut(PoseidonHash::two_to_one(
-                self.user_tree_delta_merkle_proof.new_root.0,
-                self.withdrawal_tree_delta_merkle_proof.new_root.0,
-            )),
-            event_hash: self.withdrawal_tree_delta_merkle_proof.new_value,
-        }
-    }
-}
 
 #[derive(Debug)]
 pub struct CRAddL1WithdrawalCircuit<C: GenericConfig<D> + 'static, const D: usize>

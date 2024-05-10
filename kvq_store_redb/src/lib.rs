@@ -119,6 +119,15 @@ where
         }
         Ok(results)
     }
+
+    fn get_exact_if_exists(&self, key: &Vec<u8>) -> anyhow::Result<Option<Vec<u8>>> {
+        let res = self.kv.get(key.as_slice())?;
+        if res.is_some() {
+            Ok(Some(res.unwrap().value().to_vec()))
+        } else {
+            Ok(None)
+        }
+    }
 }
 
 impl<'db, 'txn> KVQBinaryStoreWriter

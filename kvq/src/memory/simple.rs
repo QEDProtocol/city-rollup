@@ -121,6 +121,15 @@ impl KVQBinaryStoreReader for KVQSimpleMemoryBackingStore {
         }
         Ok(results)
     }
+
+    fn get_exact_if_exists(&self, key: &Vec<u8>) -> anyhow::Result<Option<Vec<u8>>> {
+        let result = self.map.get(key);
+        if result.is_some() {
+            Ok(Some(result.unwrap().to_owned()))
+        } else {
+            Ok(None)
+        }
+    }
 }
 
 impl KVQBinaryStoreWriter for KVQSimpleMemoryBackingStore {

@@ -1,24 +1,33 @@
 use city_common::logging::trace_timer::TraceTimer;
-use city_common_circuit::circuits::l1_secp256k1_signature::L1Secp256K1SignatureCircuit;
-use city_common_circuit::circuits::traits::qstandard::QStandardCircuit;
-use city_common_circuit::circuits::traits::qstandard::QStandardCircuitWithDefaultMinified;
-use city_common_circuit::circuits::zk_signature_wrapper::ZKSignatureWrapperCircuit;
-use city_common_circuit::treeprover::aggregation::state_transition::AggStateTransitionCircuit;
-use city_common_circuit::treeprover::aggregation::state_transition_track_events::AggStateTransitionWithEventsCircuit;
-use city_common_circuit::treeprover::data::TPCircuitFingerprintConfig;
-use city_common_circuit::treeprover::traits::TreeProverAggCircuit;
-use city_crypto::hash::traits::hasher::MerkleZeroHasher;
-use plonky2::hash::hash_types::HashOut;
-use plonky2::plonk::config::AlgebraicHasher;
-use plonky2::plonk::config::GenericConfig;
+use city_common_circuit::{
+    circuits::{
+        l1_secp256k1_signature::L1Secp256K1SignatureCircuit,
+        traits::qstandard::{QStandardCircuit, QStandardCircuitWithDefaultMinified},
+        zk_signature_wrapper::ZKSignatureWrapperCircuit,
+    },
+    treeprover::{
+        aggregation::{
+            state_transition::AggStateTransitionCircuit,
+            state_transition_track_events::AggStateTransitionWithEventsCircuit,
+        },
+        traits::TreeProverAggCircuit,
+    },
+};
+use city_crypto::hash::{
+    merkle::treeprover::TPCircuitFingerprintConfig, traits::hasher::MerkleZeroHasher,
+};
+use city_rollup_common::qworker::fingerprints::CRWorkerToolboxCoreCircuitFingerprints;
+use plonky2::{
+    hash::hash_types::HashOut,
+    plonk::config::{AlgebraicHasher, GenericConfig},
+};
 
-use super::fingerprints::CRWorkerToolboxCoreCircuitFingerprints;
-use crate::block_circuits::ops::add_l1_deposit::WCRAddL1DepositCircuit;
-use crate::block_circuits::ops::add_l1_withdrawal::CRAddL1WithdrawalCircuit;
-use crate::block_circuits::ops::claim_l1_deposit::CRClaimL1DepositCircuit;
-use crate::block_circuits::ops::l2_transfer::circuit::CRL2TransferCircuit;
-use crate::block_circuits::ops::process_l1_withdrawal::WCRProcessL1WithdrawalCircuit;
-use crate::block_circuits::ops::register_user::WCRUserRegistrationCircuit;
+use crate::block_circuits::ops::{
+    add_l1_deposit::WCRAddL1DepositCircuit, add_l1_withdrawal::CRAddL1WithdrawalCircuit,
+    claim_l1_deposit::CRClaimL1DepositCircuit, l2_transfer::circuit::CRL2TransferCircuit,
+    process_l1_withdrawal::WCRProcessL1WithdrawalCircuit,
+    register_user::WCRUserRegistrationCircuit,
+};
 
 pub struct CRWorkerToolboxCoreCircuits<C: GenericConfig<D> + 'static, const D: usize>
 where
