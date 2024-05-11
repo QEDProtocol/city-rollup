@@ -21,6 +21,8 @@ use city_store::config::C;
 use city_store::config::D;
 use tokio::task::spawn_blocking;
 
+pub const PROVING_INTERVAL: u64 = 60000;
+
 pub async fn run(args: L2WorkerArgs) -> anyhow::Result<()> {
     let redis_dispatcher = RedisDispatcher::new(&args.redis_uri).await?;
     let proof_store = SyncRedisProofStore::new(&args.redis_uri)?;
@@ -30,7 +32,7 @@ pub async fn run(args: L2WorkerArgs) -> anyhow::Result<()> {
     trace_timer.lap("start => build core toolbox circuits");
     let toolbox = Arc::new(CRWorkerToolboxCoreCircuits::<C, D>::new(network_magic));
 
-    async_infinite_loop!(1000, {
+    async_infinite_loop!(PROVING_INTERVAL, {
         let proof_store = proof_store.clone();
         let mut redis_dispatcher = redis_dispatcher.clone();
         while let Some((id, message)) = redis_dispatcher
@@ -38,7 +40,8 @@ pub async fn run(args: L2WorkerArgs) -> anyhow::Result<()> {
             .await?
         {
             let mut proof_store = proof_store.clone();
-            if let Ok(mut job_id) = serde_json::from_slice::<QProvingJobDataID>(&message) {
+            // Single proof
+            if let Ok(job_id) = serde_json::from_slice::<QProvingJobDataID>(&message) {
                 if job_id.data_type == ProvingJobDataType::InputWitness {
                     let witness = proof_store.get_bytes_by_id(job_id)?;
                     if job_id.circuit_type == ProvingJobCircuitType::RegisterUser {
@@ -49,7 +52,6 @@ pub async fn run(args: L2WorkerArgs) -> anyhow::Result<()> {
                                 &bincode::deserialize(&witness)?,
                             )?;
                             println!("register_user proof generated");
-                            job_id.data_type = ProvingJobDataType::OutputProof;
                             proof_store.set_proof_by_id(job_id, &proof)?;
                             println!("register_user proof stored");
                             Ok::<_, anyhow::Error>(())
@@ -66,7 +68,6 @@ pub async fn run(args: L2WorkerArgs) -> anyhow::Result<()> {
                                 &bincode::deserialize(&witness)?,
                             )?;
                             println!("claim l1 deposit proof generated");
-                            job_id.data_type = ProvingJobDataType::OutputProof;
                             proof_store.set_proof_by_id(job_id, &proof)?;
                             println!("claim l1 deposit proof stored");
                             Ok::<_, anyhow::Error>(())
@@ -83,7 +84,6 @@ pub async fn run(args: L2WorkerArgs) -> anyhow::Result<()> {
                                 &bincode::deserialize(&witness)?,
                             )?;
                             println!("claim l1 deposit proof generated");
-                            job_id.data_type = ProvingJobDataType::OutputProof;
                             proof_store.set_proof_by_id(job_id, &proof)?;
                             println!("claim l1 deposit proof stored");
                             Ok::<_, anyhow::Error>(())
@@ -100,7 +100,6 @@ pub async fn run(args: L2WorkerArgs) -> anyhow::Result<()> {
                                 &bincode::deserialize(&witness)?,
                             )?;
                             println!("add l1 withdrawal proof generated");
-                            job_id.data_type = ProvingJobDataType::OutputProof;
                             proof_store.set_proof_by_id(job_id, &proof)?;
                             println!("add l1 withdrawal proof stored");
                             Ok::<_, anyhow::Error>(())
@@ -119,7 +118,6 @@ pub async fn run(args: L2WorkerArgs) -> anyhow::Result<()> {
                                     &bincode::deserialize(&witness)?,
                                 )?;
                             println!("process l1 withdrawal proof generated");
-                            job_id.data_type = ProvingJobDataType::OutputProof;
                             proof_store.set_proof_by_id(job_id, &proof)?;
                             println!("process l1 withdrawal proof stored");
                             Ok::<_, anyhow::Error>(())
@@ -136,7 +134,6 @@ pub async fn run(args: L2WorkerArgs) -> anyhow::Result<()> {
                                 &bincode::deserialize(&witness)?,
                             )?;
                             println!("process l1 withdrawal proof generated");
-                            job_id.data_type = ProvingJobDataType::OutputProof;
                             proof_store.set_proof_by_id(job_id, &proof)?;
                             println!("process l1 withdrawal proof stored");
                             Ok::<_, anyhow::Error>(())
@@ -148,6 +145,7 @@ pub async fn run(args: L2WorkerArgs) -> anyhow::Result<()> {
                     }
                 }
             }
+
         }
     });
 }

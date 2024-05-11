@@ -1,25 +1,21 @@
-use city_crypto::hash::{
-    merkle::{
-        core::DeltaMerkleProofCore,
-        treeprover::{
-            AggStateTrackableInput, AggStateTrackableWithEventsInput, AggStateTransition,
-            StateTransitionWithEvents,
-        },
-    },
-    qhashout::QHashOut,
-};
-use kvq::traits::KVQSerializable;
-use plonky2::{
-    hash::{hash_types::RichField, poseidon::PoseidonHash},
-    plonk::config::Hasher,
-};
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::fmt::Debug;
 
-use crate::{
-    introspection::rollup::introspection_result::BTCRollupIntrospectionResultDeposit,
-    qworker::job_id::{QProvingJobDataID},
-};
+use city_crypto::hash::merkle::core::DeltaMerkleProofCore;
+use city_crypto::hash::merkle::treeprover::AggStateTrackableInput;
+use city_crypto::hash::merkle::treeprover::AggStateTrackableWithEventsInput;
+use city_crypto::hash::merkle::treeprover::AggStateTransition;
+use city_crypto::hash::merkle::treeprover::StateTransitionWithEvents;
+use city_crypto::hash::qhashout::QHashOut;
+use kvq::traits::KVQSerializable;
+use plonky2::hash::hash_types::RichField;
+use plonky2::hash::poseidon::PoseidonHash;
+use plonky2::plonk::config::Hasher;
+use serde::de::DeserializeOwned;
+use serde::Deserialize;
+use serde::Serialize;
+
+use crate::introspection::rollup::introspection_result::BTCRollupIntrospectionResultDeposit;
+use crate::qworker::job_id::QProvingJobDataID;
 
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
 #[serde(bound = "")]
