@@ -1,10 +1,5 @@
-use crate::{
-    circuits::traits::qstandard::{
-        QStandardCircuit, QStandardCircuitProvableWithProofStoreSync, QStandardCircuitWithDefault,
-        QStandardCircuitWithDefaultMinified,
-    },
-    proof_minifier::pm_chain_dynamic::OASProofMinifierDynamicChain,
-};
+use std::fmt::Debug;
+
 use city_crypto::hash::qhashout::QHashOut;
 use city_rollup_common::qworker::proof_store::QProofStoreReaderSync;
 use plonky2::plonk::circuit_data::CommonCircuitData;
@@ -12,9 +7,14 @@ use plonky2::plonk::circuit_data::VerifierOnlyCircuitData;
 use plonky2::plonk::config::AlgebraicHasher;
 use plonky2::plonk::config::GenericConfig;
 use plonky2::plonk::proof::ProofWithPublicInputs;
+use serde::de::DeserializeOwned;
 use serde::Serialize;
-use core::fmt::Debug;
 
+use crate::circuits::traits::qstandard::QStandardCircuit;
+use crate::circuits::traits::qstandard::QStandardCircuitProvableWithProofStoreSync;
+use crate::circuits::traits::qstandard::QStandardCircuitWithDefault;
+use crate::circuits::traits::qstandard::QStandardCircuitWithDefaultMinified;
+use crate::proof_minifier::pm_chain_dynamic::OASProofMinifierDynamicChain;
 
 pub struct TreeProverLeafCircuitWrapper<AC, C: 'static + GenericConfig<D>, const D: usize>
 where
@@ -90,7 +90,7 @@ where
 impl<
         SC: QStandardCircuitProvableWithProofStoreSync<S, I, C, D> + Clone + Send,
         S: QProofStoreReaderSync,
-        I: Serialize + Clone + Debug + Send,
+        I: DeserializeOwned + Serialize + Clone + Debug + Send,
         C: GenericConfig<D>,
         const D: usize,
     > QStandardCircuitProvableWithProofStoreSync<S, I, C, D>

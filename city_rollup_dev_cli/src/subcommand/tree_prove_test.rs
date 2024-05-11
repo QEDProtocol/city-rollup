@@ -25,7 +25,6 @@ use plonky2::plonk::proof::ProofWithPublicInputs;
 use crate::build;
 use crate::error::Result;
 
-
 fn gen_user_registration_proofs<S: KVQBinaryStore>(
     store: &mut S,
     n: usize,

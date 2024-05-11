@@ -1,20 +1,17 @@
-use city_crypto::hash::qhashout::QHashOut;
-use city_rollup_common::{
-    api::data::block::{
-        requested_actions::{
-            CityAddWithdrawalRequest, CityClaimDepositRequest, CityRegisterUserRequest,
-            CityTokenTransferRequest,
-        },
-        rpc_request::{
-            CityAddWithdrawalRPCRequest, CityClaimDepositRPCRequest, CityRegisterUserRPCRequest,
-            CityTokenTransferRPCRequest,
-        },
-    },
-    qworker::{job_id::QProvingJobDataID, proof_store::QProofStore},
-};
-
-use plonky2::{field::extension::Extendable, hash::hash_types::RichField};
-use serde::{Deserialize, Serialize};
+use city_rollup_common::api::data::block::requested_actions::CityAddWithdrawalRequest;
+use city_rollup_common::api::data::block::requested_actions::CityClaimDepositRequest;
+use city_rollup_common::api::data::block::requested_actions::CityRegisterUserRequest;
+use city_rollup_common::api::data::block::requested_actions::CityTokenTransferRequest;
+use city_rollup_common::api::data::block::rpc_request::CityAddWithdrawalRPCRequest;
+use city_rollup_common::api::data::block::rpc_request::CityClaimDepositRPCRequest;
+use city_rollup_common::api::data::block::rpc_request::CityRegisterUserRPCRequest;
+use city_rollup_common::api::data::block::rpc_request::CityTokenTransferRPCRequest;
+use city_rollup_common::qworker::job_id::QProvingJobDataID;
+use city_rollup_common::qworker::proof_store::QProofStore;
+use plonky2::field::extension::Extendable;
+use plonky2::hash::hash_types::RichField;
+use serde::Deserialize;
+use serde::Serialize;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(bound = "")]
@@ -42,9 +39,9 @@ pub struct DebugRPCProcessor<F: RichField + Extendable<D>, const D: usize> {
 }
 
 impl<F: RichField + Extendable<D>, const D: usize> DebugRPCProcessor<F, D> {
-    pub fn new() -> Self {
+    pub fn new(checkpoint_id: u64) -> Self {
         Self {
-            checkpoint_id: 1,
+            checkpoint_id: checkpoint_id,
             rpc_node_id: 0,
             output: CityScenarioRequestedActionsFromRPC::new(),
         }
@@ -75,10 +72,8 @@ impl<F: RichField + Extendable<D>, const D: usize> DebugRPCProcessor<F, D> {
     pub fn injest_rpc_register_user(
         &self,
         req: &CityRegisterUserRPCRequest<F>,
-        user_id: u64,
-        rpc_node_id: u64,
     ) -> anyhow::Result<CityRegisterUserRequest<F>> {
-        Ok(CityRegisterUserRequest::new(user_id, rpc_node_id, req.public_key))
+        Ok(CityRegisterUserRequest::new(req.public_key))
     }
     pub fn injest_rpc_token_transfer<PS: QProofStore>(
         &self,
@@ -104,14 +99,13 @@ impl<F: RichField + Extendable<D>, const D: usize> DebugRPCProcessor<F, D> {
     pub fn injest_rpc_add_withdrawal<PS: QProofStore>(
         &self,
         ps: &mut PS,
-        withdrawal_id: u64,
         req: &CityAddWithdrawalRPCRequest,
     ) -> anyhow::Result<CityAddWithdrawalRequest> {
-        let count = self.output.add_withdrawals.len() as u32;
-        let signature_proof_id = QProvingJobDataID::transfer_signature_proof(
+        let count = self.output.add_withdrawals.len() as u64;
+        let signature_proof_id = QProvingJobDataID::withdrawal_signature_proof(
             self.rpc_node_id,
             self.checkpoint_id,
-            count,
+            count as u32,
         );
         ps.set_bytes_by_id(signature_proof_id, &req.signature_proof)?;
 
@@ -119,7 +113,7 @@ impl<F: RichField + Extendable<D>, const D: usize> DebugRPCProcessor<F, D> {
             req.user_id,
             req.value,
             req.nonce,
-            withdrawal_id,
+            count,
             req.destination_type,
             req.destination,
             signature_proof_id,
@@ -161,11 +155,9 @@ impl<F: RichField + Extendable<D>, const D: usize> DebugRPCProcessor<F, D> {
     pub fn process_register_users(
         &mut self,
         reqs: &[CityRegisterUserRPCRequest<F>],
-        rpc_node_id: u64,
-        user_id: u64,
     ) -> anyhow::Result<()> {
         for req in reqs {
-            let register = self.injest_rpc_register_user(req, user_id, rpc_node_id)?;
+            let register = self.injest_rpc_register_user(req)?;
             self.output.register_users.push(register);
         }
         Ok(())

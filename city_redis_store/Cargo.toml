@@ -16,6 +16,9 @@ redis                 = { workspace = true }
 rsmq_async            = { workspace = true }
 bincode = {workspace = true}
 bb8-redis = {workspace = true}
+serde_json = {workspace = true}
+r2d2 = { workspace = true }
+r2d2_redis = { workspace = true }
 
 [dev-dependencies]
 criterion = "0.5.1"

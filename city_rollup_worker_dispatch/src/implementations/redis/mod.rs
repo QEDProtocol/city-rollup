@@ -22,8 +22,8 @@ pub const Q_HIDDEN: Option<Duration> = Some(Duration::from_secs(600));
 pub const Q_DELAY: Option<Duration> = None;
 pub const Q_CAP: Option<i32> = Some(-1);
 
-pub const Q_TX: u8 = 0;
-pub const Q_JOB: u8 = 1;
+pub const Q_TX: &'static str = "TX";
+pub const Q_JOB: &'static str = "JOB";
 
 impl RedisDispatcher {
     pub async fn new(uri: &str) -> Result<Self> {
@@ -42,25 +42,24 @@ impl RedisDispatcher {
 
 #[async_trait]
 impl ProvingDispatcher for RedisDispatcher {
-    async fn dispatch<const Q_KIND: u8>(
+    async fn dispatch(
         &mut self,
-        topic: impl Into<u64> + Send + 'static,
+        topic: &str,
         value: impl Serialize + Send + 'static,
     ) -> Result<()> {
-        let qname = format!("{}_{}", Q_KIND, topic.into());
         if matches!(
-            self.queue.get_queue_attributes(&qname).await,
+            self.queue.get_queue_attributes(topic).await,
             Err(rsmq_async::RsmqError::QueueNotFound)
         ) {
             // worker should be able to finish in 10 minutes, otherwise
             // other worker will pick up the task
             self.queue
-                .create_queue(&qname, Q_HIDDEN, Q_DELAY, Q_CAP)
+                .create_queue(topic, Q_HIDDEN, Q_DELAY, Q_CAP)
                 .await?;
         }
-        println!("dispatching message to queue: {}", qname);
+        println!("dispatching message to queue: {}", topic);
         self.queue
-            .send_message(&qname, serde_json::to_vec(&value)?, None)
+            .send_message(topic, serde_json::to_vec(&value)?, None)
             .await?;
         Ok(())
     }
@@ -68,46 +67,27 @@ impl ProvingDispatcher for RedisDispatcher {
 
 #[async_trait]
 impl ProvingWorkerListener for RedisDispatcher {
-    async fn subscribe<const Q_KIND: u8>(
-        &mut self,
-        _topic: impl Into<u64> + Send + 'static,
-    ) -> anyhow::Result<()> {
+    async fn subscribe(&mut self, _topic: &str) -> anyhow::Result<()> {
         Ok(())
     }
 
-    async fn receive_one<const Q_KIND: u8>(
-        &mut self,
-        topic: impl Into<u64> + Send + 'static,
-    ) -> anyhow::Result<Option<(String, Vec<u8>)>> {
-        let qname = format!("{}_{}", Q_KIND, topic.into());
-        match self.queue.receive_message(&qname, Q_HIDDEN).await? {
+    async fn receive_one(&mut self, topic: &str) -> anyhow::Result<Option<(String, Vec<u8>)>> {
+        match self.queue.receive_message(topic, Q_HIDDEN).await? {
             Some(RsmqMessage { id, message, .. }) => Ok(Some((id, message))),
             None => Ok(None),
         }
     }
 
-    async fn receive_all<const Q_KIND: u8>(
-        &mut self,
-        topic: impl Into<u64> + Send + 'static,
-    ) -> anyhow::Result<Vec<(String, Vec<u8>)>> {
-        let qname = format!("{}_{}", Q_KIND, topic.into());
-
+    async fn receive_all(&mut self, topic: &str) -> anyhow::Result<Vec<(String, Vec<u8>)>> {
         let mut result = Vec::new();
-        while let Some(RsmqMessage { id, message, .. }) =
-            self.queue.receive_message(&qname, Q_HIDDEN).await?
-        {
+        while let Some(RsmqMessage { id, message, .. }) = self.queue.pop_message(topic).await? {
             result.push((id, message));
         }
 
         Ok(result)
     }
 
-    async fn delete_message<const Q_KIND: u8>(
-        &mut self,
-        topic: impl Into<u64> + Send + 'static,
-        id: String,
-    ) -> anyhow::Result<bool> {
-        let qname = format!("{}_{}", Q_KIND, topic.into());
-        Ok(self.queue.delete_message(&qname, &id).await?)
+    async fn delete_message(&mut self, topic: &str, id: String) -> anyhow::Result<bool> {
+        Ok(self.queue.delete_message(topic, &id).await?)
     }
 }

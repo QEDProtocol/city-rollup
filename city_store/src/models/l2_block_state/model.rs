@@ -1,5 +1,8 @@
 use city_rollup_common::api::data::store::CityL2BlockState;
-use kvq::traits::{KVQBinaryStore, KVQBinaryStoreReader, KVQStoreAdapter, KVQStoreAdapterReader};
+use kvq::traits::KVQBinaryStore;
+use kvq::traits::KVQBinaryStoreReader;
+use kvq::traits::KVQStoreAdapter;
+use kvq::traits::KVQStoreAdapterReader;
 
 use super::data::L2BlockStateKeyCore;
 

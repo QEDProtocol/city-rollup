@@ -5,6 +5,7 @@ use city_crypto::hash::merkle::core::DeltaMerkleProofCore;
 use city_crypto::hash::merkle::core::MerkleProofCore;
 use city_crypto::hash::qhashout::QHashOut;
 use city_rollup_common::api::data::store::CityL1Deposit;
+use city_rollup_common::api::data::store::CityL2BlockState;
 use kvq::adapters::standard::KVQStandardAdapter;
 use plonky2::field::goldilocks_field::GoldilocksField;
 use plonky2::hash::poseidon::PoseidonHash;
@@ -15,6 +16,8 @@ use crate::models::kvq_merkle::model::KVQFixedConfigMerkleTreeModel;
 use crate::models::l1_deposits::data::L1DepositKeyByDepositIdCore;
 use crate::models::l1_deposits::data::L1DepositKeyByTransactionIdCore;
 use crate::models::l1_deposits::model::L1DepositsModel;
+use crate::models::l2_block_state::data::L2BlockStateKeyCore;
+use crate::models::l2_block_state::model::L2BlockStatesModel;
 
 pub type F = GoldilocksField;
 pub type C = PoseidonGoldilocksConfig;
@@ -62,4 +65,10 @@ pub type L1DepositsStore<S> = L1DepositsModel<
         L1DepositKeyByTransactionIdCore<L1_DEPOSITS_BY_TXID_TABLE_TYPE>,
         CityL1Deposit,
     >,
+>;
+
+pub type L2BlockStateStore<S> = L2BlockStatesModel<
+    L2_BLOCK_STATE_TABLE_TYPE,
+    S,
+    KVQStandardAdapter<S, L2BlockStateKeyCore<L2_BLOCK_STATE_TABLE_TYPE>, CityL2BlockState>,
 >;

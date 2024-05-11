@@ -1,27 +1,28 @@
 use std::marker::PhantomData;
 
-use city_rollup_common::{
-    api::data::{
-        block::requested_actions::{
-            CityAddDepositRequest, CityAddWithdrawalRequest, CityClaimDepositRequest,
-            CityProcessWithdrawalRequest, CityRegisterUserRequest, CityTokenTransferRequest,
-        },
-        store::CityL2BlockState,
-    },
-    qworker::{
-        fingerprints::CRWorkerToolboxCoreCircuitFingerprints,
-        job_id::{ProvingJobCircuitType, ProvingJobDataType, QJobTopic, QProvingJobDataID},
-        job_witnesses::op::{
-            CRAddL1DepositCircuitInput, CRAddL1WithdrawalCircuitInput,
-            CRClaimL1DepositCircuitInput, CRL2TransferCircuitInput,
-            CRProcessL1WithdrawalCircuitInput, CRUserRegistrationCircuitInput,
-            CircuitInputWithJobId,
-        },
-        proof_store::QProofStore,
-    },
-};
+use city_rollup_common::api::data::block::requested_actions::CityAddDepositRequest;
+use city_rollup_common::api::data::block::requested_actions::CityAddWithdrawalRequest;
+use city_rollup_common::api::data::block::requested_actions::CityClaimDepositRequest;
+use city_rollup_common::api::data::block::requested_actions::CityProcessWithdrawalRequest;
+use city_rollup_common::api::data::block::requested_actions::CityRegisterUserRequest;
+use city_rollup_common::api::data::block::requested_actions::CityTokenTransferRequest;
+use city_rollup_common::api::data::store::CityL2BlockState;
+use city_rollup_common::qworker::fingerprints::CRWorkerToolboxCoreCircuitFingerprints;
+use city_rollup_common::qworker::job_id::ProvingJobCircuitType;
+use city_rollup_common::qworker::job_id::ProvingJobDataType;
+use city_rollup_common::qworker::job_id::QJobTopic;
+use city_rollup_common::qworker::job_id::QProvingJobDataID;
+use city_rollup_common::qworker::job_witnesses::op::CRAddL1DepositCircuitInput;
+use city_rollup_common::qworker::job_witnesses::op::CRAddL1WithdrawalCircuitInput;
+use city_rollup_common::qworker::job_witnesses::op::CRClaimL1DepositCircuitInput;
+use city_rollup_common::qworker::job_witnesses::op::CRL2TransferCircuitInput;
+use city_rollup_common::qworker::job_witnesses::op::CRProcessL1WithdrawalCircuitInput;
+use city_rollup_common::qworker::job_witnesses::op::CRUserRegistrationCircuitInput;
+use city_rollup_common::qworker::job_witnesses::op::CircuitInputWithJobId;
+use city_rollup_common::qworker::proof_store::QProofStore;
 use city_store::config::F;
-use kvq::traits::{KVQBinaryStore, KVQSerializable};
+use kvq::traits::KVQBinaryStore;
+use kvq::traits::KVQSerializable;
 
 use super::op_processor::CityOrchestratorOpRequestProcessor;
 

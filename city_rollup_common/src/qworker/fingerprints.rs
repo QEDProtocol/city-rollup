@@ -1,9 +1,10 @@
-use city_crypto::hash::{merkle::treeprover::TPCircuitFingerprintConfig, qhashout::QHashOut};
+use city_crypto::hash::merkle::treeprover::TPCircuitFingerprintConfig;
+use city_crypto::hash::qhashout::QHashOut;
 use plonky2::hash::hash_types::RichField;
 use serde::Deserialize;
 use serde::Serialize;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(bound = "")]
 pub struct CRWorkerToolboxCoreCircuitFingerprints<F: RichField> {
     pub network_magic: u64,
@@ -23,6 +24,7 @@ pub struct CRWorkerToolboxCoreCircuitFingerprints<F: RichField> {
 
     // operation aggregators
     pub agg_state_transition: QHashOut<F>,
-    pub agg_state_transition_signed: QHashOut<F>,
     pub agg_state_transition_with_events: QHashOut<F>,
+    pub agg_state_transition_dummy: QHashOut<F>,
+    pub agg_state_transition_with_events_dummy: QHashOut<F>,
 }

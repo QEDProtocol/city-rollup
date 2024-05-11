@@ -1,28 +1,28 @@
-use city_crypto::hash::{merkle::treeprover::AggStateTransitionInput, qhashout::QHashOut};
-use plonky2::{
-    field::extension::Extendable,
-    hash::{
-        hash_types::{HashOutTarget, RichField},
-        poseidon::PoseidonHash,
-    },
-    iop::witness::{PartialWitness, Witness, WitnessWrite},
-    plonk::{
-        circuit_builder::CircuitBuilder,
-        circuit_data::{
-            CircuitConfig, CircuitData, CommonCircuitData, VerifierCircuitTarget,
-            VerifierOnlyCircuitData,
-        },
-        config::{AlgebraicHasher, GenericConfig},
-        proof::{ProofWithPublicInputs, ProofWithPublicInputsTarget},
-    },
-};
+use city_crypto::hash::merkle::treeprover::AggStateTransitionInput;
+use city_crypto::hash::qhashout::QHashOut;
+use plonky2::field::extension::Extendable;
+use plonky2::hash::hash_types::HashOutTarget;
+use plonky2::hash::hash_types::RichField;
+use plonky2::hash::poseidon::PoseidonHash;
+use plonky2::iop::witness::PartialWitness;
+use plonky2::iop::witness::Witness;
+use plonky2::iop::witness::WitnessWrite;
+use plonky2::plonk::circuit_builder::CircuitBuilder;
+use plonky2::plonk::circuit_data::CircuitConfig;
+use plonky2::plonk::circuit_data::CircuitData;
+use plonky2::plonk::circuit_data::CommonCircuitData;
+use plonky2::plonk::circuit_data::VerifierCircuitTarget;
+use plonky2::plonk::circuit_data::VerifierOnlyCircuitData;
+use plonky2::plonk::config::AlgebraicHasher;
+use plonky2::plonk::config::GenericConfig;
+use plonky2::plonk::proof::ProofWithPublicInputs;
+use plonky2::plonk::proof::ProofWithPublicInputsTarget;
 
-use crate::{
-    builder::{hash::core::CircuitBuilderHashCore, verify::CircuitBuilderVerifyProofHelpers},
-    circuits::traits::qstandard::QStandardCircuit,
-    proof_minifier::pm_core::get_circuit_fingerprint_generic,
-    treeprover::traits::TreeProverAggCircuit,
-};
+use crate::builder::hash::core::CircuitBuilderHashCore;
+use crate::builder::verify::CircuitBuilderVerifyProofHelpers;
+use crate::circuits::traits::qstandard::QStandardCircuit;
+use crate::proof_minifier::pm_core::get_circuit_fingerprint_generic;
+use crate::treeprover::traits::TreeProverAggCircuit;
 
 #[derive(Debug, Clone)]
 pub struct AggStateTrackableCircuitHeaderGadget {

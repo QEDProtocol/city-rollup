@@ -1,25 +1,21 @@
-use city_crypto::hash::{
-    merkle::{
-        core::DeltaMerkleProofCore,
-        treeprover::{
-            AggStateTrackableInput, AggStateTrackableWithEventsInput, AggStateTransition,
-            StateTransitionWithEvents,
-        },
-    },
-    qhashout::QHashOut,
-};
-use kvq::traits::KVQSerializable;
-use plonky2::{
-    hash::{hash_types::RichField, poseidon::PoseidonHash},
-    plonk::config::Hasher,
-};
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::fmt::Debug;
 
-use crate::{
-    introspection::rollup::introspection_result::BTCRollupIntrospectionResultDeposit,
-    qworker::job_id::{self, QProvingJobDataID},
-};
+use city_crypto::hash::merkle::core::DeltaMerkleProofCore;
+use city_crypto::hash::merkle::treeprover::AggStateTrackableInput;
+use city_crypto::hash::merkle::treeprover::AggStateTrackableWithEventsInput;
+use city_crypto::hash::merkle::treeprover::AggStateTransition;
+use city_crypto::hash::merkle::treeprover::AggStateTransitionWithEvents;
+use city_crypto::hash::qhashout::QHashOut;
+use kvq::traits::KVQSerializable;
+use plonky2::hash::hash_types::RichField;
+use plonky2::hash::poseidon::PoseidonHash;
+use plonky2::plonk::config::Hasher;
+use serde::de::DeserializeOwned;
+use serde::Deserialize;
+use serde::Serialize;
+
+use crate::introspection::rollup::introspection_result::BTCRollupIntrospectionResultDeposit;
+use crate::qworker::job_id::QProvingJobDataID;
 
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
 #[serde(bound = "")]
@@ -60,7 +56,7 @@ impl<
         F: RichField,
     > AggStateTrackableWithEventsInput<F> for CircuitInputWithJobId<I>
 {
-    fn get_state_transition_with_events(&self) -> StateTransitionWithEvents<F> {
+    fn get_state_transition_with_events(&self) -> AggStateTransitionWithEvents<F> {
         self.input.get_state_transition_with_events()
     }
 }
@@ -73,8 +69,8 @@ pub struct CRAddL1DepositCircuitInput<F: RichField> {
 }
 
 impl<F: RichField> AggStateTrackableWithEventsInput<F> for CRAddL1DepositCircuitInput<F> {
-    fn get_state_transition_with_events(&self) -> StateTransitionWithEvents<F> {
-        StateTransitionWithEvents {
+    fn get_state_transition_with_events(&self) -> AggStateTransitionWithEvents<F> {
+        AggStateTransitionWithEvents {
             state_transition_start: self.deposit_tree_delta_merkle_proof.old_root,
             state_transition_end: self.deposit_tree_delta_merkle_proof.new_root,
             event_hash: self.deposit_tree_delta_merkle_proof.new_value,
@@ -190,8 +186,8 @@ pub struct CRProcessL1WithdrawalCircuitInput<F: RichField> {
 }
 
 impl<F: RichField> AggStateTrackableWithEventsInput<F> for CRProcessL1WithdrawalCircuitInput<F> {
-    fn get_state_transition_with_events(&self) -> StateTransitionWithEvents<F> {
-        StateTransitionWithEvents {
+    fn get_state_transition_with_events(&self) -> AggStateTransitionWithEvents<F> {
+        AggStateTransitionWithEvents {
             state_transition_start: self.withdrawal_tree_delta_merkle_proof.old_root,
             state_transition_end: self.withdrawal_tree_delta_merkle_proof.new_root,
             event_hash: self.withdrawal_tree_delta_merkle_proof.new_value,

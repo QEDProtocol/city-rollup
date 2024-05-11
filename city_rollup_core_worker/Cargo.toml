@@ -15,6 +15,7 @@ city_rollup_worker_dispatch = { path = "../city_rollup_worker_dispatch" }
 city_common           = { path = "../city_common" }
 city_rollup_common    = { path = "../city_rollup_common" }
 city_macros = {path = "../city_macros"}
+city_redis_store = {path =  "../city_redis_store" }
 r2d2 = { workspace = true }
 r2d2_redis = { workspace = true }
 bincode = {workspace = true}

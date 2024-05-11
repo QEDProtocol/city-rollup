@@ -172,8 +172,9 @@ impl DeltaMerkleProofGadget {
 
         for i in 0..height {
             let zero_hash_target = builder.constant_hash(H::get_zero_hash(i));
-            // we only really need to make sure the the leaves to the right of the tree are 0
-            // builder.ensure_hash_not_equal_if(index_bits[i], siblings[i], zero_hash_target);
+            // we only really need to make sure the the leaves to the right of the tree are
+            // 0 builder.ensure_hash_not_equal_if(index_bits[i], siblings[i],
+            // zero_hash_target);
             builder.connect_hashes_if_false(index_bits[i], siblings[i], zero_hash_target);
         }
 

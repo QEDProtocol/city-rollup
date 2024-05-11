@@ -1,25 +1,23 @@
 use std::marker::PhantomData;
 
 use city_crypto::hash::qhashout::QHashOut;
-use city_rollup_common::{
-    api::data::{
-        block::requested_actions::{
-            CityAddDepositRequest, CityAddWithdrawalRequest, CityClaimDepositRequest,
-            CityProcessWithdrawalRequest, CityRegisterUserRequest, CityTokenTransferRequest,
-        },
-        store::CityL2BlockState,
-    },
-    introspection::rollup::introspection_result::BTCRollupIntrospectionResultDeposit,
-    qworker::{
-        fingerprints::CRWorkerToolboxCoreCircuitFingerprints,
-        job_witnesses::op::{
-            CRAddL1DepositCircuitInput, CRAddL1WithdrawalCircuitInput,
-            CRClaimL1DepositCircuitInput, CRL2TransferCircuitInput,
-            CRProcessL1WithdrawalCircuitInput, CRUserRegistrationCircuitInput,
-        },
-    },
-};
-use city_store::{config::F, store::city::base::CityStore};
+use city_rollup_common::api::data::block::requested_actions::CityAddDepositRequest;
+use city_rollup_common::api::data::block::requested_actions::CityAddWithdrawalRequest;
+use city_rollup_common::api::data::block::requested_actions::CityClaimDepositRequest;
+use city_rollup_common::api::data::block::requested_actions::CityProcessWithdrawalRequest;
+use city_rollup_common::api::data::block::requested_actions::CityRegisterUserRequest;
+use city_rollup_common::api::data::block::requested_actions::CityTokenTransferRequest;
+use city_rollup_common::api::data::store::CityL2BlockState;
+use city_rollup_common::introspection::rollup::introspection_result::BTCRollupIntrospectionResultDeposit;
+use city_rollup_common::qworker::fingerprints::CRWorkerToolboxCoreCircuitFingerprints;
+use city_rollup_common::qworker::job_witnesses::op::CRAddL1DepositCircuitInput;
+use city_rollup_common::qworker::job_witnesses::op::CRAddL1WithdrawalCircuitInput;
+use city_rollup_common::qworker::job_witnesses::op::CRClaimL1DepositCircuitInput;
+use city_rollup_common::qworker::job_witnesses::op::CRL2TransferCircuitInput;
+use city_rollup_common::qworker::job_witnesses::op::CRProcessL1WithdrawalCircuitInput;
+use city_rollup_common::qworker::job_witnesses::op::CRUserRegistrationCircuitInput;
+use city_store::config::F;
+use city_store::store::city::base::CityStore;
 use kvq::traits::KVQBinaryStore;
 
 pub struct CityOrchestratorOpRequestProcessor<S: KVQBinaryStore> {
@@ -83,7 +81,6 @@ impl<S: KVQBinaryStore> CityOrchestratorOpRequestProcessor<S> {
         store: &mut S,
         req: &CityAddWithdrawalRequest,
     ) -> anyhow::Result<CRAddL1WithdrawalCircuitInput<F>> {
-        let withdrawal_id = self.next_add_withdrawal_id;
         let user_tree_delta_merkle_proof = CityStore::<S>::decrement_user_balance(
             store,
             self.checkpoint_id,
@@ -92,11 +89,7 @@ impl<S: KVQBinaryStore> CityOrchestratorOpRequestProcessor<S> {
             Some(req.nonce),
         )?;
         let withdrawal_tree_delta_merkle_proof =
-            CityStore::<S>::add_withdrawal_to_tree_from_request(
-                store,
-                self.checkpoint_id,
-                req,
-            )?;
+            CityStore::<S>::add_withdrawal_to_tree_from_request(store, self.checkpoint_id, req)?;
         self.next_add_withdrawal_id += 1;
         Ok(CRAddL1WithdrawalCircuitInput {
             allowed_circuit_hashes_root: self

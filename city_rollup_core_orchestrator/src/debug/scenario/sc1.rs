@@ -1,6 +1,6 @@
-use city_common_circuit::wallet::zk::{MemoryZKSignatureWallet, SimpleZKSignatureWallet};
 use kvq::traits::KVQBinaryStore;
-use plonky2::plonk::config::{AlgebraicHasher, GenericConfig};
+use plonky2::plonk::config::AlgebraicHasher;
+use plonky2::plonk::config::GenericConfig;
 
 use super::wallet::DebugScenarioWallet;
 

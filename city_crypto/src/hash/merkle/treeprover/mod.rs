@@ -1,16 +1,38 @@
-use city_common::tree_planner::{BinaryTreeJob, BinaryTreePlanner};
-use plonky2::{
-    hash::{hash_types::RichField, poseidon::PoseidonHash},
-    plonk::config::{AlgebraicHasher, Hasher},
-};
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use city_common::tree_planner::BinaryTreeJob;
+use city_common::tree_planner::BinaryTreePlanner;
+use plonky2::hash::hash_types::RichField;
+use plonky2::hash::poseidon::PoseidonHash;
+use plonky2::plonk::config::AlgebraicHasher;
+use plonky2::plonk::config::Hasher;
+use serde::Deserialize;
+use serde::Serialize;
 
 use crate::hash::qhashout::QHashOut;
 pub trait WithDummyStateTransition<F: RichField> {
     fn get_dummy_value(state_root: QHashOut<F>) -> Self;
 }
+pub trait StateTransitionTrackable<F: RichField> {
+    fn get_start_root(&self) -> QHashOut<F>;
+    fn get_end_root(&self) -> QHashOut<F>;
+}
+pub trait StateTransitionTrackableWithEvents<F: RichField>: StateTransitionTrackable<F> {
+    fn get_events_hash(&self) -> QHashOut<F>;
+}
 pub trait AggStateTrackableInput<F: RichField> {
     fn get_state_transition(&self) -> AggStateTransition<F>;
+}
+#[derive(Debug, Clone, Copy, Deserialize, Serialize, PartialEq)]
+#[serde(bound = "")]
+pub struct DummyAggStateTransition<F: RichField> {
+    pub state_transition_hash: QHashOut<F>,
+    pub allowed_circuit_hashes_root: QHashOut<F>,
+}
+#[derive(Debug, Clone, Copy, Deserialize, Serialize, PartialEq)]
+#[serde(bound = "")]
+pub struct DummyAggStateTransitionWithEvents<F: RichField> {
+    pub state_transition_hash: QHashOut<F>,
+    pub event_transition_hash: QHashOut<F>,
+    pub allowed_circuit_hashes_root: QHashOut<F>,
 }
 
 #[derive(Debug, Clone, Copy, Deserialize, Serialize, PartialEq)]
@@ -19,6 +41,29 @@ pub struct AggStateTransition<F: RichField> {
     pub state_transition_start: QHashOut<F>,
     pub state_transition_end: QHashOut<F>,
 }
+impl<F: RichField> Default for AggStateTransition<F> {
+    fn default() -> Self {
+        Self {
+            state_transition_start: Default::default(),
+            state_transition_end: Default::default(),
+        }
+    }
+}
+impl<F: RichField> AggStateTrackableInput<F> for AggStateTransition<F> {
+    fn get_state_transition(&self) -> AggStateTransition<F> {
+        *self
+    }
+}
+impl<F: RichField, T: AggStateTrackableInput<F>> StateTransitionTrackable<F> for T {
+    fn get_start_root(&self) -> QHashOut<F> {
+        self.get_state_transition().state_transition_start
+    }
+
+    fn get_end_root(&self) -> QHashOut<F> {
+        self.get_state_transition().state_transition_end
+    }
+}
+
 impl<F: RichField> WithDummyStateTransition<F> for AggStateTransition<F> {
     fn get_dummy_value(state_root: QHashOut<F>) -> Self {
         Self {
@@ -43,6 +88,11 @@ impl<F: RichField> WithDummyStateTransition<F> for AggStateTransitionInput<F> {
             left_proof_is_leaf: false,
             right_proof_is_leaf: false,
         }
+    }
+}
+impl<F: RichField> AggStateTrackableInput<F> for AggStateTransitionInput<F> {
+    fn get_state_transition(&self) -> AggStateTransition<F> {
+        self.condense()
     }
 }
 impl<F: RichField> AggStateTransitionInput<F> {
@@ -71,17 +121,34 @@ impl<F: RichField> AggStateTransitionInput<F> {
 }
 
 pub trait AggStateTrackableWithEventsInput<F: RichField> {
-    fn get_state_transition_with_events(&self) -> StateTransitionWithEvents<F>;
+    fn get_state_transition_with_events(&self) -> AggStateTransitionWithEvents<F>;
 }
 
 #[derive(Debug, Clone, Copy, Deserialize, Serialize, PartialEq)]
 #[serde(bound = "")]
-pub struct StateTransitionWithEvents<F: RichField> {
+pub struct AggStateTransitionWithEvents<F: RichField> {
     pub state_transition_start: QHashOut<F>,
     pub state_transition_end: QHashOut<F>,
     pub event_hash: QHashOut<F>,
 }
-impl<F: RichField> WithDummyStateTransition<F> for StateTransitionWithEvents<F> {
+impl<F: RichField> Default for AggStateTransitionWithEvents<F> {
+    fn default() -> Self {
+        Self {
+            state_transition_start: Default::default(),
+            state_transition_end: Default::default(),
+            event_hash: Default::default(),
+        }
+    }
+}
+impl<F: RichField> AggStateTrackableInput<F> for AggStateTransitionWithEvents<F> {
+    fn get_state_transition(&self) -> AggStateTransition<F> {
+        AggStateTransition {
+            state_transition_start: self.state_transition_start,
+            state_transition_end: self.state_transition_end,
+        }
+    }
+}
+impl<F: RichField> WithDummyStateTransition<F> for AggStateTransitionWithEvents<F> {
     fn get_dummy_value(state_root: QHashOut<F>) -> Self {
         Self {
             state_transition_start: state_root,
@@ -94,24 +161,35 @@ impl<F: RichField> WithDummyStateTransition<F> for StateTransitionWithEvents<F> 
 #[derive(Debug, Clone, Copy, Deserialize, Serialize, PartialEq)]
 #[serde(bound = "")]
 pub struct AggStateTransitionWithEventsInput<F: RichField> {
-    pub left_input: StateTransitionWithEvents<F>,
-    pub right_input: StateTransitionWithEvents<F>,
+    pub left_input: AggStateTransitionWithEvents<F>,
+    pub right_input: AggStateTransitionWithEvents<F>,
     pub left_proof_is_leaf: bool,
     pub right_proof_is_leaf: bool,
+}
+
+impl<F: RichField> AggStateTrackableWithEventsInput<F> for AggStateTransitionWithEventsInput<F> {
+    fn get_state_transition_with_events(&self) -> AggStateTransitionWithEvents<F> {
+        self.condense()
+    }
+}
+impl<F: RichField, T: AggStateTrackableInput<F>> StateTransitionTrackableWithEvents<F> for T {
+    fn get_events_hash(&self) -> QHashOut<F> {
+        QHashOut::ZERO
+    }
 }
 impl<F: RichField> WithDummyStateTransition<F> for AggStateTransitionWithEventsInput<F> {
     fn get_dummy_value(state_root: QHashOut<F>) -> Self {
         Self {
-            left_input: StateTransitionWithEvents::<F>::get_dummy_value(state_root),
-            right_input: StateTransitionWithEvents::<F>::get_dummy_value(state_root),
+            left_input: AggStateTransitionWithEvents::<F>::get_dummy_value(state_root),
+            right_input: AggStateTransitionWithEvents::<F>::get_dummy_value(state_root),
             left_proof_is_leaf: false,
             right_proof_is_leaf: false,
         }
     }
 }
 impl<F: RichField> AggStateTransitionWithEventsInput<F> {
-    pub fn condense(&self) -> StateTransitionWithEvents<F> {
-        StateTransitionWithEvents {
+    pub fn condense(&self) -> AggStateTransitionWithEvents<F> {
+        AggStateTransitionWithEvents {
             state_transition_start: self.left_input.state_transition_start,
             state_transition_end: self.right_input.state_transition_end,
             event_hash: QHashOut(PoseidonHash::two_to_one(
@@ -229,25 +307,50 @@ impl<IL: AggStateTrackableWithEventsInput<F>, F: RichField>
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(bound = "")]
 pub struct TPCircuitFingerprintConfig<F: RichField> {
     pub leaf_fingerprint: QHashOut<F>,
     pub aggregator_fingerprint: QHashOut<F>,
+    pub dummy_fingerprint: QHashOut<F>,
     pub allowed_circuit_hashes_root: QHashOut<F>,
+    pub leaf_circuit_type: u8,
+    pub aggregator_circuit_type: u8,
 }
 
 impl<F: RichField> TPCircuitFingerprintConfig<F> {
     pub fn from_leaf_and_agg_fingerprints<H: AlgebraicHasher<F>>(
         leaf_fingerprint: QHashOut<F>,
         aggregator_fingerprint: QHashOut<F>,
+        dummy_fingerprint: QHashOut<F>,
     ) -> Self {
         let allowed_circuit_hashes_root =
             QHashOut(H::two_to_one(leaf_fingerprint.0, aggregator_fingerprint.0));
         Self {
             leaf_fingerprint,
             aggregator_fingerprint,
+            dummy_fingerprint,
             allowed_circuit_hashes_root,
+            leaf_circuit_type: 255,
+            aggregator_circuit_type: 255,
+        }
+    }
+    pub fn from_leaf_and_agg_fingerprints_with_type<H: AlgebraicHasher<F>>(
+        leaf_fingerprint: QHashOut<F>,
+        aggregator_fingerprint: QHashOut<F>,
+        dummy_fingerprint: QHashOut<F>,
+        leaf_circuit_type: u8,
+        aggregator_circuit_type: u8,
+    ) -> Self {
+        let allowed_circuit_hashes_root =
+            QHashOut(H::two_to_one(leaf_fingerprint.0, aggregator_fingerprint.0));
+        Self {
+            leaf_fingerprint,
+            aggregator_fingerprint,
+            dummy_fingerprint,
+            allowed_circuit_hashes_root,
+            leaf_circuit_type,
+            aggregator_circuit_type,
         }
     }
 }

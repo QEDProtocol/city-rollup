@@ -1,4 +1,5 @@
 use std::collections::BTreeMap;
+use std::ops::Bound::Included;
 
 use crate::traits::KVQBinaryStore;
 use crate::traits::KVQBinaryStoreReader;
@@ -57,7 +58,10 @@ impl KVQBinaryStoreReader for KVQSimpleMemoryBackingStore {
                 Ok(Some(res.unwrap().to_owned()))
             }
         } else {
-            let rq = self.map.range(base_key..key_end).next_back();
+            let rq = self
+                .map
+                .range((Included(base_key), Included(key_end)))
+                .next_back();
 
             if let Some((_, p)) = rq {
                 Ok(Some(p.to_owned()))
@@ -84,7 +88,10 @@ impl KVQBinaryStoreReader for KVQSimpleMemoryBackingStore {
         for i in 0..fuzzy_bytes {
             base_key[key_len - i - 1] = 0;
         }
-        let rq = self.map.range(base_key..key_end).next_back();
+        let rq = self
+            .map
+            .range((Included(base_key), Included(key_end)))
+            .next_back();
 
         if let Some((k, v)) = rq {
             Ok(Some(KVQPair {
