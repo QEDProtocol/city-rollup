@@ -22,9 +22,9 @@ pub const LAST_BLOCK_TIMESTAMP: &'static str = "last_block_timestamp";
 pub const TOKEN_TRANSFER_COUNTER: &'static str = "token_transfer_counter";
 pub const USER_COUNTER: &'static str = "user_counter";
 pub const CLAIM_L1_DEPOSIT_COUNTER: &'static str = "claim_l1_deposit_counter";
-pub const DEPOSIT_COUNTER: &'static str = "deposit_counter";
+pub const ADD_DEPOSIT_COUNTER: &'static str = "add_deposit_counter";
 pub const ADD_WITHDRWAL_COUNTER: &'static str = "add_withdrawal_counter";
-pub const WITHDRWAL_COUNTER: &'static str = "withdrawal_counter";
+pub const PROCESSED_WITHDRWAL_COUNTER: &'static str = "processed_withdrawal_counter";
 pub const TASK_COUNTER: &'static str = "task_counter";
 
 pub const NEXT_BLOCK_REDEEM_SCRIPT: &'static str = "next_block_redeem_script";
@@ -46,9 +46,9 @@ pub struct ChainState {
     pub last_block_timestamp: u64,
     pub token_transfer_counter: u64,
     pub claim_l1_deposit_counter: u64,
-    pub deposit_counter: u64,
+    pub add_deposit_counter: u64,
     pub add_withdrawal_counter: u64,
-    pub withdrawal_counter: u64,
+    pub processed_withdrawal_counter: u64,
     pub task_counter: u64,
     pub user_counter: u64,
 }
@@ -109,9 +109,9 @@ impl RedisStore {
             .hget(BLOCK_STATE, LAST_BLOCK_TIMESTAMP)
             .hget(BLOCK_STATE, TOKEN_TRANSFER_COUNTER)
             .hget(BLOCK_STATE, CLAIM_L1_DEPOSIT_COUNTER)
-            .hget(BLOCK_STATE, DEPOSIT_COUNTER)
+            .hget(BLOCK_STATE, ADD_DEPOSIT_COUNTER)
             .hget(BLOCK_STATE, ADD_WITHDRWAL_COUNTER)
-            .hget(BLOCK_STATE, WITHDRWAL_COUNTER)
+            .hget(BLOCK_STATE, PROCESSED_WITHDRWAL_COUNTER)
             .hget(BLOCK_STATE, USER_COUNTER)
             .hget(BLOCK_STATE, TASK_COUNTER)
             .query_async(&mut *connection)
@@ -123,9 +123,9 @@ impl RedisStore {
             last_block_timestamp: last_block_timestamp.unwrap_or(0),
             token_transfer_counter: token_transfer_counter.unwrap_or(0),
             claim_l1_deposit_counter: claim_l1_deposit_counter.unwrap_or(0),
-            deposit_counter: deposit_counter.unwrap_or(0),
+            add_deposit_counter: deposit_counter.unwrap_or(0),
             add_withdrawal_counter: add_withdrawal_counter.unwrap_or(0),
-            withdrawal_counter: withdrawal_counter.unwrap_or(0),
+            processed_withdrawal_counter: withdrawal_counter.unwrap_or(0),
             task_counter: task_counter.unwrap_or(0),
             user_counter: user_counter.unwrap_or(0),
         })

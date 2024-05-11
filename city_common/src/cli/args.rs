@@ -40,6 +40,8 @@ pub struct OrchestratorArgs {
     pub db_path: String,
     #[clap(short, long, default_value = "dogeregtest", env)]
     pub network: String,
+    #[clap(short, long, default_value = "3AdD7ZaJQw9m1maN39CeJ1zVyXQLn2MEHR", env)]
+    pub next_block_redeem_script: String
 }
 
 #[derive(Clone, Args)]
