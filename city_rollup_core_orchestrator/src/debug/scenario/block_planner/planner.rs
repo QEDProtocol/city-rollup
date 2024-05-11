@@ -107,7 +107,7 @@ impl<S: KVQBinaryStore, PS: QProofStore> CityOrchestratorBlockPlanner<S, PS> {
                 proof_store,
                 QProvingJobDataID::new_proof_job_id(
                     self.processor.checkpoint_id,
-                    ProvingJobCircuitType::DummyRegisterUserAggregate,
+                    ProvingJobCircuitType::DummyClaimL1DepositAggregate,
                     0xDD,
                     0,
                     0,
@@ -135,7 +135,7 @@ impl<S: KVQBinaryStore, PS: QProofStore> CityOrchestratorBlockPlanner<S, PS> {
                 proof_store,
                 QProvingJobDataID::new_proof_job_id(
                     self.processor.checkpoint_id,
-                    ProvingJobCircuitType::DummyRegisterUserAggregate,
+                    ProvingJobCircuitType::DummyTransferTokensL2Aggregate,
                     0xDD,
                     0,
                     0,
@@ -169,7 +169,7 @@ impl<S: KVQBinaryStore, PS: QProofStore> CityOrchestratorBlockPlanner<S, PS> {
                 proof_store,
                 QProvingJobDataID::new_proof_job_id(
                     self.processor.checkpoint_id,
-                    ProvingJobCircuitType::DummyRegisterUserAggregate,
+                    ProvingJobCircuitType::DummyAddL1WithdrawalAggregate,
                     0xDD,
                     0,
                     0,
@@ -206,7 +206,7 @@ impl<S: KVQBinaryStore, PS: QProofStore> CityOrchestratorBlockPlanner<S, PS> {
                 proof_store,
                 QProvingJobDataID::new_proof_job_id(
                     self.processor.checkpoint_id,
-                    ProvingJobCircuitType::DummyRegisterUserAggregate,
+                    ProvingJobCircuitType::DummyProcessL1WithdrawalAggregate,
                     0xDD,
                     0,
                     0,
@@ -239,7 +239,7 @@ impl<S: KVQBinaryStore, PS: QProofStore> CityOrchestratorBlockPlanner<S, PS> {
                 proof_store,
                 QProvingJobDataID::new_proof_job_id(
                     self.processor.checkpoint_id,
-                    ProvingJobCircuitType::DummyRegisterUserAggregate,
+                    ProvingJobCircuitType::DummyAddL1DepositAggregate,
                     0xDD,
                     0,
                     0,

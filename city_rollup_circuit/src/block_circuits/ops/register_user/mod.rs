@@ -89,6 +89,10 @@ where
         delta_merkle_proof: &DeltaMerkleProofCore<QHashOut<C::F>>,
         allowed_circuit_hashes_root: QHashOut<C::F>,
     ) -> ProofWithPublicInputs<C::F, C, D> {
+        println!(
+            "dmp: {}",
+            serde_json::to_string(delta_merkle_proof).unwrap()
+        );
         let mut pw = PartialWitness::new();
         pw.set_hash_target(
             self.allowed_circuit_hashes_root_target,

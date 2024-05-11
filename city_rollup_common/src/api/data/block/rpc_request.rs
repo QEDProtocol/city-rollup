@@ -54,3 +54,12 @@ pub struct CityAddWithdrawalRPCRequest {
 pub struct CityRegisterUserRPCRequest<F: RichField> {
     pub public_key: QHashOut<F>,
 }
+
+impl<F: RichField> CityRegisterUserRPCRequest<F> {
+    pub fn new_batch(public_keys: &[QHashOut<F>]) -> Vec<Self> {
+        public_keys
+            .iter()
+            .map(|pk| CityRegisterUserRPCRequest { public_key: *pk })
+            .collect()
+    }
+}

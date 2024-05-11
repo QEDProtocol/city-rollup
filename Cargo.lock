@@ -407,6 +407,7 @@ dependencies = [
  "clap",
  "dotenv",
  "hex",
+ "hex-literal",
  "k256",
  "kvq",
  "plonky2",

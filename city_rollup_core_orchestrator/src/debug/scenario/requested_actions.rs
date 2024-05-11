@@ -35,7 +35,7 @@ impl<F: RichField> CityScenarioRequestedActions<F> {
             register_users: Vec::new(),
         }
     }
-    pub fn new_from_requested_rpc<S: KVQBinaryStore>(
+    pub fn new_from_requested_rpc(
         requested_from_rpc: CityScenarioRequestedActionsFromRPC<F>,
         funding_transactions: &[BTCTransaction],
         last_block_state: &CityL2BlockState,

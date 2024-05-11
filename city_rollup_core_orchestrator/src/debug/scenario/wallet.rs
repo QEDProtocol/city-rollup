@@ -39,6 +39,12 @@ where
     pub fn add_zk_private_key(&mut self, private_key: QHashOut<C::F>) -> QHashOut<C::F> {
         self.zk_wallet.add_private_key(private_key)
     }
+    pub fn add_secp256k1_private_key(
+        &mut self,
+        private_key: Hash256,
+    ) -> anyhow::Result<CompressedPublicKey> {
+        self.secp256k1_wallet.add_private_key(private_key)
+    }
     pub fn zk_sign(
         &self,
         fingerprint_hash: QHashOut<C::F>,

@@ -318,9 +318,61 @@ impl QProvingJobDataID {
         }
     }
     pub fn get_tree_parent_proof_input_id(&self) -> Self {
+        let parent_type = match self.circuit_type {
+            ProvingJobCircuitType::RegisterUser => ProvingJobCircuitType::RegisterUserAggregate,
+            ProvingJobCircuitType::RegisterUserAggregate => {
+                ProvingJobCircuitType::RegisterUserAggregate
+            }
+            ProvingJobCircuitType::AddL1Deposit => ProvingJobCircuitType::AddL1DepositAggregate,
+            ProvingJobCircuitType::AddL1DepositAggregate => {
+                ProvingJobCircuitType::AddL1DepositAggregate
+            }
+            ProvingJobCircuitType::ClaimL1Deposit => ProvingJobCircuitType::ClaimL1DepositAggregate,
+            ProvingJobCircuitType::ClaimL1DepositAggregate => {
+                ProvingJobCircuitType::ClaimL1DepositAggregate
+            }
+            ProvingJobCircuitType::TransferTokensL2 => {
+                ProvingJobCircuitType::TransferTokensL2Aggregate
+            }
+            ProvingJobCircuitType::TransferTokensL2Aggregate => {
+                ProvingJobCircuitType::TransferTokensL2Aggregate
+            }
+            ProvingJobCircuitType::AddL1Withdrawal => {
+                ProvingJobCircuitType::AddL1WithdrawalAggregate
+            }
+            ProvingJobCircuitType::AddL1WithdrawalAggregate => {
+                ProvingJobCircuitType::AddL1WithdrawalAggregate
+            }
+            ProvingJobCircuitType::ProcessL1Withdrawal => {
+                ProvingJobCircuitType::ProcessL1WithdrawalAggregate
+            }
+            ProvingJobCircuitType::ProcessL1WithdrawalAggregate => {
+                ProvingJobCircuitType::ProcessL1WithdrawalAggregate
+            }
+            ProvingJobCircuitType::DummyRegisterUserAggregate => {
+                ProvingJobCircuitType::RegisterUserAggregate
+            }
+            ProvingJobCircuitType::DummyAddL1DepositAggregate => {
+                ProvingJobCircuitType::AddL1DepositAggregate
+            }
+            ProvingJobCircuitType::DummyClaimL1DepositAggregate => {
+                ProvingJobCircuitType::ClaimL1DepositAggregate
+            }
+            ProvingJobCircuitType::DummyTransferTokensL2Aggregate => {
+                ProvingJobCircuitType::TransferTokensL2Aggregate
+            }
+            ProvingJobCircuitType::DummyAddL1WithdrawalAggregate => {
+                ProvingJobCircuitType::AddL1WithdrawalAggregate
+            }
+            ProvingJobCircuitType::DummyProcessL1WithdrawalAggregate => {
+                ProvingJobCircuitType::ProcessL1WithdrawalAggregate
+            }
+            _ => self.circuit_type,
+        };
         Self {
             data_type: ProvingJobDataType::InputWitness,
             data_index: 0,
+            circuit_type: parent_type,
             sub_group_id: self.sub_group_id + 1,
             task_index: self.sub_group_id >> 1u32,
             ..*self
