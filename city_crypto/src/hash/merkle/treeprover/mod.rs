@@ -158,14 +158,14 @@ impl<F: RichField> WithDummyStateTransition<F> for AggStateTransitionWithEvents<
 
 #[derive(Debug, Clone, Copy, Deserialize, Serialize, PartialEq)]
 #[serde(bound = "")]
-pub struct AggAggStateTransitionWithEventsInput<F: RichField> {
+pub struct AggStateTransitionWithEventsInput<F: RichField> {
     pub left_input: AggStateTransitionWithEvents<F>,
     pub right_input: AggStateTransitionWithEvents<F>,
     pub left_proof_is_leaf: bool,
     pub right_proof_is_leaf: bool,
 }
 
-impl<F: RichField> AggStateTrackableWithEventsInput<F> for AggAggStateTransitionWithEventsInput<F> {
+impl<F: RichField> AggStateTrackableWithEventsInput<F> for AggStateTransitionWithEventsInput<F> {
     fn get_state_transition_with_events(&self) -> AggStateTransitionWithEvents<F> {
         self.condense()
     }
@@ -175,7 +175,7 @@ impl<F: RichField, T: AggStateTrackableInput<F>> StateTransitionTrackableWithEve
         QHashOut::ZERO
     }
 }
-impl<F: RichField> WithDummyStateTransition<F> for AggAggStateTransitionWithEventsInput<F> {
+impl<F: RichField> WithDummyStateTransition<F> for AggStateTransitionWithEventsInput<F> {
     fn get_dummy_value(state_root: QHashOut<F>) -> Self {
         Self {
             left_input: AggStateTransitionWithEvents::<F>::get_dummy_value(state_root),
@@ -185,7 +185,7 @@ impl<F: RichField> WithDummyStateTransition<F> for AggAggStateTransitionWithEven
         }
     }
 }
-impl<F: RichField> AggAggStateTransitionWithEventsInput<F> {
+impl<F: RichField> AggStateTransitionWithEventsInput<F> {
     pub fn condense(&self) -> AggStateTransitionWithEvents<F> {
         AggStateTransitionWithEvents {
             state_transition_start: self.left_input.state_transition_start,
@@ -267,13 +267,13 @@ impl<IL: AggStateTrackableInput<F>, F: RichField> TPLeafAggregator<IL, AggStateT
 pub struct AggWTTELeafAggregator;
 
 impl<IL: AggStateTrackableWithEventsInput<F>, F: RichField>
-    TPLeafAggregator<IL, AggAggStateTransitionWithEventsInput<F>> for AggWTTELeafAggregator
+    TPLeafAggregator<IL, AggStateTransitionWithEventsInput<F>> for AggWTTELeafAggregator
 {
     fn get_output_from_inputs(
-        left: &AggAggStateTransitionWithEventsInput<F>,
-        right: &AggAggStateTransitionWithEventsInput<F>,
-    ) -> AggAggStateTransitionWithEventsInput<F> {
-        AggAggStateTransitionWithEventsInput {
+        left: &AggStateTransitionWithEventsInput<F>,
+        right: &AggStateTransitionWithEventsInput<F>,
+    ) -> AggStateTransitionWithEventsInput<F> {
+        AggStateTransitionWithEventsInput {
             left_input: left.condense(),
             right_input: right.condense(),
             left_proof_is_leaf: false,
@@ -283,20 +283,20 @@ impl<IL: AggStateTrackableWithEventsInput<F>, F: RichField>
 
     fn get_output_from_left_leaf(
         left: &IL,
-        right: &AggAggStateTransitionWithEventsInput<F>,
-    ) -> AggAggStateTransitionWithEventsInput<F> {
+        right: &AggStateTransitionWithEventsInput<F>,
+    ) -> AggStateTransitionWithEventsInput<F> {
         right.combine_with_left_leaf(left)
     }
 
     fn get_output_from_right_leaf(
-        left: &AggAggStateTransitionWithEventsInput<F>,
+        left: &AggStateTransitionWithEventsInput<F>,
         right: &IL,
-    ) -> AggAggStateTransitionWithEventsInput<F> {
+    ) -> AggStateTransitionWithEventsInput<F> {
         left.combine_with_right_leaf(right)
     }
 
-    fn get_output_from_leaves(left: &IL, right: &IL) -> AggAggStateTransitionWithEventsInput<F> {
-        AggAggStateTransitionWithEventsInput {
+    fn get_output_from_leaves(left: &IL, right: &IL) -> AggStateTransitionWithEventsInput<F> {
+        AggStateTransitionWithEventsInput {
             left_input: left.get_state_transition_with_events(),
             right_input: right.get_state_transition_with_events(),
             left_proof_is_leaf: true,

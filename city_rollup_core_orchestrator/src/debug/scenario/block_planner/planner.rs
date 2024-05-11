@@ -1,6 +1,6 @@
 use city_crypto::hash::{
     merkle::treeprover::{
-        AggAggStateTransitionWithEventsInput, AggStateTransitionInput, AggWTLeafAggregator,
+        AggStateTransitionInput, AggStateTransitionWithEventsInput, AggWTLeafAggregator,
         AggWTTELeafAggregator,
     },
     qhashout::QHashOut,
@@ -193,7 +193,7 @@ impl<S: KVQBinaryStore, PS: QProofStore> CityOrchestratorBlockPlanner<S, PS> {
                 PS,
                 AggWTTELeafAggregator,
                 _,
-                AggAggStateTransitionWithEventsInput<F>,
+                AggStateTransitionWithEventsInput<F>,
             >(
                 &requested_actions
                     .process_withdrawals
@@ -229,7 +229,7 @@ impl<S: KVQBinaryStore, PS: QProofStore> CityOrchestratorBlockPlanner<S, PS> {
                 PS,
                 AggWTTELeafAggregator,
                 _,
-                AggAggStateTransitionWithEventsInput<F>,
+                AggStateTransitionWithEventsInput<F>,
             >(
                 &requested_actions
                     .add_deposits
