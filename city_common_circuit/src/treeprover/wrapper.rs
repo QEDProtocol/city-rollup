@@ -12,7 +12,7 @@ use plonky2::plonk::{
     config::{AlgebraicHasher, GenericConfig},
     proof::ProofWithPublicInputs,
 };
-use serde::Serialize;
+use serde::{de::DeserializeOwned, Serialize};
 use std::fmt::Debug;
 
 pub struct TreeProverLeafCircuitWrapper<AC, C: 'static + GenericConfig<D>, const D: usize>
@@ -89,7 +89,7 @@ where
 impl<
         SC: QStandardCircuitProvableWithProofStoreSync<S, I, C, D> + Clone + Send,
         S: QProofStoreReaderSync,
-        I: Serialize + Clone + Debug + Send,
+        I: DeserializeOwned + Serialize + Clone + Debug + Send,
         C: GenericConfig<D>,
         const D: usize,
     > QStandardCircuitProvableWithProofStoreSync<S, I, C, D>

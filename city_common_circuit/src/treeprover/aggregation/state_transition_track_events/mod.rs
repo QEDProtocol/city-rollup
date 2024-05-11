@@ -115,7 +115,7 @@ impl AggStateTrackableWithEventsCircuitHeaderGadget {
 }
 
 #[derive(Debug)]
-pub struct AggAggStateTransitionWithEventsCircuit<C: GenericConfig<D>, const D: usize> {
+pub struct AggStateTransitionWithEventsCircuit<C: GenericConfig<D>, const D: usize> {
     pub header_gadget: AggStateTrackableWithEventsCircuitHeaderGadget,
 
     pub left_proof: ProofWithPublicInputsTarget<D>,
@@ -128,7 +128,7 @@ pub struct AggAggStateTransitionWithEventsCircuit<C: GenericConfig<D>, const D: 
     pub circuit_data: CircuitData<C::F, C, D>,
     pub fingerprint: QHashOut<C::F>,
 }
-impl<C: GenericConfig<D>, const D: usize> Clone for AggAggStateTransitionWithEventsCircuit<C, D>
+impl<C: GenericConfig<D>, const D: usize> Clone for AggStateTransitionWithEventsCircuit<C, D>
 where
     C::Hasher: AlgebraicHasher<C::F>,
 {
@@ -142,7 +142,7 @@ where
         )
     }
 }
-impl<C: GenericConfig<D>, const D: usize> AggAggStateTransitionWithEventsCircuit<C, D>
+impl<C: GenericConfig<D>, const D: usize> AggStateTransitionWithEventsCircuit<C, D>
 where
     C::Hasher: AlgebraicHasher<C::F>,
 {
@@ -242,7 +242,7 @@ where
     }
 }
 impl<C: GenericConfig<D>, const D: usize> QStandardCircuit<C, D>
-    for AggAggStateTransitionWithEventsCircuit<C, D>
+    for AggStateTransitionWithEventsCircuit<C, D>
 {
     fn get_fingerprint(&self) -> QHashOut<C::F> {
         self.fingerprint
@@ -257,7 +257,7 @@ impl<C: GenericConfig<D>, const D: usize> QStandardCircuit<C, D>
 
 impl<C: GenericConfig<D>, const D: usize>
     TreeProverAggCircuit<AggAggStateTransitionWithEventsInput<C::F>, C, D>
-    for AggAggStateTransitionWithEventsCircuit<C, D>
+    for AggStateTransitionWithEventsCircuit<C, D>
 where
     C::Hasher: AlgebraicHasher<C::F>,
 {

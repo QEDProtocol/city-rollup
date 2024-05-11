@@ -22,6 +22,7 @@ pub struct CRWorkerToolboxCoreCircuitFingerprints<F: RichField> {
 
     // operation aggregators
     pub agg_state_transition: QHashOut<F>,
-    pub agg_state_transition_signed: QHashOut<F>,
     pub agg_state_transition_with_events: QHashOut<F>,
+    pub agg_state_transition_dummy: QHashOut<F>,
+    pub agg_state_transition_with_events_dummy: QHashOut<F>,
 }

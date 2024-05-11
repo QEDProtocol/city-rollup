@@ -6,7 +6,7 @@ use plonky2::plonk::{
     config::GenericConfig,
     proof::ProofWithPublicInputs,
 };
-use serde::Serialize;
+use serde::{de::DeserializeOwned, Serialize};
 
 pub mod provable;
 pub trait QStandardCircuit<C: GenericConfig<D>, const D: usize> {
@@ -48,6 +48,19 @@ pub trait QStandardCircuit<C: GenericConfig<D>, const D: usize> {
         );*/
         println!("{}: \"{:?}\",", name, self.get_common_circuit_data_ref());
     }
+    fn get_verifier_triplet(
+        &self,
+    ) -> (
+        &CommonCircuitData<C::F, D>,
+        &VerifierOnlyCircuitData<C, D>,
+        QHashOut<C::F>,
+    ) {
+        (
+            self.get_common_circuit_data_ref(),
+            self.get_verifier_config_ref(),
+            self.get_fingerprint(),
+        )
+    }
 }
 
 pub trait QStandardCircuitWithDefault {
@@ -59,7 +72,7 @@ pub trait QStandardCircuitWithDefaultMinified {
 
 pub trait QStandardCircuitProvableWithProofStoreSync<
     S: QProofStoreReaderSync,
-    I: Serialize + Clone,
+    I: DeserializeOwned + Serialize + Clone,
     C: GenericConfig<D>,
     const D: usize,
 >: QStandardCircuit<C, D>
@@ -68,6 +81,18 @@ pub trait QStandardCircuitProvableWithProofStoreSync<
         &self,
         store: &S,
         input: &I,
+    ) -> anyhow::Result<ProofWithPublicInputs<C::F, C, D>>;
+}
+pub trait QStandardCircuitProvableSerializedWithProofStoreSync<
+    S: QProofStoreReaderSync,
+    C: GenericConfig<D>,
+    const D: usize,
+>: QStandardCircuit<C, D>
+{
+    fn prove_with_proof_store_sync(
+        &self,
+        store: &S,
+        input: &[u8],
     ) -> anyhow::Result<ProofWithPublicInputs<C::F, C, D>>;
 }
 #[async_trait]

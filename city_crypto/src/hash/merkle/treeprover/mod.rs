@@ -19,6 +19,19 @@ pub trait StateTransitionTrackableWithEvents<F: RichField>: StateTransitionTrack
 pub trait AggStateTrackableInput<F: RichField> {
     fn get_state_transition(&self) -> AggStateTransition<F>;
 }
+#[derive(Debug, Clone, Copy, Deserialize, Serialize, PartialEq)]
+#[serde(bound = "")]
+pub struct DummyAggStateTransition<F: RichField> {
+    pub state_transition_hash: QHashOut<F>,
+    pub allowed_circuit_hashes_root: QHashOut<F>,
+}
+#[derive(Debug, Clone, Copy, Deserialize, Serialize, PartialEq)]
+#[serde(bound = "")]
+pub struct DummyAggStateTransitionWithEvents<F: RichField> {
+    pub state_transition_hash: QHashOut<F>,
+    pub event_transition_hash: QHashOut<F>,
+    pub allowed_circuit_hashes_root: QHashOut<F>,
+}
 
 #[derive(Debug, Clone, Copy, Deserialize, Serialize, PartialEq)]
 #[serde(bound = "")]

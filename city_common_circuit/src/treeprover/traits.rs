@@ -6,7 +6,7 @@ use plonky2::plonk::{
     config::{AlgebraicHasher, GenericConfig},
     proof::ProofWithPublicInputs,
 };
-use serde::Serialize;
+use serde::{de::DeserializeOwned, Serialize};
 
 use crate::{
     circuits::traits::qstandard::{QStandardCircuit, QStandardCircuitProvableWithProofStoreSync},
@@ -21,7 +21,7 @@ pub struct VerifierConfig<C: GenericConfig<D>, const D: usize> {
 
 pub trait TreeProverLeafCircuit<
     S: QProofStoreReaderSync,
-    I: Serialize + Clone + Debug + Send,
+    I: DeserializeOwned + Serialize + Clone + Debug + Send,
     C: GenericConfig<D>,
     const D: usize,
 >: QStandardCircuitProvableWithProofStoreSync<S, I, C, D> + Clone + Send
@@ -30,7 +30,7 @@ pub trait TreeProverLeafCircuit<
 impl<
         SC: QStandardCircuitProvableWithProofStoreSync<S, I, C, D> + Clone + Send,
         S: QProofStoreReaderSync,
-        I: Serialize + Clone + Debug + Send,
+        I: DeserializeOwned + Serialize + Clone + Debug + Send,
         C: GenericConfig<D>,
         const D: usize,
     > TreeProverLeafCircuit<S, I, C, D> for SC

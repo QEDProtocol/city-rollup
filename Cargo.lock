@@ -530,6 +530,7 @@ name = "city_rollup_circuit"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "bincode",
  "city_common",
  "city_common_circuit",
  "city_crypto",

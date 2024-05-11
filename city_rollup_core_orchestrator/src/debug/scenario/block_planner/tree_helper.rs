@@ -4,7 +4,7 @@ use city_crypto::hash::{
     merkle::treeprover::{
         generate_tree_inputs_with_position, AggStateTrackableInput,
         AggStateTrackableWithEventsInput, AggStateTransition, AggStateTransitionWithEvents,
-        StateTransitionTrackable, StateTransitionTrackableWithEvents, TPLeafAggregator,
+        DummyAggStateTransition, DummyAggStateTransitionWithEvents, TPLeafAggregator,
         WithDummyStateTransition,
     },
     qhashout::QHashOut,
@@ -33,10 +33,16 @@ pub fn plan_tree_prover_from_leaves<
     proof_store: &mut PS,
     dummy_id: QProvingJobDataID,
     dummy_state_root: QHashOut<F>,
+    allowed_circuit_hashes_root: QHashOut<F>,
 ) -> anyhow::Result<(Vec<Vec<QProvingJobDataID>>, AggStateTransition<F>)> {
     if leaves.len() == 0 {
-        let dummy = IO::get_dummy_value(dummy_state_root);
+        //let dummy = IO::get_dummy_value(dummy_state_root);
+        let dummy = DummyAggStateTransition {
+            state_transition_hash: dummy_state_root,
+            allowed_circuit_hashes_root: allowed_circuit_hashes_root,
+        };
         proof_store.set_bytes_by_id(dummy_id, &bincode::serialize(&dummy)?)?;
+        let dummy = IO::get_dummy_value(dummy_state_root);
 
         return Ok((vec![vec![dummy_id]], dummy.get_state_transition()));
     }
@@ -90,10 +96,16 @@ pub fn plan_tree_prover_from_leaves_with_events<
     proof_store: &mut PS,
     dummy_id: QProvingJobDataID,
     dummy_state_root: QHashOut<F>,
+    allowed_circuit_hashes_root: QHashOut<F>,
 ) -> anyhow::Result<(Vec<Vec<QProvingJobDataID>>, AggStateTransitionWithEvents<F>)> {
     if leaves.len() == 0 {
-        let dummy = IO::get_dummy_value(dummy_state_root);
+        let dummy = DummyAggStateTransitionWithEvents {
+            state_transition_hash: dummy_state_root,
+            allowed_circuit_hashes_root: allowed_circuit_hashes_root,
+            event_transition_hash: QHashOut::ZERO,
+        };
         proof_store.set_bytes_by_id(dummy_id, &bincode::serialize(&dummy)?)?;
+        let dummy = IO::get_dummy_value(dummy_state_root);
 
         return Ok((
             vec![vec![dummy_id]],
