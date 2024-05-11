@@ -3,7 +3,7 @@ use plonky2::hash::hash_types::RichField;
 use serde::Deserialize;
 use serde::Serialize;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(bound = "")]
 pub struct CRWorkerToolboxCoreCircuitFingerprints<F: RichField> {
     pub network_magic: u64,

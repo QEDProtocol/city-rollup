@@ -108,7 +108,9 @@ pub enum ProvingJobCircuitType {
 
     WrappedSignatureProof = 64,
     Secp256K1SignatureProof = 65,
+    Unknown = 255,
 }
+
 impl ProvingJobCircuitType {
     pub fn to_u8(&self) -> u8 {
         *self as u8
@@ -146,6 +148,7 @@ impl TryFrom<u8> for ProvingJobCircuitType {
             53 => Ok(ProvingJobCircuitType::DummyProcessL1WithdrawalAggregate),
             64 => Ok(ProvingJobCircuitType::WrappedSignatureProof),
             65 => Ok(ProvingJobCircuitType::Secp256K1SignatureProof),
+            255 => Ok(ProvingJobCircuitType::Unknown),
             _ => Err(anyhow::format_err!(
                 "Invalid ProvingJobCircuitType value: {}",
                 value

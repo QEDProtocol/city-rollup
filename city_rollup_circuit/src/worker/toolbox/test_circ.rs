@@ -77,6 +77,7 @@ where
             op_register_user: TPCircuitFingerprintConfig::from_leaf_and_agg_fingerprints::<C::Hasher>(
                 self.op_register_user.get_fingerprint(),
                 agg_state_transition_fingerprint,
+                QHashOut::ZERO,
             ),
             agg_state_transition: agg_state_transition_fingerprint,
         }
