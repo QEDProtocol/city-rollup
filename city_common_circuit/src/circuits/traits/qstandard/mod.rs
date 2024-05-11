@@ -1,11 +1,11 @@
 use city_crypto::hash::qhashout::QHashOut;
-use city_rollup_common::qworker::proof_store::{QProofStoreReaderSync};
-use plonky2::plonk::{
-    circuit_data::{CommonCircuitData, VerifierOnlyCircuitData},
-    config::GenericConfig,
-    proof::ProofWithPublicInputs,
-};
-use serde::{de::DeserializeOwned, Serialize};
+use city_rollup_common::qworker::proof_store::QProofStoreReaderSync;
+use plonky2::plonk::circuit_data::CommonCircuitData;
+use plonky2::plonk::circuit_data::VerifierOnlyCircuitData;
+use plonky2::plonk::config::GenericConfig;
+use plonky2::plonk::proof::ProofWithPublicInputs;
+use serde::de::DeserializeOwned;
+use serde::Serialize;
 
 pub mod provable;
 pub trait QStandardCircuit<C: GenericConfig<D>, const D: usize> {

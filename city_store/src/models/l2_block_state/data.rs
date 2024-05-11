@@ -1,6 +1,7 @@
 use city_rollup_common::api::data::store::CityL2BlockState;
 use kvq::traits::KVQSerializable;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use serde::Serialize;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
 pub struct L2BlockStateKeyCore<const TABLE_TYPE: u16>(pub u64);

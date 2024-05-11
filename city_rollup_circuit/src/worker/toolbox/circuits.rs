@@ -1,50 +1,37 @@
 use city_common::logging::trace_timer::TraceTimer;
-use city_common_circuit::{
-    circuits::{
-        l1_secp256k1_signature::L1Secp256K1SignatureCircuit,
-        traits::qstandard::{QStandardCircuit, QStandardCircuitWithDefaultMinified},
-        zk_signature_wrapper::ZKSignatureWrapperCircuit,
-    },
-    treeprover::{
-        aggregation::{
-            state_transition::AggStateTransitionCircuit,
-            state_transition_dummy::AggStateTransitionDummyCircuit,
-            state_transition_track_events::AggStateTransitionWithEventsCircuit,
-            state_transition_track_events_dummy::AggStateTransitionWithEventsDummyCircuit,
-        },
-        traits::TreeProverAggCircuit,
-    },
-};
-use city_crypto::hash::{
-    merkle::treeprover::TPCircuitFingerprintConfig, qhashout::QHashOut,
-    traits::hasher::MerkleZeroHasher,
-};
-use city_rollup_common::qworker::{
-    fingerprints::CRWorkerToolboxCoreCircuitFingerprints,
-    job_id::{ProvingJobCircuitType, QProvingJobDataID},
-    proof_store::QProofStoreReaderSync,
-    verifier::QWorkerVerifyHelper,
-};
-use plonky2::{
-    hash::hash_types::HashOut,
-    plonk::{
-        circuit_data::{CommonCircuitData, VerifierOnlyCircuitData},
-        config::{AlgebraicHasher, GenericConfig},
-        proof::ProofWithPublicInputs,
-    },
-};
+use city_common_circuit::circuits::l1_secp256k1_signature::L1Secp256K1SignatureCircuit;
+use city_common_circuit::circuits::traits::qstandard::QStandardCircuit;
+use city_common_circuit::circuits::traits::qstandard::QStandardCircuitWithDefaultMinified;
+use city_common_circuit::circuits::zk_signature_wrapper::ZKSignatureWrapperCircuit;
+use city_common_circuit::treeprover::aggregation::state_transition::AggStateTransitionCircuit;
+use city_common_circuit::treeprover::aggregation::state_transition_dummy::AggStateTransitionDummyCircuit;
+use city_common_circuit::treeprover::aggregation::state_transition_track_events::AggStateTransitionWithEventsCircuit;
+use city_common_circuit::treeprover::aggregation::state_transition_track_events_dummy::AggStateTransitionWithEventsDummyCircuit;
+use city_common_circuit::treeprover::traits::TreeProverAggCircuit;
+use city_crypto::hash::merkle::treeprover::TPCircuitFingerprintConfig;
+use city_crypto::hash::qhashout::QHashOut;
+use city_crypto::hash::traits::hasher::MerkleZeroHasher;
+use city_rollup_common::qworker::fingerprints::CRWorkerToolboxCoreCircuitFingerprints;
+use city_rollup_common::qworker::job_id::ProvingJobCircuitType;
+use city_rollup_common::qworker::job_id::QProvingJobDataID;
+use city_rollup_common::qworker::proof_store::QProofStoreReaderSync;
+use city_rollup_common::qworker::verifier::QWorkerVerifyHelper;
+use plonky2::hash::hash_types::HashOut;
+use plonky2::plonk::circuit_data::CommonCircuitData;
+use plonky2::plonk::circuit_data::VerifierOnlyCircuitData;
+use plonky2::plonk::config::AlgebraicHasher;
+use plonky2::plonk::config::GenericConfig;
+use plonky2::plonk::proof::ProofWithPublicInputs;
 
-use crate::{
-    block_circuits::ops::{
-        add_l1_deposit::WCRAddL1DepositCircuit, add_l1_withdrawal::CRAddL1WithdrawalCircuit,
-        claim_l1_deposit::CRClaimL1DepositCircuit, l2_transfer::circuit::CRL2TransferCircuit,
-        process_l1_withdrawal::WCRProcessL1WithdrawalCircuit,
-        register_user::WCRUserRegistrationCircuit,
-    },
-    worker::traits::{
-        QWorkerCircuitAggWithDataSync, QWorkerCircuitSimpleWithDataSync, QWorkerGenericProver,
-    },
-};
+use crate::block_circuits::ops::add_l1_deposit::WCRAddL1DepositCircuit;
+use crate::block_circuits::ops::add_l1_withdrawal::CRAddL1WithdrawalCircuit;
+use crate::block_circuits::ops::claim_l1_deposit::CRClaimL1DepositCircuit;
+use crate::block_circuits::ops::l2_transfer::circuit::CRL2TransferCircuit;
+use crate::block_circuits::ops::process_l1_withdrawal::WCRProcessL1WithdrawalCircuit;
+use crate::block_circuits::ops::register_user::WCRUserRegistrationCircuit;
+use crate::worker::traits::QWorkerCircuitAggWithDataSync;
+use crate::worker::traits::QWorkerCircuitSimpleWithDataSync;
+use crate::worker::traits::QWorkerGenericProver;
 
 pub struct CRWorkerToolboxCoreCircuits<C: GenericConfig<D> + 'static, const D: usize>
 where

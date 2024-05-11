@@ -1,8 +1,6 @@
 use city_common::logging::trace_timer::TraceTimer;
-use city_rollup_common::qworker::{
-    job_id::QProvingJobDataID,
-    proof_store::{QProofStore, QProofStoreReaderSync},
-};
+use city_rollup_common::qworker::job_id::QProvingJobDataID;
+use city_rollup_common::qworker::proof_store::QProofStore;
 use plonky2::plonk::config::GenericConfig;
 
 use super::traits::QWorkerGenericProver;

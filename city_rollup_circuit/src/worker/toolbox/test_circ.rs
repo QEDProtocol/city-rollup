@@ -1,18 +1,17 @@
 use city_common::logging::trace_timer::TraceTimer;
-use city_common_circuit::{
-    circuits::traits::qstandard::{QStandardCircuit, QStandardCircuitWithDefaultMinified},
-    treeprover::{
-        aggregation::state_transition::AggStateTransitionCircuit, traits::TreeProverAggCircuit,
-    },
-};
-use city_crypto::hash::{
-    merkle::treeprover::TPCircuitFingerprintConfig, qhashout::QHashOut, traits::hasher::MerkleZeroHasher
-};
-use plonky2::{
-    hash::hash_types::{HashOut, RichField},
-    plonk::config::{AlgebraicHasher, GenericConfig},
-};
-use serde::{Deserialize, Serialize};
+use city_common_circuit::circuits::traits::qstandard::QStandardCircuit;
+use city_common_circuit::circuits::traits::qstandard::QStandardCircuitWithDefaultMinified;
+use city_common_circuit::treeprover::aggregation::state_transition::AggStateTransitionCircuit;
+use city_common_circuit::treeprover::traits::TreeProverAggCircuit;
+use city_crypto::hash::merkle::treeprover::TPCircuitFingerprintConfig;
+use city_crypto::hash::qhashout::QHashOut;
+use city_crypto::hash::traits::hasher::MerkleZeroHasher;
+use plonky2::hash::hash_types::HashOut;
+use plonky2::hash::hash_types::RichField;
+use plonky2::plonk::config::AlgebraicHasher;
+use plonky2::plonk::config::GenericConfig;
+use serde::Deserialize;
+use serde::Serialize;
 
 use crate::block_circuits::ops::register_user::WCRUserRegistrationCircuit;
 

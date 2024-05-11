@@ -63,7 +63,7 @@ pub enum CityRPCRequest<F: RichField> {
     CityTokenTransferRPCRequest((u32, CityTokenTransferRPCRequest)),
     CityClaimDepositRPCRequest((u32, CityClaimDepositRPCRequest)),
     CityAddWithdrawalRPCRequest((u32, CityAddWithdrawalRPCRequest)),
-    CityRegisterUserRPCRequest((u32, CityRegisterUserRPCRequest<F>))
+    CityRegisterUserRPCRequest((u32, CityRegisterUserRPCRequest<F>)),
 }
 
 impl<F: RichField> CityRegisterUserRPCRequest<F> {

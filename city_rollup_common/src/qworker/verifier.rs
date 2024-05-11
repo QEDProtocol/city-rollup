@@ -1,8 +1,8 @@
-use city_crypto::hash::{merkle::treeprover::TPCircuitFingerprintConfig, qhashout::QHashOut};
-use plonky2::plonk::{
-    circuit_data::{CommonCircuitData, VerifierOnlyCircuitData},
-    config::GenericConfig,
-};
+use city_crypto::hash::merkle::treeprover::TPCircuitFingerprintConfig;
+use city_crypto::hash::qhashout::QHashOut;
+use plonky2::plonk::circuit_data::CommonCircuitData;
+use plonky2::plonk::circuit_data::VerifierOnlyCircuitData;
+use plonky2::plonk::config::GenericConfig;
 
 use super::job_id::ProvingJobCircuitType;
 

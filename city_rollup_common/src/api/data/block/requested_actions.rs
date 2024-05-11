@@ -6,7 +6,8 @@ use plonky2::hash::hash_types::RichField;
 use serde::Deserialize;
 use serde::Serialize;
 
-use crate::{introspection::transaction::BTCTransaction, qworker::job_id::QProvingJobDataID};
+use crate::introspection::transaction::BTCTransaction;
+use crate::qworker::job_id::QProvingJobDataID;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Hash, Copy, PartialEq, Eq)]
 pub struct CityTokenTransferRequest {
@@ -174,7 +175,7 @@ pub struct CityRegisterUserRequest<F: RichField> {
 }
 
 impl<F: RichField> CityRegisterUserRequest<F> {
-    pub fn new( public_key: QHashOut<F>) -> Self {
+    pub fn new(public_key: QHashOut<F>) -> Self {
         Self {
             request_type: 5,
             public_key,

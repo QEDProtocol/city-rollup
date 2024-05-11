@@ -1,10 +1,10 @@
-use city_crypto::hash::{
-    merkle::treeprover::{AggStateTransition, AggStateTransitionWithEvents},
-    qhashout::QHashOut,
-};
+use city_crypto::hash::merkle::treeprover::AggStateTransition;
+use city_crypto::hash::merkle::treeprover::AggStateTransitionWithEvents;
+use city_crypto::hash::qhashout::QHashOut;
 use city_rollup_common::qworker::job_id::QProvingJobDataID;
 use plonky2::hash::hash_types::RichField;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use serde::Serialize;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(bound = "")]

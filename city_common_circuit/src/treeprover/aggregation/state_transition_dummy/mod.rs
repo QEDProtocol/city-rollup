@@ -1,24 +1,23 @@
-use city_crypto::hash::{merkle::treeprover::DummyAggStateTransition, qhashout::QHashOut};
+use city_crypto::hash::merkle::treeprover::DummyAggStateTransition;
+use city_crypto::hash::qhashout::QHashOut;
 use city_rollup_common::qworker::proof_store::QProofStoreReaderSync;
-use plonky2::{
-    hash::hash_types::HashOutTarget,
-    iop::witness::{PartialWitness, WitnessWrite},
-    plonk::{
-        circuit_builder::CircuitBuilder,
-        circuit_data::{CircuitConfig, CircuitData, CommonCircuitData, VerifierOnlyCircuitData},
-        config::{AlgebraicHasher, GenericConfig},
-        proof::ProofWithPublicInputs,
-    },
-};
+use plonky2::hash::hash_types::HashOutTarget;
+use plonky2::iop::witness::PartialWitness;
+use plonky2::iop::witness::WitnessWrite;
+use plonky2::plonk::circuit_builder::CircuitBuilder;
+use plonky2::plonk::circuit_data::CircuitConfig;
+use plonky2::plonk::circuit_data::CircuitData;
+use plonky2::plonk::circuit_data::CommonCircuitData;
+use plonky2::plonk::circuit_data::VerifierOnlyCircuitData;
+use plonky2::plonk::config::AlgebraicHasher;
+use plonky2::plonk::config::GenericConfig;
+use plonky2::plonk::proof::ProofWithPublicInputs;
 
-use crate::{
-    builder::pad_circuit::pad_circuit_degree,
-    circuits::traits::qstandard::{
-        provable::QStandardCircuitProvable, QStandardCircuit,
-        QStandardCircuitProvableWithProofStoreSync,
-    },
-    proof_minifier::pm_core::get_circuit_fingerprint_generic,
-};
+use crate::builder::pad_circuit::pad_circuit_degree;
+use crate::circuits::traits::qstandard::provable::QStandardCircuitProvable;
+use crate::circuits::traits::qstandard::QStandardCircuit;
+use crate::circuits::traits::qstandard::QStandardCircuitProvableWithProofStoreSync;
+use crate::proof_minifier::pm_core::get_circuit_fingerprint_generic;
 
 #[derive(Debug)]
 pub struct AggStateTransitionDummyCircuit<C: GenericConfig<D>, const D: usize>

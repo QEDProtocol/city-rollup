@@ -80,9 +80,7 @@ impl ProvingWorkerListener for RedisDispatcher {
 
     async fn receive_all(&mut self, topic: &str) -> anyhow::Result<Vec<(String, Vec<u8>)>> {
         let mut result = Vec::new();
-        while let Some(RsmqMessage { id, message, .. }) =
-            self.queue.pop_message(topic).await?
-        {
+        while let Some(RsmqMessage { id, message, .. }) = self.queue.pop_message(topic).await? {
             result.push((id, message));
         }
 

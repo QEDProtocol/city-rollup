@@ -1,12 +1,11 @@
 use city_rollup_common::api::data::store::CityL2BlockState;
-use kvq::traits::{KVQBinaryStore, KVQBinaryStoreReader};
-
-use crate::{
-    config::L2BlockStateStore,
-    models::l2_block_state::model::{L2BlockStatesModelCore, L2BlockStatesModelReaderCore},
-};
+use kvq::traits::KVQBinaryStore;
+use kvq::traits::KVQBinaryStoreReader;
 
 use super::base::CityStore;
+use crate::config::L2BlockStateStore;
+use crate::models::l2_block_state::model::L2BlockStatesModelCore;
+use crate::models::l2_block_state::model::L2BlockStatesModelReaderCore;
 
 impl<S: KVQBinaryStoreReader> CityStore<S> {
     pub fn get_block_state(store: &S, checkpoint_id: u64) -> anyhow::Result<CityL2BlockState> {

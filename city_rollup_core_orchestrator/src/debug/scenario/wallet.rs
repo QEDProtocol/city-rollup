@@ -1,19 +1,16 @@
 use city_common::binaryhelpers::bytes::CompressedPublicKey;
-use city_common_circuit::{
-    circuits::l1_secp256k1_signature::L1Secp256K1SignatureCircuit,
-    wallet::zk::{MemoryZKSignatureWallet, SimpleZKSignatureWallet, ZKSignatureWalletProvider},
-};
-use city_crypto::{
-    hash::{base_types::hash256::Hash256, qhashout::QHashOut},
-    signature::secp256k1::{
-        core::QEDCompressedSecp256K1Signature,
-        wallet::{MemorySecp256K1Wallet, Secp256K1WalletProvider},
-    },
-};
-use plonky2::plonk::{
-    config::{AlgebraicHasher, GenericConfig},
-    proof::ProofWithPublicInputs,
-};
+use city_common_circuit::circuits::l1_secp256k1_signature::L1Secp256K1SignatureCircuit;
+use city_common_circuit::wallet::zk::MemoryZKSignatureWallet;
+use city_common_circuit::wallet::zk::SimpleZKSignatureWallet;
+use city_common_circuit::wallet::zk::ZKSignatureWalletProvider;
+use city_crypto::hash::base_types::hash256::Hash256;
+use city_crypto::hash::qhashout::QHashOut;
+use city_crypto::signature::secp256k1::core::QEDCompressedSecp256K1Signature;
+use city_crypto::signature::secp256k1::wallet::MemorySecp256K1Wallet;
+use city_crypto::signature::secp256k1::wallet::Secp256K1WalletProvider;
+use plonky2::plonk::config::AlgebraicHasher;
+use plonky2::plonk::config::GenericConfig;
+use plonky2::plonk::proof::ProofWithPublicInputs;
 
 #[derive(Clone)]
 pub struct DebugScenarioWallet<C: GenericConfig<D> + 'static, const D: usize>

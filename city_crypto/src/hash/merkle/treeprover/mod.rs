@@ -1,9 +1,11 @@
-use city_common::tree_planner::{BinaryTreeJob, BinaryTreePlanner};
-use plonky2::{
-    hash::{hash_types::RichField, poseidon::PoseidonHash},
-    plonk::config::{AlgebraicHasher, Hasher},
-};
-use serde::{Deserialize, Serialize};
+use city_common::tree_planner::BinaryTreeJob;
+use city_common::tree_planner::BinaryTreePlanner;
+use plonky2::hash::hash_types::RichField;
+use plonky2::hash::poseidon::PoseidonHash;
+use plonky2::plonk::config::AlgebraicHasher;
+use plonky2::plonk::config::Hasher;
+use serde::Deserialize;
+use serde::Serialize;
 
 use crate::hash::qhashout::QHashOut;
 pub trait WithDummyStateTransition<F: RichField> {

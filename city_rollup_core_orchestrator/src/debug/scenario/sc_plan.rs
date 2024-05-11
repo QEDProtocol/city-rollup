@@ -1,22 +1,13 @@
 use city_crypto::hash::qhashout::QHashOut;
-use city_rollup_common::{
-    api::data::{
-        block::{
-            requested_actions::{
-                CityAddDepositRequest, CityAddWithdrawalRequest, CityClaimDepositRequest,
-                CityProcessWithdrawalRequest, CityRegisterUserRequest, CityTokenTransferRequest,
-            },
-            rpc_request::{
-                CityAddWithdrawalRPCRequest, CityClaimDepositRPCRequest,
-                CityRegisterUserRPCRequest, CityTokenTransferRPCRequest,
-            },
-        },
-        store::CityL1Deposit,
-    },
-    introspection::transaction::BTCTransaction,
-};
+use city_rollup_common::api::data::block::rpc_request::CityAddWithdrawalRPCRequest;
+use city_rollup_common::api::data::block::rpc_request::CityClaimDepositRPCRequest;
+use city_rollup_common::api::data::block::rpc_request::CityRegisterUserRPCRequest;
+use city_rollup_common::api::data::block::rpc_request::CityTokenTransferRPCRequest;
+use city_rollup_common::api::data::store::CityL1Deposit;
+use city_rollup_common::introspection::transaction::BTCTransaction;
 use plonky2::hash::hash_types::RichField;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use serde::Serialize;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(bound = "")]

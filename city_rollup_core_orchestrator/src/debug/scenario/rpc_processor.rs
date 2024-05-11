@@ -1,19 +1,17 @@
-use city_rollup_common::{
-    api::data::block::{
-        requested_actions::{
-            CityAddWithdrawalRequest, CityClaimDepositRequest, CityRegisterUserRequest,
-            CityTokenTransferRequest,
-        },
-        rpc_request::{
-            CityAddWithdrawalRPCRequest, CityClaimDepositRPCRequest, CityRegisterUserRPCRequest,
-            CityTokenTransferRPCRequest,
-        },
-    },
-    qworker::{job_id::QProvingJobDataID, proof_store::QProofStore},
-};
-
-use plonky2::{field::extension::Extendable, hash::hash_types::RichField};
-use serde::{Deserialize, Serialize};
+use city_rollup_common::api::data::block::requested_actions::CityAddWithdrawalRequest;
+use city_rollup_common::api::data::block::requested_actions::CityClaimDepositRequest;
+use city_rollup_common::api::data::block::requested_actions::CityRegisterUserRequest;
+use city_rollup_common::api::data::block::requested_actions::CityTokenTransferRequest;
+use city_rollup_common::api::data::block::rpc_request::CityAddWithdrawalRPCRequest;
+use city_rollup_common::api::data::block::rpc_request::CityClaimDepositRPCRequest;
+use city_rollup_common::api::data::block::rpc_request::CityRegisterUserRPCRequest;
+use city_rollup_common::api::data::block::rpc_request::CityTokenTransferRPCRequest;
+use city_rollup_common::qworker::job_id::QProvingJobDataID;
+use city_rollup_common::qworker::proof_store::QProofStore;
+use plonky2::field::extension::Extendable;
+use plonky2::hash::hash_types::RichField;
+use serde::Deserialize;
+use serde::Serialize;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(bound = "")]

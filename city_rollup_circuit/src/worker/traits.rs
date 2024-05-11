@@ -1,14 +1,15 @@
-use city_common_circuit::{
-    circuits::traits::qstandard::QStandardCircuitProvableWithProofStoreSync,
-    treeprover::traits::TreeProverAggCircuit,
-};
-use city_rollup_common::qworker::{
-    job_id::QProvingJobDataID, job_witnesses::op::CircuitInputWithDependencies,
-    proof_store::QProofStoreReaderSync, verifier::QWorkerVerifyHelper,
-};
-use plonky2::plonk::{config::GenericConfig, proof::ProofWithPublicInputs};
-use serde::{de::DeserializeOwned, Serialize};
 use std::fmt::Debug;
+
+use city_common_circuit::circuits::traits::qstandard::QStandardCircuitProvableWithProofStoreSync;
+use city_common_circuit::treeprover::traits::TreeProverAggCircuit;
+use city_rollup_common::qworker::job_id::QProvingJobDataID;
+use city_rollup_common::qworker::job_witnesses::op::CircuitInputWithDependencies;
+use city_rollup_common::qworker::proof_store::QProofStoreReaderSync;
+use city_rollup_common::qworker::verifier::QWorkerVerifyHelper;
+use plonky2::plonk::config::GenericConfig;
+use plonky2::plonk::proof::ProofWithPublicInputs;
+use serde::de::DeserializeOwned;
+use serde::Serialize;
 
 pub trait QWorkerGenericProver<S: QProofStoreReaderSync, C: GenericConfig<D>, const D: usize>:
     QWorkerVerifyHelper<C, D>
@@ -53,7 +54,8 @@ impl<
         SCP: QStandardCircuitProvableWithProofStoreSync<S, I, C, D>,
         V: QWorkerVerifyHelper<C, D>,
         S: QProofStoreReaderSync,
-        I: DeserializeOwned + Serialize + Clone, // the type parameter `I` is not constrained by the impl trait, self type, or predicates
+        I: DeserializeOwned + Serialize + Clone, /* the type parameter `I` is not constrained by
+                                                  * the impl trait, self type, or predicates */
         C: GenericConfig<D>,
         const D: usize,
     > QWorkerCircuitSimpleWithDataSync<V, S, I, C, D> for SCP

@@ -1,38 +1,31 @@
-use std::{fs, path::PathBuf};
+use std::fs;
+use std::path::PathBuf;
 
-use city_common::logging::debug_timer::DebugTimer;
 use city_common_circuit::field::cubic::CubicExtendable;
-use city_crypto::hash::{base_types::hash256::Hash256, qhashout::QHashOut};
-use city_rollup_circuit::{
-    sighash_circuits::sighash::CRSigHashCircuit,
-    worker::{prover::QWorkerStandardProver, toolbox::circuits::CRWorkerToolboxCoreCircuits},
-};
-use city_rollup_common::{
-    api::data::{block::rpc_request::CityRegisterUserRPCRequest, store::CityL2BlockState},
-    introspection::{
-        rollup::{
-            constants::NETWORK_MAGIC_DOGE_REGTEST,
-            introspection::{BlockSpendIntrospectionGadgetConfig, BlockSpendIntrospectionHint},
-        },
-        transaction::BTCTransaction,
-    },
-    qworker::{memory_proof_store::SimpleProofStoreMemory, proof_store::QProofStoreReaderSync},
-};
-use city_rollup_core_orchestrator::debug::scenario::{
-    block_planner::planner::CityOrchestratorBlockPlanner,
-    requested_actions::CityScenarioRequestedActions,
-    rpc_processor::{CityScenarioRequestedActionsFromRPC, DebugRPCProcessor},
-    wallet::DebugScenarioWallet,
-};
+use city_crypto::hash::base_types::hash256::Hash256;
+use city_crypto::hash::qhashout::QHashOut;
+use city_rollup_circuit::sighash_circuits::sighash::CRSigHashCircuit;
+use city_rollup_circuit::worker::prover::QWorkerStandardProver;
+use city_rollup_circuit::worker::toolbox::circuits::CRWorkerToolboxCoreCircuits;
+use city_rollup_common::api::data::block::rpc_request::CityRegisterUserRPCRequest;
+use city_rollup_common::api::data::store::CityL2BlockState;
+use city_rollup_common::introspection::rollup::constants::NETWORK_MAGIC_DOGE_REGTEST;
+use city_rollup_common::introspection::rollup::introspection::BlockSpendIntrospectionGadgetConfig;
+use city_rollup_common::introspection::rollup::introspection::BlockSpendIntrospectionHint;
+use city_rollup_common::introspection::transaction::BTCTransaction;
+use city_rollup_common::qworker::memory_proof_store::SimpleProofStoreMemory;
+use city_rollup_common::qworker::proof_store::QProofStoreReaderSync;
+use city_rollup_core_orchestrator::debug::scenario::block_planner::planner::CityOrchestratorBlockPlanner;
+use city_rollup_core_orchestrator::debug::scenario::requested_actions::CityScenarioRequestedActions;
+use city_rollup_core_orchestrator::debug::scenario::rpc_processor::DebugRPCProcessor;
+use city_rollup_core_orchestrator::debug::scenario::wallet::DebugScenarioWallet;
 use city_store::store::city::base::CityStore;
 use kvq::memory::simple::KVQSimpleMemoryBackingStore;
-use plonky2::{
-    field::goldilocks_field::GoldilocksField,
-    plonk::{
-        config::{AlgebraicHasher, GenericConfig, PoseidonGoldilocksConfig},
-        proof::ProofWithPublicInputs,
-    },
-};
+use plonky2::field::goldilocks_field::GoldilocksField;
+use plonky2::plonk::config::AlgebraicHasher;
+use plonky2::plonk::config::GenericConfig;
+use plonky2::plonk::config::PoseidonGoldilocksConfig;
+use plonky2::plonk::proof::ProofWithPublicInputs;
 
 fn generate_circuit<C: GenericConfig<D> + 'static, const D: usize>(
     introspection_config: BlockSpendIntrospectionGadgetConfig,
