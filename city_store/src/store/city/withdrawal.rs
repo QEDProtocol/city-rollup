@@ -12,6 +12,9 @@ use crate::models::kvq_merkle::model::KVQFixedConfigMerkleTreeModelCore;
 use crate::models::kvq_merkle::model::KVQFixedConfigMerkleTreeModelReaderCore;
 
 impl<S: KVQBinaryStoreReader> CityStore<S> {
+    pub fn get_withdrawal_tree_root(store: &S, checkpoint_id: u64) -> anyhow::Result<CityHash> {
+        L1WithdrawalTreeStore::<S>::get_root_fc(store, checkpoint_id)
+    }
     pub fn get_withdrawal_by_id(
         store: &S,
         checkpoint_id: u64,

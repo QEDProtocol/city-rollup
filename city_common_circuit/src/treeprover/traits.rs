@@ -2,12 +2,12 @@ use core::fmt::Debug;
 
 use city_crypto::hash::qhashout::QHashOut;
 use city_rollup_common::qworker::proof_store::QProofStoreReaderSync;
-use plonky2::plonk::circuit_data::CommonCircuitData;
-use plonky2::plonk::circuit_data::VerifierOnlyCircuitData;
-use plonky2::plonk::config::AlgebraicHasher;
-use plonky2::plonk::config::GenericConfig;
-use plonky2::plonk::proof::ProofWithPublicInputs;
-use serde::Serialize;
+use plonky2::plonk::{
+    circuit_data::{CommonCircuitData, VerifierOnlyCircuitData},
+    config::{AlgebraicHasher, GenericConfig},
+    proof::ProofWithPublicInputs,
+};
+use serde::{de::DeserializeOwned, Serialize};
 
 use crate::circuits::traits::qstandard::QStandardCircuit;
 use crate::circuits::traits::qstandard::QStandardCircuitProvableWithProofStoreSync;
@@ -21,7 +21,7 @@ pub struct VerifierConfig<C: GenericConfig<D>, const D: usize> {
 
 pub trait TreeProverLeafCircuit<
     S: QProofStoreReaderSync,
-    I: Serialize + Clone + Debug + Send,
+    I: DeserializeOwned + Serialize + Clone + Debug + Send,
     C: GenericConfig<D>,
     const D: usize,
 >: QStandardCircuitProvableWithProofStoreSync<S, I, C, D> + Clone + Send
@@ -30,7 +30,7 @@ pub trait TreeProverLeafCircuit<
 impl<
         SC: QStandardCircuitProvableWithProofStoreSync<S, I, C, D> + Clone + Send,
         S: QProofStoreReaderSync,
-        I: Serialize + Clone + Debug + Send,
+        I: DeserializeOwned + Serialize + Clone + Debug + Send,
         C: GenericConfig<D>,
         const D: usize,
     > TreeProverLeafCircuit<S, I, C, D> for SC
