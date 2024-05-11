@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use city_rollup_common::api::data::block::requested_actions::CityAddDepositRequest;
 use city_rollup_common::api::data::block::requested_actions::CityAddWithdrawalRequest;
 use city_rollup_common::api::data::block::requested_actions::CityClaimDepositRequest;
@@ -62,5 +64,21 @@ impl<F: RichField> CityScenarioRequestedActions<F> {
             process_withdrawals,
             register_users: requested_from_rpc.register_users,
         }
+    }
+    pub fn modified_users(&self) -> HashSet<u64> {
+        let mut res = HashSet::new();
+
+        for add_withdrawal in &self.add_withdrawals {
+            res.insert(add_withdrawal.user_id);
+        }
+        for claim_l1_deposit in &self.claim_l1_deposits {
+            res.insert(claim_l1_deposit.user_id);
+        }
+        for token_transfer in &self.token_transfers {
+            res.insert(token_transfer.user_id);
+            res.insert(token_transfer.to);
+        }
+
+        res
     }
 }

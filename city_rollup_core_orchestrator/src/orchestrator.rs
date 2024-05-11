@@ -1,8 +1,7 @@
+use std::collections::HashSet;
 use std::sync::Arc;
-use std::time::Duration;
 
 use city_common::cli::args::OrchestratorArgs;
-use city_macros::async_infinite_loop;
 use city_macros::define_table;
 use city_redis_store::RedisStore;
 use city_rollup_circuit::worker::toolbox::circuits::CRWorkerToolboxCoreCircuits;
@@ -30,7 +29,9 @@ use city_store::config::L2_BLOCK_STATE_TABLE_TYPE;
 use city_store::models::l2_block_state::data::L2BlockStateKeyCore;
 use city_store::models::l2_block_state::model::L2BlockStatesModel;
 use city_store::models::l2_block_state::model::L2BlockStatesModelReaderCore;
+use city_store::store::city::base::CityStore;
 use kvq::adapters::standard::KVQStandardAdapter;
+use kvq::traits::KVQBinaryStore;
 use kvq_store_redb::KVQReDBStore;
 use plonky2::hash::hash_types::RichField;
 use redb::Database;
@@ -42,8 +43,6 @@ use crate::debug::scenario::requested_actions::CityScenarioRequestedActions;
 use crate::debug::scenario::rpc_processor::CityScenarioRequestedActionsFromRPC;
 use crate::debug::scenario::rpc_processor::DebugRPCProcessor;
 
-pub const DEFAULT_BLOCK_TIME_IN_SECS: u32 = 4;
-pub const SEQUENCING_TICK: u64 = 100;
 pub const BLOCK_BUILDING_INTERVAL: u64 = 1000;
 
 pub const MAX_WITHDRAWALS_PROCESSED_PER_BLOCK: usize = 10;
@@ -100,11 +99,8 @@ impl Orchestrator {
         Ok(orchestrator)
     }
 
-    pub async fn run(self) {
-        async_infinite_loop!(BLOCK_BUILDING_INTERVAL, {
-            let mut this = self.clone();
-            this.build_block().await?;
-        })
+    pub async fn run(&mut self) -> anyhow::Result<()> {
+        self.build_block().await
     }
 
     pub async fn build_block(&mut self) -> anyhow::Result<()> {
@@ -119,12 +115,13 @@ impl Orchestrator {
         let (job_ids, _) = {
             let mut store = KVQReDBStore::new(wxn.open_table(KV)?);
 
-            let requested_rpc = self.get_requested_rpc(block_id, &mut redis_store).await?;
-            let last_block_state = L2BlockStateModel::get_block_state_by_id(&store, block_id)?;
+            let txs = self.get_txs(block_id, &mut redis_store).await?;
+            let last_block_state =
+                L2BlockStateModel::get_block_state_by_id(&store, block_id).unwrap_or_default();
 
             let funding_transactions = self.get_funding_transactions()?;
             let requested_actions = CityScenarioRequestedActions::new_from_requested_rpc(
-                requested_rpc,
+                txs,
                 &funding_transactions,
                 &last_block_state,
                 MAX_WITHDRAWALS_PROCESSED_PER_BLOCK,
@@ -134,7 +131,33 @@ impl Orchestrator {
                 self.toolbox.get_fingerprint_config(),
                 last_block_state,
             );
-            block_planner.process_requests(&mut store, &mut redis_store, &requested_actions)?
+
+            let res =
+                block_planner.process_requests(&mut store, &mut redis_store, &requested_actions)?;
+
+            let new_block_state = CityL2BlockState {
+                checkpoint_id: block_planner.processor.op_processor.checkpoint_id,
+                next_add_withdrawal_id: block_planner.processor.op_processor.next_add_withdrawal_id,
+                next_process_withdrawal_id: block_planner
+                    .processor
+                    .op_processor
+                    .next_process_withdrawal_id,
+                next_deposit_id: block_planner.processor.op_processor.next_deposit_id,
+                total_deposits_claimed_epoch: block_planner
+                    .processor
+                    .op_processor
+                    .total_deposits_claimed_epoch,
+                next_user_id: block_planner.processor.op_processor.next_user_id,
+                end_balance: block_planner.processor.op_processor.end_balance,
+            };
+
+            CityStore::set_block_state(&mut store, &new_block_state)?;
+
+            let mut modified_users = requested_actions.modified_users();
+            modified_users.extend(last_block_state.next_user_id..new_block_state.next_user_id);
+            self.cache_accessed_users(&mut store, block_id, modified_users)?;
+
+            res
         };
 
         for job in job_ids.plan_jobs() {
@@ -147,7 +170,20 @@ impl Orchestrator {
         Ok(())
     }
 
-    async fn get_requested_rpc(
+    fn cache_accessed_users<S: KVQBinaryStore>(
+        &mut self,
+        store: &mut S,
+        checkpoint_id: u64,
+        modified_users: HashSet<u64>,
+    ) -> anyhow::Result<()> {
+        for user_id in modified_users {
+            let user_state = CityStore::<S>::get_user_by_id(store, checkpoint_id, user_id)?;
+            self.redis_store.set_user_state(&user_state)?;
+        }
+        Ok(())
+    }
+
+    async fn get_txs(
         &mut self,
         checkpoint_id: u64,
         proof_store: &mut RedisStore,

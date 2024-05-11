@@ -28,6 +28,7 @@ pub struct CityOrchestratorOpRequestProcessor<S: KVQBinaryStore> {
     pub next_deposit_id: u64,
     pub next_user_id: u64,
     pub total_deposits_claimed_epoch: u64,
+    pub end_balance: u64,
     pub fingerprints: CRWorkerToolboxCoreCircuitFingerprints<F>,
     pub processed_withdrawal_hashes: Vec<QHashOut<F>>,
     pub added_deposit_hashes: Vec<QHashOut<F>>,
@@ -47,6 +48,7 @@ impl<S: KVQBinaryStore> CityOrchestratorOpRequestProcessor<S> {
             next_process_withdrawal_id: last_block_state.next_process_withdrawal_id,
             next_deposit_id: last_block_state.next_deposit_id,
             next_user_id: last_block_state.next_user_id,
+            end_balance: last_block_state.end_balance,
             total_deposits_claimed_epoch: last_block_state.total_deposits_claimed_epoch,
             fingerprints,
             added_deposit_hashes: Vec::new(),
@@ -67,6 +69,7 @@ impl<S: KVQBinaryStore> CityOrchestratorOpRequestProcessor<S> {
         self.added_deposit_hashes
             .push(deposit_tree_delta_merkle_proof.new_value);
         self.next_deposit_id += 1;
+        self.end_balance += req.value;
         Ok(CRAddL1DepositCircuitInput {
             deposit_tree_delta_merkle_proof,
             allowed_circuit_hashes_root: self
@@ -91,6 +94,7 @@ impl<S: KVQBinaryStore> CityOrchestratorOpRequestProcessor<S> {
         let withdrawal_tree_delta_merkle_proof =
             CityStore::<S>::add_withdrawal_to_tree_from_request(store, self.checkpoint_id, req)?;
         self.next_add_withdrawal_id += 1;
+        self.end_balance -= req.value;
         Ok(CRAddL1WithdrawalCircuitInput {
             allowed_circuit_hashes_root: self
                 .fingerprints
