@@ -3,7 +3,7 @@ use city_crypto::hash::{
         core::DeltaMerkleProofCore,
         treeprover::{
             AggStateTrackableInput, AggStateTrackableWithEventsInput, AggStateTransition,
-            StateTransitionWithEvents,
+            AggStateTransitionWithEvents,
         },
     },
     qhashout::QHashOut,
@@ -60,7 +60,7 @@ impl<
         F: RichField,
     > AggStateTrackableWithEventsInput<F> for CircuitInputWithJobId<I>
 {
-    fn get_state_transition_with_events(&self) -> StateTransitionWithEvents<F> {
+    fn get_state_transition_with_events(&self) -> AggStateTransitionWithEvents<F> {
         self.input.get_state_transition_with_events()
     }
 }
@@ -73,8 +73,8 @@ pub struct CRAddL1DepositCircuitInput<F: RichField> {
 }
 
 impl<F: RichField> AggStateTrackableWithEventsInput<F> for CRAddL1DepositCircuitInput<F> {
-    fn get_state_transition_with_events(&self) -> StateTransitionWithEvents<F> {
-        StateTransitionWithEvents {
+    fn get_state_transition_with_events(&self) -> AggStateTransitionWithEvents<F> {
+        AggStateTransitionWithEvents {
             state_transition_start: self.deposit_tree_delta_merkle_proof.old_root,
             state_transition_end: self.deposit_tree_delta_merkle_proof.new_root,
             event_hash: self.deposit_tree_delta_merkle_proof.new_value,
@@ -190,8 +190,8 @@ pub struct CRProcessL1WithdrawalCircuitInput<F: RichField> {
 }
 
 impl<F: RichField> AggStateTrackableWithEventsInput<F> for CRProcessL1WithdrawalCircuitInput<F> {
-    fn get_state_transition_with_events(&self) -> StateTransitionWithEvents<F> {
-        StateTransitionWithEvents {
+    fn get_state_transition_with_events(&self) -> AggStateTransitionWithEvents<F> {
+        AggStateTransitionWithEvents {
             state_transition_start: self.withdrawal_tree_delta_merkle_proof.old_root,
             state_transition_end: self.withdrawal_tree_delta_merkle_proof.new_root,
             event_hash: self.withdrawal_tree_delta_merkle_proof.new_value,

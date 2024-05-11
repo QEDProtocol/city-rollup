@@ -19,6 +19,9 @@ use crate::models::l1_deposits::model::L1DepositsModelCore;
 use crate::models::l1_deposits::model::L1DepositsModelReaderCore;
 
 impl<S: KVQBinaryStoreReader> CityStore<S> {
+    pub fn get_deposit_tree_root(store: &S, checkpoint_id: u64) -> anyhow::Result<CityHash> {
+        L1DepositTreeStore::get_root_fc(store, checkpoint_id)
+    }
     pub fn get_deposit_by_id(
         store: &S,
         checkpoint_id: u64,

@@ -8,18 +8,27 @@ use city_common_circuit::{
     treeprover::{
         aggregation::{
             state_transition::AggStateTransitionCircuit,
+            state_transition_dummy::AggStateTransitionDummyCircuit,
             state_transition_track_events::AggStateTransitionWithEventsCircuit,
+            state_transition_track_events_dummy::AggStateTransitionWithEventsDummyCircuit,
         },
         traits::TreeProverAggCircuit,
     },
 };
 use city_crypto::hash::{
-    merkle::treeprover::TPCircuitFingerprintConfig, traits::hasher::MerkleZeroHasher,
+    merkle::treeprover::TPCircuitFingerprintConfig, qhashout::QHashOut,
+    traits::hasher::MerkleZeroHasher,
 };
-use city_rollup_common::qworker::fingerprints::CRWorkerToolboxCoreCircuitFingerprints;
+use city_rollup_common::qworker::{
+    fingerprints::CRWorkerToolboxCoreCircuitFingerprints, job_id::ProvingJobCircuitType,
+    verifier::QWorkerVerifyHelper,
+};
 use plonky2::{
     hash::hash_types::HashOut,
-    plonk::config::{AlgebraicHasher, GenericConfig},
+    plonk::{
+        circuit_data::{CommonCircuitData, VerifierOnlyCircuitData},
+        config::{AlgebraicHasher, GenericConfig},
+    },
 };
 
 use crate::block_circuits::ops::{
@@ -52,7 +61,8 @@ where
     // operation aggregators
     pub agg_state_transition: AggStateTransitionCircuit<C, D>,
     pub agg_state_transition_with_events: AggStateTransitionWithEventsCircuit<C, D>,
-    pub agg_state_transition_signed: AggStateTransitionCircuit<C, D>,
+    pub agg_state_transition_dummy: AggStateTransitionDummyCircuit<C, D>,
+    pub agg_state_transition_with_events_dummy: AggStateTransitionWithEventsDummyCircuit<C, D>,
 }
 
 impl<C: GenericConfig<D> + 'static, const D: usize> CRWorkerToolboxCoreCircuits<C, D>
@@ -105,15 +115,8 @@ where
                 .height(),
         );
         trace_timer.lap("built agg_state_transition");
-
-        let agg_state_transition_signed = AggStateTransitionCircuit::new(
-            op_l2_transfer.get_common_circuit_data_ref(),
-            op_l2_transfer
-                .get_verifier_config_ref()
-                .constants_sigmas_cap
-                .height(),
-        );
-        trace_timer.lap("built agg_state_transition_signed");
+        let agg_state_transition_dummy = AggStateTransitionDummyCircuit::new();
+        trace_timer.lap("built agg_state_transition_dummy");
 
         // operation aggregators
         let agg_state_transition_with_events = AggStateTransitionWithEventsCircuit::new(
@@ -124,6 +127,9 @@ where
                 .height(),
         );
         trace_timer.lap("built agg_state_transition_with_events");
+        let agg_state_transition_with_events_dummy =
+            AggStateTransitionWithEventsDummyCircuit::new();
+        trace_timer.lap("built agg_state_transition_with_events_dummy");
 
         Self {
             network_magic,
@@ -136,14 +142,14 @@ where
             op_add_l1_deposit,
             op_process_l1_withdrawal,
             agg_state_transition,
-            agg_state_transition_signed,
+            agg_state_transition_dummy,
             agg_state_transition_with_events,
+            agg_state_transition_with_events_dummy,
         }
     }
     pub fn get_fingerprint_config(&self) -> CRWorkerToolboxCoreCircuitFingerprints<C::F> {
         let agg_state_transition_fingerprint = self.agg_state_transition.get_fingerprint();
-        let agg_state_transition_signed_fingerprint =
-            self.agg_state_transition_signed.get_fingerprint();
+
         let agg_state_transition_with_events_fingerprint =
             self.agg_state_transition_with_events.get_fingerprint();
 
@@ -160,17 +166,17 @@ where
                 C::Hasher,
             >(
                 self.op_claim_l1_deposit.get_fingerprint(),
-                agg_state_transition_signed_fingerprint,
+                agg_state_transition_fingerprint,
             ),
             op_l2_transfer: TPCircuitFingerprintConfig::from_leaf_and_agg_fingerprints::<C::Hasher>(
                 self.op_l2_transfer.get_fingerprint(),
-                agg_state_transition_signed_fingerprint,
+                agg_state_transition_fingerprint,
             ),
             op_add_l1_withdrawal: TPCircuitFingerprintConfig::from_leaf_and_agg_fingerprints::<
                 C::Hasher,
             >(
                 self.op_add_l1_withdrawal.get_fingerprint(),
-                agg_state_transition_signed_fingerprint,
+                agg_state_transition_fingerprint,
             ),
             op_add_l1_deposit: TPCircuitFingerprintConfig::from_leaf_and_agg_fingerprints::<
                 C::Hasher,
@@ -185,8 +191,11 @@ where
                 agg_state_transition_with_events_fingerprint,
             ),
             agg_state_transition: agg_state_transition_fingerprint,
-            agg_state_transition_signed: agg_state_transition_signed_fingerprint,
             agg_state_transition_with_events: agg_state_transition_with_events_fingerprint,
+            agg_state_transition_dummy: self.agg_state_transition_dummy.get_fingerprint(),
+            agg_state_transition_with_events_dummy: self
+                .agg_state_transition_with_events_dummy
+                .get_fingerprint(),
         }
     }
     pub fn print_op_common_data(&self) {
@@ -210,10 +219,89 @@ where
         self.agg_state_transition
             .print_config_with_name("agg_state_transition");
 
-        self.agg_state_transition_signed
-            .print_config_with_name("agg_state_transition_signed");
+        self.agg_state_transition_dummy
+            .print_config_with_name("agg_state_transition_dummy");
 
         self.agg_state_transition_with_events
             .print_config_with_name("agg_state_transition_with_events");
+
+        self.agg_state_transition_with_events_dummy
+            .print_config_with_name("agg_state_transition_with_events_dummy");
+    }
+}
+
+impl<C: GenericConfig<D> + 'static, const D: usize> QWorkerVerifyHelper<C, D>
+    for CRWorkerToolboxCoreCircuits<C, D>
+where
+    C::Hasher: AlgebraicHasher<C::F> + MerkleZeroHasher<HashOut<C::F>>,
+{
+    fn get_verifier_triplet_for_circuit_type(
+        &self,
+        circuit_type: ProvingJobCircuitType,
+    ) -> (
+        &CommonCircuitData<C::F, D>,
+        &VerifierOnlyCircuitData<C, D>,
+        QHashOut<C::F>,
+    ) {
+        match circuit_type {
+            ProvingJobCircuitType::RegisterUser => self.op_register_user.get_verifier_triplet(),
+            ProvingJobCircuitType::RegisterUserAggregate => {
+                self.agg_state_transition.get_verifier_triplet()
+            }
+            ProvingJobCircuitType::AddL1Deposit => self.op_add_l1_deposit.get_verifier_triplet(),
+            ProvingJobCircuitType::AddL1DepositAggregate => {
+                self.op_add_l1_deposit.get_verifier_triplet()
+            }
+            ProvingJobCircuitType::ClaimL1Deposit => {
+                self.op_claim_l1_deposit.get_verifier_triplet()
+            }
+            ProvingJobCircuitType::ClaimL1DepositAggregate => {
+                self.agg_state_transition.get_verifier_triplet()
+            }
+            ProvingJobCircuitType::TransferTokensL2 => self.op_l2_transfer.get_verifier_triplet(),
+            ProvingJobCircuitType::TransferTokensL2Aggregate => {
+                self.agg_state_transition.get_verifier_triplet()
+            }
+            ProvingJobCircuitType::AddL1Withdrawal => {
+                self.op_add_l1_withdrawal.get_verifier_triplet()
+            }
+            ProvingJobCircuitType::AddL1WithdrawalAggregate => {
+                self.agg_state_transition.get_verifier_triplet()
+            }
+            ProvingJobCircuitType::ProcessL1Withdrawal => {
+                self.op_process_l1_withdrawal.get_verifier_triplet()
+            }
+            ProvingJobCircuitType::ProcessL1WithdrawalAggregate => {
+                self.op_process_l1_withdrawal.get_verifier_triplet()
+            }
+            ProvingJobCircuitType::GenerateRollupStateTransitionProof => todo!(),
+            ProvingJobCircuitType::GenerateSigHashIntrospectionProof => todo!(),
+            ProvingJobCircuitType::GenerateFinalSigHashProof => todo!(),
+            ProvingJobCircuitType::GenerateFinalSigHashProofGroth16 => todo!(),
+            ProvingJobCircuitType::DummyRegisterUserAggregate => {
+                self.agg_state_transition_dummy.get_verifier_triplet()
+            }
+            ProvingJobCircuitType::DummyAddL1DepositAggregate => self
+                .agg_state_transition_with_events_dummy
+                .get_verifier_triplet(),
+            ProvingJobCircuitType::DummyClaimL1DepositAggregate => {
+                self.agg_state_transition_dummy.get_verifier_triplet()
+            }
+            ProvingJobCircuitType::DummyTransferTokensL2Aggregate => {
+                self.agg_state_transition_dummy.get_verifier_triplet()
+            }
+            ProvingJobCircuitType::DummyAddL1WithdrawalAggregate => {
+                self.agg_state_transition_dummy.get_verifier_triplet()
+            }
+            ProvingJobCircuitType::DummyProcessL1WithdrawalAggregate => self
+                .agg_state_transition_with_events_dummy
+                .get_verifier_triplet(),
+            ProvingJobCircuitType::WrappedSignatureProof => {
+                self.zk_signature_wrapper.get_verifier_triplet()
+            }
+            ProvingJobCircuitType::Secp256K1SignatureProof => {
+                self.l1_secp256k1_signature.get_verifier_triplet()
+            }
+        }
     }
 }
