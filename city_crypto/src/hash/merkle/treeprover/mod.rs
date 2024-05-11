@@ -305,25 +305,50 @@ impl<IL: AggStateTrackableWithEventsInput<F>, F: RichField>
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(bound = "")]
 pub struct TPCircuitFingerprintConfig<F: RichField> {
     pub leaf_fingerprint: QHashOut<F>,
     pub aggregator_fingerprint: QHashOut<F>,
+    pub dummy_fingerprint: QHashOut<F>,
     pub allowed_circuit_hashes_root: QHashOut<F>,
+    pub leaf_circuit_type: u8,
+    pub aggregator_circuit_type: u8,
 }
 
 impl<F: RichField> TPCircuitFingerprintConfig<F> {
     pub fn from_leaf_and_agg_fingerprints<H: AlgebraicHasher<F>>(
         leaf_fingerprint: QHashOut<F>,
         aggregator_fingerprint: QHashOut<F>,
+        dummy_fingerprint: QHashOut<F>,
     ) -> Self {
         let allowed_circuit_hashes_root =
             QHashOut(H::two_to_one(leaf_fingerprint.0, aggregator_fingerprint.0));
         Self {
             leaf_fingerprint,
             aggregator_fingerprint,
+            dummy_fingerprint,
             allowed_circuit_hashes_root,
+            leaf_circuit_type: 255,
+            aggregator_circuit_type: 255,
+        }
+    }
+    pub fn from_leaf_and_agg_fingerprints_with_type<H: AlgebraicHasher<F>>(
+        leaf_fingerprint: QHashOut<F>,
+        aggregator_fingerprint: QHashOut<F>,
+        dummy_fingerprint: QHashOut<F>,
+        leaf_circuit_type: u8,
+        aggregator_circuit_type: u8,
+    ) -> Self {
+        let allowed_circuit_hashes_root =
+            QHashOut(H::two_to_one(leaf_fingerprint.0, aggregator_fingerprint.0));
+        Self {
+            leaf_fingerprint,
+            aggregator_fingerprint,
+            dummy_fingerprint,
+            allowed_circuit_hashes_root,
+            leaf_circuit_type,
+            aggregator_circuit_type,
         }
     }
 }

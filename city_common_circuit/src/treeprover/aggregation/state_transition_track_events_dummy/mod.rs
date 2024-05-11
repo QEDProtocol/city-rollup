@@ -1,6 +1,7 @@
 use city_crypto::hash::{
     merkle::treeprover::DummyAggStateTransitionWithEvents, qhashout::QHashOut,
 };
+use city_rollup_common::qworker::proof_store::QProofStoreReaderSync;
 use plonky2::{
     hash::hash_types::{HashOut, HashOutTarget},
     iop::witness::{PartialWitness, WitnessWrite},
@@ -14,12 +15,15 @@ use plonky2::{
 
 use crate::{
     builder::pad_circuit::pad_circuit_degree,
-    circuits::traits::qstandard::{provable::QStandardCircuitProvable, QStandardCircuit},
+    circuits::traits::qstandard::{
+        provable::QStandardCircuitProvable, QStandardCircuit,
+        QStandardCircuitProvableWithProofStoreSync,
+    },
     proof_minifier::pm_core::get_circuit_fingerprint_generic,
 };
 
 #[derive(Debug)]
-pub struct AggStateTransitionWithEventsDummyCircuit<C: GenericConfig<D> + 'static, const D: usize>
+pub struct AggStateTransitionWithEventsDummyCircuit<C: GenericConfig<D>, const D: usize>
 where
     C::Hasher: AlgebraicHasher<C::F>,
 {
@@ -32,8 +36,7 @@ where
     pub fingerprint: QHashOut<C::F>,
     //pub minifier_chain: OASProofMinifierChain<D, C::F, C>,
 }
-impl<C: GenericConfig<D> + 'static, const D: usize> Clone
-    for AggStateTransitionWithEventsDummyCircuit<C, D>
+impl<C: GenericConfig<D>, const D: usize> Clone for AggStateTransitionWithEventsDummyCircuit<C, D>
 where
     C::Hasher: AlgebraicHasher<C::F>,
 {
@@ -41,7 +44,7 @@ where
         Self::new()
     }
 }
-impl<C: GenericConfig<D> + 'static, const D: usize> AggStateTransitionWithEventsDummyCircuit<C, D>
+impl<C: GenericConfig<D>, const D: usize> AggStateTransitionWithEventsDummyCircuit<C, D>
 where
     C::Hasher: AlgebraicHasher<C::F>,
 {
@@ -112,7 +115,7 @@ where
     }
 }
 */
-impl<C: GenericConfig<D> + 'static, const D: usize> QStandardCircuit<C, D>
+impl<C: GenericConfig<D>, const D: usize> QStandardCircuit<C, D>
     for AggStateTransitionWithEventsDummyCircuit<C, D>
 where
     C::Hasher: AlgebraicHasher<C::F>,
@@ -144,5 +147,20 @@ where
             input.state_transition_hash,
             input.allowed_circuit_hashes_root,
         )
+    }
+}
+
+impl<S: QProofStoreReaderSync, C: GenericConfig<D>, const D: usize>
+    QStandardCircuitProvableWithProofStoreSync<S, DummyAggStateTransitionWithEvents<C::F>, C, D>
+    for AggStateTransitionWithEventsDummyCircuit<C, D>
+where
+    C::Hasher: AlgebraicHasher<C::F>,
+{
+    fn prove_with_proof_store_sync(
+        &self,
+        _store: &S,
+        input: &DummyAggStateTransitionWithEvents<C::F>,
+    ) -> anyhow::Result<ProofWithPublicInputs<C::F, C, D>> {
+        self.prove_standard(input)
     }
 }

@@ -2,7 +2,7 @@ use city_crypto::hash::{merkle::treeprover::TPCircuitFingerprintConfig, qhashout
 use plonky2::hash::hash_types::RichField;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(bound = "")]
 pub struct CRWorkerToolboxCoreCircuitFingerprints<F: RichField> {
     pub network_magic: u64,
