@@ -5,6 +5,7 @@ use plonky2::plonk::config::GenericConfig;
 
 use super::traits::QWorkerGenericProver;
 
+#[derive(Clone)]
 pub struct QWorkerStandardProver {
     pub timer: TraceTimer,
 }
@@ -21,7 +22,7 @@ impl QWorkerStandardProver {
         C: GenericConfig<D>,
         const D: usize,
     >(
-        &mut self,
+        &self,
         store: &mut S,
         prover: &G,
         job_id: QProvingJobDataID,

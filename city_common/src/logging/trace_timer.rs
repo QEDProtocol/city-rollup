@@ -16,6 +16,7 @@ C_DEEPSKYBLUE4="\x1b[48;5;23m"
 */
 use std::time::Instant;
 
+#[derive(Clone)]
 pub struct TraceTimer {
     pub start_time: Instant,
     pub name: String,

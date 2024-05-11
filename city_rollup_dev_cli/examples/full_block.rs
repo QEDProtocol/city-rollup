@@ -167,7 +167,7 @@ fn prove_block_demo(transactions: &[BTCTransaction]) -> anyhow::Result<()> {
         serde_json::to_string(&block_1_state_transition).unwrap()
     );
 
-    let mut worker = QWorkerStandardProver::new();
+    let worker = QWorkerStandardProver::new();
 
     let all_job_ids = block_1_job_ids.plan_jobs();
     for job in all_job_ids {
