@@ -2,6 +2,11 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use city_common::cli::args::OrchestratorArgs;
+use city_crypto::hash::merkle::treeprover::AggStateTransitionInput;
+use city_crypto::hash::merkle::treeprover::AggStateTransitionWithEventsInput;
+use city_crypto::hash::merkle::treeprover::AggWTLeafAggregator;
+use city_crypto::hash::merkle::treeprover::AggWTTELeafAggregator;
+use city_crypto::hash::qhashout::QHashOut;
 use city_macros::async_infinite_loop;
 use city_macros::define_table;
 use city_macros::spawn_async_infinite_loop;
@@ -34,6 +39,7 @@ use city_rollup_common::qworker::job_witnesses::op::CRL2TransferCircuitInput;
 use city_rollup_common::qworker::job_witnesses::op::CRProcessL1WithdrawalCircuitInput;
 use city_rollup_common::qworker::job_witnesses::op::CRUserRegistrationCircuitInput;
 use city_rollup_common::qworker::job_witnesses::op::CircuitInputWithJobId;
+use city_rollup_common::qworker::redis_proof_store::SyncRedisProofStore;
 use city_rollup_worker_dispatch::implementations::redis::RedisDispatcher;
 use city_rollup_worker_dispatch::implementations::redis::Q_JOB;
 use city_rollup_worker_dispatch::implementations::redis::Q_TX;
@@ -51,9 +57,12 @@ use kvq::adapters::standard::KVQStandardAdapter;
 use kvq::traits::KVQBinaryStore;
 use kvq::traits::KVQSerializable;
 use kvq_store_redb::KVQReDBStore;
+use plonky2::hash::hash_types::RichField;
 use redb::Database;
 use redb::Table;
 use redb::TableDefinition;
+
+use crate::debug::scenario::block_planner::tree_helper::plan_tree_prover_from_leaves;
 
 pub const DEFAULT_BLOCK_TIME_IN_SECS: u32 = 4;
 pub const SEQUENCING_TICK: u64 = 100;
@@ -62,6 +71,18 @@ pub const BLOCK_BUILDING_INTERVAL: u64 = 1000;
 pub const MAX_WITHDRAWALS_PROCESSED_PER_BLOCK: u64 = 10;
 
 define_table! { KV, &[u8], &[u8] }
+
+#[derive(Default)]
+pub struct CityScenarioInputWithJobIds<F: RichField> {
+    pub add_deposits: Vec<CircuitInputWithJobId<CRAddL1DepositCircuitInput<F>>>,
+    pub add_withdrawals: Vec<CircuitInputWithJobId<CRAddL1WithdrawalCircuitInput<F>>>,
+    pub claim_l1_deposits: Vec<CircuitInputWithJobId<CRClaimL1DepositCircuitInput<F>>>,
+    pub token_transfers: Vec<CircuitInputWithJobId<CRL2TransferCircuitInput<F>>>,
+    pub process_withdrawals: Vec<CircuitInputWithJobId<CRProcessL1WithdrawalCircuitInput<F>>>,
+    pub register_users: Vec<CircuitInputWithJobId<CRUserRegistrationCircuitInput<F>>>,
+}
+
+
 
 pub type L2BlockStateModel<'db, 'txn> = L2BlockStatesModel<
     L2_BLOCK_STATE_TABLE_TYPE,
@@ -76,6 +97,7 @@ pub type L2BlockStateModel<'db, 'txn> = L2BlockStatesModel<
 #[derive(Clone)]
 pub struct Orchestrator {
     pub store: RedisStore,
+    pub proof_store: SyncRedisProofStore,
     pub db: Arc<Database>,
     pub dispatcher: RedisDispatcher,
     pub toolbox: Arc<CRWorkerToolboxCoreCircuits<C, D>>,
@@ -85,6 +107,7 @@ pub struct Orchestrator {
 impl Orchestrator {
     pub async fn new(args: OrchestratorArgs) -> anyhow::Result<Self> {
         let store = RedisStore::new(&args.redis_uri).await?;
+        let proof_store = SyncRedisProofStore::new(&args.redis_uri)?;
         let dispatcher = RedisDispatcher::new_with_pool(store.get_pool())?;
         let db = Arc::new(Database::create(args.db_path)?);
         let link_api = BTCLinkAPI::new(args.bitcoin_rpc, args.electrs_api);
@@ -94,6 +117,7 @@ impl Orchestrator {
 
         let orchestrator = Self {
             store,
+            proof_store,
             db,
             dispatcher,
             toolbox,
@@ -191,70 +215,151 @@ impl Orchestrator {
 
         let mut store = KVQReDBStore::new(wxn.open_table(KV)?);
 
+        let mut job_ids = CityScenarioInputWithJobIds::default();
         for (id, message) in messages {
             match message {
                 CityRequest::CityTokenTransferRequest((rpc_node_id, req)) => {
-                    self.process_l2_transfer_request(
+                    job_ids.token_transfers.push(self.process_l2_transfer_request(
                         &mut store,
                         &chain_state,
                         rpc_node_id,
                         id,
                         &req,
                     )
-                    .await?;
+                    .await?)
                 }
                 CityRequest::CityClaimDepositRequest((rpc_node_id, req)) => {
-                    self.process_claim_deposit_request(
+                    job_ids.claim_l1_deposits.push(self.process_claim_deposit_request(
                         &mut store,
                         &chain_state,
                         rpc_node_id,
                         id,
                         &req,
                     )
-                    .await?;
+                    .await?)
                 }
                 CityRequest::CityAddWithdrawalRequest((rpc_node_id, req)) => {
-                    self.process_add_withdrawal_request(
+                    job_ids.add_withdrawals.push(self.process_add_withdrawal_request(
                         &mut store,
                         &chain_state,
                         rpc_node_id,
                         id,
                         &req,
                     )
-                    .await?;
+                    .await?)
                 }
                 CityRequest::CityRegisterUserRequest((rpc_node_id, req)) => {
-                    self.process_register_user_request(
+                    job_ids.register_users.push(self.process_register_user_request(
                         &mut store,
                         &chain_state,
                         rpc_node_id,
                         id,
                         &req,
                     )
-                    .await?;
+                    .await?)
                 }
                 CityRequest::CityAddDepositRequest((rpc_node_id, req)) => {
-                    self.process_add_deposit_request(
+                    job_ids.add_deposits.push(self.process_add_deposit_request(
                         &mut store,
                         &chain_state,
                         rpc_node_id,
                         id,
                         &req,
                     )
-                    .await?;
+                    .await?)
                 }
                 CityRequest::CityProcessWithdrawalRequest((rpc_node_id, req)) => {
-                    self.process_complete_l1_withdrawal_request(
+                    job_ids.process_withdrawals.push(self.process_complete_l1_withdrawal_request(
                         &mut store,
                         &chain_state,
                         rpc_node_id,
                         id,
                         &req,
                     )
-                    .await?;
+                    .await?)
                 }
             }
         }
+
+        let dummy_state_root = QHashOut::ZERO;
+        let register_user_job_ids =
+            plan_tree_prover_from_leaves::<SyncRedisProofStore, AggWTLeafAggregator, _, AggStateTransitionInput<F>>(
+                &job_ids.register_users,
+                &mut self.proof_store,
+                QProvingJobDataID::new_proof_job_id(
+                    chain_state.last_orchestrator_block_id,
+                    ProvingJobCircuitType::DummyRegisterUserAggregate,
+                    0xDD,
+                    0,
+                    0,
+                ),
+                dummy_state_root,
+            )?;
+        let claim_deposit_job_ids =
+            plan_tree_prover_from_leaves::<SyncRedisProofStore, AggWTLeafAggregator, _, AggStateTransitionInput<F>>(
+                &job_ids.claim_l1_deposits,
+                &mut self.proof_store,
+                QProvingJobDataID::new_proof_job_id(
+                    chain_state.last_orchestrator_block_id,
+                    ProvingJobCircuitType::DummyClaimL1DepositAggregate,
+                    0xDD,
+                    0,
+                    0,
+                ),
+                dummy_state_root,
+            )?;
+        let token_transfer_job_ids =
+            plan_tree_prover_from_leaves::<SyncRedisProofStore, AggWTLeafAggregator, _, AggStateTransitionInput<F>>(
+                &job_ids.token_transfers,
+                &mut self.proof_store,
+                QProvingJobDataID::new_proof_job_id(
+                    chain_state.last_orchestrator_block_id,
+                    ProvingJobCircuitType::DummyTransferTokensL2Aggregate,
+                    0xDD,
+                    0,
+                    0,
+                ),
+                dummy_state_root,
+        )?;
+        let add_withdrawal_job_ids =
+            plan_tree_prover_from_leaves::<SyncRedisProofStore, AggWTLeafAggregator, _, AggStateTransitionInput<F>>(
+                &job_ids.add_withdrawals,
+                &mut self.proof_store,
+                QProvingJobDataID::new_proof_job_id(
+                    chain_state.last_orchestrator_block_id,
+                    ProvingJobCircuitType::DummyAddL1WithdrawalAggregate,
+                    0xDD,
+                    0,
+                    0,
+                ),
+                dummy_state_root,
+            )?;
+        let add_deposit_job_ids =
+            plan_tree_prover_from_leaves::<SyncRedisProofStore, AggWTTELeafAggregator, _, AggStateTransitionWithEventsInput<F>>(
+                &job_ids.add_deposits,
+                &mut self.proof_store,
+                QProvingJobDataID::new_proof_job_id(
+                    chain_state.last_orchestrator_block_id,
+                    ProvingJobCircuitType::DummyAddL1DepositAggregate,
+                    0xDD,
+                    0,
+                    0,
+                ),
+                dummy_state_root,
+            )?;
+        let process_withdrawal_job_ids =
+            plan_tree_prover_from_leaves::<SyncRedisProofStore, AggWTTELeafAggregator, _, AggStateTransitionWithEventsInput<F>>(
+                &job_ids.process_withdrawals,
+                &mut self.proof_store,
+                QProvingJobDataID::new_proof_job_id(
+                    chain_state.last_orchestrator_block_id,
+                    ProvingJobCircuitType::DummyProcessL1WithdrawalAggregate,
+                    0xDD,
+                    0,
+                    0,
+                ),
+                dummy_state_root,
+            )?;
 
         let new_block_state = self.store.get_block_state().await?;
 
