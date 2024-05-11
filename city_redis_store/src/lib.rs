@@ -158,6 +158,11 @@ impl RedisStore {
         Ok(user_id)
     }
 
+    pub async fn get_next_block_redeem_script(&self) -> anyhow::Result<String> {
+        let mut connection = self.get_connection().await?;
+        Ok(connection.get(NEXT_BLOCK_REDEEM_SCRIPT).await?)
+    }
+
     pub async fn register_user(&self, public_key: &[u8]) -> anyhow::Result<(u64, u64)> {
         let mut connection = self.get_connection().await?;
 
