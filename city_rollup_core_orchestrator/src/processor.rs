@@ -37,6 +37,7 @@ use kvq::traits::KVQSerializable;
 use kvq_store_redb::KVQReDBStore;
 use redb::Table;
 
+use crate::debug::scenario::block_planner::planner::CityOpJobIds;
 use crate::debug::scenario::block_planner::tree_helper::plan_tree_prover_from_leaves;
 use crate::orchestrator::CityScenarioInputWithJobIds;
 use crate::orchestrator::Orchestrator;
@@ -481,7 +482,7 @@ impl Orchestrator {
         job_ids: CityScenarioInputWithJobIds<F>,
         chain_state: ChainState,
         dummy_state_root: QHashOut<F>,
-    ) -> anyhow::Result<()> {
+    ) -> anyhow::Result<CityOpJobIds> {
         let register_user_job_ids = plan_tree_prover_from_leaves::<
             SyncRedisProofStore,
             AggWTLeafAggregator,
@@ -584,6 +585,13 @@ impl Orchestrator {
             ),
             dummy_state_root,
         )?;
-        Ok(())
+        Ok(CityOpJobIds {
+            register_user_job_ids,
+            claim_deposit_job_ids,
+            token_transfer_job_ids,
+            add_withdrawal_job_ids,
+            add_deposit_job_ids,
+            process_withdrawal_job_ids,
+        })
     }
 }
