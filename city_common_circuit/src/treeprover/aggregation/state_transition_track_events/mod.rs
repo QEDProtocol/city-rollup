@@ -1,5 +1,5 @@
 use city_crypto::hash::{
-    merkle::treeprover::AggStateTransitionWithEventsInput, qhashout::QHashOut,
+    merkle::treeprover::AggAggStateTransitionWithEventsInput, qhashout::QHashOut,
 };
 use plonky2::{
     field::extension::Extendable,
@@ -86,7 +86,7 @@ impl AggStateTrackableWithEventsCircuitHeaderGadget {
     pub fn set_witness<W: Witness<F>, F: RichField>(
         &self,
         witness: &mut W,
-        input: &AggStateTransitionWithEventsInput<F>,
+        input: &AggAggStateTransitionWithEventsInput<F>,
         agg_fingerprint: QHashOut<F>,
         leaf_fingerprint: QHashOut<F>,
     ) {
@@ -115,7 +115,7 @@ impl AggStateTrackableWithEventsCircuitHeaderGadget {
 }
 
 #[derive(Debug)]
-pub struct AggStateTransitionWithEventsCircuit<C: GenericConfig<D>, const D: usize> {
+pub struct AggAggStateTransitionWithEventsCircuit<C: GenericConfig<D>, const D: usize> {
     pub header_gadget: AggStateTrackableWithEventsCircuitHeaderGadget,
 
     pub left_proof: ProofWithPublicInputsTarget<D>,
@@ -128,7 +128,7 @@ pub struct AggStateTransitionWithEventsCircuit<C: GenericConfig<D>, const D: usi
     pub circuit_data: CircuitData<C::F, C, D>,
     pub fingerprint: QHashOut<C::F>,
 }
-impl<C: GenericConfig<D>, const D: usize> Clone for AggStateTransitionWithEventsCircuit<C, D>
+impl<C: GenericConfig<D>, const D: usize> Clone for AggAggStateTransitionWithEventsCircuit<C, D>
 where
     C::Hasher: AlgebraicHasher<C::F>,
 {
@@ -142,7 +142,7 @@ where
         )
     }
 }
-impl<C: GenericConfig<D>, const D: usize> AggStateTransitionWithEventsCircuit<C, D>
+impl<C: GenericConfig<D>, const D: usize> AggAggStateTransitionWithEventsCircuit<C, D>
 where
     C::Hasher: AlgebraicHasher<C::F>,
 {
@@ -209,7 +209,7 @@ where
         leaf_verifier_data: &VerifierOnlyCircuitData<C, D>,
         left_proof: &ProofWithPublicInputs<C::F, C, D>,
         right_proof: &ProofWithPublicInputs<C::F, C, D>,
-        input: &AggStateTransitionWithEventsInput<C::F>,
+        input: &AggAggStateTransitionWithEventsInput<C::F>,
     ) -> anyhow::Result<ProofWithPublicInputs<C::F, C, D>> {
         let mut pw = PartialWitness::<C::F>::new();
         self.header_gadget
@@ -242,7 +242,7 @@ where
     }
 }
 impl<C: GenericConfig<D>, const D: usize> QStandardCircuit<C, D>
-    for AggStateTransitionWithEventsCircuit<C, D>
+    for AggAggStateTransitionWithEventsCircuit<C, D>
 {
     fn get_fingerprint(&self) -> QHashOut<C::F> {
         self.fingerprint
@@ -256,8 +256,8 @@ impl<C: GenericConfig<D>, const D: usize> QStandardCircuit<C, D>
 }
 
 impl<C: GenericConfig<D>, const D: usize>
-    TreeProverAggCircuit<AggStateTransitionWithEventsInput<C::F>, C, D>
-    for AggStateTransitionWithEventsCircuit<C, D>
+    TreeProverAggCircuit<AggAggStateTransitionWithEventsInput<C::F>, C, D>
+    for AggAggStateTransitionWithEventsCircuit<C, D>
 where
     C::Hasher: AlgebraicHasher<C::F>,
 {
@@ -273,7 +273,7 @@ where
         leaf_verifier_data: &VerifierOnlyCircuitData<C, D>,
         left_proof: &ProofWithPublicInputs<C::F, C, D>,
         right_proof: &ProofWithPublicInputs<C::F, C, D>,
-        input: &AggStateTransitionWithEventsInput<C::F>,
+        input: &AggAggStateTransitionWithEventsInput<C::F>,
     ) -> anyhow::Result<ProofWithPublicInputs<C::F, C, D>> {
         self.prove_base(
             agg_fingerprint,

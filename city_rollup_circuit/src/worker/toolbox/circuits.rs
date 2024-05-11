@@ -8,7 +8,7 @@ use city_common_circuit::{
     treeprover::{
         aggregation::{
             state_transition::AggStateTransitionCircuit,
-            state_transition_track_events::AggStateTransitionWithEventsCircuit,
+            state_transition_track_events::AggAggStateTransitionWithEventsCircuit,
         },
         traits::TreeProverAggCircuit,
     },
@@ -51,7 +51,7 @@ where
 
     // operation aggregators
     pub agg_state_transition: AggStateTransitionCircuit<C, D>,
-    pub agg_state_transition_with_events: AggStateTransitionWithEventsCircuit<C, D>,
+    pub agg_state_transition_with_events: AggAggStateTransitionWithEventsCircuit<C, D>,
     pub agg_state_transition_signed: AggStateTransitionCircuit<C, D>,
 }
 
@@ -116,7 +116,7 @@ where
         trace_timer.lap("built agg_state_transition_signed");
 
         // operation aggregators
-        let agg_state_transition_with_events = AggStateTransitionWithEventsCircuit::new(
+        let agg_state_transition_with_events = AggAggStateTransitionWithEventsCircuit::new(
             op_process_l1_withdrawal.get_common_circuit_data_ref(),
             op_process_l1_withdrawal
                 .get_verifier_config_ref()

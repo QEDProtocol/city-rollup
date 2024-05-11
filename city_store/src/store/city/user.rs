@@ -16,6 +16,9 @@ use crate::{
 use super::base::CityStore;
 
 impl<S: KVQBinaryStoreReader> CityStore<S> {
+    pub fn get_user_tree_root(store: &S, checkpoint_id: u64) -> anyhow::Result<CityHash> {
+        GlobalUserTreeStore::<S>::get_root_fc(store, checkpoint_id)
+    }
     pub fn get_user_by_id(
         store: &S,
         checkpoint_id: u64,

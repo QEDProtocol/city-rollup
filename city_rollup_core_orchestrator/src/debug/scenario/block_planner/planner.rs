@@ -1,9 +1,11 @@
 use city_crypto::hash::{
     merkle::treeprover::{
-        AggStateTransitionInput, AggStateTransitionWithEventsInput, AggWTLeafAggregator,
-        AggWTTELeafAggregator,
+        AggAggStateTransitionWithEventsInput, AggStateTrackableInput, AggStateTransitionInput,
+        AggWTLeafAggregator, AggWTTELeafAggregator, StateTransitionTrackable,
+        StateTransitionTrackableWithEvents,
     },
     qhashout::QHashOut,
+    traits::hasher::MerkleHasher,
 };
 use city_rollup_common::{
     api::data::store::CityL2BlockState,
@@ -13,15 +15,16 @@ use city_rollup_common::{
         proof_store::QProofStore,
     },
 };
-use city_store::config::F;
+use city_store::{config::F, store::city::base::CityStore};
 use kvq::traits::KVQBinaryStore;
+use plonky2::hash::poseidon::PoseidonHash;
 
 use crate::debug::scenario::{
     process_requests::block_processor::CityOrchestratorBlockProcessor,
     requested_actions::CityScenarioRequestedActions,
 };
 
-use super::tree_helper::plan_tree_prover_from_leaves;
+use super::tree_helper::{plan_tree_prover_from_leaves, plan_tree_prover_from_leaves_with_events};
 
 pub struct CityOpRootJobIds {
     pub register_user_job_root_id: QProvingJobDataID,
@@ -91,6 +94,7 @@ impl CityOpJobIds {
                 job_ids.extend(&self.add_deposit_job_ids[i]);
             }
         }
+
         job_ids
     }
 }
@@ -132,7 +136,13 @@ impl<S: KVQBinaryStore, PS: QProofStore> CityOrchestratorBlockPlanner<S, PS> {
         requested_actions: &CityScenarioRequestedActions<F>,
     ) -> anyhow::Result<()> {
         let dummy_state_root = QHashOut::ZERO;
-        let register_user_job_ids =
+
+        let register_user_dummy_state_root = if requested_actions.register_users.len() == 0 {
+            CityStore::<S>::get_user_tree_root(store, self.processor.checkpoint_id)?
+        } else {
+            dummy_state_root
+        };
+        let (register_user_job_ids, root_transition_register_users) =
             plan_tree_prover_from_leaves::<PS, AggWTLeafAggregator, _, AggStateTransitionInput<F>>(
                 &requested_actions
                     .register_users
@@ -150,10 +160,18 @@ impl<S: KVQBinaryStore, PS: QProofStore> CityOrchestratorBlockPlanner<S, PS> {
                     0,
                     0,
                 ),
-                dummy_state_root,
+                register_user_dummy_state_root,
             )?;
+        let claim_deposit_dummy_state_root = if requested_actions.claim_l1_deposits.len() == 0 {
+            PoseidonHash::two_to_one(
+                &root_transition_register_users.state_transition_end,
+                &CityStore::get_deposit_tree_root(store, self.processor.checkpoint_id)?,
+            )
+        } else {
+            dummy_state_root
+        };
 
-        let claim_deposit_job_ids =
+        let (claim_deposit_job_ids, root_transition_claim_deposits) =
             plan_tree_prover_from_leaves::<PS, AggWTLeafAggregator, _, AggStateTransitionInput<F>>(
                 &requested_actions
                     .claim_l1_deposits
@@ -171,10 +189,10 @@ impl<S: KVQBinaryStore, PS: QProofStore> CityOrchestratorBlockPlanner<S, PS> {
                     0,
                     0,
                 ),
-                dummy_state_root,
+                claim_deposit_dummy_state_root,
             )?;
 
-        let token_transfer_job_ids =
+        let (token_transfer_job_ids, root_transition_transfer_tokens) =
             plan_tree_prover_from_leaves::<PS, AggWTLeafAggregator, _, AggStateTransitionInput<F>>(
                 &requested_actions
                     .token_transfers
@@ -192,7 +210,7 @@ impl<S: KVQBinaryStore, PS: QProofStore> CityOrchestratorBlockPlanner<S, PS> {
                 dummy_state_root,
             )?;
 
-        let add_withdrawal_job_ids =
+        let (add_withdrawal_job_ids, root_transition_add_withdrawals) =
             plan_tree_prover_from_leaves::<PS, AggWTLeafAggregator, _, AggStateTransitionInput<F>>(
                 &requested_actions
                     .add_withdrawals
@@ -213,52 +231,54 @@ impl<S: KVQBinaryStore, PS: QProofStore> CityOrchestratorBlockPlanner<S, PS> {
                 dummy_state_root,
             )?;
 
-        let process_withdrawal_job_ids = plan_tree_prover_from_leaves::<
-            PS,
-            AggWTTELeafAggregator,
-            _,
-            AggStateTransitionWithEventsInput<F>,
-        >(
-            &requested_actions
-                .process_withdrawals
-                .iter()
-                .map(|req| {
-                    self.processor
-                        .process_complete_l1_withdrawal(store, proof_store, req)
-                })
-                .collect::<anyhow::Result<Vec<_>>>()?,
-            proof_store,
-            QProvingJobDataID::new_proof_job_id(
-                self.processor.checkpoint_id,
-                ProvingJobCircuitType::DummyRegisterUserAggregate,
-                0xDD,
-                0,
-                0,
-            ),
-            dummy_state_root,
-        )?;
+        let (process_withdrawal_job_ids, root_transition_process_withdrawals) =
+            plan_tree_prover_from_leaves_with_events::<
+                PS,
+                AggWTTELeafAggregator,
+                _,
+                AggAggStateTransitionWithEventsInput<F>,
+            >(
+                &requested_actions
+                    .process_withdrawals
+                    .iter()
+                    .map(|req| {
+                        self.processor
+                            .process_complete_l1_withdrawal(store, proof_store, req)
+                    })
+                    .collect::<anyhow::Result<Vec<_>>>()?,
+                proof_store,
+                QProvingJobDataID::new_proof_job_id(
+                    self.processor.checkpoint_id,
+                    ProvingJobCircuitType::DummyRegisterUserAggregate,
+                    0xDD,
+                    0,
+                    0,
+                ),
+                dummy_state_root,
+            )?;
 
-        let add_deposit_job_ids = plan_tree_prover_from_leaves::<
-            PS,
-            AggWTTELeafAggregator,
-            _,
-            AggStateTransitionWithEventsInput<F>,
-        >(
-            &requested_actions
-                .add_deposits
-                .iter()
-                .map(|req| self.processor.process_add_deposit(store, proof_store, req))
-                .collect::<anyhow::Result<Vec<_>>>()?,
-            proof_store,
-            QProvingJobDataID::new_proof_job_id(
-                self.processor.checkpoint_id,
-                ProvingJobCircuitType::DummyRegisterUserAggregate,
-                0xDD,
-                0,
-                0,
-            ),
-            dummy_state_root,
-        )?;
+        let (add_deposit_job_ids, root_transition_add_deposits) =
+            plan_tree_prover_from_leaves_with_events::<
+                PS,
+                AggWTTELeafAggregator,
+                _,
+                AggAggStateTransitionWithEventsInput<F>,
+            >(
+                &requested_actions
+                    .add_deposits
+                    .iter()
+                    .map(|req| self.processor.process_add_deposit(store, proof_store, req))
+                    .collect::<anyhow::Result<Vec<_>>>()?,
+                proof_store,
+                QProvingJobDataID::new_proof_job_id(
+                    self.processor.checkpoint_id,
+                    ProvingJobCircuitType::DummyRegisterUserAggregate,
+                    0xDD,
+                    0,
+                    0,
+                ),
+                dummy_state_root,
+            )?;
         self.op_job_ids_by_level = CityOpJobIds {
             register_user_job_ids,
             claim_deposit_job_ids,

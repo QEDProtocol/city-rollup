@@ -3,11 +3,18 @@ use plonky2::{
     hash::{hash_types::RichField, poseidon::PoseidonHash},
     plonk::config::{AlgebraicHasher, Hasher},
 };
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 
 use crate::hash::qhashout::QHashOut;
 pub trait WithDummyStateTransition<F: RichField> {
     fn get_dummy_value(state_root: QHashOut<F>) -> Self;
+}
+pub trait StateTransitionTrackable<F: RichField> {
+    fn get_start_root(&self) -> QHashOut<F>;
+    fn get_end_root(&self) -> QHashOut<F>;
+}
+pub trait StateTransitionTrackableWithEvents<F: RichField>: StateTransitionTrackable<F> {
+    fn get_events_hash(&self) -> QHashOut<F>;
 }
 pub trait AggStateTrackableInput<F: RichField> {
     fn get_state_transition(&self) -> AggStateTransition<F>;
@@ -19,6 +26,29 @@ pub struct AggStateTransition<F: RichField> {
     pub state_transition_start: QHashOut<F>,
     pub state_transition_end: QHashOut<F>,
 }
+impl<F: RichField> Default for AggStateTransition<F> {
+    fn default() -> Self {
+        Self {
+            state_transition_start: Default::default(),
+            state_transition_end: Default::default(),
+        }
+    }
+}
+impl<F: RichField> AggStateTrackableInput<F> for AggStateTransition<F> {
+    fn get_state_transition(&self) -> AggStateTransition<F> {
+        *self
+    }
+}
+impl<F: RichField, T: AggStateTrackableInput<F>> StateTransitionTrackable<F> for T {
+    fn get_start_root(&self) -> QHashOut<F> {
+        self.get_state_transition().state_transition_start
+    }
+
+    fn get_end_root(&self) -> QHashOut<F> {
+        self.get_state_transition().state_transition_end
+    }
+}
+
 impl<F: RichField> WithDummyStateTransition<F> for AggStateTransition<F> {
     fn get_dummy_value(state_root: QHashOut<F>) -> Self {
         Self {
@@ -43,6 +73,11 @@ impl<F: RichField> WithDummyStateTransition<F> for AggStateTransitionInput<F> {
             left_proof_is_leaf: false,
             right_proof_is_leaf: false,
         }
+    }
+}
+impl<F: RichField> AggStateTrackableInput<F> for AggStateTransitionInput<F> {
+    fn get_state_transition(&self) -> AggStateTransition<F> {
+        self.condense()
     }
 }
 impl<F: RichField> AggStateTransitionInput<F> {
@@ -71,17 +106,34 @@ impl<F: RichField> AggStateTransitionInput<F> {
 }
 
 pub trait AggStateTrackableWithEventsInput<F: RichField> {
-    fn get_state_transition_with_events(&self) -> StateTransitionWithEvents<F>;
+    fn get_state_transition_with_events(&self) -> AggStateTransitionWithEvents<F>;
 }
 
 #[derive(Debug, Clone, Copy, Deserialize, Serialize, PartialEq)]
 #[serde(bound = "")]
-pub struct StateTransitionWithEvents<F: RichField> {
+pub struct AggStateTransitionWithEvents<F: RichField> {
     pub state_transition_start: QHashOut<F>,
     pub state_transition_end: QHashOut<F>,
     pub event_hash: QHashOut<F>,
 }
-impl<F: RichField> WithDummyStateTransition<F> for StateTransitionWithEvents<F> {
+impl<F: RichField> Default for AggStateTransitionWithEvents<F> {
+    fn default() -> Self {
+        Self {
+            state_transition_start: Default::default(),
+            state_transition_end: Default::default(),
+            event_hash: Default::default(),
+        }
+    }
+}
+impl<F: RichField> AggStateTrackableInput<F> for AggStateTransitionWithEvents<F> {
+    fn get_state_transition(&self) -> AggStateTransition<F> {
+        AggStateTransition {
+            state_transition_start: self.state_transition_start,
+            state_transition_end: self.state_transition_end,
+        }
+    }
+}
+impl<F: RichField> WithDummyStateTransition<F> for AggStateTransitionWithEvents<F> {
     fn get_dummy_value(state_root: QHashOut<F>) -> Self {
         Self {
             state_transition_start: state_root,
@@ -93,25 +145,36 @@ impl<F: RichField> WithDummyStateTransition<F> for StateTransitionWithEvents<F> 
 
 #[derive(Debug, Clone, Copy, Deserialize, Serialize, PartialEq)]
 #[serde(bound = "")]
-pub struct AggStateTransitionWithEventsInput<F: RichField> {
-    pub left_input: StateTransitionWithEvents<F>,
-    pub right_input: StateTransitionWithEvents<F>,
+pub struct AggAggStateTransitionWithEventsInput<F: RichField> {
+    pub left_input: AggStateTransitionWithEvents<F>,
+    pub right_input: AggStateTransitionWithEvents<F>,
     pub left_proof_is_leaf: bool,
     pub right_proof_is_leaf: bool,
 }
-impl<F: RichField> WithDummyStateTransition<F> for AggStateTransitionWithEventsInput<F> {
+
+impl<F: RichField> AggStateTrackableWithEventsInput<F> for AggAggStateTransitionWithEventsInput<F> {
+    fn get_state_transition_with_events(&self) -> AggStateTransitionWithEvents<F> {
+        self.condense()
+    }
+}
+impl<F: RichField, T: AggStateTrackableInput<F>> StateTransitionTrackableWithEvents<F> for T {
+    fn get_events_hash(&self) -> QHashOut<F> {
+        QHashOut::ZERO
+    }
+}
+impl<F: RichField> WithDummyStateTransition<F> for AggAggStateTransitionWithEventsInput<F> {
     fn get_dummy_value(state_root: QHashOut<F>) -> Self {
         Self {
-            left_input: StateTransitionWithEvents::<F>::get_dummy_value(state_root),
-            right_input: StateTransitionWithEvents::<F>::get_dummy_value(state_root),
+            left_input: AggStateTransitionWithEvents::<F>::get_dummy_value(state_root),
+            right_input: AggStateTransitionWithEvents::<F>::get_dummy_value(state_root),
             left_proof_is_leaf: false,
             right_proof_is_leaf: false,
         }
     }
 }
-impl<F: RichField> AggStateTransitionWithEventsInput<F> {
-    pub fn condense(&self) -> StateTransitionWithEvents<F> {
-        StateTransitionWithEvents {
+impl<F: RichField> AggAggStateTransitionWithEventsInput<F> {
+    pub fn condense(&self) -> AggStateTransitionWithEvents<F> {
+        AggStateTransitionWithEvents {
             state_transition_start: self.left_input.state_transition_start,
             state_transition_end: self.right_input.state_transition_end,
             event_hash: QHashOut(PoseidonHash::two_to_one(
@@ -191,13 +254,13 @@ impl<IL: AggStateTrackableInput<F>, F: RichField> TPLeafAggregator<IL, AggStateT
 pub struct AggWTTELeafAggregator;
 
 impl<IL: AggStateTrackableWithEventsInput<F>, F: RichField>
-    TPLeafAggregator<IL, AggStateTransitionWithEventsInput<F>> for AggWTTELeafAggregator
+    TPLeafAggregator<IL, AggAggStateTransitionWithEventsInput<F>> for AggWTTELeafAggregator
 {
     fn get_output_from_inputs(
-        left: &AggStateTransitionWithEventsInput<F>,
-        right: &AggStateTransitionWithEventsInput<F>,
-    ) -> AggStateTransitionWithEventsInput<F> {
-        AggStateTransitionWithEventsInput {
+        left: &AggAggStateTransitionWithEventsInput<F>,
+        right: &AggAggStateTransitionWithEventsInput<F>,
+    ) -> AggAggStateTransitionWithEventsInput<F> {
+        AggAggStateTransitionWithEventsInput {
             left_input: left.condense(),
             right_input: right.condense(),
             left_proof_is_leaf: false,
@@ -207,20 +270,20 @@ impl<IL: AggStateTrackableWithEventsInput<F>, F: RichField>
 
     fn get_output_from_left_leaf(
         left: &IL,
-        right: &AggStateTransitionWithEventsInput<F>,
-    ) -> AggStateTransitionWithEventsInput<F> {
+        right: &AggAggStateTransitionWithEventsInput<F>,
+    ) -> AggAggStateTransitionWithEventsInput<F> {
         right.combine_with_left_leaf(left)
     }
 
     fn get_output_from_right_leaf(
-        left: &AggStateTransitionWithEventsInput<F>,
+        left: &AggAggStateTransitionWithEventsInput<F>,
         right: &IL,
-    ) -> AggStateTransitionWithEventsInput<F> {
+    ) -> AggAggStateTransitionWithEventsInput<F> {
         left.combine_with_right_leaf(right)
     }
 
-    fn get_output_from_leaves(left: &IL, right: &IL) -> AggStateTransitionWithEventsInput<F> {
-        AggStateTransitionWithEventsInput {
+    fn get_output_from_leaves(left: &IL, right: &IL) -> AggAggStateTransitionWithEventsInput<F> {
+        AggAggStateTransitionWithEventsInput {
             left_input: left.get_state_transition_with_events(),
             right_input: right.get_state_transition_with_events(),
             left_proof_is_leaf: true,
