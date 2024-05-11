@@ -3,9 +3,9 @@ use serde::Serialize;
 
 #[async_trait]
 pub trait ProvingDispatcher {
-    async fn dispatch<const Q_KIND: u8>(
+    async fn dispatch(
         &mut self,
-        topic: impl Into<u64> + Send + 'static,
-        key: impl Serialize + Send + 'static,
+        topic: &str,
+        value: impl Serialize + Send + 'static,
     ) -> anyhow::Result<()>;
 }

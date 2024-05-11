@@ -492,10 +492,13 @@ dependencies = [
  "hex-literal",
  "plonky2",
  "postcard",
+ "r2d2",
+ "r2d2_redis",
  "rand_chacha",
  "redis",
  "rsmq_async",
  "serde",
+ "serde_json",
  "serde_repr",
 ]
 
@@ -616,6 +619,7 @@ dependencies = [
  "city_common",
  "city_common_circuit",
  "city_macros",
+ "city_redis_store",
  "city_rollup_circuit",
  "city_rollup_common",
  "city_rollup_worker_dispatch",

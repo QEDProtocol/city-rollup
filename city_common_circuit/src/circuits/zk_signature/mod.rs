@@ -124,13 +124,12 @@ where
 }
 
 pub fn verify_standard_wrapped_zk_signature_proof<C: GenericConfig<D> + 'static, const D: usize>(
-    public_key: Vec<u8>,
+    public_key: QHashOut<C::F>,
     signature_proof: Vec<u8>,
 ) -> anyhow::Result<()>
 where
     C::Hasher: AlgebraicHasher<C::F>,
 {
-    let public_key = QHashOut::<C::F>::from_bytes(&public_key);
     let circuit = ZKSignatureCircuit::<C, D>::new(public_key);
     let proof = ProofWithPublicInputs::<C::F, C, D>::from_bytes(
         signature_proof,

@@ -60,8 +60,8 @@ pub struct CityRegisterUserRPCRequest<F: RichField> {
 #[serde(bound = "")]
 #[serde(untagged)]
 pub enum CityRPCRequest<F: RichField> {
-    CityTokenTransferRPCRequest(CityTokenTransferRPCRequest),
-    CityClaimDepositRPCRequest(CityClaimDepositRPCRequest),
-    CityAddWithdrawalRPCRequest(CityAddWithdrawalRPCRequest),
-    CityRegisterUserRPCRequest(CityRegisterUserRPCRequest<F>)
+    CityTokenTransferRPCRequest((u32, CityTokenTransferRPCRequest)),
+    CityClaimDepositRPCRequest((u32, CityClaimDepositRPCRequest)),
+    CityAddWithdrawalRPCRequest((u32, CityAddWithdrawalRPCRequest)),
+    CityRegisterUserRPCRequest((u32, CityRegisterUserRPCRequest<F>))
 }

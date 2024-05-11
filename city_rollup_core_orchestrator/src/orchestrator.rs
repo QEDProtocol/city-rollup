@@ -6,13 +6,12 @@ use city_crypto::hash::qhashout::QHashOut;
 use city_macros::async_infinite_loop;
 use city_macros::define_table;
 use city_macros::spawn_async_infinite_loop;
-use city_redis_store::ChainState;
 use city_redis_store::RedisStore;
-use city_redis_store::LAST_ORCHESTOR_BLOCK_ID;
 use city_rollup_circuit::worker::toolbox::circuits::CRWorkerToolboxCoreCircuits;
 use city_rollup_common::api::data::block::requested_actions::CityAddDepositRequest;
 use city_rollup_common::api::data::block::requested_actions::CityProcessWithdrawalRequest;
 use city_rollup_common::api::data::block::requested_actions::CityRequest;
+use city_rollup_common::api::data::block::rpc_request::CityRPCRequest;
 use city_rollup_common::api::data::store::CityL2BlockState;
 use city_rollup_common::introspection::rollup::constants::get_network_magic_for_str;
 use city_rollup_common::introspection::transaction::BTCTransaction;
@@ -24,9 +23,10 @@ use city_rollup_common::qworker::job_witnesses::op::CRL2TransferCircuitInput;
 use city_rollup_common::qworker::job_witnesses::op::CRProcessL1WithdrawalCircuitInput;
 use city_rollup_common::qworker::job_witnesses::op::CRUserRegistrationCircuitInput;
 use city_rollup_common::qworker::job_witnesses::op::CircuitInputWithJobId;
-use city_rollup_common::qworker::redis_proof_store::SyncRedisProofStore;
 use city_rollup_worker_dispatch::implementations::redis::RedisDispatcher;
+use city_rollup_worker_dispatch::implementations::redis::Q_JOB;
 use city_rollup_worker_dispatch::implementations::redis::Q_TX;
+use city_rollup_worker_dispatch::traits::proving_dispatcher::ProvingDispatcher;
 use city_rollup_worker_dispatch::traits::proving_worker::ProvingWorkerListener;
 use city_store::config::C;
 use city_store::config::D;
@@ -35,6 +35,7 @@ use city_store::config::L2_BLOCK_STATE_TABLE_TYPE;
 use city_store::models::l2_block_state::data::L2BlockStateKeyCore;
 use city_store::models::l2_block_state::model::L2BlockStatesModel;
 use city_store::models::l2_block_state::model::L2BlockStatesModelCore;
+use city_store::models::l2_block_state::model::L2BlockStatesModelReaderCore;
 use kvq::adapters::standard::KVQStandardAdapter;
 use kvq_store_redb::KVQReDBStore;
 use plonky2::hash::hash_types::RichField;
@@ -42,11 +43,17 @@ use redb::Database;
 use redb::Table;
 use redb::TableDefinition;
 
+use crate::debug::scenario::block_planner::planner::CityOrchestratorBlockPlanner;
+use crate::debug::scenario::process_requests::block_processor::CityOrchestratorBlockProcessor;
+use crate::debug::scenario::requested_actions::CityScenarioRequestedActions;
+use crate::debug::scenario::rpc_processor::CityScenarioRequestedActionsFromRPC;
+use crate::debug::scenario::rpc_processor::DebugRPCProcessor;
+
 pub const DEFAULT_BLOCK_TIME_IN_SECS: u32 = 4;
 pub const SEQUENCING_TICK: u64 = 100;
 pub const BLOCK_BUILDING_INTERVAL: u64 = 1000;
 
-pub const MAX_WITHDRAWALS_PROCESSED_PER_BLOCK: u64 = 10;
+pub const MAX_WITHDRAWALS_PROCESSED_PER_BLOCK: usize = 10;
 
 define_table! { KV, &[u8], &[u8] }
 
@@ -72,8 +79,7 @@ pub type L2BlockStateModel<'db, 'txn> = L2BlockStatesModel<
 
 #[derive(Clone)]
 pub struct Orchestrator {
-    pub store: RedisStore,
-    pub proof_store: SyncRedisProofStore,
+    pub redis_store: RedisStore,
     pub db: Arc<Database>,
     pub dispatcher: RedisDispatcher,
     pub toolbox: Arc<CRWorkerToolboxCoreCircuits<C, D>>,
@@ -82,9 +88,8 @@ pub struct Orchestrator {
 
 impl Orchestrator {
     pub async fn new(args: OrchestratorArgs) -> anyhow::Result<Self> {
-        let store = RedisStore::new(&args.redis_uri).await?;
-        let proof_store = SyncRedisProofStore::new(&args.redis_uri)?;
-        let dispatcher = RedisDispatcher::new_with_pool(store.get_pool())?;
+        let redis_store = RedisStore::new(&args.redis_uri)?;
+        let dispatcher = RedisDispatcher::new(&args.redis_uri).await?;
         let db = Arc::new(Database::create(args.db_path)?);
         let link_api = BTCLinkAPI::new(args.bitcoin_rpc, args.electrs_api);
         let toolbox = Arc::new(CRWorkerToolboxCoreCircuits::new(get_network_magic_for_str(
@@ -92,25 +97,14 @@ impl Orchestrator {
         )?));
 
         let orchestrator = Self {
-            store,
-            proof_store,
+            redis_store,
             db,
             dispatcher,
             toolbox,
             link_api,
         };
 
-        orchestrator.sequence_block();
-
         Ok(orchestrator)
-    }
-
-    pub fn sequence_block(&self) {
-        let redis_store = self.store.clone();
-
-        spawn_async_infinite_loop!(SEQUENCING_TICK, {
-            redis_store.try_sequence_block().await?;
-        });
     }
 
     pub async fn run(self) {
@@ -124,71 +118,69 @@ impl Orchestrator {
         let db = self.db.clone();
         let wxn = db.begin_write()?;
 
-        let chain_state = self.store.get_block_state().await?;
+        let (block_id, _) = self.redis_store.get_block_state()?;
 
-        // keep us to be 2 blocks before the latest block to ensure the queue is filled
-        // with all block transactions
-        if chain_state.last_orchestrator_block_id + 2 >= chain_state.last_block_id {
-            println!("wait new blocks");
-            return Ok(());
+        println!("current building block: {}", block_id);
+
+        let mut redis_store = self.redis_store.clone();
+        let (job_ids, _) = {
+            let mut store = KVQReDBStore::new(wxn.open_table(KV)?);
+
+            let requested_rpc = self.get_requested_rpc(&mut redis_store).await?;
+            let last_block_state = L2BlockStateModel::get_block_state_by_id(&store, block_id)?;
+
+            let funding_transactions = self.get_funding_transactions()?;
+            let requested_actions = CityScenarioRequestedActions::new_from_requested_rpc(
+                requested_rpc,
+                &funding_transactions,
+                &last_block_state,
+                MAX_WITHDRAWALS_PROCESSED_PER_BLOCK,
+            );
+
+            let mut block_planner = CityOrchestratorBlockPlanner::new(
+                self.toolbox.get_fingerprint_config(),
+                last_block_state,
+            );
+            block_planner.process_requests(&mut store, &mut redis_store, &requested_actions)?
+        };
+
+        for job in job_ids.plan_jobs() {
+            self.dispatcher.dispatch(Q_JOB, job).await?;
         }
 
-        println!(
-            "block height: {}, current building block: {}",
-            chain_state.last_block_id, chain_state.last_orchestrator_block_id
-        );
-
-        let messages = self.get_all_txs(&chain_state).await?;
-
-        let mut store = KVQReDBStore::new(wxn.open_table(KV)?);
-
-        let job_ids = self.process_txs(messages, &mut store, chain_state).await?;
-
-        let dummy_state_root = QHashOut::ZERO;
-        self.generate_agg_jobs(job_ids, chain_state, dummy_state_root)?;
-
-        let new_chain_state = self.store.get_block_state().await?;
-
-        L2BlockStateModel::set_block_state(
-            &mut store,
-            CityL2BlockState {
-                checkpoint_id: chain_state.last_orchestrator_block_id,
-                next_add_withdrawal_id: new_chain_state.add_withdrawal_counter,
-                next_process_withdrawal_id: new_chain_state.processed_withdrawal_counter,
-                next_deposit_id: new_chain_state.add_deposit_counter,
-                total_deposits_claimed_epoch: new_chain_state.claim_l1_deposit_counter,
-                next_user_id: new_chain_state.user_counter,
-                end_balance: 0,
-            },
-        )?;
-
-        std::mem::drop(store);
-
-        self.store
-            .incr_block_state_counter(LAST_ORCHESTOR_BLOCK_ID)
-            .await?;
+        redis_store.sequence_block()?;
 
         wxn.commit()?;
         Ok(())
     }
 
-    async fn get_all_txs(
+    async fn get_requested_rpc(
         &mut self,
-        chain_state: &ChainState,
-    ) -> Result<Vec<(Option<String>, CityRequest<F>)>, anyhow::Error> {
-        let mut messages = self
-            .dispatcher
-            .receive_all::<Q_TX>(chain_state.last_orchestrator_block_id)
-            .await?
-            .into_iter()
-            .flat_map(|(id, message)| {
-                Some((
-                    Some(id),
-                    serde_json::from_slice::<CityRequest<F>>(&message).ok()?,
-                ))
-            })
-            .collect::<Vec<_>>();
-        let next_block_redeem_script = self.store.get_next_block_redeem_script().await?;
+        proof_store: &mut RedisStore,
+    ) -> Result<CityScenarioRequestedActionsFromRPC<F>, anyhow::Error> {
+        let rpc_processor = DebugRPCProcessor::<F, D>::new();
+        for (_, message) in self.dispatcher.receive_all(Q_TX).await? {
+            match serde_json::from_slice::<CityRPCRequest<F>>(&message)? {
+                CityRPCRequest::CityTokenTransferRPCRequest(x) => {
+                    rpc_processor.injest_rpc_token_transfer(proof_store, &x.1)?;
+                }
+                CityRPCRequest::CityRegisterUserRPCRequest(x) => {
+                    rpc_processor.injest_rpc_register_user(&x.1)?;
+                }
+                CityRPCRequest::CityClaimDepositRPCRequest(x) => {
+                    rpc_processor.injest_rpc_claim_deposit(proof_store, &x.1)?;
+                }
+                CityRPCRequest::CityAddWithdrawalRPCRequest(x) => {
+                    rpc_processor.injest_rpc_add_withdrawal(proof_store, &x.1)?;
+                }
+            }
+        }
+
+        Ok(rpc_processor.output)
+    }
+
+    pub fn get_funding_transactions(&self) -> anyhow::Result<Vec<BTCTransaction>> {
+        let next_block_redeem_script = self.redis_store.get_next_block_redeem_script()?;
         let utxos = self.link_api.btc_get_utxos(next_block_redeem_script)?;
         let funding_transactions = utxos
             .into_iter()
@@ -199,31 +191,6 @@ impl Orchestrator {
                     .and_then(|x| BTCTransaction::from_bytes(&x.0))
             })
             .collect::<anyhow::Result<Vec<_>>>()?;
-        messages.extend(funding_transactions.iter().map(|tx| {
-            (
-                None,
-                CityRequest::CityAddDepositRequest((
-                    0,
-                    CityAddDepositRequest::new_from_transaction(tx),
-                )),
-            )
-        }));
-        let pending_withdrawals = (chain_state.add_withdrawal_counter
-            - chain_state.processed_withdrawal_counter
-            + messages
-                .iter()
-                .filter(|(_, x)| matches!(x, &CityRequest::CityAddWithdrawalRequest(_)))
-                .count() as u64)
-            .min(MAX_WITHDRAWALS_PROCESSED_PER_BLOCK);
-        messages.extend((0..pending_withdrawals).map(|i| {
-            (
-                None,
-                CityRequest::CityProcessWithdrawalRequest((
-                    0,
-                    CityProcessWithdrawalRequest::new(i + chain_state.processed_withdrawal_counter),
-                )),
-            )
-        }));
-        Ok(messages)
+        Ok(funding_transactions)
     }
 }

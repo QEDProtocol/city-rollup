@@ -5,15 +5,7 @@ use bytes::Bytes;
 use city_common::cli::args::RPCServerArgs;
 use city_common_circuit::circuits::zk_signature::verify_standard_wrapped_zk_signature_proof;
 use city_redis_store::RedisStore;
-use city_redis_store::ADD_WITHDRWAL_COUNTER;
-use city_redis_store::CLAIM_L1_DEPOSIT_COUNTER;
-use city_redis_store::TOKEN_TRANSFER_COUNTER;
-use city_rollup_common::api::data::block::requested_actions::CityAddWithdrawalRequest;
-use city_rollup_common::api::data::block::requested_actions::CityClaimDepositRequest;
-use city_rollup_common::api::data::block::requested_actions::CityRegisterUserRequest;
-use city_rollup_common::api::data::block::requested_actions::CityRequest;
-use city_rollup_common::api::data::block::requested_actions::CityTokenTransferRequest;
-use city_rollup_common::qworker::job_id::QProvingJobDataID;
+use city_rollup_common::api::data::block::rpc_request::CityRPCRequest;
 use city_rollup_worker_dispatch::implementations::redis::RedisDispatcher;
 use city_rollup_worker_dispatch::implementations::redis::Q_TX;
 use city_rollup_worker_dispatch::traits::proving_dispatcher::ProvingDispatcher;
@@ -31,7 +23,6 @@ use hyper::Request;
 use hyper::Response;
 use hyper::StatusCode;
 use hyper_util::rt::TokioIo;
-use plonky2::plonk::config::GenericHashOut;
 use tokio::net::TcpListener;
 use tokio::task::spawn_blocking;
 
@@ -56,8 +47,8 @@ pub struct CityRollupRPCServerHandler {
 impl CityRollupRPCServerHandler {
     pub async fn new(args: RPCServerArgs, store: RedisStore) -> anyhow::Result<Self> {
         Ok(Self {
+            dispatcher: RedisDispatcher::new(&args.redis_uri).await?,
             args,
-            dispatcher: RedisDispatcher::new_with_pool(store.get_pool())?,
             store,
         })
     }
@@ -78,12 +69,7 @@ impl CityRollupRPCServerHandler {
         user_id: u64,
         signature_proof: Vec<u8>,
     ) -> anyhow::Result<()> {
-        let mut pubkey_bytes: Vec<u8> = self
-            .store
-            .get_user_public_key(user_id)
-            .await?
-            .ok_or(anyhow::anyhow!("User not found"))?;
-        pubkey_bytes.reverse();
+        let pubkey_bytes = self.store.get_user_state(user_id)?.public_key;
 
         spawn_blocking(move || {
             verify_standard_wrapped_zk_signature_proof::<C, D>(pubkey_bytes, signature_proof)?;
@@ -108,134 +94,51 @@ impl CityRollupRPCServerHandler {
                 self.verify_signature_proof(req.user_id, req.signature_proof.clone())
                     .await?;
 
-                let (token_transfer_id, block_id) = self
-                    .store
-                    .incr_block_state_counter(TOKEN_TRANSFER_COUNTER)
-                    .await?;
-
-                let signature_proof_id = QProvingJobDataID::transfer_signature_proof(
-                    self.args.rpc_node_id,
-                    block_id,
-                    token_transfer_id as u32,
-                );
-
-                self.store
-                    .set_bytes_by_id(signature_proof_id, &req.signature_proof)
-                    .await?;
-
                 self.dispatcher
-                    .dispatch::<Q_TX>(
-                        block_id,
-                        CityRequest::<F>::CityTokenTransferRequest((
+                    .dispatch(
+                        Q_TX,
+                        CityRPCRequest::<F>::CityTokenTransferRPCRequest((
                             self.args.rpc_node_id,
-                            CityTokenTransferRequest::new(
-                                req.user_id,
-                                req.to,
-                                req.value,
-                                req.nonce,
-                                signature_proof_id,
-                            ),
+                            req,
                         )),
                     )
                     .await?;
-
-                String::new()
             }
             RequestParams::ClaimDeposit(req) => {
                 self.verify_signature_proof(req.user_id, req.signature_proof.clone())
                     .await?;
 
-                let (deposit_id, block_id) = self
-                    .store
-                    .incr_block_state_counter(CLAIM_L1_DEPOSIT_COUNTER)
-                    .await?;
-
-                let signature_proof_id = QProvingJobDataID::claim_deposit_l1_signature_proof(
-                    self.args.rpc_node_id,
-                    block_id,
-                    deposit_id as u32,
-                );
-
-                self.store
-                    .set_bytes_by_id(signature_proof_id, &req.signature_proof)
-                    .await?;
-
                 self.dispatcher
-                    .dispatch::<Q_TX>(
-                        block_id,
-                        CityRequest::<F>::CityClaimDepositRequest((
+                    .dispatch(
+                        Q_TX,
+                        CityRPCRequest::<F>::CityClaimDepositRPCRequest((
                             self.args.rpc_node_id,
-                            CityClaimDepositRequest::new(
-                                req.user_id,
-                                req.nonce,
-                                req.deposit_id,
-                                req.value,
-                                req.txid,
-                                req.public_key,
-                                signature_proof_id,
-                            ),
+                            req,
                         )),
                     )
                     .await?;
-
-                String::new()
             }
             RequestParams::AddWithdrawal(req) => {
                 self.verify_signature_proof(req.user_id, req.signature_proof.clone())
                     .await?;
 
-                let (withdrawal_id, block_id) = self
-                    .store
-                    .incr_block_state_counter(ADD_WITHDRWAL_COUNTER)
-                    .await?;
-
-                let signature_proof_id = QProvingJobDataID::withdrawal_signature_proof(
-                    self.args.rpc_node_id,
-                    block_id,
-                    withdrawal_id as u32,
-                );
-
-                self.store
-                    .set_bytes_by_id(signature_proof_id, &req.signature_proof)
-                    .await?;
-
                 self.dispatcher
-                    .dispatch::<Q_TX>(
-                        block_id,
-                        CityRequest::<F>::CityAddWithdrawalRequest((
+                    .dispatch(
+                        Q_TX,
+                        CityRPCRequest::<F>::CityAddWithdrawalRPCRequest((
                             self.args.rpc_node_id,
-                            CityAddWithdrawalRequest::new(
-                                req.user_id,
-                                req.value,
-                                req.nonce,
-                                withdrawal_id.into(),
-                                req.destination_type,
-                                req.destination,
-                                signature_proof_id,
-                            ),
+                            req,
                         )),
                     )
                     .await?;
-
-                String::new()
             }
             RequestParams::RegisterUser(req) => {
-                let (user_id, block_id) = self
-                    .store
-                    .register_user(&req.public_key.0.to_bytes())
-                    .await?;
-
                 self.dispatcher
-                    .dispatch::<Q_TX>(
-                        block_id,
-                        CityRequest::CityRegisterUserRequest((
-                            self.args.rpc_node_id,
-                            CityRegisterUserRequest::new(user_id, req.public_key),
-                        )),
+                    .dispatch(
+                        Q_TX,
+                        CityRPCRequest::CityRegisterUserRPCRequest((self.args.rpc_node_id, req)),
                     )
                     .await?;
-
-                user_id.to_string()
             }
         };
 
@@ -258,7 +161,7 @@ pub async fn run(args: RPCServerArgs) -> anyhow::Result<()> {
 
     let listener = TcpListener::bind(addr).await?;
     println!("Listening on http://{}", addr);
-    let store = RedisStore::new(&args.redis_uri).await?;
+    let store = RedisStore::new(&args.redis_uri)?;
     let handler = CityRollupRPCServerHandler::new(args, store).await?;
 
     loop {

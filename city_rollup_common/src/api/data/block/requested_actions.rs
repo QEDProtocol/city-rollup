@@ -170,15 +170,13 @@ impl CityProcessWithdrawalRequest {
 #[serde(bound = "")]
 pub struct CityRegisterUserRequest<F: RichField> {
     request_type: u8,
-    pub user_id: u64,
     pub public_key: QHashOut<F>,
 }
 
 impl<F: RichField> CityRegisterUserRequest<F> {
-    pub fn new(user_id: u64, public_key: QHashOut<F>) -> Self {
+    pub fn new( public_key: QHashOut<F>) -> Self {
         Self {
             request_type: 5,
-            user_id,
             public_key,
         }
     }
