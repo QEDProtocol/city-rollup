@@ -26,3 +26,5 @@ pub trait QProofStoreWriterSync {
 }
 
 pub trait QProofStore: QProofStoreReaderSync + QProofStoreWriterSync {}
+
+impl<T: QProofStoreReaderSync + QProofStoreWriterSync> QProofStore for T {}
