@@ -65,3 +65,12 @@ pub enum CityRPCRequest<F: RichField> {
     CityAddWithdrawalRPCRequest((u32, CityAddWithdrawalRPCRequest)),
     CityRegisterUserRPCRequest((u32, CityRegisterUserRPCRequest<F>))
 }
+
+impl<F: RichField> CityRegisterUserRPCRequest<F> {
+    pub fn new_batch(public_keys: &[QHashOut<F>]) -> Vec<Self> {
+        public_keys
+            .iter()
+            .map(|pk| CityRegisterUserRPCRequest { public_key: *pk })
+            .collect()
+    }
+}

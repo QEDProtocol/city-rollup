@@ -126,7 +126,7 @@ impl Orchestrator {
         let (job_ids, _) = {
             let mut store = KVQReDBStore::new(wxn.open_table(KV)?);
 
-            let requested_rpc = self.get_requested_rpc(&mut redis_store).await?;
+            let requested_rpc = self.get_requested_rpc(block_id, &mut redis_store).await?;
             let last_block_state = L2BlockStateModel::get_block_state_by_id(&store, block_id)?;
 
             let funding_transactions = self.get_funding_transactions()?;
@@ -156,9 +156,10 @@ impl Orchestrator {
 
     async fn get_requested_rpc(
         &mut self,
+        checkpoint_id: u64,
         proof_store: &mut RedisStore,
     ) -> Result<CityScenarioRequestedActionsFromRPC<F>, anyhow::Error> {
-        let rpc_processor = DebugRPCProcessor::<F, D>::new();
+        let rpc_processor = DebugRPCProcessor::<F, D>::new(checkpoint_id);
         for (_, message) in self.dispatcher.receive_all(Q_TX).await? {
             match serde_json::from_slice::<CityRPCRequest<F>>(&message)? {
                 CityRPCRequest::CityTokenTransferRPCRequest(x) => {

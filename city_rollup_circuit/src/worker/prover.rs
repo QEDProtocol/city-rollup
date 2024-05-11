@@ -23,6 +23,7 @@ impl QWorkerStandardProver {
         C: GenericConfig<D>,
         const D: usize,
     >(
+        &mut self,
         store: &mut S,
         prover: &G,
         job_id: QProvingJobDataID,

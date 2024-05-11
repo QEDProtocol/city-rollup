@@ -41,9 +41,9 @@ pub struct DebugRPCProcessor<F: RichField + Extendable<D>, const D: usize> {
 }
 
 impl<F: RichField + Extendable<D>, const D: usize> DebugRPCProcessor<F, D> {
-    pub fn new() -> Self {
+    pub fn new(checkpoint_id: u64) -> Self {
         Self {
-            checkpoint_id: 1,
+            checkpoint_id: checkpoint_id,
             rpc_node_id: 0,
             output: CityScenarioRequestedActionsFromRPC::new(),
         }

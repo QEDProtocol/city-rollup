@@ -4,7 +4,10 @@ use city_crypto::hash::{
 };
 use city_rollup_common::qworker::job_id::QProvingJobDataID;
 use plonky2::hash::hash_types::RichField;
+use serde::{Deserialize, Serialize};
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(bound = "")]
 pub struct CityRootStateTransitions<F: RichField> {
     pub start_deposit_tree_root: QHashOut<F>,
     pub start_withdrawal_tree_root: QHashOut<F>,
@@ -15,6 +18,8 @@ pub struct CityRootStateTransitions<F: RichField> {
     pub process_withdrawals: AggStateTransitionWithEvents<F>,
     pub add_deposits: AggStateTransitionWithEvents<F>,
 }
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(bound = "")]
 pub struct CityOpRootJobIds {
     pub register_user_job_root_id: QProvingJobDataID,
     pub claim_deposit_job_root_id: QProvingJobDataID,
@@ -23,6 +28,9 @@ pub struct CityOpRootJobIds {
     pub process_withdrawal_job_root_id: QProvingJobDataID,
     pub add_deposit_job_root_id: QProvingJobDataID,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(bound = "")]
 pub struct CityOpJobIds {
     pub register_user_job_ids: Vec<Vec<QProvingJobDataID>>,
     pub claim_deposit_job_ids: Vec<Vec<QProvingJobDataID>>,
@@ -77,6 +85,52 @@ impl CityOpJobIds {
         }
 
         job_ids
+    }
+    pub fn get_root_proof_outputs(&self) -> CityOpRootJobIds {
+        CityOpRootJobIds {
+            register_user_job_root_id: self
+                .register_user_job_ids
+                .last()
+                .unwrap()
+                .last()
+                .unwrap()
+                .get_output_id(),
+            claim_deposit_job_root_id: self
+                .claim_deposit_job_ids
+                .last()
+                .unwrap()
+                .last()
+                .unwrap()
+                .get_output_id(),
+            token_transfer_job_root_id: self
+                .token_transfer_job_ids
+                .last()
+                .unwrap()
+                .last()
+                .unwrap()
+                .get_output_id(),
+            add_withdrawal_job_root_id: self
+                .add_withdrawal_job_ids
+                .last()
+                .unwrap()
+                .last()
+                .unwrap()
+                .get_output_id(),
+            process_withdrawal_job_root_id: self
+                .process_withdrawal_job_ids
+                .last()
+                .unwrap()
+                .last()
+                .unwrap()
+                .get_output_id(),
+            add_deposit_job_root_id: self
+                .add_deposit_job_ids
+                .last()
+                .unwrap()
+                .last()
+                .unwrap()
+                .get_output_id(),
+        }
     }
 }
 impl CityOpJobIds {
