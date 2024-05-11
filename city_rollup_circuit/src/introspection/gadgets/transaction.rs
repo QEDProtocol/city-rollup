@@ -1,23 +1,19 @@
-use city_common_circuit::{
-    builder::core::{CircuitBuilderHelpersCore, WitnessHelpersCore},
-    hash::{
-        accelerator::sha256::planner::Sha256AcceleratorDomain,
-        base_types::hash256bytes::{
-            CircuitBuilderHash256Bytes, Hash256BytesTarget, WitnessHash256Bytes,
-        },
-    },
-    vector_builder::ByteTargetVectorBuilder,
-};
-use city_rollup_common::introspection::{
-    size::BTCTransactionLayout,
-    transaction::{BTCTransaction, BTCTransactionInput, BTCTransactionOutput},
-};
-use plonky2::{
-    field::extension::Extendable,
-    hash::hash_types::RichField,
-    iop::{target::Target, witness::Witness},
-    plonk::circuit_builder::CircuitBuilder,
-};
+use city_common_circuit::builder::core::CircuitBuilderHelpersCore;
+use city_common_circuit::builder::core::WitnessHelpersCore;
+use city_common_circuit::hash::accelerator::sha256::planner::Sha256AcceleratorDomain;
+use city_common_circuit::hash::base_types::hash256bytes::CircuitBuilderHash256Bytes;
+use city_common_circuit::hash::base_types::hash256bytes::Hash256BytesTarget;
+use city_common_circuit::hash::base_types::hash256bytes::WitnessHash256Bytes;
+use city_common_circuit::vector_builder::ByteTargetVectorBuilder;
+use city_rollup_common::introspection::size::BTCTransactionLayout;
+use city_rollup_common::introspection::transaction::BTCTransaction;
+use city_rollup_common::introspection::transaction::BTCTransactionInput;
+use city_rollup_common::introspection::transaction::BTCTransactionOutput;
+use plonky2::field::extension::Extendable;
+use plonky2::hash::hash_types::RichField;
+use plonky2::iop::target::Target;
+use plonky2::iop::witness::Witness;
+use plonky2::plonk::circuit_builder::CircuitBuilder;
 
 #[derive(Debug, Clone)]
 pub struct BTCTransactionBytesInputGadget {

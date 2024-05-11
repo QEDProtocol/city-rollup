@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
-use plonky2::plonk::{config::GenericConfig, proof::ProofWithPublicInputs};
+use plonky2::plonk::config::GenericConfig;
+use plonky2::plonk::proof::ProofWithPublicInputs;
 
 use super::{
     job_id::QProvingJobDataID,
@@ -67,4 +68,3 @@ impl QProofStoreWriterSync for SimpleProofStoreMemory {
     }
 }
 
-impl QProofStore for SimpleProofStoreMemory {}

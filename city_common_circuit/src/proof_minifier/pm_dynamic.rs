@@ -1,22 +1,24 @@
 use anyhow::Result;
 use city_common::logging::debug_timer::DebugTimer;
-use plonky2::{
-    field::extension::Extendable,
-    gates::gate::GateRef,
-    hash::hash_types::{HashOut, RichField},
-    iop::witness::{PartialWitness, WitnessWrite},
-    plonk::{
-        circuit_builder::CircuitBuilder,
-        circuit_data::{
-            CircuitConfig, CircuitData, CommonCircuitData, VerifierCircuitTarget,
-            VerifierOnlyCircuitData,
-        },
-        config::{AlgebraicHasher, GenericConfig},
-        proof::{ProofWithPublicInputs, ProofWithPublicInputsTarget},
-    },
-};
+use plonky2::field::extension::Extendable;
+use plonky2::gates::gate::GateRef;
+use plonky2::hash::hash_types::HashOut;
+use plonky2::hash::hash_types::RichField;
+use plonky2::iop::witness::PartialWitness;
+use plonky2::iop::witness::WitnessWrite;
+use plonky2::plonk::circuit_builder::CircuitBuilder;
+use plonky2::plonk::circuit_data::CircuitConfig;
+use plonky2::plonk::circuit_data::CircuitData;
+use plonky2::plonk::circuit_data::CommonCircuitData;
+use plonky2::plonk::circuit_data::VerifierCircuitTarget;
+use plonky2::plonk::circuit_data::VerifierOnlyCircuitData;
+use plonky2::plonk::config::AlgebraicHasher;
+use plonky2::plonk::config::GenericConfig;
+use plonky2::plonk::proof::ProofWithPublicInputs;
+use plonky2::plonk::proof::ProofWithPublicInputsTarget;
 
-use super::{pm_core::get_circuit_fingerprint_generic, pm_custom::PMCircuitCustomizer};
+use super::pm_core::get_circuit_fingerprint_generic;
+use super::pm_custom::PMCircuitCustomizer;
 
 #[derive(Debug)]
 pub struct OASProofMinifierDynamic<
@@ -169,8 +171,9 @@ where
     }
     pub fn prove(
         &self,
-        base_proof: &ProofWithPublicInputs<F, C, D>, //verifier_data: &VerifierOnlyCircuitData<C, D>,
-                                                     //proof: &ProofWithPublicInputs<F, C, D>,
+        base_proof: &ProofWithPublicInputs<F, C, D>, /*verifier_data:
+                                                      * &VerifierOnlyCircuitData<C, D>,
+                                                      * proof: &ProofWithPublicInputs<F, C, D>, */
     ) -> Result<ProofWithPublicInputs<F, C, D>> {
         let mut pw = PartialWitness::new();
         if self.verifier_data_target.is_some() {

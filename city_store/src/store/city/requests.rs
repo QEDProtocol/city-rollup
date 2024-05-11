@@ -1,9 +1,8 @@
 use city_rollup_common::api::data::block::requested_actions::CityAddDepositRequest;
 use kvq::traits::KVQBinaryStore;
 
-use crate::config::CityDeltaMerkleProof;
-
 use super::base::CityStore;
+use crate::config::CityDeltaMerkleProof;
 
 impl<S: KVQBinaryStore> CityStore<S> {
     pub fn process_add_deposit_request(

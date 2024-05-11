@@ -4,16 +4,15 @@ use hex::FromHexError;
 use kvq::traits::KVQSerializable;
 use plonky2::{field::secp256k1_scalar::Secp256K1Scalar, hash::hash_types::RichField};
 use rand::RngCore;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use serde::Serialize;
 use serde_with::serde_as;
 
-use crate::{
-    hash::{
-        merkle::core::{DeltaMerkleProofCore, MerkleProofCore},
-        qhashout::QHashOut,
-    },
-    signature::secp256k1::curve::{ecdsa::ECDSASecretKey, secp256k1::Secp256K1},
-};
+use crate::hash::merkle::core::DeltaMerkleProofCore;
+use crate::hash::merkle::core::MerkleProofCore;
+use crate::hash::qhashout::QHashOut;
+use crate::signature::secp256k1::curve::ecdsa::ECDSASecretKey;
+use crate::signature::secp256k1::curve::secp256k1::Secp256K1;
 
 #[serde_as]
 #[derive(Serialize, Deserialize, PartialEq, Clone, Copy, Debug, Eq, Hash, PartialOrd, Ord)]

@@ -1,5 +1,7 @@
-use serde::{Deserialize, Serialize};
-use serde_repr::{Deserialize_repr, Serialize_repr};
+use serde::Deserialize;
+use serde::Serialize;
+use serde_repr::Deserialize_repr;
+use serde_repr::Serialize_repr;
 
 #[derive(
     Serialize_repr, Deserialize_repr, PartialEq, Debug, Clone, Copy, Eq, Hash, PartialOrd, Ord,
@@ -346,7 +348,8 @@ impl QProvingJobDataID {
 }
 #[cfg(test)]
 mod tests {
-    use super::{ProvingJobCircuitType, QProvingJobDataID};
+    use super::ProvingJobCircuitType;
+    use super::QProvingJobDataID;
 
     #[test]
     fn test_decode() {

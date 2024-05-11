@@ -11,9 +11,6 @@ version = "0.1.0"
 plonky2 = { workspace = true }
 anyhow = { workspace = true }
 serde_json = { workspace = true }
-serde = { workspace = true }
-serde_with = { workspace = true }
-rand = { workspace = true }
 kvq           = { path = "../kvq" }
 city_store           = { path = "../city_store" }
 city_crypto           = { path = "../city_crypto" }
@@ -21,17 +18,11 @@ city_common_circuit   = { path = "../city_common_circuit" }
 city_rollup_circuit   = { path = "../city_rollup_circuit" }
 city_common           = { path = "../city_common" }
 city_rollup_common    = { path = "../city_rollup_common" }
-city_rollup_core_node    = { path = "../city_rollup_core_node" }
-city_rollup_core_orchestrator    = { path = "../city_rollup_core_orchestrator" }
-bitcoincore-rpc       = { workspace = true }
 clap                  = { workspace = true }
 dotenv                = { workspace = true }
-hex                   = { workspace = true }
-k256                  = { workspace = true }
 shadow-rs             = { workspace = true }
 thiserror             = { workspace = true }
 tokio                 = { workspace = true }
-tracing               = { workspace = true }
 
 [build-dependencies]
 shadow-rs = { workspace = true }

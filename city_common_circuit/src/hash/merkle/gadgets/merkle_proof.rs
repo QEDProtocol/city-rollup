@@ -1,20 +1,19 @@
-use crate::builder::select::CircuitBuilderSelectHelpers;
 use bitflags::bitflags;
-use city_crypto::hash::{
-    merkle::core::{MerkleProof, MerkleProofBase},
-    qhashout::QHashOut,
-};
-use plonky2::{
-    field::extension::Extendable,
-    hash::hash_types::{HashOutTarget, RichField},
-    iop::{
-        target::{BoolTarget, Target},
-        witness::{PartialWitness, WitnessWrite},
-    },
-    plonk::{circuit_builder::CircuitBuilder, config::AlgebraicHasher},
-};
+use city_crypto::hash::merkle::core::MerkleProof;
+use city_crypto::hash::merkle::core::MerkleProofBase;
+use city_crypto::hash::qhashout::QHashOut;
+use plonky2::field::extension::Extendable;
+use plonky2::hash::hash_types::HashOutTarget;
+use plonky2::hash::hash_types::RichField;
+use plonky2::iop::target::BoolTarget;
+use plonky2::iop::target::Target;
+use plonky2::iop::witness::PartialWitness;
+use plonky2::iop::witness::WitnessWrite;
+use plonky2::plonk::circuit_builder::CircuitBuilder;
+use plonky2::plonk::config::AlgebraicHasher;
 
 use crate::builder::optional_inputs::CircuitBuilderOptionalInputs;
+use crate::builder::select::CircuitBuilderSelectHelpers;
 
 pub const NUM_HASH_OUT_ELEMENTS: usize = 4;
 bitflags! {
@@ -231,11 +230,11 @@ mod tests {
     use plonky2::iop::witness::PartialWitness;
     use plonky2::plonk::circuit_builder::CircuitBuilder;
     use plonky2::plonk::circuit_data::CircuitConfig;
-    use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
+    use plonky2::plonk::config::GenericConfig;
+    use plonky2::plonk::config::PoseidonGoldilocksConfig;
 
-    use crate::hash::merkle::gadgets::merkle_proof::{
-        MerkleProofGadget, OptionalMerkleProofGadget,
-    };
+    use crate::hash::merkle::gadgets::merkle_proof::MerkleProofGadget;
+    use crate::hash::merkle::gadgets::merkle_proof::OptionalMerkleProofGadget;
 
     const D: usize = 2;
     type C = PoseidonGoldilocksConfig;

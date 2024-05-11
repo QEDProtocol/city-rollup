@@ -1,17 +1,21 @@
 use anyhow::Result;
 use city_common::logging::debug_timer::DebugTimer;
-use plonky2::{
-    field::extension::Extendable,
-    gates::gate::GateRef,
-    hash::hash_types::{HashOut, RichField},
-    iop::witness::{PartialWitness, WitnessWrite},
-    plonk::{
-        circuit_builder::CircuitBuilder,
-        circuit_data::{CircuitConfig, CircuitData, CommonCircuitData, VerifierOnlyCircuitData},
-        config::{AlgebraicHasher, GenericConfig, Hasher},
-        proof::{ProofWithPublicInputs, ProofWithPublicInputsTarget},
-    },
-};
+use plonky2::field::extension::Extendable;
+use plonky2::gates::gate::GateRef;
+use plonky2::hash::hash_types::HashOut;
+use plonky2::hash::hash_types::RichField;
+use plonky2::iop::witness::PartialWitness;
+use plonky2::iop::witness::WitnessWrite;
+use plonky2::plonk::circuit_builder::CircuitBuilder;
+use plonky2::plonk::circuit_data::CircuitConfig;
+use plonky2::plonk::circuit_data::CircuitData;
+use plonky2::plonk::circuit_data::CommonCircuitData;
+use plonky2::plonk::circuit_data::VerifierOnlyCircuitData;
+use plonky2::plonk::config::AlgebraicHasher;
+use plonky2::plonk::config::GenericConfig;
+use plonky2::plonk::config::Hasher;
+use plonky2::plonk::proof::ProofWithPublicInputs;
+use plonky2::plonk::proof::ProofWithPublicInputsTarget;
 
 use super::pm_custom::PMCircuitCustomizer;
 
@@ -142,8 +146,9 @@ where
     }
     pub fn prove(
         &self,
-        base_proof: &ProofWithPublicInputs<F, C, D>, //verifier_data: &VerifierOnlyCircuitData<C, D>,
-                                                     //proof: &ProofWithPublicInputs<F, C, D>,
+        base_proof: &ProofWithPublicInputs<F, C, D>, /*verifier_data:
+                                                      * &VerifierOnlyCircuitData<C, D>,
+                                                      * proof: &ProofWithPublicInputs<F, C, D>, */
     ) -> Result<ProofWithPublicInputs<F, C, D>> {
         let mut pw = PartialWitness::new();
         pw.set_proof_with_pis_target(&self.proof_target, base_proof);

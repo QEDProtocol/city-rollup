@@ -1,24 +1,21 @@
 use anyhow::Result;
 use city_common::logging::debug_timer::DebugTimer;
-use plonky2::{
-    field::{extension::Extendable, secp256k1_scalar::Secp256K1Scalar},
-    hash::hash_types::RichField,
-    iop::witness::PartialWitness,
-    plonk::{
-        circuit_builder::CircuitBuilder,
-        circuit_data::{CircuitConfig, CircuitData},
-        config::{AlgebraicHasher, GenericConfig},
-        proof::ProofWithPublicInputs,
-    },
-};
-
-use crate::proof_minifier::pm_chain::OASProofMinifierChain;
+use city_crypto::signature::secp256k1::curve::ecdsa::ECDSAPublicKey;
+use city_crypto::signature::secp256k1::curve::ecdsa::ECDSASignature;
+use city_crypto::signature::secp256k1::curve::secp256k1::Secp256K1;
+use plonky2::field::extension::Extendable;
+use plonky2::field::secp256k1_scalar::Secp256K1Scalar;
+use plonky2::hash::hash_types::RichField;
+use plonky2::iop::witness::PartialWitness;
+use plonky2::plonk::circuit_builder::CircuitBuilder;
+use plonky2::plonk::circuit_data::CircuitConfig;
+use plonky2::plonk::circuit_data::CircuitData;
+use plonky2::plonk::config::AlgebraicHasher;
+use plonky2::plonk::config::GenericConfig;
+use plonky2::plonk::proof::ProofWithPublicInputs;
 
 use super::gadget::Secp256K1CircuitGadget;
-use city_crypto::signature::secp256k1::curve::{
-    ecdsa::{ECDSAPublicKey, ECDSASignature},
-    secp256k1::Secp256K1,
-};
+use crate::proof_minifier::pm_chain::OASProofMinifierChain;
 
 pub struct Secp256K1SignatureCircuit<
     F: RichField + Extendable<D>,
@@ -82,14 +79,16 @@ where
 mod tests {
 
     use anyhow::Result;
-    use city_crypto::signature::secp256k1::curve::curve_types::{Curve, CurveScalar};
-    use city_crypto::signature::secp256k1::curve::ecdsa::{
-        sign_message, ECDSAPublicKey, ECDSASecretKey,
-    };
+    use city_crypto::signature::secp256k1::curve::curve_types::Curve;
+    use city_crypto::signature::secp256k1::curve::curve_types::CurveScalar;
+    use city_crypto::signature::secp256k1::curve::ecdsa::sign_message;
+    use city_crypto::signature::secp256k1::curve::ecdsa::ECDSAPublicKey;
+    use city_crypto::signature::secp256k1::curve::ecdsa::ECDSASecretKey;
     use city_crypto::signature::secp256k1::curve::secp256k1::Secp256K1;
     use plonky2::field::secp256k1_scalar::Secp256K1Scalar;
     use plonky2::field::types::Sample;
-    use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
+    use plonky2::plonk::config::GenericConfig;
+    use plonky2::plonk::config::PoseidonGoldilocksConfig;
 
     use super::Secp256K1SignatureCircuit;
 

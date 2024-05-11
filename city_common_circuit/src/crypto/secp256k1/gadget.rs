@@ -1,33 +1,32 @@
 use std::marker::PhantomData;
 
-use super::ecdsa::gadgets::{
-    biguint::BigUintTarget,
-    curve::CircuitBuilderCurve,
-    curve_fixed_base::fixed_base_curve_mul_circuit,
-    ecdsa::{ECDSAPublicKeyTarget, ECDSASignatureTarget},
-    glv::CircuitBuilderGlv,
-    nonnative::{CircuitBuilderNonNative, NonNativeTarget},
-};
-use crate::{
-    builder::hash::core::CircuitBuilderHashCore,
-    crypto::secp256k1::ecdsa::gadgets::biguint::WitnessBigUint,
-};
-use city_crypto::{
-    field::conversions::bytes33_to_public_key,
-    hash::qhashout::QHashOut,
-    signature::secp256k1::curve::{
-        curve_types::Curve,
-        ecdsa::{ECDSAPublicKey, ECDSASignature},
-        secp256k1::Secp256K1,
-    },
-};
+use city_crypto::field::conversions::bytes33_to_public_key;
+use city_crypto::hash::qhashout::QHashOut;
+use city_crypto::signature::secp256k1::curve::curve_types::Curve;
+use city_crypto::signature::secp256k1::curve::ecdsa::ECDSAPublicKey;
+use city_crypto::signature::secp256k1::curve::ecdsa::ECDSASignature;
+use city_crypto::signature::secp256k1::curve::secp256k1::Secp256K1;
 use num::BigUint;
-use plonky2::{
-    field::{extension::Extendable, secp256k1_scalar::Secp256K1Scalar},
-    hash::hash_types::{HashOut, HashOutTarget, RichField},
-    iop::{target::Target, witness::Witness},
-    plonk::{circuit_builder::CircuitBuilder, config::AlgebraicHasher},
-};
+use plonky2::field::extension::Extendable;
+use plonky2::field::secp256k1_scalar::Secp256K1Scalar;
+use plonky2::hash::hash_types::HashOut;
+use plonky2::hash::hash_types::HashOutTarget;
+use plonky2::hash::hash_types::RichField;
+use plonky2::iop::target::Target;
+use plonky2::iop::witness::Witness;
+use plonky2::plonk::circuit_builder::CircuitBuilder;
+use plonky2::plonk::config::AlgebraicHasher;
+
+use super::ecdsa::gadgets::biguint::BigUintTarget;
+use super::ecdsa::gadgets::curve::CircuitBuilderCurve;
+use super::ecdsa::gadgets::curve_fixed_base::fixed_base_curve_mul_circuit;
+use super::ecdsa::gadgets::ecdsa::ECDSAPublicKeyTarget;
+use super::ecdsa::gadgets::ecdsa::ECDSASignatureTarget;
+use super::ecdsa::gadgets::glv::CircuitBuilderGlv;
+use super::ecdsa::gadgets::nonnative::CircuitBuilderNonNative;
+use super::ecdsa::gadgets::nonnative::NonNativeTarget;
+use crate::builder::hash::core::CircuitBuilderHashCore;
+use crate::crypto::secp256k1::ecdsa::gadgets::biguint::WitnessBigUint;
 fn biguint_from_array(arr: [u64; 4]) -> BigUint {
     BigUint::from_slice(&[
         arr[0] as u32,
@@ -272,8 +271,8 @@ impl DogeQEDSignatureGadget {
         let y_parity = y_low_32_bits[0];
         let two_target = builder.constant(F::from_canonical_u64(2));
 
-        // a compressed public key is a 33 byte array, where the first byte is the parity of the y coordinate
-        // if y is even then the parity byte is 0x02.
+        // a compressed public key is a 33 byte array, where the first byte is the
+        // parity of the y coordinate if y is even then the parity byte is 0x02.
         // if y is odd, the the parity byte is 0x03
         let parity_byte = builder.add(two_target, y_parity.target);
         let compressed_public_key = core::array::from_fn(|i| {
@@ -332,10 +331,12 @@ impl DogeQEDSignatureGadget {
 mod tests {
 
     use anyhow::Result;
-    use city_crypto::signature::secp256k1::curve::curve_types::{Curve, CurveScalar};
-    use city_crypto::signature::secp256k1::curve::ecdsa::{
-        sign_message, ECDSAPublicKey, ECDSASecretKey, ECDSASignature,
-    };
+    use city_crypto::signature::secp256k1::curve::curve_types::Curve;
+    use city_crypto::signature::secp256k1::curve::curve_types::CurveScalar;
+    use city_crypto::signature::secp256k1::curve::ecdsa::sign_message;
+    use city_crypto::signature::secp256k1::curve::ecdsa::ECDSAPublicKey;
+    use city_crypto::signature::secp256k1::curve::ecdsa::ECDSASecretKey;
+    use city_crypto::signature::secp256k1::curve::ecdsa::ECDSASignature;
     use city_crypto::signature::secp256k1::curve::secp256k1::Secp256K1;
     use plonky2::field::secp256k1_scalar::Secp256K1Scalar;
     use plonky2::field::types::Sample;
@@ -343,12 +344,13 @@ mod tests {
     use plonky2::iop::witness::PartialWitness;
     use plonky2::plonk::circuit_builder::CircuitBuilder;
     use plonky2::plonk::circuit_data::CircuitConfig;
-    use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
+    use plonky2::plonk::config::GenericConfig;
+    use plonky2::plonk::config::PoseidonGoldilocksConfig;
 
     use crate::crypto::secp256k1::ecdsa::gadgets::curve::CircuitBuilderCurve;
-    use crate::crypto::secp256k1::ecdsa::gadgets::ecdsa::{
-        verify_message_circuit, ECDSAPublicKeyTarget, ECDSASignatureTarget,
-    };
+    use crate::crypto::secp256k1::ecdsa::gadgets::ecdsa::verify_message_circuit;
+    use crate::crypto::secp256k1::ecdsa::gadgets::ecdsa::ECDSAPublicKeyTarget;
+    use crate::crypto::secp256k1::ecdsa::gadgets::ecdsa::ECDSASignatureTarget;
     use crate::crypto::secp256k1::ecdsa::gadgets::nonnative::CircuitBuilderNonNative;
     use crate::crypto::secp256k1::gadget::Secp256K1CircuitGadget;
 

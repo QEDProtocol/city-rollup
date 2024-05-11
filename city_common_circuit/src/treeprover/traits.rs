@@ -1,6 +1,7 @@
+use core::fmt::Debug;
+
 use city_crypto::hash::qhashout::QHashOut;
 use city_rollup_common::qworker::proof_store::QProofStoreReaderSync;
-use core::fmt::Debug;
 use plonky2::plonk::{
     circuit_data::{CommonCircuitData, VerifierOnlyCircuitData},
     config::{AlgebraicHasher, GenericConfig},
@@ -8,10 +9,9 @@ use plonky2::plonk::{
 };
 use serde::{de::DeserializeOwned, Serialize};
 
-use crate::{
-    circuits::traits::qstandard::{QStandardCircuit, QStandardCircuitProvableWithProofStoreSync},
-    proof_minifier::pm_chain::OASProofMinifierChain,
-};
+use crate::circuits::traits::qstandard::QStandardCircuit;
+use crate::circuits::traits::qstandard::QStandardCircuitProvableWithProofStoreSync;
+use crate::proof_minifier::pm_chain::OASProofMinifierChain;
 
 #[derive(Debug, Clone, Eq, PartialEq, Serialize)]
 pub struct VerifierConfig<C: GenericConfig<D>, const D: usize> {

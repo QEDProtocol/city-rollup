@@ -1,24 +1,22 @@
 use city_crypto::hash::base_types::hash256::Hash256;
-use city_rollup_common::{
-    api::data::{block::requested_actions::CityAddDepositRequest, store::CityL1Deposit},
-    introspection::rollup::introspection_result::BTCRollupIntrospectionResultDeposit,
-};
-use kvq::traits::{KVQBinaryStore, KVQBinaryStoreReader};
-
-use crate::{
-    config::{
-        CityDeltaMerkleProof, CityHash, CityHasher, CityMerkleProof, L1DepositTreeStore,
-        L1DepositsStore, F,
-    },
-    models::{
-        kvq_merkle::model::{
-            KVQFixedConfigMerkleTreeModelCore, KVQFixedConfigMerkleTreeModelReaderCore,
-        },
-        l1_deposits::model::{L1DepositsModelCore, L1DepositsModelReaderCore},
-    },
-};
+use city_rollup_common::api::data::block::requested_actions::CityAddDepositRequest;
+use city_rollup_common::api::data::store::CityL1Deposit;
+use city_rollup_common::introspection::rollup::introspection_result::BTCRollupIntrospectionResultDeposit;
+use kvq::traits::KVQBinaryStore;
+use kvq::traits::KVQBinaryStoreReader;
 
 use super::base::CityStore;
+use crate::config::CityDeltaMerkleProof;
+use crate::config::CityHash;
+use crate::config::CityHasher;
+use crate::config::CityMerkleProof;
+use crate::config::L1DepositTreeStore;
+use crate::config::L1DepositsStore;
+use crate::config::F;
+use crate::models::kvq_merkle::model::KVQFixedConfigMerkleTreeModelCore;
+use crate::models::kvq_merkle::model::KVQFixedConfigMerkleTreeModelReaderCore;
+use crate::models::l1_deposits::model::L1DepositsModelCore;
+use crate::models::l1_deposits::model::L1DepositsModelReaderCore;
 
 impl<S: KVQBinaryStoreReader> CityStore<S> {
     pub fn get_deposit_tree_root(store: &S, checkpoint_id: u64) -> anyhow::Result<CityHash> {

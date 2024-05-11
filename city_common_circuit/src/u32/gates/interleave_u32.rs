@@ -8,23 +8,35 @@ use plonky2::gates::packed_util::PackedEvaluableBase;
 use plonky2::gates::util::StridedConstraintConsumer;
 use plonky2::hash::hash_types::RichField;
 use plonky2::iop::ext_target::ExtensionTarget;
-use plonky2::iop::generator::{GeneratedValues, SimpleGenerator, WitnessGeneratorRef};
+use plonky2::iop::generator::GeneratedValues;
+use plonky2::iop::generator::SimpleGenerator;
+use plonky2::iop::generator::WitnessGeneratorRef;
 use plonky2::iop::target::Target;
 use plonky2::iop::wire::Wire;
-use plonky2::iop::witness::{PartitionWitness, Witness, WitnessWrite};
+use plonky2::iop::witness::PartitionWitness;
+use plonky2::iop::witness::Witness;
+use plonky2::iop::witness::WitnessWrite;
 use plonky2::plonk::circuit_builder::CircuitBuilder;
-use plonky2::plonk::circuit_data::{CircuitConfig, CommonCircuitData};
-use plonky2::plonk::plonk_common::{reduce_with_powers, reduce_with_powers_ext_circuit};
-use plonky2::plonk::vars::{
-    EvaluationTargets, EvaluationVars, EvaluationVarsBase, EvaluationVarsBaseBatch,
-    EvaluationVarsBasePacked,
-};
-use plonky2::util::serialization::{Buffer, IoResult, Read, Write};
+use plonky2::plonk::circuit_data::CircuitConfig;
+use plonky2::plonk::circuit_data::CommonCircuitData;
+use plonky2::plonk::plonk_common::reduce_with_powers;
+use plonky2::plonk::plonk_common::reduce_with_powers_ext_circuit;
+use plonky2::plonk::vars::EvaluationTargets;
+use plonky2::plonk::vars::EvaluationVars;
+use plonky2::plonk::vars::EvaluationVarsBase;
+use plonky2::plonk::vars::EvaluationVarsBaseBatch;
+use plonky2::plonk::vars::EvaluationVarsBasePacked;
+use plonky2::util::serialization::Buffer;
+use plonky2::util::serialization::IoResult;
+use plonky2::util::serialization::Read;
+use plonky2::util::serialization::Write;
 
-/// Take a target x, which we assume is constrained to be a U32, and interleave it with zeroes (allows efficient XOR and AND)
+/// Take a target x, which we assume is constrained to be a U32, and interleave
+/// it with zeroes (allows efficient XOR and AND)
 ///
-/// If we're careful to use a big-endian representation, then the first digit of this result
-/// will always be 0, so it can safely fit inside a single Goldilocks field element
+/// If we're careful to use a big-endian representation, then the first digit of
+/// this result will always be 0, so it can safely fit inside a single
+/// Goldilocks field element
 ///
 /// An example
 ///   x:             b0000_0000_0000_0000_1111_0111_0011_1110
@@ -72,9 +84,11 @@ impl U32InterleaveGate {
     pub const NUM_BITS: usize = 32;
     pub const B: usize = 2; // If we want we can make this a type parameter, as in https://github.com/mir-protocol/plonky2/blob/main/plonky2/src/gates/base_sum.rs
 
-    /// Make sure the inputs are big-endian — this is out of line with the rest of the plonky2 repo, but we
-    /// specifically need our interleaved representation to be big-endian in order to fit in the field, so
-    /// it's better to be explicit about this from the beginning when assigning the wire values
+    /// Make sure the inputs are big-endian — this is out of line with the rest
+    /// of the plonky2 repo, but we specifically need our interleaved
+    /// representation to be big-endian in order to fit in the field, so
+    /// it's better to be explicit about this from the beginning when assigning
+    /// the wire values
     pub fn wires_ith_bit_decomposition(&self, i: usize) -> Range<usize> {
         let start = self.num_ops * Self::routed_wires_per_op();
         (start + Self::NUM_BITS * i)..(start + Self::NUM_BITS * (i + 1))
@@ -94,15 +108,18 @@ impl<F: RichField + Extendable<D>, const D: usize> Gate<F, D> for U32InterleaveG
             let bits = vars.local_wires[self.wires_ith_bit_decomposition(i)].to_vec();
 
             // Check 1: Ensure that the decomposition matches the input
-            // Remember that the bits are big-endian. The reduce_with_powers function takes a little-endian representation, so we reverse the input.
-            // The function just reverses it back again when it does the computation but it's cleaner to re-use the existing code, this isn't a bottleneck
+            // Remember that the bits are big-endian. The reduce_with_powers function takes
+            // a little-endian representation, so we reverse the input.
+            // The function just reverses it back again when it does the computation but
+            // it's cleaner to re-use the existing code, this isn't a bottleneck
             let computed_x = reduce_with_powers(
                 bits.iter().rev(),
                 F::Extension::from_canonical_usize(Self::B),
             );
             constraints.push(computed_x - x);
 
-            // Check 2: Ensure that the bit decomposition matches the interleaved representation
+            // Check 2: Ensure that the bit decomposition matches the interleaved
+            // representation
             let x_interleaved = vars.local_wires[self.wire_ith_x_interleaved(i)];
 
             // Reduce with powers, but using 4 instead of 2 as the base
@@ -141,12 +158,15 @@ impl<F: RichField + Extendable<D>, const D: usize> Gate<F, D> for U32InterleaveG
             let bits_reversed: Vec<ExtensionTarget<D>> = bits.clone().into_iter().rev().collect();
 
             // Check 1: Ensure that the decomposition matches the input
-            // Remember that the bits are big-endian. The reduce_with_powers function takes a little-endian representation, so we reverse the input.
-            // The function just reverses it back again when it does the computation but it's cleaner to re-use the existing code, this isn't a bottleneck
+            // Remember that the bits are big-endian. The reduce_with_powers function takes
+            // a little-endian representation, so we reverse the input.
+            // The function just reverses it back again when it does the computation but
+            // it's cleaner to re-use the existing code, this isn't a bottleneck
             let computed_x = reduce_with_powers_ext_circuit(builder, &bits_reversed, base);
             constraints.push(builder.sub_extension(computed_x, x));
 
-            // Check 2: Ensure that the bit decomposition matches the interleaved representation
+            // Check 2: Ensure that the bit decomposition matches the interleaved
+            // representation
             let computed_x_interleaved =
                 reduce_with_powers_ext_circuit(builder, &bits_reversed, base_sq);
             constraints.push(builder.sub_extension(computed_x_interleaved, x_interleaved));
@@ -183,10 +203,10 @@ impl<F: RichField + Extendable<D>, const D: usize> Gate<F, D> for U32InterleaveG
         self.eval_unfiltered_base_batch_packed(vars_base)
     }
 
-    fn generators(&self, row: usize, _local_constants: &[F]) -> Vec<WitnessGeneratorRef<F,D>> {
+    fn generators(&self, row: usize, _local_constants: &[F]) -> Vec<WitnessGeneratorRef<F, D>> {
         (0..self.num_ops)
             .map(|i| {
-                let g = WitnessGeneratorRef::<F,D>::new(
+                let g = WitnessGeneratorRef::<F, D>::new(
                     U32InterleaveGenerator {
                         gate: *self,
                         row,
@@ -215,11 +235,11 @@ impl<F: RichField + Extendable<D>, const D: usize> Gate<F, D> for U32InterleaveG
         self.num_ops * (Self::NUM_BITS + 1 + 1)
     }
 
-    fn serialize(&self, dst: &mut Vec<u8>, _common_data: &CommonCircuitData<F, D>) -> IoResult<()>{
+    fn serialize(&self, dst: &mut Vec<u8>, _common_data: &CommonCircuitData<F, D>) -> IoResult<()> {
         dst.write_usize(self.num_ops)
     }
 
-    fn deserialize(src: &mut Buffer, _common_data: &CommonCircuitData<F, D> ) -> IoResult<Self>
+    fn deserialize(src: &mut Buffer, _common_data: &CommonCircuitData<F, D>) -> IoResult<Self>
     where
         Self: Sized,
     {
@@ -244,7 +264,8 @@ impl<F: RichField + Extendable<D>, const D: usize> PackedEvaluableBase<F, D> for
 
             yield_constr.one(computed_x - x);
 
-            // Check 2: Ensure that the bit decomposition matches the interleaved representation
+            // Check 2: Ensure that the bit decomposition matches the interleaved
+            // representation
             let x_interleaved = vars.local_wires[self.wire_ith_x_interleaved(i)];
 
             // Reduce with powers, but use 4 instead of 2 as the base
@@ -273,8 +294,11 @@ pub struct U32InterleaveGenerator {
     i: usize,
 }
 
-// Populate the bit wires and the x_interleaved wire, given that the x wire's value has been set
-impl<F: RichField + Extendable<D>, const D: usize> SimpleGenerator<F,D> for U32InterleaveGenerator {
+// Populate the bit wires and the x_interleaved wire, given that the x wire's
+// value has been set
+impl<F: RichField + Extendable<D>, const D: usize> SimpleGenerator<F, D>
+    for U32InterleaveGenerator
+{
     fn dependencies(&self) -> Vec<Target> {
         let local_target = |column| Target::wire(self.row, column);
 
@@ -316,13 +340,13 @@ impl<F: RichField + Extendable<D>, const D: usize> SimpleGenerator<F,D> for U32I
         "U32InterleaveGenerator".to_string()
     }
 
-    fn serialize(&self, dst: &mut Vec<u8>, _common_data: &CommonCircuitData<F, D>) -> IoResult<()>{
+    fn serialize(&self, dst: &mut Vec<u8>, _common_data: &CommonCircuitData<F, D>) -> IoResult<()> {
         dst.write_usize(self.gate.num_ops)?;
         dst.write_usize(self.row)?;
         dst.write_usize(self.i)
     }
 
-    fn deserialize(src: &mut Buffer, _common_data: &CommonCircuitData<F, D> ) -> IoResult<Self>
+    fn deserialize(src: &mut Buffer, _common_data: &CommonCircuitData<F, D>) -> IoResult<Self>
     where
         Self: Sized,
     {
@@ -339,8 +363,10 @@ impl<F: RichField + Extendable<D>, const D: usize> SimpleGenerator<F,D> for U32I
 mod tests {
     use anyhow::Result;
     use plonky2::field::goldilocks_field::GoldilocksField;
-    use plonky2::gates::gate_testing::{test_eval_fns, test_low_degree};
-    use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
+    use plonky2::gates::gate_testing::test_eval_fns;
+    use plonky2::gates::gate_testing::test_low_degree;
+    use plonky2::plonk::config::GenericConfig;
+    use plonky2::plonk::config::PoseidonGoldilocksConfig;
 
     use super::*;
 

@@ -1,10 +1,9 @@
 use city_common::tree_planner::{BinaryTreeJob, BinaryTreePlanner};
 use city_crypto::hash::merkle::treeprover::TPLeafAggregator;
 use city_rollup_common::qworker::proof_store::{QProofStoreReaderSync, QProofStoreWriterSync};
-use core::fmt::Debug;
-use itertools::Itertools;
 use plonky2::plonk::{config::GenericConfig, proof::ProofWithPublicInputs};
 use serde::{de::DeserializeOwned, Serialize};
+use core::fmt::Debug;
 
 use super::traits::{TreeProverAggCircuit, TreeProverLeafCircuit};
 
@@ -103,7 +102,7 @@ pub fn prove_tree_serial<
     let leaf_proofs = leaf_inputs
         .iter()
         .map(|input| leaf_circuit.prove_with_proof_store_sync(&store, &input))
-        .try_collect::<_, Vec<_>, _>()?;
+        .collect::<anyhow::Result<Vec<_>>>()?;
 
     let mut current_proofs = vec![leaf_proofs];
     for level in job_plan {

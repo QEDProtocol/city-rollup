@@ -1,8 +1,10 @@
+use std::fmt::Display;
+
 use hex::FromHexError;
 use rand::RngCore;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use serde::Serialize;
 use serde_with::serde_as;
-use std::fmt::Display;
 
 #[serde_as]
 #[derive(Serialize, Deserialize, PartialEq, Clone, Debug)]

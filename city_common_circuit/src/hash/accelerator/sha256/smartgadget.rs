@@ -1,53 +1,53 @@
-use super::{
-    super::config::HashAcceleratorConfig,
-    utils::reconstruct_preimages_sha256_constrain_padding_length,
-};
+use core::fmt::Debug;
+
+use city_crypto::hash::core::sha256::CoreSha256Hasher;
+use itertools::Itertools;
+use plonky2::field::extension::Extendable;
+use plonky2::field::goldilocks_field::GoldilocksField;
+use plonky2::field::types::Field;
+use plonky2::hash::hash_types::RichField;
+use plonky2::iop::target::Target;
+use plonky2::iop::witness::Witness;
+use plonky2::plonk::circuit_builder::CircuitBuilder;
+use plonky2::plonk::config::AlgebraicHasher;
+use plonky2::plonk::config::GenericConfig;
+use plonky2::timed;
+use plonky2::util::log2_ceil;
+use plonky2::util::timing::TimingTree;
+use serde::Deserialize;
+use serde::Serialize;
+use starkyx::chip::register::array::ArrayRegister;
+use starkyx::chip::register::bit::BitRegister;
+use starkyx::chip::register::element::ElementRegister;
+use starkyx::chip::trace::writer::data::AirWriterData;
+use starkyx::chip::trace::writer::AirWriter;
+use starkyx::chip::uint::operations::instruction::UintInstruction;
+use starkyx::chip::uint::operations::instruction::UintInstructions;
+use starkyx::chip::AirParameters;
+use starkyx::chip::Chip;
+use starkyx::machine::builder::Builder;
+use starkyx::machine::bytes::builder::BytesBuilder;
+use starkyx::machine::bytes::proof::ByteStarkProofTarget;
+use starkyx::machine::bytes::stark::ByteStark;
+use starkyx::machine::hash::sha::algorithm::SHAir;
+use starkyx::machine::hash::sha::builder::SHABuilder;
+use starkyx::machine::hash::sha::sha256::SHA256;
+use starkyx::machine::hash::HashInteger;
+use starkyx::machine::hash::HashPureInteger;
+use starkyx::math::extension::CubicParameters;
+use starkyx::math::goldilocks::cubic::GoldilocksCubicParameters;
+use starkyx::plonky2::stark::config::GenericCombinedConfig;
+use starkyx::plonky2::Plonky2Air;
+
+use super::super::config::HashAcceleratorConfig;
+use super::utils::reconstruct_preimages_sha256_constrain_padding_length;
 use crate::builder::connect::CircuitBuilderConnectHelpers;
 use crate::field::cubic::CubicExtendable;
-use crate::hash::accelerator::sha256::utils::{
-    get_pad_length_sha256_u32, pad_preimage_virtual_targets_sha256,
-};
+use crate::hash::accelerator::sha256::utils::get_pad_length_sha256_u32;
+use crate::hash::accelerator::sha256::utils::pad_preimage_virtual_targets_sha256;
 use crate::hash::base_types::hash256bytes::read_hash256_bytes_target_from_array;
 use crate::hash::base_types::hash256bytes::CircuitBuilderHash256Bytes;
 use crate::hash::base_types::hash256bytes::Hash256BytesTarget;
-use city_crypto::hash::core::sha256::CoreSha256Hasher;
-use core::fmt::Debug;
-use itertools::Itertools;
-use plonky2::field::goldilocks_field::GoldilocksField;
-use plonky2::{
-    field::{extension::Extendable, types::Field},
-    hash::hash_types::RichField,
-    iop::{target::Target, witness::Witness},
-    plonk::{
-        circuit_builder::CircuitBuilder,
-        config::{AlgebraicHasher, GenericConfig},
-    },
-    timed,
-    util::{log2_ceil, timing::TimingTree},
-};
-use serde::{Deserialize, Serialize};
-use starkyx::math::goldilocks::cubic::GoldilocksCubicParameters;
-use starkyx::{
-    chip::uint::operations::instruction::{UintInstruction, UintInstructions},
-    machine::hash::{sha::sha256::SHA256, HashPureInteger},
-};
-use starkyx::{
-    chip::{
-        register::{array::ArrayRegister, bit::BitRegister, element::ElementRegister},
-        trace::writer::{data::AirWriterData, AirWriter},
-        AirParameters, Chip,
-    },
-    machine::{
-        builder::Builder,
-        bytes::{builder::BytesBuilder, proof::ByteStarkProofTarget, stark::ByteStark},
-        hash::{
-            sha::{algorithm::SHAir, builder::SHABuilder},
-            HashInteger,
-        },
-    },
-    math::extension::CubicParameters,
-    plonky2::{stark::config::GenericCombinedConfig, Plonky2Air},
-};
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Sha256AirParametersGoldilocks;
 
@@ -314,7 +314,8 @@ where
         let (stark_proof_target, stark_public_inputs) = if planned_hashes.is_some() {
             let planned_hashes = planned_hashes.unwrap();
             let stark_proof_target = stark.add_virtual_proof_target(builder);
-            //let public_inputs_test = builder.add_virtual_targets(stark.num_public_inputs());
+            //let public_inputs_test =
+            // builder.add_virtual_targets(stark.num_public_inputs());
 
             let padded_preimage_targets = planned_hashes
                 .iter()
@@ -405,7 +406,8 @@ where
         });
         cur_pos += SHA256_EXTRA_DATA.len();
 
-        // not sure what the next byte does, seems to be related to the number/size of messages?
+        // not sure what the next byte does, seems to be related to the number/size of
+        // messages?
         cur_pos += 1;
         let zero = builder.zero();
         let one = builder.one();
@@ -589,8 +591,10 @@ where
 #[cfg(test)]
 mod tests {
 
+    use plonky2::field::goldilocks_field::GoldilocksField;
     use plonky2::field::types::Field;
-    use plonky2::iop::witness::{PartialWitness, WitnessWrite};
+    use plonky2::iop::witness::PartialWitness;
+    use plonky2::iop::witness::WitnessWrite;
     use plonky2::plonk::circuit_builder::CircuitBuilder;
     use plonky2::plonk::circuit_data::CircuitConfig;
     use plonky2::plonk::config::PoseidonGoldilocksConfig;
@@ -605,7 +609,6 @@ mod tests {
     use crate::hash::accelerator::sha256::smartgadget::SmartSha256AcceleratorGadget;
     use crate::hash::base_types::hash256bytes::CircuitBuilderHash256Bytes;
     use crate::hash::base_types::hash256bytes::WitnessHash256Bytes;
-    use plonky2::field::goldilocks_field::GoldilocksField;
 
     #[test]
     fn test_sha256_planner() {

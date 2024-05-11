@@ -1,4 +1,5 @@
-use std::{fs, path::PathBuf};
+use std::fs;
+use std::path::PathBuf;
 
 use city_common::logging::debug_timer::DebugTimer;
 use city_common_circuit::field::cubic::CubicExtendable;

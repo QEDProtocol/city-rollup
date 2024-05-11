@@ -1,3 +1,4 @@
+use city_crypto::hash::qhashout::QHashOut;
 use city_rollup_common::{
     api::data::block::{
         requested_actions::{
@@ -74,8 +75,10 @@ impl<F: RichField + Extendable<D>, const D: usize> DebugRPCProcessor<F, D> {
     pub fn injest_rpc_register_user(
         &self,
         req: &CityRegisterUserRPCRequest<F>,
+        user_id: u64,
+        rpc_node_id: u64,
     ) -> anyhow::Result<CityRegisterUserRequest<F>> {
-        Ok(CityRegisterUserRequest::new(req.public_key))
+        Ok(CityRegisterUserRequest::new(user_id, rpc_node_id, req.public_key))
     }
     pub fn injest_rpc_token_transfer<PS: QProofStore>(
         &self,
@@ -101,6 +104,7 @@ impl<F: RichField + Extendable<D>, const D: usize> DebugRPCProcessor<F, D> {
     pub fn injest_rpc_add_withdrawal<PS: QProofStore>(
         &self,
         ps: &mut PS,
+        withdrawal_id: u64,
         req: &CityAddWithdrawalRPCRequest,
     ) -> anyhow::Result<CityAddWithdrawalRequest> {
         let count = self.output.add_withdrawals.len() as u32;
@@ -115,6 +119,7 @@ impl<F: RichField + Extendable<D>, const D: usize> DebugRPCProcessor<F, D> {
             req.user_id,
             req.value,
             req.nonce,
+            withdrawal_id,
             req.destination_type,
             req.destination,
             signature_proof_id,
@@ -156,9 +161,11 @@ impl<F: RichField + Extendable<D>, const D: usize> DebugRPCProcessor<F, D> {
     pub fn process_register_users(
         &mut self,
         reqs: &[CityRegisterUserRPCRequest<F>],
+        rpc_node_id: u64,
+        user_id: u64,
     ) -> anyhow::Result<()> {
         for req in reqs {
-            let register = self.injest_rpc_register_user(req)?;
+            let register = self.injest_rpc_register_user(req, user_id, rpc_node_id)?;
             self.output.register_users.push(register);
         }
         Ok(())

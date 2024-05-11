@@ -2,10 +2,12 @@ use std::fmt::Display;
 
 use hex::FromHexError;
 use kvq::traits::KVQSerializable;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use serde::Serialize;
 use serde_with::serde_as;
 
-use crate::hash::merkle::core::{DeltaMerkleProofCore, MerkleProofCore};
+use crate::hash::merkle::core::DeltaMerkleProofCore;
+use crate::hash::merkle::core::MerkleProofCore;
 
 #[serde_as]
 #[derive(Serialize, Deserialize, PartialEq, Clone, Copy, Debug, Hash, Eq)]

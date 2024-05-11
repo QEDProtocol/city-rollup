@@ -1,6 +1,6 @@
 use city_crypto::hash::base_types::hash256::Hash256;
-use serde::{Deserialize, Serialize};
-
+use serde::Deserialize;
+use serde::Serialize;
 use serde_with::serde_as;
 
 #[serde_as]

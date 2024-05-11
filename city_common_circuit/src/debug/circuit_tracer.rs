@@ -1,20 +1,19 @@
 use std::collections::HashMap;
 
 use city_crypto::hash::qhashout::QHashOut;
-use plonky2::{
-    field::extension::Extendable,
-    hash::hash_types::{HashOutTarget, RichField},
-    iop::{
-        generator::generate_partial_witness,
-        target::Target,
-        witness::{PartialWitness, PartitionWitness, Witness},
-    },
-    plonk::{
-        circuit_data::{CommonCircuitData, ProverOnlyCircuitData},
-        config::GenericConfig,
-    },
-};
-use serde::{Deserialize, Serialize};
+use plonky2::field::extension::Extendable;
+use plonky2::hash::hash_types::HashOutTarget;
+use plonky2::hash::hash_types::RichField;
+use plonky2::iop::generator::generate_partial_witness;
+use plonky2::iop::target::Target;
+use plonky2::iop::witness::PartialWitness;
+use plonky2::iop::witness::PartitionWitness;
+use plonky2::iop::witness::Witness;
+use plonky2::plonk::circuit_data::CommonCircuitData;
+use plonky2::plonk::circuit_data::ProverOnlyCircuitData;
+use plonky2::plonk::config::GenericConfig;
+use serde::Deserialize;
+use serde::Serialize;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(bound = "")]
 pub struct DebugCircuitTraceResult<F: RichField> {

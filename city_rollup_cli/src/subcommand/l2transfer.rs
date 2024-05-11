@@ -7,12 +7,10 @@ pub async fn run(_args: L2TransferArgs) -> Result<()> {
     println!(
         "
 ----------------------------------------
-|           CityRollup v{}             |
+|           CityRollup v{}          |
 ----------------------------------------
 ",
         build::PKG_VERSION
     );
-    //let indexer = city_indexer::Indexer::new(args).await?;
-    //indexer.listen().await?;
     Ok(())
 }

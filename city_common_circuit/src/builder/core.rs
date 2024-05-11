@@ -1,13 +1,11 @@
 use hashbrown::HashMap;
-use plonky2::{
-    field::{extension::Extendable, types::PrimeField64},
-    hash::hash_types::RichField,
-    iop::{
-        target::{BoolTarget, Target},
-        witness::Witness,
-    },
-    plonk::circuit_builder::CircuitBuilder,
-};
+use plonky2::field::extension::Extendable;
+use plonky2::field::types::PrimeField64;
+use plonky2::hash::hash_types::RichField;
+use plonky2::iop::target::BoolTarget;
+use plonky2::iop::target::Target;
+use plonky2::iop::witness::Witness;
+use plonky2::plonk::circuit_builder::CircuitBuilder;
 pub trait TargetResolverCore<F: PrimeField64> {
     fn try_resolve_target_or_constant(&self, target: Target) -> Option<F>;
 }

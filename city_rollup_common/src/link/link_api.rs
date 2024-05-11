@@ -3,11 +3,12 @@ use std::str::FromStr;
 use city_common::data::u8bytes::U8Bytes;
 use city_crypto::hash::base_types::hash256::Hash256;
 use reqwest::blocking::ClientBuilder;
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
-
-use crate::errors::data_resolver::BTCDataResolverError;
+use serde::de::DeserializeOwned;
+use serde::Deserialize;
+use serde::Serialize;
 
 use super::data::BTCUTXO;
+use crate::errors::data_resolver::BTCDataResolverError;
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, PartialOrd, Eq)]
 pub struct BTCLinkRPCConfig {

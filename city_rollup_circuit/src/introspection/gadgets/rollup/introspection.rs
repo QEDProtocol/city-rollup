@@ -1,20 +1,30 @@
 use city_common::logging::trace_timer::TraceTimer;
-use city_common_circuit::{builder::{connect::CircuitBuilderConnectHelpers, core::{CircuitBuilderHelpersCore, WitnessHelpersCore}, signature::CircuitBuilderSignatureHelpers}, hash::{accelerator::sha256::planner::{Sha256AcceleratorDomain, Sha256AcceleratorDomainID, Sha256AcceleratorDomainPlanner, Sha256AcceleratorDomainResolver}, base_types::{felthash252::CircuitBuilderFelt252Hash, hash160bytes::Hash160BytesTarget, hash256bytes::{CircuitBuilderHash256Bytes, Hash256BytesTarget}}}};
-use city_rollup_common::introspection::rollup::introspection::{BlockSpendIntrospectionGadgetConfig, BlockSpendIntrospectionHint};
-use plonky2::{
-    field::extension::Extendable,
-    hash::hash_types::{HashOutTarget, RichField},
-    iop::{target::Target, witness::Witness},
-    plonk::circuit_builder::CircuitBuilder,
-};
+use city_common_circuit::builder::connect::CircuitBuilderConnectHelpers;
+use city_common_circuit::builder::core::CircuitBuilderHelpersCore;
+use city_common_circuit::builder::core::WitnessHelpersCore;
+use city_common_circuit::builder::signature::CircuitBuilderSignatureHelpers;
+use city_common_circuit::hash::accelerator::sha256::planner::Sha256AcceleratorDomain;
+use city_common_circuit::hash::accelerator::sha256::planner::Sha256AcceleratorDomainID;
+use city_common_circuit::hash::accelerator::sha256::planner::Sha256AcceleratorDomainPlanner;
+use city_common_circuit::hash::accelerator::sha256::planner::Sha256AcceleratorDomainResolver;
+use city_common_circuit::hash::base_types::felthash252::CircuitBuilderFelt252Hash;
+use city_common_circuit::hash::base_types::hash160bytes::Hash160BytesTarget;
+use city_common_circuit::hash::base_types::hash256bytes::CircuitBuilderHash256Bytes;
+use city_common_circuit::hash::base_types::hash256bytes::Hash256BytesTarget;
+use city_rollup_common::introspection::rollup::introspection::BlockSpendIntrospectionGadgetConfig;
+use city_rollup_common::introspection::rollup::introspection::BlockSpendIntrospectionHint;
+use plonky2::field::extension::Extendable;
+use plonky2::hash::hash_types::HashOutTarget;
+use plonky2::hash::hash_types::RichField;
+use plonky2::iop::target::Target;
+use plonky2::iop::witness::Witness;
+use plonky2::plonk::circuit_builder::CircuitBuilder;
 
-
-use crate::introspection::gadgets::{sighash::SigHashPreimageBytesGadget, transaction::BTCTransactionBytesGadget};
-
-use super::introspection_result::{
-    BTCRollupIntrospectionResultDepositGadget, BTCRollupIntrospectionResultGadget,
-    BTCRollupIntrospectionResultWithdrawalGadget,
-};
+use super::introspection_result::BTCRollupIntrospectionResultDepositGadget;
+use super::introspection_result::BTCRollupIntrospectionResultGadget;
+use super::introspection_result::BTCRollupIntrospectionResultWithdrawalGadget;
+use crate::introspection::gadgets::sighash::SigHashPreimageBytesGadget;
+use crate::introspection::gadgets::transaction::BTCTransactionBytesGadget;
 
 #[derive(Debug, Clone)]
 pub struct BTCRollupIntrospectionGadget {
@@ -194,7 +204,8 @@ impl BTCRollupIntrospectionGadget {
             .for_each(|(_, (funding_tx, spend_tx))| {
                 let funding_tx_bytes = funding_tx.to_byte_targets(builder);
                 let funding_tx_hash = self.hash_domain.btc_hash256(builder, &funding_tx_bytes);
-                // ensure the funding transaction provided is actually the transaction that funded this utxo
+                // ensure the funding transaction provided is actually the transaction that
+                // funded this utxo
                 builder.connect_hash256_bytes(funding_tx_hash, spend_tx.hash);
             });
     }
@@ -218,8 +229,8 @@ impl BTCRollupIntrospectionGadget {
                         "deposits should only have one output (send to layer 2)"
                     );
                     assert_eq!(
-                        funding_tx.inputs[0].script.len(), 
-                        106, 
+                        funding_tx.inputs[0].script.len(),
+                        106,
                         "the input script for a deposit should be a p2pkh signature + public key reveal"
                     );
                     let public_key =
@@ -281,7 +292,9 @@ impl BTCRollupIntrospectionGadget {
             .get_value_target_u64(builder);
         let sighash_felt252 = builder.hash256_bytes_to_felt252_hashout(self.current_sighash);
 
-        let next_block_state_hash = builder.hash256_bytes_to_felt252_hashout(self.next_block_redeem_script[1..33].try_into().unwrap());
+        let next_block_state_hash = builder.hash256_bytes_to_felt252_hashout(
+            self.next_block_redeem_script[1..33].try_into().unwrap(),
+        );
         BTCRollupIntrospectionResultGadget {
             deposits,
             withdrawals,

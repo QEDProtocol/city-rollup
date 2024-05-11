@@ -1,8 +1,13 @@
-use plonky2::field::types::{Field, Sample};
-use serde::{Deserialize, Serialize};
+use plonky2::field::types::Field;
+use plonky2::field::types::Sample;
+use serde::Deserialize;
+use serde::Serialize;
 
 use super::curve_msm::msm_parallel;
-use super::curve_types::{base_to_scalar, AffinePoint, Curve, CurveScalar};
+use super::curve_types::base_to_scalar;
+use super::curve_types::AffinePoint;
+use super::curve_types::Curve;
+use super::curve_types::CurveScalar;
 
 #[derive(Copy, Clone, Debug, Deserialize, Eq, Hash, PartialEq, Serialize)]
 pub struct ECDSASignature<C: Curve> {
@@ -66,7 +71,9 @@ mod tests {
     use plonky2::field::secp256k1_scalar::Secp256K1Scalar;
     use plonky2::field::types::Sample;
 
-    use super::super::ecdsa::{sign_message, verify_message, ECDSASecretKey};
+    use super::super::ecdsa::sign_message;
+    use super::super::ecdsa::verify_message;
+    use super::super::ecdsa::ECDSASecretKey;
     use super::super::secp256k1::Secp256K1;
 
     #[test]

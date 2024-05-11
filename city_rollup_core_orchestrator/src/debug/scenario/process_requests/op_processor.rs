@@ -95,7 +95,6 @@ impl<S: KVQBinaryStore> CityOrchestratorOpRequestProcessor<S> {
             CityStore::<S>::add_withdrawal_to_tree_from_request(
                 store,
                 self.checkpoint_id,
-                withdrawal_id,
                 req,
             )?;
         self.next_add_withdrawal_id += 1;

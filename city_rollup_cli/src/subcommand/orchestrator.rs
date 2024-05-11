@@ -7,13 +7,12 @@ pub async fn run(args: OrchestratorArgs) -> Result<()> {
     println!(
         "
 ----------------------------------------
-|           CityRollup v{}             |
+|           CityRollup v{}          |
 ----------------------------------------
 ",
         build::PKG_VERSION
     );
-    //let indexer = city_indexer::Indexer::new(args).await?;
-    //indexer.listen().await?;
-    city_rollup_core_orchestrator::debug::run_debug_demo(args);
+    let orchestrator = city_rollup_core_orchestrator::orchestrator::Orchestrator::new(args).await?;
+    orchestrator.run().await;
     Ok(())
 }

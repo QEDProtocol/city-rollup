@@ -1,20 +1,30 @@
-use num::{BigUint, Integer, Zero};
-use plonky2::field::extension::Extendable;
-use plonky2::field::types::{PrimeField, PrimeField64};
-use plonky2::hash::hash_types::RichField;
-use plonky2::iop::generator::{GeneratedValues, SimpleGenerator};
-use plonky2::iop::target::{BoolTarget, Target};
-use plonky2::iop::witness::{PartitionWitness, Witness};
-use plonky2::plonk::circuit_builder::CircuitBuilder;
-use plonky2::plonk::circuit_data::CommonCircuitData;
-use plonky2::util::serialization::Read;
-use plonky2::util::serialization::Write;
-use plonky2::util::serialization::{Buffer, IoResult};
 use std::marker::PhantomData;
 
-use crate::u32::arithmetic_u32::{CircuitBuilderU32, U32Target};
+use num::BigUint;
+use num::Integer;
+use num::Zero;
+use plonky2::field::extension::Extendable;
+use plonky2::field::types::PrimeField;
+use plonky2::field::types::PrimeField64;
+use plonky2::hash::hash_types::RichField;
+use plonky2::iop::generator::GeneratedValues;
+use plonky2::iop::generator::SimpleGenerator;
+use plonky2::iop::target::BoolTarget;
+use plonky2::iop::target::Target;
+use plonky2::iop::witness::PartitionWitness;
+use plonky2::iop::witness::Witness;
+use plonky2::plonk::circuit_builder::CircuitBuilder;
+use plonky2::plonk::circuit_data::CommonCircuitData;
+use plonky2::util::serialization::Buffer;
+use plonky2::util::serialization::IoResult;
+use plonky2::util::serialization::Read;
+use plonky2::util::serialization::Write;
+
+use crate::u32::arithmetic_u32::CircuitBuilderU32;
+use crate::u32::arithmetic_u32::U32Target;
 use crate::u32::multiple_comparison::list_lte_u32_circuit;
-use crate::u32::witness::{GeneratedValuesU32, WitnessU32};
+use crate::u32::witness::GeneratedValuesU32;
+use crate::u32::witness::WitnessU32;
 
 #[derive(Clone, Debug)]
 pub struct BigUintTarget {
@@ -51,14 +61,16 @@ pub trait CircuitBuilderBiguint<F: RichField + Extendable<D>, const D: usize> {
     /// Add two `BigUintTarget`s.
     fn add_biguint(&mut self, a: &BigUintTarget, b: &BigUintTarget) -> BigUintTarget;
 
-    /// Subtract two `BigUintTarget`s. We assume that the first is larger than the second.
+    /// Subtract two `BigUintTarget`s. We assume that the first is larger than
+    /// the second.
     fn sub_biguint(&mut self, a: &BigUintTarget, b: &BigUintTarget) -> BigUintTarget;
 
     fn mul_biguint(&mut self, a: &BigUintTarget, b: &BigUintTarget) -> BigUintTarget;
 
     fn mul_biguint_by_bool(&mut self, a: &BigUintTarget, b: BoolTarget) -> BigUintTarget;
 
-    /// Returns x * y + z. This is no more efficient than mul-then-add; it's purely for convenience (only need to call one CircuitBuilder function).
+    /// Returns x * y + z. This is no more efficient than mul-then-add; it's
+    /// purely for convenience (only need to call one CircuitBuilder function).
     fn mul_add_biguint(
         &mut self,
         x: &BigUintTarget,
@@ -394,15 +406,19 @@ impl<F: RichField + Extendable<D>, const D: usize> SimpleGenerator<F, D>
 #[cfg(test)]
 mod tests {
     use anyhow::Result;
-    use num::{BigUint, FromPrimitive, Integer};
+    use num::BigUint;
+    use num::FromPrimitive;
+    use num::Integer;
     use plonky2::iop::witness::PartialWitness;
     use plonky2::plonk::circuit_builder::CircuitBuilder;
     use plonky2::plonk::circuit_data::CircuitConfig;
-    use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
+    use plonky2::plonk::config::GenericConfig;
+    use plonky2::plonk::config::PoseidonGoldilocksConfig;
     use rand::rngs::OsRng;
     use rand::Rng;
 
-    use super::super::super::gadgets::biguint::{CircuitBuilderBiguint, WitnessBigUint};
+    use super::super::super::gadgets::biguint::CircuitBuilderBiguint;
+    use super::super::super::gadgets::biguint::WitnessBigUint;
 
     #[test]
     fn test_biguint_add() -> Result<()> {

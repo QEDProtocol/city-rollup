@@ -214,8 +214,9 @@ where
         let y = builder.constant(C::F::ZERO);
         let is_geq = builder.is_greater_than(32, x, y);
         builder.connect(is_geq.target, x);*/
-        //builder.verify_proof::<C>(&left_proof, &left_verifier_data, &child_common_data);
-        //builder.verify_proof::<C>(&right_proof, &right_verifier_data, &child_common_data);
+        //builder.verify_proof::<C>(&left_proof, &left_verifier_data,
+        // &child_common_data); builder.verify_proof::<C>(&right_proof,
+        // &right_verifier_data, &child_common_data);
 
         builder.verify_proof_with_fingerprint_enum::<C>(
             &left_proof,
