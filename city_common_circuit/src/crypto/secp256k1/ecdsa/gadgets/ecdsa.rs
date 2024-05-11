@@ -7,10 +7,12 @@ use plonky2::field::secp256k1_scalar::Secp256K1Scalar;
 use plonky2::hash::hash_types::RichField;
 use plonky2::plonk::circuit_builder::CircuitBuilder;
 
-use super::super::gadgets::curve::{AffinePointTarget, CircuitBuilderCurve};
+use super::super::gadgets::curve::AffinePointTarget;
+use super::super::gadgets::curve::CircuitBuilderCurve;
 use super::super::gadgets::curve_fixed_base::fixed_base_curve_mul_circuit;
 use super::super::gadgets::glv::CircuitBuilderGlv;
-use super::super::gadgets::nonnative::{CircuitBuilderNonNative, NonNativeTarget};
+use super::super::gadgets::nonnative::CircuitBuilderNonNative;
+use super::super::gadgets::nonnative::NonNativeTarget;
 
 #[derive(Clone, Debug)]
 pub struct ECDSASecretKeyTarget<C: Curve>(pub NonNativeTarget<C::ScalarField>);
@@ -56,14 +58,18 @@ mod tests {
     use anyhow::Result;
     use city_common::logging::debug_timer::DebugTimer;
     use city_crypto::signature::secp256k1::curve::curve_types::CurveScalar;
-    use city_crypto::signature::secp256k1::curve::ecdsa::{
-        sign_message, ECDSAPublicKey, ECDSASecretKey, ECDSASignature,
-    };
-    use plonky2::field::types::{PrimeField64, Sample};
+    use city_crypto::signature::secp256k1::curve::ecdsa::sign_message;
+    use city_crypto::signature::secp256k1::curve::ecdsa::ECDSAPublicKey;
+    use city_crypto::signature::secp256k1::curve::ecdsa::ECDSASecretKey;
+    use city_crypto::signature::secp256k1::curve::ecdsa::ECDSASignature;
+    use plonky2::field::types::PrimeField64;
+    use plonky2::field::types::Sample;
     use plonky2::iop::witness::PartialWitness;
     use plonky2::plonk::circuit_data::CircuitConfig;
-    use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
-    use serde::{Deserialize, Serialize};
+    use plonky2::plonk::config::GenericConfig;
+    use plonky2::plonk::config::PoseidonGoldilocksConfig;
+    use serde::Deserialize;
+    use serde::Serialize;
 
     use super::*;
 

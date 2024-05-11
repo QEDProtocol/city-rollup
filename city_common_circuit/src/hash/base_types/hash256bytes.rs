@@ -1,14 +1,18 @@
 use plonky2::field::extension::Extendable;
 use plonky2::field::types::PrimeField64;
-use plonky2::hash::hash_types::{HashOutTarget, RichField};
-use plonky2::iop::target::{BoolTarget, Target};
+use plonky2::hash::hash_types::HashOutTarget;
+use plonky2::hash::hash_types::RichField;
+use plonky2::iop::target::BoolTarget;
+use plonky2::iop::target::Target;
 use plonky2::iop::witness::Witness;
 use plonky2::plonk::circuit_builder::CircuitBuilder;
 
-use crate::traits::{ConnectableTarget, CreatableTarget, SwappableTarget, ToTargets};
-use crate::u32::arithmetic_u32::U32Target;
-
 use super::hash256::Hash256Target;
+use crate::traits::ConnectableTarget;
+use crate::traits::CreatableTarget;
+use crate::traits::SwappableTarget;
+use crate::traits::ToTargets;
+use crate::u32::arithmetic_u32::U32Target;
 
 pub type Hash256BytesTarget = [Target; 32];
 

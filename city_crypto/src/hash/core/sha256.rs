@@ -1,6 +1,8 @@
-use sha2::{Digest, Sha256};
+use sha2::Digest;
+use sha2::Sha256;
 
-use crate::hash::{base_types::hash256::Hash256, traits::hasher::MerkleHasher};
+use crate::hash::base_types::hash256::Hash256;
+use crate::hash::traits::hasher::MerkleHasher;
 
 #[derive(Debug, Clone)]
 pub struct CoreSha256Hasher {

@@ -1,48 +1,30 @@
+use city_common::cli::dev_args::TreeProveTestArgs;
+use city_common::logging::trace_timer::TraceTimer;
+use city_common_circuit::circuits::traits::qstandard::QStandardCircuit;
+use city_common_circuit::circuits::traits::qstandard::QStandardCircuitProvableWithProofStoreSync;
+use city_common_circuit::circuits::traits::qstandard::QStandardCircuitWithDefaultMinified;
+use city_common_circuit::treeprover::aggregation::state_transition::AggStateTransitionCircuit;
+use city_common_circuit::treeprover::prover::prove_tree_serial;
+use city_common_circuit::treeprover::traits::TreeProverAggCircuit;
+use city_crypto::hash::merkle::treeprover::AggStateTransitionInput;
+use city_crypto::hash::merkle::treeprover::AggWTLeafAggregator;
+use city_crypto::hash::merkle::treeprover::TPLeafAggregator;
+use city_crypto::hash::qhashout::QHashOut;
+use city_rollup_circuit::block_circuits::ops::register_user::WCRUserRegistrationCircuit;
+use city_rollup_circuit::worker::toolbox::test_circ::CRWorkerTestToolboxCoreCircuits;
+use city_rollup_common::introspection::rollup::constants::get_network_magic_for_str;
+use city_rollup_common::qworker::job_witnesses::op::CRUserRegistrationCircuitInput;
+use city_rollup_common::qworker::memory_proof_store::SimpleProofStoreMemory;
+use city_store::store::city::base::CityStore;
+use kvq::memory::simple::KVQSimpleMemoryBackingStore;
+use kvq::traits::KVQBinaryStore;
+use plonky2::field::goldilocks_field::GoldilocksField;
+use plonky2::plonk::config::PoseidonGoldilocksConfig;
+use plonky2::plonk::proof::ProofWithPublicInputs;
+
 use crate::build;
 use crate::error::Result;
-use city_common::{cli::dev_args::TreeProveTestArgs, logging::trace_timer::TraceTimer};
-use city_common_circuit::{
-    circuits::traits::qstandard::{
-        QStandardCircuit, QStandardCircuitProvableWithProofStoreSync,
-        QStandardCircuitWithDefaultMinified,
-    },
-    treeprover::{
-        aggregation::state_transition::AggStateTransitionCircuit, prover::prove_tree_serial,
-        traits::TreeProverAggCircuit,
-    },
-};
-use city_crypto::hash::{
-    merkle::treeprover::{AggStateTransitionInput, AggWTLeafAggregator, TPLeafAggregator},
-    qhashout::QHashOut,
-};
-use city_rollup_circuit::{
-    block_circuits::ops::register_user::WCRUserRegistrationCircuit,
-    worker::toolbox::test_circ::CRWorkerTestToolboxCoreCircuits,
-};
-use city_rollup_common::{
-    introspection::rollup::constants::{
-        NETWORK_MAGIC_DOGE_MAINNET, NETWORK_MAGIC_DOGE_REGTEST, NETWORK_MAGIC_DOGE_TESTNET,
-    },
-    qworker::{
-        job_witnesses::op::CRUserRegistrationCircuitInput,
-        memory_proof_store::SimpleProofStoreMemory,
-    },
-};
-use city_store::store::city::base::CityStore;
-use kvq::{memory::simple::KVQSimpleMemoryBackingStore, traits::KVQBinaryStore};
-use plonky2::{
-    field::goldilocks_field::GoldilocksField,
-    plonk::{config::PoseidonGoldilocksConfig, proof::ProofWithPublicInputs},
-};
 
-fn get_network_magic_for_str(network: String) -> anyhow::Result<u64> {
-    match network.as_str() {
-        "dogeregtest" => Ok(NETWORK_MAGIC_DOGE_REGTEST),
-        "dogetestnet" => Ok(NETWORK_MAGIC_DOGE_TESTNET),
-        "dogemainnet" => Ok(NETWORK_MAGIC_DOGE_MAINNET),
-        _ => Err(anyhow::anyhow!("Invalid network {}", network)),
-    }
-}
 
 fn gen_user_registration_proofs<S: KVQBinaryStore>(
     store: &mut S,
@@ -110,7 +92,7 @@ fn _test_basic(args: &TreeProveTestArgs) -> Result<()> {
         agg_state_transition2.get_fingerprint()
     );
 
-    let mut proof_store = SimpleProofStoreMemory::new();
+    let proof_store = SimpleProofStoreMemory::new();
 
     let mut store = S::new();
     let base = gen_user_registration_proofs(&mut store, 4, QHashOut::from_values(1, 2, 3, 4));
@@ -164,19 +146,16 @@ pub async fn run(args: TreeProveTestArgs) -> Result<()> {
     println!(
         "
 ----------------------------------------
-|           CityRollup v{}             |
+|           CityRollup v{}          |
 ----------------------------------------
 ",
         build::PKG_VERSION
     );
-    //let indexer = city_indexer::Indexer::new(args).await?;
-    //indexer.listen().await?;
 
     //test_basic(&args)?;
 
     const D: usize = 2;
     type C = PoseidonGoldilocksConfig;
-    type F = GoldilocksField;
     type S = KVQSimpleMemoryBackingStore;
 
     let network_magic = get_network_magic_for_str(args.network)?;
@@ -200,7 +179,7 @@ pub async fn run(args: TreeProveTestArgs) -> Result<()> {
     let mut store = S::new();
     let base = gen_user_registration_proofs(&mut store, 4, allowed_circuit_hashes_root);
 
-    let mut proof_store = SimpleProofStoreMemory::new();
+    let proof_store = SimpleProofStoreMemory::new();
 
     let result = prove_tree_serial::<_, AggWTLeafAggregator, _, _, _, _, C, D>(
         proof_store,

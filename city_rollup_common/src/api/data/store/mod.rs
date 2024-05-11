@@ -1,14 +1,13 @@
 use city_common::binaryhelpers::bytes::CompressedPublicKey;
-use city_crypto::hash::{
-    base_types::{hash160::Hash160, hash256::Hash256},
-    qhashout::QHashOut,
-};
+use city_crypto::hash::base_types::hash160::Hash160;
+use city_crypto::hash::base_types::hash256::Hash256;
+use city_crypto::hash::qhashout::QHashOut;
 use kvq::traits::KVQSerializable;
-use plonky2::{
-    field::{goldilocks_field::GoldilocksField, types::PrimeField64},
-    hash::hash_types::RichField,
-};
-use serde::{Deserialize, Serialize};
+use plonky2::field::goldilocks_field::GoldilocksField;
+use plonky2::field::types::PrimeField64;
+use plonky2::hash::hash_types::RichField;
+use serde::Deserialize;
+use serde::Serialize;
 
 use crate::introspection::rollup::introspection_result::BTCRollupIntrospectionResultWithdrawal;
 
@@ -115,6 +114,7 @@ impl CityUserState {
     pub fn get_left_leaf(&self) -> QHashOut<F> {
         QHashOut::from_values(self.balance, self.nonce, self.alt_0, self.alt_1)
     }
+
     pub fn get_right_leaf(&self) -> QHashOut<F> {
         self.public_key
     }

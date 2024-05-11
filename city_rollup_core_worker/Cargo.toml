@@ -8,19 +8,18 @@ version = "0.1.0"
 plonky2 = { workspace = true }
 anyhow = { workspace = true }
 serde_json = { workspace = true }
-serde = { workspace = true }
-serde_with = { workspace = true }
-hex = { workspace = true }
-rand = { workspace = true }
-bitcoin = { workspace = true }
-reqwest = { workspace = true }
-url = { workspace = true }
-k256 = { workspace = true }
-city_crypto           = { path = "../city_crypto" }
+city_store = {path = "../city_store" }
 city_common_circuit   = { path = "../city_common_circuit" }
+city_rollup_circuit   = { path = "../city_rollup_circuit" }
+city_rollup_worker_dispatch = { path = "../city_rollup_worker_dispatch" }
 city_common           = { path = "../city_common" }
 city_rollup_common    = { path = "../city_rollup_common" }
-tokio                 = { workspace = true }
+city_macros = {path = "../city_macros"}
+r2d2 = { workspace = true }
+r2d2_redis = { workspace = true }
+bincode = {workspace = true}
+redis = {workspace = true}
+tokio = {workspace = true}
 
 [dev-dependencies]
 criterion = "0.5.1"

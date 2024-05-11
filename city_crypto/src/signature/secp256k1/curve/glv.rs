@@ -2,10 +2,12 @@ use num::rational::Ratio;
 use num::BigUint;
 use plonky2::field::secp256k1_base::Secp256K1Base;
 use plonky2::field::secp256k1_scalar::Secp256K1Scalar;
-use plonky2::field::types::{Field, PrimeField};
+use plonky2::field::types::Field;
+use plonky2::field::types::PrimeField;
 
 use super::curve_msm::msm_parallel;
-use super::curve_types::{AffinePoint, ProjectivePoint};
+use super::curve_types::AffinePoint;
+use super::curve_types::ProjectivePoint;
 use super::secp256k1::Secp256K1;
 
 pub const GLV_BETA: Secp256K1Base = Secp256K1Base([
@@ -31,9 +33,9 @@ const A2: Secp256K1Scalar = Secp256K1Scalar([6323353552219852760, 14980988506747
 
 const B2: Secp256K1Scalar = Secp256K1Scalar([16747920425669159701, 3496713202691238861, 0, 0]);
 
-/// Algorithm 15.41 in Handbook of Elliptic and Hyperelliptic Curve Cryptography.
-/// Decompose a scalar `k` into two small scalars `k1, k2` with `|k1|, |k2| < √p` that satisfy
-/// `k1 + s * k2 = k`.
+/// Algorithm 15.41 in Handbook of Elliptic and Hyperelliptic Curve
+/// Cryptography. Decompose a scalar `k` into two small scalars `k1, k2` with
+/// `|k1|, |k2| < √p` that satisfy `k1 + s * k2 = k`.
 /// Returns `(|k1|, |k2|, k1 < 0, k2 < 0)`.
 pub fn decompose_secp256k1_scalar(
     k: Secp256K1Scalar,
@@ -75,10 +77,11 @@ pub fn decompose_secp256k1_scalar(
     (k1, k2, k1_neg, k2_neg)
 }
 
-/// See Section 15.2.1 in Handbook of Elliptic and Hyperelliptic Curve Cryptography.
-/// GLV scalar multiplication `k * P = k1 * P + k2 * psi(P)`, where `k = k1 + s * k2` is the
-/// decomposition computed in `decompose_secp256k1_scalar(k)` and `psi` is the Secp256k1
-/// endomorphism `psi: (x, y) |-> (beta * x, y)` equivalent to scalar multiplication by `s`.
+/// See Section 15.2.1 in Handbook of Elliptic and Hyperelliptic Curve
+/// Cryptography. GLV scalar multiplication `k * P = k1 * P + k2 * psi(P)`,
+/// where `k = k1 + s * k2` is the decomposition computed in
+/// `decompose_secp256k1_scalar(k)` and `psi` is the Secp256k1 endomorphism
+/// `psi: (x, y) |-> (beta * x, y)` equivalent to scalar multiplication by `s`.
 pub fn glv_mul(p: ProjectivePoint<Secp256K1>, k: Secp256K1Scalar) -> ProjectivePoint<Secp256K1> {
     let (k1, k2, k1_neg, k2_neg) = decompose_secp256k1_scalar(k);
 
@@ -103,10 +106,14 @@ pub fn glv_mul(p: ProjectivePoint<Secp256K1>, k: Secp256K1Scalar) -> ProjectiveP
 mod tests {
     use anyhow::Result;
     use plonky2::field::secp256k1_scalar::Secp256K1Scalar;
-    use plonky2::field::types::{Field, Sample};
+    use plonky2::field::types::Field;
+    use plonky2::field::types::Sample;
 
-    use super::super::curve_types::{Curve, CurveScalar};
-    use super::super::glv::{decompose_secp256k1_scalar, glv_mul, GLV_S};
+    use super::super::curve_types::Curve;
+    use super::super::curve_types::CurveScalar;
+    use super::super::glv::decompose_secp256k1_scalar;
+    use super::super::glv::glv_mul;
+    use super::super::glv::GLV_S;
     use super::super::secp256k1::Secp256K1;
 
     #[test]

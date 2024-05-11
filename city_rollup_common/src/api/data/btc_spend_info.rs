@@ -1,12 +1,11 @@
 use city_crypto::hash::base_types::hash256::Hash256;
-use serde::{Deserialize, Serialize};
-
+use serde::Deserialize;
+use serde::Serialize;
 use serde_with::serde_as;
 
-use crate::introspection::{
-    rollup::introspection::BlockSpendIntrospectionHint, sighash::SigHashPreimage,
-    transaction::BTCTransaction,
-};
+use crate::introspection::rollup::introspection::BlockSpendIntrospectionHint;
+use crate::introspection::sighash::SigHashPreimage;
+use crate::introspection::transaction::BTCTransaction;
 
 #[serde_as]
 #[derive(Serialize, Deserialize, PartialEq, Clone, Debug)]

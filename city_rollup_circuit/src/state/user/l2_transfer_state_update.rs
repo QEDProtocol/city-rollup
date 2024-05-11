@@ -1,15 +1,15 @@
 use city_common::config::rollup_constants::GLOBAL_USER_TREE_HEIGHT;
-use city_common_circuit::{
-    builder::{comparison::CircuitBuilderComparison, hash::core::CircuitBuilderHashCore},
-    hash::merkle::gadgets::delta_merkle_proof::DeltaMerkleProofGadget,
-};
-use city_crypto::hash::{merkle::core::DeltaMerkleProofCore, qhashout::QHashOut};
-use plonky2::{
-    field::extension::Extendable,
-    hash::hash_types::RichField,
-    iop::{target::Target, witness::Witness},
-    plonk::{circuit_builder::CircuitBuilder, config::AlgebraicHasher},
-};
+use city_common_circuit::builder::comparison::CircuitBuilderComparison;
+use city_common_circuit::builder::hash::core::CircuitBuilderHashCore;
+use city_common_circuit::hash::merkle::gadgets::delta_merkle_proof::DeltaMerkleProofGadget;
+use city_crypto::hash::merkle::core::DeltaMerkleProofCore;
+use city_crypto::hash::qhashout::QHashOut;
+use plonky2::field::extension::Extendable;
+use plonky2::hash::hash_types::RichField;
+use plonky2::iop::target::Target;
+use plonky2::iop::witness::Witness;
+use plonky2::plonk::circuit_builder::CircuitBuilder;
+use plonky2::plonk::config::AlgebraicHasher;
 
 use super::user_state::UserStateGadget;
 
@@ -37,10 +37,12 @@ impl L2TransferStateUpdateGadget {
         let receiver_user_tree_delta_merkle_proof_gadget: DeltaMerkleProofGadget =
             DeltaMerkleProofGadget::add_virtual_to_u8h::<H, F, D>(builder, GLOBAL_USER_TREE_HEIGHT);
 
-        // ensure the receiver has a non-zero public key (i.e the receiver user already exists on the network)
+        // ensure the receiver has a non-zero public key (i.e the receiver user already
+        // exists on the network)
         builder.ensure_hash_is_non_zero(receiver_user_tree_delta_merkle_proof_gadget.siblings[0]);
 
-        // ensure the sender has a non-zero public key (i.e the receiver user already exists on the network)
+        // ensure the sender has a non-zero public key (i.e the receiver user already
+        // exists on the network)
         builder.ensure_hash_is_non_zero(sender_user_tree_delta_merkle_proof_gadget.siblings[0]);
 
         // ensure this is not a self transfer

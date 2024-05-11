@@ -1,22 +1,20 @@
-use city_crypto::{
-    field::conversions::bytes33_to_public_key,
-    hash::{base_types::felt252::hash256_le_to_felt252_hashout, qhashout::QHashOut},
-    signature::secp256k1::core::hash256_to_hashout_u224,
-};
-use plonky2::{hash::hash_types::RichField, plonk::config::AlgebraicHasher};
-use serde::{Deserialize, Serialize};
-
+use city_crypto::field::conversions::bytes33_to_public_key;
+use city_crypto::hash::base_types::felt252::hash256_le_to_felt252_hashout;
+use city_crypto::hash::qhashout::QHashOut;
+use city_crypto::signature::secp256k1::core::hash256_to_hashout_u224;
+use plonky2::hash::hash_types::RichField;
+use plonky2::plonk::config::AlgebraicHasher;
+use serde::Deserialize;
+use serde::Serialize;
 use serde_with::serde_as;
 
-use crate::introspection::{
-    sighash::{SigHashPreimage, SigHashPreimageConfig},
-    transaction::{BTCTransaction, BTCTransactionConfig},
-};
-
-use super::introspection_result::{
-    BTCRollupIntrospectionResult, BTCRollupIntrospectionResultDeposit,
-    BTCRollupIntrospectionResultWithdrawal,
-};
+use super::introspection_result::BTCRollupIntrospectionResult;
+use super::introspection_result::BTCRollupIntrospectionResultDeposit;
+use super::introspection_result::BTCRollupIntrospectionResultWithdrawal;
+use crate::introspection::sighash::SigHashPreimage;
+use crate::introspection::sighash::SigHashPreimageConfig;
+use crate::introspection::transaction::BTCTransaction;
+use crate::introspection::transaction::BTCTransactionConfig;
 
 #[serde_as]
 #[derive(Serialize, Deserialize, PartialEq, Clone, Debug)]
@@ -61,7 +59,8 @@ impl BlockSpendIntrospectionHint {
             if i as i32 != self.last_block_spend_index {
                 deposits.push(BTCRollupIntrospectionResultDeposit {
                     txid_224: QHashOut(hash256_to_hashout_u224(
-                        d.get_hash(), //self.sighash_preimage.transaction.inputs[self.current_spend_index].hash,
+                        d.get_hash(), /* self.sighash_preimage.transaction.inputs[self.
+                                       * current_spend_index].hash, */
                     )),
                     public_key: bytes33_to_public_key::<F>(&d.inputs[0].script[73..106]),
                     value: F::from_noncanonical_u64(d.outputs[0].value),

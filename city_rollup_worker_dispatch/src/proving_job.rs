@@ -1,5 +1,7 @@
-use serde::{Deserialize, Serialize};
-use serde_repr::{Deserialize_repr, Serialize_repr};
+use serde::Deserialize;
+use serde::Serialize;
+use serde_repr::Deserialize_repr;
+use serde_repr::Serialize_repr;
 
 #[derive(Serialize_repr, Deserialize_repr, PartialEq, Debug, Clone, Copy, Eq, Hash)]
 #[repr(u8)]
@@ -99,7 +101,9 @@ impl ToString for ProvingJobDataID {
 
 #[cfg(test)]
 mod tests {
-    use super::{ProvingJobDataID, ProvingJobDataType, ProvingJobType};
+    use super::ProvingJobDataID;
+    use super::ProvingJobDataType;
+    use super::ProvingJobType;
 
     #[test]
     fn test_decode() {

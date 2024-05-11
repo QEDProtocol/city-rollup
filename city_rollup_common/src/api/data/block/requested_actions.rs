@@ -1,10 +1,10 @@
 use city_common::binaryhelpers::bytes::CompressedPublicKey;
-use city_crypto::hash::{
-    base_types::{hash160::Hash160, hash256::Hash256},
-    qhashout::QHashOut,
-};
+use city_crypto::hash::base_types::hash160::Hash160;
+use city_crypto::hash::base_types::hash256::Hash256;
+use city_crypto::hash::qhashout::QHashOut;
 use plonky2::hash::hash_types::RichField;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use serde::Serialize;
 
 use crate::{introspection::transaction::BTCTransaction, qworker::job_id::QProvingJobDataID};
 
@@ -121,6 +121,8 @@ pub struct CityAddWithdrawalRequest {
     pub value: u64,
     pub nonce: u64,
 
+    pub withdrawal_id: u64,
+
     pub destination_type: u8,
     pub destination: Hash160,
     pub signature_proof_id: QProvingJobDataID,
@@ -131,6 +133,7 @@ impl CityAddWithdrawalRequest {
         user_id: u64,
         value: u64,
         nonce: u64,
+        withdrawal_id: u64,
         destination_type: u8,
         destination: Hash160,
         signature_proof_id: QProvingJobDataID,
@@ -140,6 +143,7 @@ impl CityAddWithdrawalRequest {
             user_id,
             value,
             nonce,
+            withdrawal_id,
             destination_type,
             destination,
             signature_proof_id,
@@ -166,14 +170,28 @@ impl CityProcessWithdrawalRequest {
 #[serde(bound = "")]
 pub struct CityRegisterUserRequest<F: RichField> {
     request_type: u8,
+    pub user_id: u64,
     pub public_key: QHashOut<F>,
 }
 
 impl<F: RichField> CityRegisterUserRequest<F> {
-    pub fn new(public_key: QHashOut<F>) -> Self {
+    pub fn new(user_id: u64, public_key: QHashOut<F>) -> Self {
         Self {
             request_type: 5,
+            user_id,
             public_key,
         }
     }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(bound = "")]
+#[serde(untagged)]
+pub enum CityRequest<F: RichField> {
+    CityTokenTransferRequest((u32, CityTokenTransferRequest)),
+    CityClaimDepositRequest((u32, CityClaimDepositRequest)),
+    CityAddWithdrawalRequest((u32, CityAddWithdrawalRequest)),
+    CityRegisterUserRequest((u32, CityRegisterUserRequest<F>)),
+    CityAddDepositRequest((u32, CityAddDepositRequest)),
+    CityProcessWithdrawalRequest((u32, CityProcessWithdrawalRequest)),
 }

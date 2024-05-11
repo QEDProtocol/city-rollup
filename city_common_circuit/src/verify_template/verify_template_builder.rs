@@ -1,11 +1,9 @@
-use plonky2::{
-    field::extension::Extendable,
-    hash::hash_types::RichField,
-    plonk::{
-        circuit_builder::CircuitBuilder,
-        proof::{OpeningSetTarget, ProofTarget, ProofWithPublicInputsTarget},
-    },
-};
+use plonky2::field::extension::Extendable;
+use plonky2::hash::hash_types::RichField;
+use plonky2::plonk::circuit_builder::CircuitBuilder;
+use plonky2::plonk::proof::OpeningSetTarget;
+use plonky2::plonk::proof::ProofTarget;
+use plonky2::plonk::proof::ProofWithPublicInputsTarget;
 
 use super::circuit_template::QEDCircuitVerifyTemplate;
 

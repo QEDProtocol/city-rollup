@@ -3,7 +3,7 @@ use city_common_circuit::{
         traits::qstandard::{QStandardCircuit, QStandardCircuitProvableWithProofStoreSync},
         zk_signature_wrapper::ZKSignatureWrapperCircuit,
     },
-    proof_minifier::pm_core::get_circuit_fingerprint_generic,
+    proof_minifier::pm_core::get_circuit_fingerprint_generic, treeprover::wrapper::TreeProverLeafCircuitWrapper,
 };
 use city_crypto::hash::{qhashout::QHashOut, traits::hasher::MerkleZeroHasher};
 
@@ -186,3 +186,6 @@ where
         self.prove_base(input, &signature_proof)
     }
 }
+
+pub type WCRAddL1WithdrawalCircuit<C, const D: usize> =
+    TreeProverLeafCircuitWrapper<CRAddL1WithdrawalCircuit<C, D>, C, D>;

@@ -1,20 +1,19 @@
-use crate::{
-    hash::{base_types::hash256::Hash256, qhashout::QHashOut},
-    signature::secp256k1::curve::{
-        curve_types::AffinePoint,
-        ecdsa::{ECDSAPublicKey, ECDSASignature},
-        secp256k1::Secp256K1,
-    },
-};
 use k256::elliptic_curve::group::GroupEncoding;
 use k256::elliptic_curve::point::DecompressPoint;
-use plonky2::{
-    field::{secp256k1_base::Secp256K1Base, secp256k1_scalar::Secp256K1Scalar},
-    hash::hash_types::{HashOut, RichField},
-};
-use serde::{Deserialize, Serialize};
-
+use plonky2::field::secp256k1_base::Secp256K1Base;
+use plonky2::field::secp256k1_scalar::Secp256K1Scalar;
+use plonky2::hash::hash_types::HashOut;
+use plonky2::hash::hash_types::RichField;
+use serde::Deserialize;
+use serde::Serialize;
 use serde_with::serde_as;
+
+use crate::hash::base_types::hash256::Hash256;
+use crate::hash::qhashout::QHashOut;
+use crate::signature::secp256k1::curve::curve_types::AffinePoint;
+use crate::signature::secp256k1::curve::ecdsa::ECDSAPublicKey;
+use crate::signature::secp256k1::curve::ecdsa::ECDSASignature;
+use crate::signature::secp256k1::curve::secp256k1::Secp256K1;
 
 pub fn secp256k1_scalar_from_bytes(bytes: &[u8], offset: usize) -> Secp256K1Scalar {
     let mut arr = [0u64; 4];

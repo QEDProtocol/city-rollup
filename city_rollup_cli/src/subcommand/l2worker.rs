@@ -7,14 +7,11 @@ pub async fn run(args: L2WorkerArgs) -> Result<()> {
     println!(
         "
 ----------------------------------------
-|           CityRollup v{}             |
+|           CityRollup v{}          |
 ----------------------------------------
 ",
         build::PKG_VERSION
     );
-    //let indexer = city_indexer::Indexer::new(args).await?;
-    //indexer.listen().await?;
-    city_rollup_core_orchestrator::debug::run_debug_demo_client(args);
-
+    city_rollup_core_worker::worker::run(args).await?;
     Ok(())
 }

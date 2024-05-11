@@ -88,7 +88,8 @@ impl BTCRollupIntrospectionResultWithdrawalGadget {
         &self,
         builder: &mut CircuitBuilder<F, D>,
     ) -> HashOutTarget {
-        //builder.hash_n_to_hash_no_pad::<H>([vec![self.value], self.script.to_vec()].concat())
+        //builder.hash_n_to_hash_no_pad::<H>([vec![self.value],
+        // self.script.to_vec()].concat())
         let script_length = self.script.len();
         assert!(
             script_length == 23 || script_length == 25,
@@ -121,7 +122,8 @@ impl BTCRollupIntrospectionResultWithdrawalGadget {
         builder.range_check(first_56, 56);
         builder.range_check(mid_56, 56);
         // disable p2sh withdrawals for now
-        // in the future we can add support by changing n_log in the range check below from 48 to 49
+        // in the future we can add support by changing n_log in the range check below
+        // from 48 to 49
         builder.range_check(last_48_with_flag, 48);
         value
     }

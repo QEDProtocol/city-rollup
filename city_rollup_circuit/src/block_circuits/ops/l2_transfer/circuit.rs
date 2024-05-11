@@ -4,7 +4,7 @@ use city_common_circuit::{
         traits::qstandard::{QStandardCircuit, QStandardCircuitProvableWithProofStoreSync},
         zk_signature_wrapper::ZKSignatureWrapperCircuit,
     },
-    proof_minifier::pm_core::get_circuit_fingerprint_generic,
+    proof_minifier::pm_core::get_circuit_fingerprint_generic, treeprover::wrapper::TreeProverLeafCircuitWrapper,
 };
 use city_crypto::hash::qhashout::QHashOut;
 use city_rollup_common::{
@@ -23,10 +23,8 @@ use plonky2::{
     },
 };
 
-use crate::{
-    introspection::gadgets::rollup::signature::compute_sig_action_hash_circuit,
-    state::user::l2_transfer_state_update::L2TransferStateUpdateGadget,
-};
+use crate::introspection::gadgets::rollup::signature::compute_sig_action_hash_circuit;
+use crate::state::user::l2_transfer_state_update::L2TransferStateUpdateGadget;
 
 #[derive(Debug, Clone)]
 pub struct L2TransferSingleGadget {
@@ -257,3 +255,6 @@ where
         self.prove_base(input, &signature_proof)
     }
 }
+
+pub type WCRL2TransferCircuit<C, const D: usize> =
+    TreeProverLeafCircuitWrapper<CRL2TransferCircuit<C, D>, C, D>;

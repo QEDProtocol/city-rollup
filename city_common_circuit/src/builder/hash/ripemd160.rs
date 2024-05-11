@@ -1,23 +1,25 @@
-use plonky2::{
-    field::extension::Extendable,
-    hash::hash_types::RichField,
-    iop::target::{BoolTarget, Target},
-    plonk::circuit_builder::CircuitBuilder,
-};
+use plonky2::field::extension::Extendable;
+use plonky2::hash::hash_types::RichField;
+use plonky2::iop::target::BoolTarget;
+use plonky2::iop::target::Target;
+use plonky2::plonk::circuit_builder::CircuitBuilder;
 
-use crate::{
-    builder::core::CircuitBuilderHelpersCore,
-    hash::{
-        base_types::{
-            hash160bytes::{CircuitBuilderHash160Bytes, Hash160BytesTarget},
-            hash256bytes::{CircuitBuilderHash256Bytes, Hash256BytesTarget},
-        },
-        hash_ops::{
-            add_arr_2, add_arr_2_const, add_arr_3, and_arr, bool_vec_to_arr_s, not_arr, or_arr,
-            rol_arr, split_le_no_drain, xor2_arr, xor3_arr,
-        },
-    },
-};
+use crate::builder::core::CircuitBuilderHelpersCore;
+use crate::hash::base_types::hash160bytes::CircuitBuilderHash160Bytes;
+use crate::hash::base_types::hash160bytes::Hash160BytesTarget;
+use crate::hash::base_types::hash256bytes::CircuitBuilderHash256Bytes;
+use crate::hash::base_types::hash256bytes::Hash256BytesTarget;
+use crate::hash::hash_ops::add_arr_2;
+use crate::hash::hash_ops::add_arr_2_const;
+use crate::hash::hash_ops::add_arr_3;
+use crate::hash::hash_ops::and_arr;
+use crate::hash::hash_ops::bool_vec_to_arr_s;
+use crate::hash::hash_ops::not_arr;
+use crate::hash::hash_ops::or_arr;
+use crate::hash::hash_ops::rol_arr;
+use crate::hash::hash_ops::split_le_no_drain;
+use crate::hash::hash_ops::xor2_arr;
+use crate::hash::hash_ops::xor3_arr;
 
 pub trait CircuitBuilderHashRipemd160<F: RichField + Extendable<D>, const D: usize> {
     fn hash_ripemd160_hash256_bytes(&mut self, value: Hash256BytesTarget) -> Hash160BytesTarget;

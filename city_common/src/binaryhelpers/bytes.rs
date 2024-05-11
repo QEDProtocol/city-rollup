@@ -1,6 +1,11 @@
-use serde::de::{self, Visitor};
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::fmt;
+
+use serde::de::Visitor;
+use serde::de::{self};
+use serde::Deserialize;
+use serde::Deserializer;
+use serde::Serialize;
+use serde::Serializer;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Ord, PartialOrd)]
 pub struct CompressedPublicKey(pub [u8; 33]);

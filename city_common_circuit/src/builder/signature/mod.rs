@@ -1,10 +1,10 @@
 use city_common::binaryhelpers::bytes::read_u32_le_at;
-use plonky2::{
-    field::{extension::Extendable, types::PrimeField64},
-    hash::hash_types::RichField,
-    iop::{target::Target, witness::Witness},
-    plonk::circuit_builder::CircuitBuilder,
-};
+use plonky2::field::extension::Extendable;
+use plonky2::field::types::PrimeField64;
+use plonky2::hash::hash_types::RichField;
+use plonky2::iop::target::Target;
+use plonky2::iop::witness::Witness;
+use plonky2::plonk::circuit_builder::CircuitBuilder;
 pub trait CircuitBuilderSignatureHelpers<F: RichField + Extendable<D>, const D: usize> {
     fn bytes33_to_public_key(&mut self, value: &[Target]) -> [Target; 9];
 }

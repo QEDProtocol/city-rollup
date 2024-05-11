@@ -7,9 +7,10 @@ use plonky2::hash::hash_types::RichField;
 use plonky2::iop::target::Target;
 use plonky2::plonk::circuit_builder::CircuitBuilder;
 
-use crate::u32::arithmetic_u32::{CircuitBuilderU32, U32Target};
-
-use super::{biguint::BigUintTarget, nonnative::NonNativeTarget};
+use super::biguint::BigUintTarget;
+use super::nonnative::NonNativeTarget;
+use crate::u32::arithmetic_u32::CircuitBuilderU32;
+use crate::u32::arithmetic_u32::U32Target;
 pub trait CircuitBuilderSplit<F: RichField + Extendable<D>, const D: usize> {
     fn split_u32_to_4_bit_limbs(&mut self, val: U32Target) -> Vec<Target>;
 
@@ -99,11 +100,11 @@ mod tests {
     use plonky2::field::types::Sample;
     use plonky2::iop::witness::PartialWitness;
     use plonky2::plonk::circuit_data::CircuitConfig;
-    use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
-
-    use crate::crypto::secp256k1::ecdsa::gadgets::nonnative::CircuitBuilderNonNative;
+    use plonky2::plonk::config::GenericConfig;
+    use plonky2::plonk::config::PoseidonGoldilocksConfig;
 
     use super::*;
+    use crate::crypto::secp256k1::ecdsa::gadgets::nonnative::CircuitBuilderNonNative;
 
     #[test]
     fn test_split_nonnative() -> Result<()> {

@@ -1,0 +1,23 @@
+[package]
+edition = "2021"
+name    = "city_redis_store"
+version = "0.1.0"
+
+[dependencies]
+plonky2 = { workspace = true }
+anyhow = { workspace = true }
+serde = { workspace = true }
+serde_repr = { workspace = true }
+postcard = { workspace = true }
+hex = { workspace = true }
+async-trait = { workspace = true }
+city_rollup_common           = { path = "../city_rollup_common" }
+redis                 = { workspace = true }
+rsmq_async            = { workspace = true }
+bincode = {workspace = true}
+bb8-redis = {workspace = true}
+
+[dev-dependencies]
+criterion = "0.5.1"
+rand_chacha = "0.3.1"
+hex-literal = "0.4.1"

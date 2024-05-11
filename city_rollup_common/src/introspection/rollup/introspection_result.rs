@@ -1,18 +1,16 @@
-use city_common::binaryhelpers::bytes::{read_u48_from_bytes_le, read_u56_from_bytes_le};
-use city_crypto::{
-    field::conversions::bytes33_to_public_key,
-    hash::{
-        base_types::{hash160::Hash160, hash256::Hash256},
-        merkle::core::compute_partial_merkle_root_from_leaves_algebraic,
-        qhashout::QHashOut,
-    },
-    signature::secp256k1::core::hash256_to_hashout_u224,
-};
-use plonky2::{
-    hash::hash_types::{HashOut, RichField},
-    plonk::config::AlgebraicHasher,
-};
-use serde::{Deserialize, Serialize};
+use city_common::binaryhelpers::bytes::read_u48_from_bytes_le;
+use city_common::binaryhelpers::bytes::read_u56_from_bytes_le;
+use city_crypto::field::conversions::bytes33_to_public_key;
+use city_crypto::hash::base_types::hash160::Hash160;
+use city_crypto::hash::base_types::hash256::Hash256;
+use city_crypto::hash::merkle::core::compute_partial_merkle_root_from_leaves_algebraic;
+use city_crypto::hash::qhashout::QHashOut;
+use city_crypto::signature::secp256k1::core::hash256_to_hashout_u224;
+use plonky2::hash::hash_types::HashOut;
+use plonky2::hash::hash_types::RichField;
+use plonky2::plonk::config::AlgebraicHasher;
+use serde::Deserialize;
+use serde::Serialize;
 
 pub const WITHDRAWAL_TYPE_BYTE_P2PKH: u8 = 0u8;
 pub const WITHDRAWAL_TYPE_BYTE_P2SH: u8 = 1u8;

@@ -1,12 +1,14 @@
-use bitcoin::consensus::{deserialize_partial, serialize};
+use bitcoin::consensus::deserialize_partial;
+use bitcoin::consensus::serialize;
 use bitcoin::VarInt;
 use city_crypto::hash::base_types::hash256::Hash256;
 use city_crypto::hash::core::btc::btc_hash256;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use serde::Serialize;
+use serde_with::serde_as;
 
 use super::sighash::SigHashPreimage;
 use super::size::BTCTransactionLayout;
-use serde_with::serde_as;
 #[derive(Serialize, Deserialize, PartialEq, Clone, Debug)]
 pub struct BTCTransaction {
     pub version: u32,
@@ -244,10 +246,9 @@ impl Default for BTCTransactionOutput {
 }
 #[cfg(test)]
 mod tests {
-    use bitcoin::{
-        consensus::encode::{deserialize, serialize},
-        Transaction,
-    };
+    use bitcoin::consensus::encode::deserialize;
+    use bitcoin::consensus::encode::serialize;
+    use bitcoin::Transaction;
 
     use crate::introspection::transaction::BTCTransaction;
 

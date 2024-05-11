@@ -4,9 +4,11 @@ use plonky2::hash::hash_types::RichField;
 use plonky2::iop::target::BoolTarget;
 use plonky2::plonk::circuit_builder::CircuitBuilder;
 
-use crate::hash::base_types::hash256::{CircuitBuilderHash, Hash256Target};
+use crate::hash::base_types::hash256::CircuitBuilderHash;
+use crate::hash::base_types::hash256::Hash256Target;
 use crate::traits::GenericCircuitMerkleHasher;
-use crate::u32::arithmetic_u32::{CircuitBuilderU32, U32Target};
+use crate::u32::arithmetic_u32::CircuitBuilderU32;
+use crate::u32::arithmetic_u32::U32Target;
 use crate::u32::interleaved_u32::CircuitBuilderB32;
 
 pub trait CircuitBuilderHashSha256<F: RichField + Extendable<D>, const D: usize> {
@@ -153,7 +155,8 @@ pub fn sha256_digest_block<F: RichField + Extendable<D>, const D: usize>(
     ];
 
     for i in 0..64 {
-        // Extend the first 16 words into the remaining 48 words w[16..63] of the message schedule array
+        // Extend the first 16 words into the remaining 48 words w[16..63] of the
+        // message schedule array
         if i >= 16 {
             let s0 = sigma(builder, w[(i + 1) & 0xf], 7, 18, 3);
             let s1 = sigma(builder, w[(i + 14) & 0xf], 17, 19, 10);
@@ -180,7 +183,8 @@ pub fn sha256_digest_block<F: RichField + Extendable<D>, const D: usize>(
         d = c;
         c = b;
         b = a;
-        a = builder.add_u32_lo(temp1, temp2); // add_many_u32 of 3 elements is the same
+        a = builder.add_u32_lo(temp1, temp2); // add_many_u32 of 3 elements is
+                                              // the same
     }
 
     // Add the compressed chunk to the current hash value
@@ -348,7 +352,8 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilderHashSha256<F, D
         ];
 
         // Initialize array of round constants:
-        // (first 32 bits of the fractional parts of the cube roots of the first 64 primes 2..311)
+        // (first 32 bits of the fractional parts of the cube roots of the first 64
+        // primes 2..311)
         let k256 = sha256_round_constants(self);
 
         // Pre-processing (Padding)
@@ -437,24 +442,30 @@ impl GenericCircuitMerkleHasher<Hash256Target> for Sha256Hasher {
 mod tests {
     use std::time::Instant;
 
-    use crate::builder::hash::sha256::sha256_digest_u32_array_with_byte_length;
-    use crate::hash::base_types::hash256::{CircuitBuilderHash, WitnessHash256};
-    use crate::u32::arithmetic_u32::CircuitBuilderU32;
-    use crate::u32::witness::WitnessU32;
-
-    use super::CircuitBuilderHashSha256;
-    use city_common::binaryhelpers::bytes::{bytes_to_u32_vec_be, u32_vec_to_bytes_be};
+    use city_common::binaryhelpers::bytes::bytes_to_u32_vec_be;
+    use city_common::binaryhelpers::bytes::u32_vec_to_bytes_be;
     use city_crypto::hash::base_types::hash256::Hash256;
     use city_crypto::hash::core::sha256::CoreSha256Hasher;
     use city_crypto::hash::qhashout::QHashOut;
     use hex;
     use plonky2::field::goldilocks_field::GoldilocksField;
-    use plonky2::field::types::{Field, PrimeField64};
+    use plonky2::field::types::Field;
+    use plonky2::field::types::PrimeField64;
     use plonky2::hash::poseidon::PoseidonHash;
-    use plonky2::iop::witness::{PartialWitness, WitnessWrite};
+    use plonky2::iop::witness::PartialWitness;
+    use plonky2::iop::witness::WitnessWrite;
     use plonky2::plonk::circuit_builder::CircuitBuilder;
     use plonky2::plonk::circuit_data::CircuitConfig;
-    use plonky2::plonk::config::{GenericConfig, Hasher, PoseidonGoldilocksConfig};
+    use plonky2::plonk::config::GenericConfig;
+    use plonky2::plonk::config::Hasher;
+    use plonky2::plonk::config::PoseidonGoldilocksConfig;
+
+    use super::CircuitBuilderHashSha256;
+    use crate::builder::hash::sha256::sha256_digest_u32_array_with_byte_length;
+    use crate::hash::base_types::hash256::CircuitBuilderHash;
+    use crate::hash::base_types::hash256::WitnessHash256;
+    use crate::u32::arithmetic_u32::CircuitBuilderU32;
+    use crate::u32::witness::WitnessU32;
 
     #[test]
     fn test_sha256_two_to_one() {

@@ -6,18 +6,15 @@ use city_common_circuit::{
     },
 };
 use city_crypto::hash::{
-    merkle::treeprover::TPCircuitFingerprintConfig, traits::hasher::MerkleZeroHasher,
+    merkle::treeprover::TPCircuitFingerprintConfig, qhashout::QHashOut, traits::hasher::MerkleZeroHasher
 };
 use plonky2::{
-    hash::hash_types::HashOut,
+    hash::hash_types::{HashOut, RichField},
     plonk::config::{AlgebraicHasher, GenericConfig},
 };
+use serde::{Deserialize, Serialize};
 
 use crate::block_circuits::ops::register_user::WCRUserRegistrationCircuit;
-
-use city_crypto::hash::qhashout::QHashOut;
-use plonky2::hash::hash_types::RichField;
-use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(bound = "")]

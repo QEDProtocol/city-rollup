@@ -1,19 +1,16 @@
-use city_crypto::{
-    hash::{base_types::hash256::Hash256, qhashout::QHashOut},
-    signature::secp256k1::core::hash256_to_hashout_u224,
-};
-use plonky2::{
-    hash::hash_types::{HashOut, RichField},
-    plonk::config::AlgebraicHasher,
-};
-use serde::{Deserialize, Serialize};
-
+use city_crypto::hash::base_types::hash256::Hash256;
+use city_crypto::hash::qhashout::QHashOut;
+use city_crypto::signature::secp256k1::core::hash256_to_hashout_u224;
+use plonky2::hash::hash_types::HashOut;
+use plonky2::hash::hash_types::RichField;
+use plonky2::plonk::config::AlgebraicHasher;
+use serde::Deserialize;
+use serde::Serialize;
 use serde_with::serde_as;
 
-use super::{
-    constants::{SIG_ACTION_CLAIM_DEPOSIT_MAGIC, SIG_ACTION_TRANSFER_MAGIC},
-    introspection_result::BTCRollupIntrospectionResultWithdrawal,
-};
+use super::constants::SIG_ACTION_CLAIM_DEPOSIT_MAGIC;
+use super::constants::SIG_ACTION_TRANSFER_MAGIC;
+use super::introspection_result::BTCRollupIntrospectionResultWithdrawal;
 
 /*
 fn public_key_enc_to_felts<F: RichField>(hash: &[u8; 33]) -> [F; 9] {

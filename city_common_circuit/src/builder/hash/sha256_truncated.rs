@@ -4,15 +4,18 @@ use plonky2::hash::hash_types::HashOutTarget;
 use plonky2::iop::target::BoolTarget;
 use plonky2::plonk::circuit_builder::CircuitBuilder;
 
-use crate::{
-    hash::base_types::hash192::{CircuitBuilderHash192, Hash192Target},
-    traits::GenericCircuitMerkleHasher,
-    u32::arithmetic_u32::{CircuitBuilderU32, U32Target},
-};
-
-use super::sha256::{
-    big_sigma, ch, maj, sha256_round_constants, sha256_start_state, sigma, CircuitBuilderHashSha256,
-};
+use super::sha256::big_sigma;
+use super::sha256::ch;
+use super::sha256::maj;
+use super::sha256::sha256_round_constants;
+use super::sha256::sha256_start_state;
+use super::sha256::sigma;
+use super::sha256::CircuitBuilderHashSha256;
+use crate::hash::base_types::hash192::CircuitBuilderHash192;
+use crate::hash::base_types::hash192::Hash192Target;
+use crate::traits::GenericCircuitMerkleHasher;
+use crate::u32::arithmetic_u32::CircuitBuilderU32;
+use crate::u32::arithmetic_u32::U32Target;
 
 pub trait CircuitBuilderTruncatedSha256<F: QRichField + Extendable<D>, const D: usize> {
     fn truncated_sha256(&mut self, data: &[U32Target]) -> Hash192Target;
@@ -66,7 +69,8 @@ impl<F: QRichField + Extendable<D>, const D: usize> CircuitBuilderTruncatedSha25
         ];
 
         for i in 0..64 {
-            // Extend the first 16 words into the remaining 48 words w[16..63] of the message schedule array
+            // Extend the first 16 words into the remaining 48 words w[16..63] of the
+            // message schedule array
             if i >= 16 {
                 let s0 = sigma(self, w[(i + 1) & 0xf], 7, 18, 3);
                 let s1 = sigma(self, w[(i + 14) & 0xf], 17, 19, 10);
@@ -91,7 +95,8 @@ impl<F: QRichField + Extendable<D>, const D: usize> CircuitBuilderTruncatedSha25
             d = c;
             c = b;
             b = a;
-            a = self.add_u32_lo(temp1, temp2); // add_many_u32 of 3 elements is the same
+            a = self.add_u32_lo(temp1, temp2); // add_many_u32 of 3 elements is
+                                               // the same
         }
 
         // Add the compressed chunk to the current hash value
@@ -182,10 +187,9 @@ mod tests {
     use plonky2::plonk::circuit_data::CircuitConfig;
     use plonky2::plonk::config::PoseidonGoldilocksConfig;
 
-    use crate::{
-        builder::hash::sha256_truncated::CircuitBuilderTruncatedSha256,
-        hash::base_types::hash192::{CircuitBuilderHash192, WitnessHash192},
-    };
+    use crate::builder::hash::sha256_truncated::CircuitBuilderTruncatedSha256;
+    use crate::hash::base_types::hash192::CircuitBuilderHash192;
+    use crate::hash::base_types::hash192::WitnessHash192;
 
     #[test]
     fn test_truncated_sha256_two_to_one() {

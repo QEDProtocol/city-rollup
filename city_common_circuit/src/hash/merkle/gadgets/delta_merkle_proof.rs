@@ -1,23 +1,23 @@
-use city_crypto::hash::{
-    merkle::core::{DeltaMerkleProof, DeltaMerkleProofBase, DeltaMerkleProofCore},
-    qhashout::QHashOut,
-    traits::hasher::MerkleZeroHasher,
-};
-use plonky2::{
-    field::extension::Extendable,
-    hash::hash_types::{HashOut, HashOutTarget, RichField},
-    iop::{target::Target, witness::Witness},
-    plonk::{circuit_builder::CircuitBuilder, config::AlgebraicHasher},
-};
+use city_crypto::hash::merkle::core::DeltaMerkleProof;
+use city_crypto::hash::merkle::core::DeltaMerkleProofBase;
+use city_crypto::hash::merkle::core::DeltaMerkleProofCore;
+use city_crypto::hash::qhashout::QHashOut;
+use city_crypto::hash::traits::hasher::MerkleZeroHasher;
+use plonky2::field::extension::Extendable;
+use plonky2::hash::hash_types::HashOut;
+use plonky2::hash::hash_types::HashOutTarget;
+use plonky2::hash::hash_types::RichField;
+use plonky2::iop::target::Target;
+use plonky2::iop::witness::Witness;
+use plonky2::plonk::circuit_builder::CircuitBuilder;
+use plonky2::plonk::config::AlgebraicHasher;
 pub const NUM_HASH_OUT_ELEMENTS: usize = 4;
 use bitflags::bitflags;
 
-use crate::builder::{
-    connect::CircuitBuilderConnectHelpers, hash::core::CircuitBuilderHashCore,
-    optional_inputs::CircuitBuilderOptionalInputs,
-};
-
 use super::merkle_proof::MerkleProofGadget;
+use crate::builder::connect::CircuitBuilderConnectHelpers;
+use crate::builder::hash::core::CircuitBuilderHashCore;
+use crate::builder::optional_inputs::CircuitBuilderOptionalInputs;
 
 bitflags! {
   #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
@@ -561,11 +561,11 @@ mod tests {
     use plonky2::iop::witness::PartialWitness;
     use plonky2::plonk::circuit_builder::CircuitBuilder;
     use plonky2::plonk::circuit_data::CircuitConfig;
-    use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
-
-    use crate::hash::merkle::gadgets::delta_merkle_proof::DeltaMerkleProofGadget;
+    use plonky2::plonk::config::GenericConfig;
+    use plonky2::plonk::config::PoseidonGoldilocksConfig;
 
     use super::OptionalDeltaMerkleProofGadget;
+    use crate::hash::merkle::gadgets::delta_merkle_proof::DeltaMerkleProofGadget;
 
     const D: usize = 2;
     type C = PoseidonGoldilocksConfig;
