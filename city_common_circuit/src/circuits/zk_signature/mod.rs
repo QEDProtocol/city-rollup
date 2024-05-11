@@ -19,7 +19,6 @@ use self::fixed_public_key::ZKSignatureCircuitSimpleFixedPublicKey;
 use self::inner::ZKSignatureCircuitInner;
 use super::traits::qstandard::provable::QStandardCircuitProvable;
 use super::traits::qstandard::QStandardCircuit;
-use crate::circuits::l1_secp256k1_signature::L1Secp256K1SignatureCircuit;
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(bound = "")]
 pub struct ZKSignatureCircuitInput<F: RichField> {

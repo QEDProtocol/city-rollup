@@ -37,10 +37,10 @@ use kvq::traits::KVQSerializable;
 use kvq_store_redb::KVQReDBStore;
 use redb::Table;
 
-use crate::debug::scenario::block_planner::planner::CityOpJobIds;
-use crate::debug::scenario::block_planner::tree_helper::plan_tree_prover_from_leaves;
 use crate::orchestrator::CityScenarioInputWithJobIds;
 use crate::orchestrator::Orchestrator;
+use crate::tree_helper::plan_tree_prover_from_leaves;
+use crate::tree_helper::CityOpJobIds;
 
 impl Orchestrator {
     pub async fn process_add_deposit_request<S: KVQBinaryStore>(

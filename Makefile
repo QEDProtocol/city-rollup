@@ -88,44 +88,16 @@ shutdown:
 .PHONY: relaunch
 relaunch: shutdown launch
 
-.PHONY: cr_set
-cr_set:
-	curl http://localhost:3000 \
-		-X POST \
-		-H "Content-Type: application/json" \
-		--data '{"method":"cr_set","params":["abcd","abcd"],"id":1,"jsonrpc":"2.0"}' | jq
-
-.PHONY: cr_get
-cr_get:
-	curl http://localhost:3000 \
-		-X POST \
-		-H "Content-Type: application/json" \
-		--data '{"method":"cr_get","params":"abcd","id":1,"jsonrpc":"2.0"}' | jq
-
-.PHONY: cr_push
-cr_push:
-	curl http://localhost:3000 \
-		-X POST \
-		-H "Content-Type: application/json" \
-		--data '{"method":"cr_push","params":[1,"abcd"],"id":1,"jsonrpc":"2.0"}' | jq
-
-.PHONY: cr_pull
-cr_pull:
-	curl http://localhost:3000 \
-		-X POST \
-		-H "Content-Type: application/json" \
-		--data '{"method":"cr_pull","params":1,"id":1,"jsonrpc":"2.0"}' | jq
-
 .PHONY: cr_register_user
 cr_register_user:
 	curl http://localhost:3000 \
 		-X POST \
 		-H "Content-Type: application/json" \
-		--data '{"method":"cr_register_user","params":"5f4d13aae1ba684e63b5ce6510ee35722005640d6433bbe56f4c250268efb254","id":1,"jsonrpc":"2.0"}' | jq
+		--data @static/register_user.json
 
 .PHONY: cr_token_transfer
 cr_token_transfer:
 	curl http://localhost:3000 \
 		-X POST \
 		-H "Content-Type: application/json" \
-		--data @proof.json | jq
+		--data @static/token_transfer.json | jq

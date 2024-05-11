@@ -2,10 +2,6 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use city_common::cli::args::OrchestratorArgs;
-use city_crypto::hash::merkle::treeprover::AggStateTransitionInput;
-use city_crypto::hash::merkle::treeprover::AggStateTransitionWithEventsInput;
-use city_crypto::hash::merkle::treeprover::AggWTLeafAggregator;
-use city_crypto::hash::merkle::treeprover::AggWTTELeafAggregator;
 use city_crypto::hash::qhashout::QHashOut;
 use city_macros::async_infinite_loop;
 use city_macros::define_table;
@@ -21,8 +17,6 @@ use city_rollup_common::api::data::store::CityL2BlockState;
 use city_rollup_common::introspection::rollup::constants::get_network_magic_for_str;
 use city_rollup_common::introspection::transaction::BTCTransaction;
 use city_rollup_common::link::link_api::BTCLinkAPI;
-use city_rollup_common::qworker::job_id::ProvingJobCircuitType;
-use city_rollup_common::qworker::job_id::QProvingJobDataID;
 use city_rollup_common::qworker::job_witnesses::op::CRAddL1DepositCircuitInput;
 use city_rollup_common::qworker::job_witnesses::op::CRAddL1WithdrawalCircuitInput;
 use city_rollup_common::qworker::job_witnesses::op::CRClaimL1DepositCircuitInput;
@@ -47,8 +41,6 @@ use plonky2::hash::hash_types::RichField;
 use redb::Database;
 use redb::Table;
 use redb::TableDefinition;
-
-use crate::debug::scenario::block_planner::tree_helper::plan_tree_prover_from_leaves;
 
 pub const DEFAULT_BLOCK_TIME_IN_SECS: u32 = 4;
 pub const SEQUENCING_TICK: u64 = 100;

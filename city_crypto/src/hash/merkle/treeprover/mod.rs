@@ -3,7 +3,7 @@ use plonky2::{
     hash::{hash_types::RichField, poseidon::PoseidonHash},
     plonk::config::{AlgebraicHasher, Hasher},
 };
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 
 use crate::hash::qhashout::QHashOut;
 pub trait WithDummyStateTransition<F: RichField> {
