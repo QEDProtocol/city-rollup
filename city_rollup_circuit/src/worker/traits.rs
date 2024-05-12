@@ -50,6 +50,21 @@ pub trait QWorkerCircuitAggWithDataSync<
         job_id: QProvingJobDataID,
     ) -> anyhow::Result<ProofWithPublicInputs<C::F, C, D>>;
 }
+
+pub trait QWorkerCircuitCustomWithDataSync<
+    V: QWorkerVerifyHelper<C, D>,
+    S: QProofStoreReaderSync,
+    C: GenericConfig<D>,
+    const D: usize,
+>
+{
+    fn prove_q_worker_custom(
+        &self,
+        verify_helper: &V,
+        store: &S,
+        job_id: QProvingJobDataID,
+    ) -> anyhow::Result<ProofWithPublicInputs<C::F, C, D>>;
+}
 impl<
         SCP: QStandardCircuitProvableWithProofStoreSync<S, I, C, D>,
         V: QWorkerVerifyHelper<C, D>,
