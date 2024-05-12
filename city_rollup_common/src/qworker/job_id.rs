@@ -99,6 +99,8 @@ pub enum ProvingJobCircuitType {
     GenerateFinalSigHashProof = 34,
     GenerateFinalSigHashProofGroth16 = 35,
 
+    AggUserRegisterClaimDepositL2Transfer = 40,
+
     DummyRegisterUserAggregate = 48,
     DummyAddL1DepositAggregate = 49,
     DummyClaimL1DepositAggregate = 50,
@@ -140,6 +142,7 @@ impl TryFrom<u8> for ProvingJobCircuitType {
             33 => Ok(ProvingJobCircuitType::GenerateSigHashIntrospectionProof),
             34 => Ok(ProvingJobCircuitType::GenerateFinalSigHashProof),
             35 => Ok(ProvingJobCircuitType::GenerateFinalSigHashProofGroth16),
+            40 => Ok(ProvingJobCircuitType::AggUserRegisterClaimDepositL2Transfer),
             48 => Ok(ProvingJobCircuitType::DummyRegisterUserAggregate),
             49 => Ok(ProvingJobCircuitType::DummyAddL1DepositAggregate),
             50 => Ok(ProvingJobCircuitType::DummyClaimL1DepositAggregate),
@@ -308,6 +311,19 @@ impl QProvingJobDataID {
             group_id,
             sub_group_id,
             task_index,
+            data_type: ProvingJobDataType::InputWitness,
+            data_index: 0,
+        }
+    }
+    pub fn block_agg_state_part_1_input_witness(block_id: u64) -> Self {
+        Self {
+            topic: QJobTopic::GenerateStandardProof,
+            goal_id: block_id,
+            group_id: ProvingJobCircuitType::AggUserRegisterClaimDepositL2Transfer
+                .to_circuit_group_id(),
+            circuit_type: ProvingJobCircuitType::AggUserRegisterClaimDepositL2Transfer,
+            sub_group_id: 0,
+            task_index: 0,
             data_type: ProvingJobDataType::InputWitness,
             data_index: 0,
         }

@@ -1,10 +1,12 @@
-use city_common_circuit::builder::core::CircuitBuilderHelpersCore;
-use city_common_circuit::builder::hash::core::CircuitBuilderHashCore;
-use city_common_circuit::circuits::traits::qstandard::QStandardCircuit;
-use city_common_circuit::circuits::traits::qstandard::QStandardCircuitProvableWithProofStoreSync;
-use city_common_circuit::circuits::zk_signature_wrapper::ZKSignatureWrapperCircuit;
-use city_common_circuit::proof_minifier::pm_core::get_circuit_fingerprint_generic;
-use city_common_circuit::treeprover::wrapper::TreeProverLeafCircuitWrapper;
+use city_common_circuit::{
+    builder::{core::CircuitBuilderHelpersCore, hash::core::CircuitBuilderHashCore},
+    circuits::{
+        traits::qstandard::{QStandardCircuit, QStandardCircuitProvableWithProofStoreSync},
+        zk_signature_wrapper::ZKSignatureWrapperCircuit,
+    },
+    proof_minifier::pm_core::get_circuit_fingerprint_generic,
+    treeprover::wrapper::TreeProverLeafCircuitWrapper,
+};
 use city_crypto::hash::qhashout::QHashOut;
 use city_rollup_common::introspection::rollup::constants::SIG_ACTION_TRANSFER_MAGIC;
 use city_rollup_common::qworker::job_witnesses::op::CRL2TransferCircuitInput;

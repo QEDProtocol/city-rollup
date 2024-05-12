@@ -112,7 +112,7 @@ impl Orchestrator {
         println!("current building block: {}", block_id);
 
         let mut redis_store = self.redis_store.clone();
-        let (job_ids, _) = {
+        let (job_ids, _, _) = {
             let mut store = KVQReDBStore::new(wxn.open_table(KV)?);
 
             let txs = self.get_txs(block_id, &mut redis_store).await?;
