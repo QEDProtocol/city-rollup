@@ -23,6 +23,25 @@ where
     pub minifier: OASProofMinifierDynamicChain<D, C::F, C>,
     pub network_magic: u64,
 }
+
+impl<AC: QStandardCircuit<C, D>, C: 'static + GenericConfig<D>, const D: usize>
+    TreeProverLeafCircuitWrapper<AC, C, D>
+where
+    C::Hasher: AlgebraicHasher<C::F>,
+{
+    pub fn new(circuit: AC, network_magic: u64, n_minifiers: usize) -> Self {
+        let minifier = OASProofMinifierDynamicChain::new(
+            circuit.get_verifier_config_ref(),
+            circuit.get_common_circuit_data_ref(),
+            n_minifiers,
+        );
+        Self {
+            circuit,
+            minifier,
+            network_magic,
+        }
+    }
+}
 impl<AC, C: 'static + GenericConfig<D>, const D: usize> QStandardCircuit<C, D>
     for TreeProverLeafCircuitWrapper<AC, C, D>
 where

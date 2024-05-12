@@ -5,7 +5,7 @@ use city_common_circuit::field::cubic::CubicExtendable;
 use city_crypto::hash::{base_types::hash256::Hash256, qhashout::QHashOut};
 use city_rollup_circuit::{
     sighash_circuits::sighash::CRSigHashCircuit,
-    worker::{prover::QWorkerStandardProver, toolbox::circuits::CRWorkerToolboxCoreCircuits},
+    worker::{prover::QWorkerStandardProver, toolbox::root::CRWorkerToolboxRootCircuits},
 };
 use city_rollup_common::{
     api::data::{block::rpc_request::CityRegisterUserRPCRequest, store::CityL2BlockState},
@@ -107,7 +107,8 @@ where
 fn prove_block_demo(transactions: &[BTCTransaction]) -> anyhow::Result<()> {
     let network_magic = NETWORK_MAGIC_DOGE_REGTEST;
 
-    let toolbox_circuits = CRWorkerToolboxCoreCircuits::<C, D>::new(network_magic);
+    let toolbox_circuits = CRWorkerToolboxRootCircuits::<C, D>::new(network_magic);
+    toolbox_circuits.print_op_common_data();
 
     const D: usize = 2;
     type C = PoseidonGoldilocksConfig;
@@ -116,6 +117,9 @@ fn prove_block_demo(transactions: &[BTCTransaction]) -> anyhow::Result<()> {
     type PS = SimpleProofStoreMemory;
     let mut proof_store = PS::new();
     let mut store = S::new();
+    let mut timer = DebugTimer::new("prove_block_demo");
+
+    timer.lap("start creating wallets");
 
     let mut wallet = DebugScenarioWallet::<C, D>::new();
 
@@ -131,6 +135,9 @@ fn prove_block_demo(transactions: &[BTCTransaction]) -> anyhow::Result<()> {
     let user_1_public_key = wallet.add_zk_private_key(QHashOut::from_values(101, 101, 101, 101));
     let user_2_public_key = wallet.add_zk_private_key(QHashOut::from_values(102, 102, 102, 102));
 
+    timer.lap("end creating wallets");
+
+    timer.lap("start setup initial state");
     let register_user_rpc_events = CityRegisterUserRPCRequest::new_batch(&[
         user_0_public_key,
         user_1_public_key,
@@ -148,6 +155,8 @@ fn prove_block_demo(transactions: &[BTCTransaction]) -> anyhow::Result<()> {
 
     CityStore::set_block_state(&mut store, &block_0_state)?;
 
+    timer.lap("end setup initial state");
+    timer.lap("start process state block 1 RPC");
     let mut block_1_builder = DebugRPCProcessor::<F, D>::new(1);
     block_1_builder.process_register_users(&register_user_rpc_events)?;
 
@@ -159,11 +168,15 @@ fn prove_block_demo(transactions: &[BTCTransaction]) -> anyhow::Result<()> {
     );
 
     let mut block_1_planner = CityOrchestratorBlockPlanner::<S, PS>::new(
-        toolbox_circuits.fingerprints.clone(),
+        toolbox_circuits.core.fingerprints.clone(),
         block_0_state,
     );
-    let (block_1_job_ids, block_1_state_transition) =
+    timer.lap("end process state block 1 RPC");
+    timer.lap("start process requests block 1");
+
+    let (block_1_job_ids, block_1_state_transition, block_1_end_jobs) =
         block_1_planner.process_requests(&mut store, &mut proof_store, &block_1_requested)?;
+    timer.lap("end process requests block 1");
     /*println!(
         "block_1_job_ids: {}",
         serde_json::to_string(&block_1_job_ids).unwrap()
@@ -175,13 +188,20 @@ fn prove_block_demo(transactions: &[BTCTransaction]) -> anyhow::Result<()> {
     );
 
     let mut worker = QWorkerStandardProver::new();
+    timer.lap("start proving op jobs");
 
     let all_job_ids = block_1_job_ids.plan_jobs();
     for job in all_job_ids {
-        println!("proving job: {:?}", job);
+        worker.prove::<PS, _, C, D>(&mut proof_store, &toolbox_circuits, job)?;
+    }
+    timer.lap("start proving end jobs");
+
+    for job in block_1_end_jobs {
         worker.prove::<PS, _, C, D>(&mut proof_store, &toolbox_circuits, job)?;
     }
 
+    timer.lap("end proving jobs");
+    /*
     let root_proof_ids = block_1_job_ids.get_root_proof_outputs();
 
     let register_users_proof =
@@ -189,7 +209,7 @@ fn prove_block_demo(transactions: &[BTCTransaction]) -> anyhow::Result<()> {
 
     let add_deposit_proof =
         proof_store.get_proof_by_id::<C, D>(root_proof_ids.add_deposit_job_root_id)?;
-    println!("got register_users_proof: {:?}", register_users_proof);
+    println!("got register_users_proof: {:?}", register_users_proof);*/
     Ok(())
 }
 fn main() {

@@ -35,11 +35,14 @@ use plonky2::{
 };
 
 use crate::{
-    block_circuits::ops::{
-        add_l1_deposit::WCRAddL1DepositCircuit, add_l1_withdrawal::CRAddL1WithdrawalCircuit,
-        claim_l1_deposit::CRClaimL1DepositCircuit, l2_transfer::circuit::CRL2TransferCircuit,
-        process_l1_withdrawal::WCRProcessL1WithdrawalCircuit,
-        register_user::WCRUserRegistrationCircuit,
+    block_circuits::{
+        ops::{
+            add_l1_deposit::WCRAddL1DepositCircuit, add_l1_withdrawal::CRAddL1WithdrawalCircuit,
+            claim_l1_deposit::CRClaimL1DepositCircuit, l2_transfer::circuit::CRL2TransferCircuit,
+            process_l1_withdrawal::WCRProcessL1WithdrawalCircuit,
+            register_user::WCRUserRegistrationCircuit,
+        },
+        root_aggregators::user_register_claim_deposits_l2_transfer::CRAggUserRegisterClaimDepositL2TransferCircuit,
     },
     worker::traits::{
         QWorkerCircuitAggWithDataSync, QWorkerCircuitSimpleWithDataSync, QWorkerGenericProver,
@@ -340,6 +343,9 @@ where
                 self.l1_secp256k1_signature.get_verifier_triplet()
             }
             ProvingJobCircuitType::Unknown => panic!("cannot get circuit data for Unknown"),
+            ProvingJobCircuitType::AggUserRegisterClaimDepositL2Transfer => {
+                panic!("cannot get circuit data for AggUserRegisterClaimDepositL2Transfer")
+            }
         }
     }
 
@@ -443,6 +449,7 @@ where
             ProvingJobCircuitType::WrappedSignatureProof => todo!(),
             ProvingJobCircuitType::Secp256K1SignatureProof => todo!(),
             ProvingJobCircuitType::Unknown => todo!(),
+            ProvingJobCircuitType::AggUserRegisterClaimDepositL2Transfer => todo!(),
         }
     }
 }

@@ -5,6 +5,7 @@ use city_common_circuit::{
         zk_signature_wrapper::ZKSignatureWrapperCircuit,
     },
     proof_minifier::pm_core::get_circuit_fingerprint_generic,
+    treeprover::wrapper::TreeProverLeafCircuitWrapper,
 };
 use city_crypto::hash::qhashout::QHashOut;
 use city_rollup_common::{
@@ -257,3 +258,6 @@ where
         self.prove_base(input, &signature_proof)
     }
 }
+
+pub type WCRL2TransferCircuit<C, const D: usize> =
+    TreeProverLeafCircuitWrapper<CRL2TransferCircuit<C, D>, C, D>;

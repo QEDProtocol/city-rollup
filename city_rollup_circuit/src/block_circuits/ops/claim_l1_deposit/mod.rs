@@ -4,6 +4,7 @@ use city_common_circuit::{
         traits::qstandard::{QStandardCircuit, QStandardCircuitProvableWithProofStoreSync},
     },
     proof_minifier::pm_core::get_circuit_fingerprint_generic,
+    treeprover::wrapper::TreeProverLeafCircuitWrapper,
 };
 use city_crypto::hash::qhashout::QHashOut;
 use city_rollup_common::qworker::{
@@ -193,3 +194,6 @@ where
         self.prove_base(input, &signature_proof)
     }
 }
+
+pub type WCRClaimL1DepositCircuit<C, const D: usize> =
+    TreeProverLeafCircuitWrapper<CRClaimL1DepositCircuit<C, D>, C, D>;

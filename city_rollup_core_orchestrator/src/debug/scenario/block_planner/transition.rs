@@ -2,7 +2,10 @@ use city_crypto::hash::{
     merkle::treeprover::{AggStateTransition, AggStateTransitionWithEvents},
     qhashout::QHashOut,
 };
-use city_rollup_common::qworker::job_id::QProvingJobDataID;
+use city_rollup_common::qworker::{
+    job_id::QProvingJobDataID,
+    job_witnesses::agg::CRAggUserRegisterClaimDepositL2TransferCircuitInput,
+};
 use plonky2::hash::hash_types::RichField;
 use serde::{Deserialize, Serialize};
 
@@ -17,6 +20,29 @@ pub struct CityRootStateTransitions<F: RichField> {
     pub add_withdrawals: AggStateTransition<F>,
     pub process_withdrawals: AggStateTransitionWithEvents<F>,
     pub add_deposits: AggStateTransitionWithEvents<F>,
+}
+
+impl<F: RichField> CityRootStateTransitions<F> {
+    pub fn get_block_state_witness_part_1(
+        &self,
+        jobs: &CityOpRootJobIds,
+    ) -> CRAggUserRegisterClaimDepositL2TransferCircuitInput<F> {
+        CRAggUserRegisterClaimDepositL2TransferCircuitInput {
+            op_register_user_transition_user_state_tree: self.register_users,
+            op_register_user_proof_id: jobs.register_user_job_root_id,
+            op_claim_l1_deposit_transition_deposit_tree: AggStateTransition::new(
+                self.start_deposit_tree_root,
+                self.add_deposits.state_transition_start,
+            ),
+            op_claim_l1_deposit_transition_user_state_tree: AggStateTransition::new(
+                self.register_users.state_transition_end,
+                self.token_transfers.state_transition_start,
+            ),
+            op_claim_l1_deposit_proof_id: jobs.claim_deposit_job_root_id,
+            op_l2_transfer_transition_user_state_tree: self.token_transfers,
+            op_l2_transfer_proof_id: jobs.token_transfer_job_root_id,
+        }
+    }
 }
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(bound = "")]

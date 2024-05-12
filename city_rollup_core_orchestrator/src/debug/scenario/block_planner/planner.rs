@@ -46,7 +46,11 @@ impl<S: KVQBinaryStore, PS: QProofStore> CityOrchestratorBlockPlanner<S, PS> {
         store: &mut S,
         proof_store: &mut PS,
         requested_actions: &CityScenarioRequestedActions<F>,
-    ) -> anyhow::Result<(CityOpJobIds, CityRootStateTransitions<F>)> {
+    ) -> anyhow::Result<(
+        CityOpJobIds,
+        CityRootStateTransitions<F>,
+        Vec<QProvingJobDataID>,
+    )> {
         let start_deposit_tree_root =
             CityStore::get_deposit_tree_root(store, self.processor.checkpoint_id)?;
 
@@ -259,6 +263,7 @@ impl<S: KVQBinaryStore, PS: QProofStore> CityOrchestratorBlockPlanner<S, PS> {
             process_withdrawal_job_ids,
             add_deposit_job_ids,
         };
+
         let transition = CityRootStateTransitions {
             start_deposit_tree_root,
             start_withdrawal_tree_root,
@@ -269,6 +274,16 @@ impl<S: KVQBinaryStore, PS: QProofStore> CityOrchestratorBlockPlanner<S, PS> {
             process_withdrawals: root_transition_process_withdrawals,
             add_deposits: root_transition_add_deposits,
         };
-        Ok((job_ids, transition))
+
+        let root_ids = job_ids.get_root_proof_outputs();
+        let block_state_witness_part_1 = transition.get_block_state_witness_part_1(&root_ids);
+        let block_state_part_1_id =
+            QProvingJobDataID::block_agg_state_part_1_input_witness(self.processor.checkpoint_id);
+        proof_store.set_bytes_by_id(
+            block_state_part_1_id,
+            &bincode::serialize(&block_state_witness_part_1)?,
+        )?;
+
+        Ok((job_ids, transition, vec![block_state_part_1_id]))
     }
 }

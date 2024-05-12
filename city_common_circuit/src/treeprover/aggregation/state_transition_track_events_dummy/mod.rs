@@ -60,7 +60,7 @@ where
         builder.register_public_inputs(&state_transition_hash.elements);
         builder.register_public_inputs(&event_transition_hash.elements);
 
-        pad_circuit_degree::<C::F, D>(&mut builder, 13);
+        pad_circuit_degree::<C::F, D>(&mut builder, 12);
         let circuit_data = builder.build::<C>();
 
         let fingerprint = QHashOut(get_circuit_fingerprint_generic(&circuit_data.verifier_only));
