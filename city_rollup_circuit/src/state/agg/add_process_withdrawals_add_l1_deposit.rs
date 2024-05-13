@@ -48,13 +48,13 @@ impl AggAddProcessL1WithdrawalAddL1DepositGadget {
                 .state_transition_end,
         };
 
-        let deposit_state_tree_transition = op_add_l1_deposit_transition_deposit_tree;
+        let deposit_tree_transition = op_add_l1_deposit_transition_deposit_tree;
         let combined_state_transition = AggStateTransitionGadget::combine_many::<H, F, D>(
             builder,
             &[
                 user_state_tree_transition,
                 withdrawal_tree_transition,
-                deposit_state_tree_transition,
+                deposit_tree_transition,
             ],
         );
 

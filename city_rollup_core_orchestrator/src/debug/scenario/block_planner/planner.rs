@@ -11,6 +11,7 @@ use city_rollup_common::{
     qworker::{
         fingerprints::CRWorkerToolboxCoreCircuitFingerprints,
         job_id::{ProvingJobCircuitType, QProvingJobDataID},
+        job_witnesses::agg::CRBlockStateTransitionCircuitInput,
         proof_store::QProofStore,
     },
 };
@@ -298,10 +299,28 @@ impl<S: KVQBinaryStore, PS: QProofStore> CityOrchestratorBlockPlanner<S, PS> {
             &bincode::serialize(&block_state_witness_part_2)?,
         )?;
 
+        let block_state_transition_input = CRBlockStateTransitionCircuitInput::from_steps(
+            block_state_part_1_id.get_output_id(),
+            &block_state_witness_part_1,
+            block_state_part_2_id.get_output_id(),
+            &block_state_witness_part_2,
+        );
+        let block_state_transition_id =
+            QProvingJobDataID::block_state_transition_input_witness(self.processor.checkpoint_id);
+
+        proof_store.set_bytes_by_id(
+            block_state_transition_id,
+            &bincode::serialize(&block_state_transition_input)?,
+        )?;
+
         Ok((
             job_ids,
             transition,
-            vec![block_state_part_1_id, block_state_part_2_id],
+            vec![
+                block_state_part_1_id,
+                block_state_part_2_id,
+                block_state_transition_id,
+            ],
         ))
     }
 }
