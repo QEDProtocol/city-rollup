@@ -1,6 +1,5 @@
 use city_common_circuit::{
-    circuits::traits::qstandard::QStandardCircuit,
-    proof_minifier::{pm_chain::OASProofMinifierChain, pm_core::get_circuit_fingerprint_generic},
+    circuits::traits::qstandard::QStandardCircuit, proof_minifier::pm_chain::OASProofMinifierChain,
     treeprover::aggregation::gadgets::AggStateTransitionProofValidityGadget,
 };
 use city_crypto::hash::{merkle::treeprover::TPCircuitFingerprintConfig, qhashout::QHashOut};
@@ -251,6 +250,7 @@ where
             .get_verifier_triplet_for_circuit_type(
                 input.op_l2_transfer_proof_id.circuit_type.try_into()?,
             );
+
         let op_register_user_proof = store.get_proof_by_id(input.op_register_user_proof_id)?;
         let op_claim_l1_deposit_proof =
             store.get_proof_by_id(input.op_claim_l1_deposit_proof_id)?;

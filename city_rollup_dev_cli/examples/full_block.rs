@@ -17,12 +17,11 @@ use city_rollup_common::{
         },
         transaction::BTCTransaction,
     },
-    qworker::{memory_proof_store::SimpleProofStoreMemory, proof_store::QProofStoreReaderSync},
+    qworker::memory_proof_store::SimpleProofStoreMemory,
 };
 use city_rollup_core_orchestrator::debug::scenario::{
     block_planner::planner::CityOrchestratorBlockPlanner,
-    requested_actions::CityScenarioRequestedActions,
-    rpc_processor::{CityScenarioRequestedActionsFromRPC, DebugRPCProcessor},
+    requested_actions::CityScenarioRequestedActions, rpc_processor::DebugRPCProcessor,
     wallet::DebugScenarioWallet,
 };
 use city_store::store::city::base::CityStore;
@@ -107,7 +106,7 @@ fn prove_block_demo(transactions: &[BTCTransaction]) -> anyhow::Result<()> {
     let network_magic = NETWORK_MAGIC_DOGE_REGTEST;
 
     let toolbox_circuits = CRWorkerToolboxRootCircuits::<C, D>::new(network_magic);
-    toolbox_circuits.print_op_common_data();
+    //toolbox_circuits.print_op_common_data();
 
     const D: usize = 2;
     type C = PoseidonGoldilocksConfig;
@@ -177,15 +176,15 @@ fn prove_block_demo(transactions: &[BTCTransaction]) -> anyhow::Result<()> {
         block_1_planner.process_requests(&mut store, &mut proof_store, &block_1_requested)?;
     timer.lap("end process requests block 1");
     /*println!(
-        "block_1_job_ids: {}",
-        serde_json::to_string(&block_1_job_ids).unwrap()
-    );*/
-    println!("block_1_job_ids: {:?}", block_1_job_ids);
-    println!(
-        "block_1_state_transition: {}",
-        serde_json::to_string(&block_1_state_transition).unwrap()
-    );
-
+            "block_1_job_ids: {}",
+            serde_json::to_string(&block_1_job_ids).unwrap()
+        );
+        println!("block_1_job_ids: {:?}", block_1_job_ids);
+        println!(
+            "block_1_state_transition: {}",
+            serde_json::to_string(&block_1_state_transition).unwrap()
+        );
+    */
     let mut worker = QWorkerStandardProver::new();
     timer.lap("start proving op jobs");
 

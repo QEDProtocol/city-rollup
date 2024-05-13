@@ -1,6 +1,4 @@
-use city_crypto::hash::merkle::treeprover::{
-    AggStateTransition, AggStateTransitionWithEvents, TPCircuitFingerprintConfig,
-};
+use city_crypto::hash::merkle::treeprover::{AggStateTransition, AggStateTransitionWithEvents};
 use plonky2::hash::hash_types::RichField;
 use serde::{Deserialize, Serialize};
 
@@ -18,6 +16,20 @@ pub struct CRAggUserRegisterClaimDepositL2TransferCircuitInput<F: RichField> {
 
     pub op_l2_transfer_transition_user_state_tree: AggStateTransition<F>,
     pub op_l2_transfer_proof_id: QProvingJobDataID,
+}
+
+#[derive(Debug, Clone, Copy, Deserialize, Serialize, PartialEq)]
+#[serde(bound = "")]
+pub struct CRAggAddProcessL1WithdrawalAddL1DepositCircuitInput<F: RichField> {
+    pub op_add_l1_withdrawal_transition_user_state_tree: AggStateTransition<F>,
+    pub op_add_l1_withdrawal_transition_withdrawal_tree: AggStateTransition<F>,
+    pub op_add_l1_withdrawal_proof_id: QProvingJobDataID,
+
+    pub op_process_l1_withdrawal_transition_withdrawal_tree: AggStateTransition<F>,
+    pub op_process_l1_withdrawal_proof_id: QProvingJobDataID,
+
+    pub op_add_l1_deposit_transition_deposit_tree: AggStateTransition<F>,
+    pub op_add_l1_deposit_proof_id: QProvingJobDataID,
 }
 
 #[derive(Debug, Clone, Copy, Deserialize, Serialize, PartialEq)]

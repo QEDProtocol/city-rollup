@@ -19,7 +19,10 @@ use plonky2::{
 };
 
 use crate::{
-    block_circuits::root_aggregators::user_register_claim_deposits_l2_transfer::CRAggUserRegisterClaimDepositL2TransferCircuit,
+    block_circuits::root_aggregators::{
+        add_process_withdrawals_add_l1_deposit::CRAggAddProcessL1WithdrawalAddL1DepositCircuit,
+        user_register_claim_deposits_l2_transfer::CRAggUserRegisterClaimDepositL2TransferCircuit,
+    },
     worker::traits::{QWorkerCircuitCustomWithDataSync, QWorkerGenericProver},
 };
 
@@ -33,6 +36,8 @@ where
     // block aggreagtors
     pub block_agg_register_claim_deposit_transfer:
         CRAggUserRegisterClaimDepositL2TransferCircuit<C, D>,
+    pub block_agg_add_process_withdrawal_add_deposit:
+        CRAggAddProcessL1WithdrawalAddL1DepositCircuit<C, D>,
     pub fingerprints: CRWorkerToolboxRootCircuitFingerprints<C::F>,
 }
 
@@ -54,16 +59,36 @@ where
                     .constants_sigmas_cap
                     .height(),
             );
+        let block_agg_add_process_withdrawal_add_deposit =
+            CRAggAddProcessL1WithdrawalAddL1DepositCircuit::<C, D>::new(
+                core.fingerprints.op_add_l1_withdrawal,
+                core.fingerprints.op_process_l1_withdrawal,
+                core.fingerprints.op_add_l1_deposit,
+                core.agg_state_transition.get_common_circuit_data_ref(),
+                core.agg_state_transition
+                    .get_verifier_config_ref()
+                    .constants_sigmas_cap
+                    .height(),
+                core.agg_state_transition_with_events
+                    .get_common_circuit_data_ref(),
+                core.agg_state_transition_with_events
+                    .get_verifier_config_ref()
+                    .constants_sigmas_cap
+                    .height(),
+            );
 
         let fingerprints = CRWorkerToolboxRootCircuitFingerprints::<C::F> {
             network_magic,
             block_agg_register_claim_deposit_transfer: block_agg_register_claim_deposit_transfer
                 .get_fingerprint(),
+            block_agg_add_process_withdrawal_add_deposit:
+                block_agg_add_process_withdrawal_add_deposit.get_fingerprint(),
         };
 
         Self {
             core,
             block_agg_register_claim_deposit_transfer,
+            block_agg_add_process_withdrawal_add_deposit,
             fingerprints,
         }
     }
@@ -92,6 +117,9 @@ where
             ProvingJobCircuitType::AggUserRegisterClaimDepositL2Transfer => self
                 .block_agg_register_claim_deposit_transfer
                 .get_verifier_triplet(),
+            ProvingJobCircuitType::AggAddProcessL1WithdrawalAddL1Deposit => self
+                .block_agg_add_process_withdrawal_add_deposit
+                .get_verifier_triplet(),
             other => self.core.get_verifier_triplet_for_circuit_type(other),
         }
     }
@@ -118,6 +146,9 @@ where
         match circuit_type {
             ProvingJobCircuitType::AggUserRegisterClaimDepositL2Transfer => self
                 .block_agg_register_claim_deposit_transfer
+                .prove_q_worker_custom(self, store, job_id),
+            ProvingJobCircuitType::AggAddProcessL1WithdrawalAddL1Deposit => self
+                .block_agg_add_process_withdrawal_add_deposit
                 .prove_q_worker_custom(self, store, job_id),
             _ => self.core.worker_prove(store, job_id),
         }

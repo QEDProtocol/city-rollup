@@ -77,7 +77,7 @@ impl<
 {
     fn prove_q_worker_simple(
         &self,
-        verify_helper: &V,
+        _verify_helper: &V,
         store: &S,
         job_id: QProvingJobDataID,
     ) -> anyhow::Result<ProofWithPublicInputs<C::F, C, D>> {

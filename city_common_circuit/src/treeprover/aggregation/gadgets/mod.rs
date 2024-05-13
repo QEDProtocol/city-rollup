@@ -14,12 +14,9 @@ use plonky2::{
     },
 };
 
-use crate::{
-    builder::{
-        connect::CircuitBuilderConnectHelpers, hash::core::CircuitBuilderHashCore,
-        verify::CircuitBuilderVerifyProofHelpers,
-    },
-    proof_minifier::pm_core::get_circuit_fingerprint_generic,
+use crate::builder::{
+    connect::CircuitBuilderConnectHelpers, hash::core::CircuitBuilderHashCore,
+    verify::CircuitBuilderVerifyProofHelpers,
 };
 
 #[derive(Debug, Clone, Copy)]
@@ -115,8 +112,8 @@ impl AggStateTransitionGadget {
 
 #[derive(Debug, Copy, Clone)]
 pub struct AggStateTransitionProofPublicInputsGadget {
-    pub state_transition_combined_hash: HashOutTarget,
     pub allowed_circuit_hashes_root: HashOutTarget,
+    pub state_transition_combined_hash: HashOutTarget,
 }
 
 impl AggStateTransitionProofPublicInputsGadget {
@@ -126,7 +123,7 @@ impl AggStateTransitionProofPublicInputsGadget {
             8,
             "AggStateTransitionProof should have 12 public inputs"
         );
-        let state_transition_combined_hash = HashOutTarget {
+        let allowed_circuit_hashes_root = HashOutTarget {
             elements: [
                 public_inputs[0],
                 public_inputs[1],
@@ -134,7 +131,7 @@ impl AggStateTransitionProofPublicInputsGadget {
                 public_inputs[3],
             ],
         };
-        let allowed_circuit_hashes_root = HashOutTarget {
+        let state_transition_combined_hash = HashOutTarget {
             elements: [
                 public_inputs[4],
                 public_inputs[5],
@@ -149,14 +146,14 @@ impl AggStateTransitionProofPublicInputsGadget {
     }
     pub fn to_public_inputs(&self) -> [Target; 8] {
         [
-            self.state_transition_combined_hash.elements[0],
-            self.state_transition_combined_hash.elements[1],
-            self.state_transition_combined_hash.elements[2],
-            self.state_transition_combined_hash.elements[3],
             self.allowed_circuit_hashes_root.elements[0],
             self.allowed_circuit_hashes_root.elements[1],
             self.allowed_circuit_hashes_root.elements[2],
             self.allowed_circuit_hashes_root.elements[3],
+            self.state_transition_combined_hash.elements[0],
+            self.state_transition_combined_hash.elements[1],
+            self.state_transition_combined_hash.elements[2],
+            self.state_transition_combined_hash.elements[3],
         ]
     }
 }
@@ -175,7 +172,7 @@ impl AggStateTransitionWithEventsProofPublicInputsGadget {
             12,
             "AggStateTransitionWithEventsProof should have 12 public inputs"
         );
-        let state_transition_combined_hash = HashOutTarget {
+        let allowed_circuit_hashes_root = HashOutTarget {
             elements: [
                 public_inputs[0],
                 public_inputs[1],
@@ -183,7 +180,7 @@ impl AggStateTransitionWithEventsProofPublicInputsGadget {
                 public_inputs[3],
             ],
         };
-        let events_hash = HashOutTarget {
+        let state_transition_combined_hash = HashOutTarget {
             elements: [
                 public_inputs[4],
                 public_inputs[5],
@@ -191,7 +188,7 @@ impl AggStateTransitionWithEventsProofPublicInputsGadget {
                 public_inputs[7],
             ],
         };
-        let allowed_circuit_hashes_root = HashOutTarget {
+        let events_hash = HashOutTarget {
             elements: [
                 public_inputs[8],
                 public_inputs[9],
@@ -207,6 +204,10 @@ impl AggStateTransitionWithEventsProofPublicInputsGadget {
     }
     pub fn to_public_inputs(&self) -> [Target; 12] {
         [
+            self.allowed_circuit_hashes_root.elements[0],
+            self.allowed_circuit_hashes_root.elements[1],
+            self.allowed_circuit_hashes_root.elements[2],
+            self.allowed_circuit_hashes_root.elements[3],
             self.state_transition_combined_hash.elements[0],
             self.state_transition_combined_hash.elements[1],
             self.state_transition_combined_hash.elements[2],
@@ -215,10 +216,6 @@ impl AggStateTransitionWithEventsProofPublicInputsGadget {
             self.events_hash.elements[1],
             self.events_hash.elements[2],
             self.events_hash.elements[3],
-            self.allowed_circuit_hashes_root.elements[0],
-            self.allowed_circuit_hashes_root.elements[1],
-            self.allowed_circuit_hashes_root.elements[2],
-            self.allowed_circuit_hashes_root.elements[3],
         ]
     }
 }
@@ -252,5 +249,42 @@ impl AggStateTransitionProofValidityGadget {
         );
 
         pub_gadget.state_transition_combined_hash
+    }
+}
+
+pub struct AggStateTransitionWithEventsProofValidityGadget {
+    pub state_transition_combined_hash: HashOutTarget,
+    pub events_hash: HashOutTarget,
+}
+
+impl AggStateTransitionWithEventsProofValidityGadget {
+    pub fn add_virtual_to<H: AlgebraicHasher<F>, F: RichField + Extendable<D>, const D: usize>(
+        builder: &mut CircuitBuilder<F, D>,
+        proof_target: &ProofWithPublicInputsTarget<D>,
+        verifier_data_target: &VerifierCircuitTarget,
+        fingerprint: &TPCircuitFingerprintConfig<F>,
+    ) -> Self {
+        let allowed_fingerprints = [
+            builder.constant_whash(fingerprint.aggregator_fingerprint),
+            builder.constant_whash(fingerprint.leaf_fingerprint),
+            builder.constant_whash(fingerprint.dummy_fingerprint),
+        ];
+        let actual_fingerprint = builder.get_circuit_fingerprint::<H>(verifier_data_target);
+        builder.connect_hashes_enum(actual_fingerprint, &allowed_fingerprints);
+        let allowed_circuit_hashes_root =
+            builder.constant_whash(fingerprint.allowed_circuit_hashes_root);
+        let pub_gadget = AggStateTransitionWithEventsProofPublicInputsGadget::from_public_inputs(
+            &proof_target.public_inputs,
+        );
+
+        builder.connect_hashes(
+            pub_gadget.allowed_circuit_hashes_root,
+            allowed_circuit_hashes_root,
+        );
+
+        Self {
+            state_transition_combined_hash: pub_gadget.state_transition_combined_hash,
+            events_hash: pub_gadget.events_hash,
+        }
     }
 }

@@ -35,4 +35,5 @@ pub struct CRWorkerToolboxRootCircuitFingerprints<F: RichField> {
     pub network_magic: u64,
 
     pub block_agg_register_claim_deposit_transfer: QHashOut<F>,
+    pub block_agg_add_process_withdrawal_add_deposit: QHashOut<F>,
 }

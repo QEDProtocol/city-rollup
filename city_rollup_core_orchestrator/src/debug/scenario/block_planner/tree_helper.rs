@@ -1,19 +1,19 @@
 use std::fmt::Debug;
 
-use city_crypto::hash::merkle::treeprover::generate_tree_inputs_with_position;
-use city_crypto::hash::merkle::treeprover::AggStateTrackableInput;
-use city_crypto::hash::merkle::treeprover::AggStateTrackableWithEventsInput;
-use city_crypto::hash::merkle::treeprover::AggStateTransition;
-use city_crypto::hash::merkle::treeprover::AggStateTransitionWithEvents;
-use city_crypto::hash::merkle::treeprover::DummyAggStateTransition;
-use city_crypto::hash::merkle::treeprover::DummyAggStateTransitionWithEvents;
-use city_crypto::hash::merkle::treeprover::TPLeafAggregator;
-use city_crypto::hash::merkle::treeprover::WithDummyStateTransition;
-use city_crypto::hash::qhashout::QHashOut;
-use city_rollup_common::qworker::job_id::QProvingJobDataID;
-use city_rollup_common::qworker::job_witnesses::op::CircuitInputWithDependencies;
-use city_rollup_common::qworker::job_witnesses::op::CircuitInputWithJobId;
-use city_rollup_common::qworker::proof_store::QProofStore;
+use city_crypto::hash::{
+    merkle::treeprover::{
+        generate_tree_inputs_with_position, AggStateTrackableInput,
+        AggStateTrackableWithEventsInput, AggStateTransition, AggStateTransitionWithEvents,
+        DummyAggStateTransition, DummyAggStateTransitionWithEvents, TPLeafAggregator,
+        WithDummyStateTransition,
+    },
+    qhashout::QHashOut,
+};
+use city_rollup_common::qworker::{
+    job_id::QProvingJobDataID,
+    job_witnesses::op::{CircuitInputWithDependencies, CircuitInputWithJobId},
+    proof_store::QProofStore,
+};
 use city_store::config::F;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
