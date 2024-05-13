@@ -12,14 +12,13 @@ use plonky2::{
 };
 
 use crate::{
-    builder::pad_circuit::pad_circuit_degree,
+    builder::{hash::core::CircuitBuilderHashCore, pad_circuit::pad_circuit_degree},
     circuits::traits::qstandard::{
         provable::QStandardCircuitProvable, QStandardCircuit,
         QStandardCircuitProvableWithProofStoreSync,
     },
     proof_minifier::{
-        pm_chain::OASProofMinifierChain, pm_chain_dynamic::OASProofMinifierDynamicChain,
-        pm_core::get_circuit_fingerprint_generic,
+        pm_chain_dynamic::OASProofMinifierDynamicChain, pm_core::get_circuit_fingerprint_generic,
     },
 };
 
@@ -55,8 +54,11 @@ where
         let state_transition_hash = builder.add_virtual_hash();
         let allowed_circuit_hashes_root = builder.add_virtual_hash();
 
+        let transition =
+            builder.hash_two_to_one::<C::Hasher>(state_transition_hash, state_transition_hash);
+
         builder.register_public_inputs(&allowed_circuit_hashes_root.elements);
-        builder.register_public_inputs(&state_transition_hash.elements);
+        builder.register_public_inputs(&transition.elements);
 
         pad_circuit_degree::<C::F, D>(&mut builder, 13);
         let circuit_data = builder.build::<C>();

@@ -10,7 +10,7 @@ use city_crypto::hash::{
     qhashout::QHashOut,
 };
 use city_rollup_common::qworker::{
-    job_id::{ProvingJobCircuitType, QProvingJobDataID},
+    job_id::QProvingJobDataID,
     job_witnesses::op::{CircuitInputWithDependencies, CircuitInputWithJobId},
     proof_store::QProofStore,
 };

@@ -94,9 +94,8 @@ impl AggUserRegisterClaimDepositL2TransferGadget {
             .get_combined_hash::<H, F, D>(builder);
 
         let expected_op_l2_transfer_combined_state_transition = self
-            .op_register_user_transition_user_state_tree
+            .op_l2_transfer_transition_user_state_tree
             .get_combined_hash::<H, F, D>(builder);
-
         builder.connect_hashes(
             actual_op_register_user_combined_state_transition,
             expected_op_register_user_combined_state_transition,

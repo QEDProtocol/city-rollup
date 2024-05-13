@@ -46,6 +46,12 @@ impl<F: RichField> AggStateTransition<F> {
             state_transition_end,
         }
     }
+    pub fn get_combined_hash<H: AlgebraicHasher<F>>(&self) -> QHashOut<F> {
+        QHashOut(H::two_to_one(
+            self.state_transition_start.0,
+            self.state_transition_end.0,
+        ))
+    }
 }
 impl<F: RichField> Default for AggStateTransition<F> {
     fn default() -> Self {

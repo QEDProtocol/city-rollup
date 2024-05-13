@@ -35,14 +35,11 @@ use plonky2::{
 };
 
 use crate::{
-    block_circuits::{
-        ops::{
-            add_l1_deposit::WCRAddL1DepositCircuit, add_l1_withdrawal::CRAddL1WithdrawalCircuit,
-            claim_l1_deposit::CRClaimL1DepositCircuit, l2_transfer::circuit::CRL2TransferCircuit,
-            process_l1_withdrawal::WCRProcessL1WithdrawalCircuit,
-            register_user::WCRUserRegistrationCircuit,
-        },
-        root_aggregators::user_register_claim_deposits_l2_transfer::CRAggUserRegisterClaimDepositL2TransferCircuit,
+    block_circuits::ops::{
+        add_l1_deposit::WCRAddL1DepositCircuit, add_l1_withdrawal::CRAddL1WithdrawalCircuit,
+        claim_l1_deposit::CRClaimL1DepositCircuit, l2_transfer::circuit::CRL2TransferCircuit,
+        process_l1_withdrawal::WCRProcessL1WithdrawalCircuit,
+        register_user::WCRUserRegistrationCircuit,
     },
     worker::traits::{
         QWorkerCircuitAggWithDataSync, QWorkerCircuitSimpleWithDataSync, QWorkerGenericProver,
@@ -290,7 +287,7 @@ where
             }
             ProvingJobCircuitType::AddL1Deposit => self.op_add_l1_deposit.get_verifier_triplet(),
             ProvingJobCircuitType::AddL1DepositAggregate => {
-                self.op_add_l1_deposit.get_verifier_triplet()
+                self.agg_state_transition_with_events.get_verifier_triplet()
             }
             ProvingJobCircuitType::ClaimL1Deposit => {
                 self.op_claim_l1_deposit.get_verifier_triplet()
@@ -312,7 +309,7 @@ where
                 self.op_process_l1_withdrawal.get_verifier_triplet()
             }
             ProvingJobCircuitType::ProcessL1WithdrawalAggregate => {
-                self.op_process_l1_withdrawal.get_verifier_triplet()
+                self.agg_state_transition_with_events.get_verifier_triplet()
             }
             ProvingJobCircuitType::GenerateRollupStateTransitionProof => todo!(),
             ProvingJobCircuitType::GenerateSigHashIntrospectionProof => todo!(),
@@ -345,6 +342,9 @@ where
             ProvingJobCircuitType::Unknown => panic!("cannot get circuit data for Unknown"),
             ProvingJobCircuitType::AggUserRegisterClaimDepositL2Transfer => {
                 panic!("cannot get circuit data for AggUserRegisterClaimDepositL2Transfer")
+            }
+            ProvingJobCircuitType::AggAddProcessL1WithdrawalAddL1Deposit => {
+                panic!("cannot get circuit data for AggAddProcessL1WithdrawalAddL1Deposit")
             }
         }
     }
@@ -450,6 +450,7 @@ where
             ProvingJobCircuitType::Secp256K1SignatureProof => todo!(),
             ProvingJobCircuitType::Unknown => todo!(),
             ProvingJobCircuitType::AggUserRegisterClaimDepositL2Transfer => todo!(),
+            ProvingJobCircuitType::AggAddProcessL1WithdrawalAddL1Deposit => todo!(),
         }
     }
 }

@@ -1,15 +1,9 @@
 use city_crypto::hash::qhashout::QHashOut;
 use city_rollup_common::{
     api::data::{
-        block::{
-            requested_actions::{
-                CityAddDepositRequest, CityAddWithdrawalRequest, CityClaimDepositRequest,
-                CityProcessWithdrawalRequest, CityRegisterUserRequest, CityTokenTransferRequest,
-            },
-            rpc_request::{
-                CityAddWithdrawalRPCRequest, CityClaimDepositRPCRequest,
-                CityRegisterUserRPCRequest, CityTokenTransferRPCRequest,
-            },
+        block::rpc_request::{
+            CityAddWithdrawalRPCRequest, CityClaimDepositRPCRequest, CityRegisterUserRPCRequest,
+            CityTokenTransferRPCRequest,
         },
         store::CityL1Deposit,
     },

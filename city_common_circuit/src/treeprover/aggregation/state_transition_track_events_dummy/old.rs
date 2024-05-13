@@ -19,13 +19,11 @@ use crate::{
         provable::QStandardCircuitProvable, QStandardCircuit,
         QStandardCircuitProvableWithProofStoreSync,
     },
-    proof_minifier::{
-        pm_chain_dynamic::OASProofMinifierDynamicChain, pm_core::get_circuit_fingerprint_generic,
-    },
+    proof_minifier::pm_core::get_circuit_fingerprint_generic,
 };
 
 #[derive(Debug)]
-pub struct AggStateTransitionWithEventsDummyCircuit<C: GenericConfig<D> + 'static, const D: usize>
+pub struct AggStateTransitionWithEventsDummyCircuit<C: GenericConfig<D>, const D: usize>
 where
     C::Hasher: AlgebraicHasher<C::F>,
 {
@@ -36,10 +34,9 @@ where
     // end circuit targets
     pub circuit_data: CircuitData<C::F, C, D>,
     pub fingerprint: QHashOut<C::F>,
-    pub minifier_chain: OASProofMinifierDynamicChain<D, C::F, C>,
+    //pub minifier_chain: OASProofMinifierChain<D, C::F, C>,
 }
-impl<C: GenericConfig<D> + 'static, const D: usize> Clone
-    for AggStateTransitionWithEventsDummyCircuit<C, D>
+impl<C: GenericConfig<D>, const D: usize> Clone for AggStateTransitionWithEventsDummyCircuit<C, D>
 where
     C::Hasher: AlgebraicHasher<C::F>,
 {
@@ -47,7 +44,7 @@ where
         Self::new()
     }
 }
-impl<C: GenericConfig<D> + 'static, const D: usize> AggStateTransitionWithEventsDummyCircuit<C, D>
+impl<C: GenericConfig<D>, const D: usize> AggStateTransitionWithEventsDummyCircuit<C, D>
 where
     C::Hasher: AlgebraicHasher<C::F>,
 {
@@ -66,20 +63,21 @@ where
         builder.register_public_inputs(&transition.elements);
         builder.register_public_inputs(&event_transition_hash.elements);
 
-        pad_circuit_degree::<C::F, D>(&mut builder, 13);
+        pad_circuit_degree::<C::F, D>(&mut builder, 12);
         let circuit_data = builder.build::<C>();
 
         let fingerprint = QHashOut(get_circuit_fingerprint_generic(&circuit_data.verifier_only));
 
+        /*
         let minifier_chain =
-            OASProofMinifierDynamicChain::new(&circuit_data.verifier_only, &circuit_data.common, 1);
+            OASProofMinifierChain::new(&circuit_data.verifier_only, &circuit_data.common, 1);*/
         Self {
             state_transition_hash,
             allowed_circuit_hashes_root,
             event_transition_hash,
             circuit_data,
             fingerprint,
-            minifier_chain,
+            //minifier_chain,
         }
     }
     pub fn prove_base(
@@ -95,14 +93,16 @@ where
             self.allowed_circuit_hashes_root,
             allowed_circuit_hashes_root.0,
         );
-
+        /*
         let inner_proof = self.circuit_data.prove(pw)?;
 
-        self.minifier_chain.prove(&inner_proof)
+        self.minifier_chain.prove(&inner_proof)*/
+        self.circuit_data.prove(pw)
     }
 }
 
-impl<C: GenericConfig<D> + 'static, const D: usize> QStandardCircuit<C, D>
+/*
+impl<C: GenericConfig<D>, const D: usize> QStandardCircuit<C, D>
     for AggStateTransitionWithEventsDummyCircuit<C, D>
 where
     C::Hasher: AlgebraicHasher<C::F>,
@@ -117,8 +117,8 @@ where
         self.minifier_chain.get_common_data()
     }
 }
-/*
-impl<C: GenericConfig<D> + 'static, const D: usize> QStandardCircuit<C, D>
+*/
+impl<C: GenericConfig<D>, const D: usize> QStandardCircuit<C, D>
     for AggStateTransitionWithEventsDummyCircuit<C, D>
 where
     C::Hasher: AlgebraicHasher<C::F>,
@@ -135,8 +135,8 @@ where
         &self.circuit_data.common
     }
 }
-*/
-impl<C: GenericConfig<D> + 'static, const D: usize>
+
+impl<C: GenericConfig<D>, const D: usize>
     QStandardCircuitProvable<DummyAggStateTransitionWithEvents<C::F>, C, D>
     for AggStateTransitionWithEventsDummyCircuit<C, D>
 where
@@ -153,7 +153,7 @@ where
     }
 }
 
-impl<S: QProofStoreReaderSync, C: GenericConfig<D> + 'static, const D: usize>
+impl<S: QProofStoreReaderSync, C: GenericConfig<D>, const D: usize>
     QStandardCircuitProvableWithProofStoreSync<S, DummyAggStateTransitionWithEvents<C::F>, C, D>
     for AggStateTransitionWithEventsDummyCircuit<C, D>
 where

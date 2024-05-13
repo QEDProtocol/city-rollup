@@ -18,7 +18,7 @@ use std::fmt::Debug;
 
 use crate::{
     introspection::rollup::introspection_result::BTCRollupIntrospectionResultDeposit,
-    qworker::job_id::{self, QProvingJobDataID},
+    qworker::job_id::QProvingJobDataID,
 };
 
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]

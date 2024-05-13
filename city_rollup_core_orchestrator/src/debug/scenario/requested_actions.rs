@@ -8,7 +8,7 @@ use city_rollup_common::{
     },
     introspection::transaction::BTCTransaction,
 };
-use kvq::traits::KVQBinaryStore;
+
 use plonky2::hash::hash_types::RichField;
 use serde::{Deserialize, Serialize};
 
