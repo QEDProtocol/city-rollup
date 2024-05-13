@@ -50,10 +50,10 @@ impl AggUserRegisterClaimDepositL2TransferGadget {
             state_transition_end: op_l2_transfer_transition_user_state_tree.state_transition_end,
         };
 
-        let deposit_state_tree_transition = op_claim_l1_deposit_transition_deposit_tree;
+        let deposit_tree_transition = op_claim_l1_deposit_transition_deposit_tree;
         let combined_state_transition = AggStateTransitionGadget::combine_many::<H, F, D>(
             builder,
-            &[user_state_tree_transition, deposit_state_tree_transition],
+            &[user_state_tree_transition, deposit_tree_transition],
         );
 
         let combined_state_transition_hash =

@@ -1,16 +1,21 @@
-use city_crypto::hash::merkle::treeprover::AggStateTransitionInput;
-use city_crypto::hash::merkle::treeprover::AggStateTransitionWithEventsInput;
-use city_crypto::hash::merkle::treeprover::AggWTLeafAggregator;
-use city_crypto::hash::merkle::treeprover::AggWTTELeafAggregator;
-use city_crypto::hash::qhashout::QHashOut;
-use city_crypto::hash::traits::hasher::MerkleHasher;
-use city_rollup_common::api::data::store::CityL2BlockState;
-use city_rollup_common::qworker::fingerprints::CRWorkerToolboxCoreCircuitFingerprints;
-use city_rollup_common::qworker::job_id::ProvingJobCircuitType;
-use city_rollup_common::qworker::job_id::QProvingJobDataID;
-use city_rollup_common::qworker::proof_store::QProofStore;
-use city_store::config::F;
-use city_store::store::city::base::CityStore;
+use city_crypto::hash::{
+    merkle::treeprover::{
+        AggStateTransitionInput, AggStateTransitionWithEventsInput, AggWTLeafAggregator,
+        AggWTTELeafAggregator,
+    },
+    qhashout::QHashOut,
+    traits::hasher::MerkleHasher,
+};
+use city_rollup_common::{
+    api::data::store::CityL2BlockState,
+    qworker::{
+        fingerprints::CRWorkerToolboxCoreCircuitFingerprints,
+        job_id::{ProvingJobCircuitType, QProvingJobDataID},
+        job_witnesses::agg::CRBlockStateTransitionCircuitInput,
+        proof_store::QProofStore,
+    },
+};
+use city_store::{config::F, store::city::base::CityStore};
 use kvq::traits::KVQBinaryStore;
 use plonky2::hash::poseidon::PoseidonHash;
 
@@ -291,10 +296,28 @@ impl<S: KVQBinaryStore, PS: QProofStore> CityOrchestratorBlockPlanner<S, PS> {
             &bincode::serialize(&block_state_witness_part_2)?,
         )?;
 
+        let block_state_transition_input = CRBlockStateTransitionCircuitInput::from_steps(
+            block_state_part_1_id.get_output_id(),
+            &block_state_witness_part_1,
+            block_state_part_2_id.get_output_id(),
+            &block_state_witness_part_2,
+        );
+        let block_state_transition_id =
+            QProvingJobDataID::block_state_transition_input_witness(self.processor.checkpoint_id);
+
+        proof_store.set_bytes_by_id(
+            block_state_transition_id,
+            &bincode::serialize(&block_state_transition_input)?,
+        )?;
+
         Ok((
             job_ids,
             transition,
-            vec![block_state_part_1_id, block_state_part_2_id],
+            vec![
+                block_state_part_1_id,
+                block_state_part_2_id,
+                block_state_transition_id,
+            ],
         ))
     }
 }
