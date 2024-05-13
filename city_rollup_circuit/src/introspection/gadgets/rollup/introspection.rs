@@ -281,8 +281,7 @@ impl BTCRollupIntrospectionGadget {
         let deposits = self.get_deposits(builder);
         let withdrawals = self.get_withdrawals(builder);
         let current_block_rollup_balance = if self.last_block_spend_index != -1 {
-            self.funding_transactions[self.block_spend_index].outputs
-                [self.last_block_spend_index as usize]
+            self.funding_transactions[self.last_block_spend_index as usize].outputs[0]
                 .get_value_target_u64(builder)
         } else {
             builder.zero()

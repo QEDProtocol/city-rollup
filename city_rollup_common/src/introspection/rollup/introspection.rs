@@ -83,9 +83,7 @@ impl BlockSpendIntrospectionHint {
 
         let current_block_rollup_balance = if self.last_block_spend_index != -1 {
             F::from_noncanonical_u64(
-                self.funding_transactions[self.last_block_spend_index as usize].outputs
-                    [self.last_block_spend_index as usize]
-                    .value,
+                self.funding_transactions[self.last_block_spend_index as usize].outputs[0].value,
             )
         } else {
             F::ZERO
