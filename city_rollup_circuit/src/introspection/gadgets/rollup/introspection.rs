@@ -284,7 +284,7 @@ impl BTCRollupIntrospectionGadget {
         let next_block_rollup_balance = self.sighash_preimage.transaction.outputs
             [self.block_spend_index]
             .get_value_target_u64(builder);
-        let sighash_felt252 = builder.hash256_bytes_to_felt252_hashout(self.current_sighash);
+        let sighash_felt252 = builder.hash256_bytes_to_felt252_hashout_packed(self.current_sighash);
 
         let next_block_state_hash = builder.hash256_bytes_to_felt252_hashout(self.next_block_redeem_script[1..33].try_into().unwrap());
         BTCRollupIntrospectionResultGadget {

@@ -398,6 +398,8 @@ impl BTCRollupIntrospectionFinalizedResultGadget {
         witness.set_hash_target(self.next_block_state_hash, result.next_block_state_hash.0);
 
         witness.set_target(self.total_deposits_count, result.total_deposits_count);
+        witness.set_target(self.total_deposits_value, result.total_deposits_value);
+
         witness.set_target(self.total_withdrawals_count, result.total_withdrawals_count);
         witness.set_target(self.total_withdrawals_value, result.total_withdrawals_value);
         witness.set_target(
@@ -408,5 +410,13 @@ impl BTCRollupIntrospectionFinalizedResultGadget {
             self.next_block_rollup_balance,
             result.next_block_rollup_balance,
         );
+        /*
+        total_deposits_count,
+        total_withdrawals_count,
+        total_deposits_value,
+        total_withdrawals_value,
+        current_block_rollup_balance,
+        next_block_rollup_balance,
+         */
     }
 }
