@@ -68,7 +68,7 @@ impl<F: RichField> CityScenarioRequestedActions<F> {
             register_users: requested_from_rpc.register_users,
         }
     }
-    pub fn modified_users(&self) -> HashSet<u64> {
+    pub fn accessed_users(&self) -> HashSet<u64> {
         let mut res = HashSet::new();
 
         for add_withdrawal in &self.add_withdrawals {

@@ -24,7 +24,7 @@ anyhow = "1.0.75"
 async-trait = { version = "0.1.80" }
 base64 = "0.21.0"
 bigdecimal = { version = "0.4.3" }
-bitcoin = { version = "0.31.1", features = ["serde", "rand"] }
+bitcoin = { git = "https://github.com/QEDProtocol/rust-bitcoin", rev = "18f0b780b2a31e70ac914d8854f165b6ad17bddd", features = ["serde", "rand"] }
 bitcoincore-rpc = "0.18.0"
 bitcoincore-rpc-json = "0.18.0"
 brotli = "3.4.0"
@@ -117,3 +117,6 @@ plonky2 = { git = "https://github.com/QEDProtocol/plonky2-hwa", rev = "6a8ca008d
 
 [patch.'https://github.com/succinctlabs/starkyx.git']
 starkyx = { git = "https://github.com/QEDProtocol/starkyx", rev = "a53ea1060c6256a8a26820e43fbe8d75233e8b29" }
+
+[patch.crates-io]
+bitcoin = { git = "https://github.com/QEDProtocol/rust-bitcoin", rev = "18f0b780b2a31e70ac914d8854f165b6ad17bddd", features = ["serde", "rand"] }

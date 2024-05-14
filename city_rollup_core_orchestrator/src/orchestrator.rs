@@ -1,13 +1,18 @@
 use std::collections::HashSet;
 use std::sync::Arc;
 
+use bitcoin::Address;
+use bitcoin::Network;
+use bitcoin::Script;
 use city_common::cli::args::OrchestratorArgs;
+use city_crypto::hash::core::btc::btc_hash160;
 use city_macros::define_table;
 use city_redis_store::RedisStore;
 use city_rollup_circuit::worker::toolbox::circuits::CRWorkerToolboxCoreCircuits;
 use city_rollup_common::api::data::block::rpc_request::CityRPCRequest;
 use city_rollup_common::api::data::store::CityL2BlockState;
 use city_rollup_common::introspection::rollup::constants::get_network_magic_for_str;
+use city_rollup_common::introspection::rollup::introspection::BlockSpendIntrospectionHint;
 use city_rollup_common::introspection::transaction::BTCTransaction;
 use city_rollup_common::link::link_api::BTCLinkAPI;
 use city_rollup_common::qworker::job_witnesses::op::CRAddL1DepositCircuitInput;
@@ -112,55 +117,43 @@ impl Orchestrator {
         println!("current building block: {}", block_id);
 
         let mut redis_store = self.redis_store.clone();
-        let (job_ids, _, _) = {
+        let (agg_job_ids, block_end_job_ids) = {
             let mut store = KVQReDBStore::new(wxn.open_table(KV)?);
 
             let txs = self.get_txs(block_id, &mut redis_store).await?;
-            let last_block_state =
+            let prev_block_state =
                 L2BlockStateModel::get_block_state_by_id(&store, block_id).unwrap_or_default();
 
-            let funding_transactions = self.get_funding_transactions()?;
+            let funding_transactions = self.get_funding_transactions(block_id)?;
             let requested_actions = CityScenarioRequestedActions::new_from_requested_rpc(
                 txs,
                 &funding_transactions,
-                &last_block_state,
+                &prev_block_state,
                 MAX_WITHDRAWALS_PROCESSED_PER_BLOCK,
             );
 
             let mut block_planner = CityOrchestratorBlockPlanner::new(
                 self.toolbox.get_fingerprint_config(),
-                last_block_state,
+                prev_block_state,
             );
 
-            let res =
+            let (next_block_state, agg_job_ids, _, block_end_job_ids) =
                 block_planner.process_requests(&mut store, &mut redis_store, &requested_actions)?;
 
-            let new_block_state = CityL2BlockState {
-                checkpoint_id: block_planner.processor.op_processor.checkpoint_id,
-                next_add_withdrawal_id: block_planner.processor.op_processor.next_add_withdrawal_id,
-                next_process_withdrawal_id: block_planner
-                    .processor
-                    .op_processor
-                    .next_process_withdrawal_id,
-                next_deposit_id: block_planner.processor.op_processor.next_deposit_id,
-                total_deposits_claimed_epoch: block_planner
-                    .processor
-                    .op_processor
-                    .total_deposits_claimed_epoch,
-                next_user_id: block_planner.processor.op_processor.next_user_id,
-                end_balance: block_planner.processor.op_processor.end_balance,
-            };
+            CityStore::set_block_state(&mut store, &next_block_state)?;
 
-            CityStore::set_block_state(&mut store, &new_block_state)?;
+            let mut accessed_users = requested_actions.accessed_users();
+            accessed_users.extend(prev_block_state.next_user_id..next_block_state.next_user_id);
+            self.cache_accessed_users(&mut store, block_id, accessed_users)?;
 
-            let mut modified_users = requested_actions.modified_users();
-            modified_users.extend(last_block_state.next_user_id..new_block_state.next_user_id);
-            self.cache_accessed_users(&mut store, block_id, modified_users)?;
-
-            res
+            (agg_job_ids, block_end_job_ids)
         };
 
-        for job in job_ids.plan_jobs() {
+        for job in agg_job_ids.plan_jobs() {
+            self.dispatcher.dispatch(Q_JOB, job).await?;
+        }
+
+        for job in block_end_job_ids {
             self.dispatcher.dispatch(Q_JOB, job).await?;
         }
 
@@ -174,9 +167,9 @@ impl Orchestrator {
         &mut self,
         store: &mut S,
         checkpoint_id: u64,
-        modified_users: HashSet<u64>,
+        accessed_users: HashSet<u64>,
     ) -> anyhow::Result<()> {
-        for user_id in modified_users {
+        for user_id in accessed_users {
             let user_state = CityStore::<S>::get_user_by_id(store, checkpoint_id, user_id)?;
             self.redis_store.set_user_state(&user_state)?;
         }
@@ -209,9 +202,21 @@ impl Orchestrator {
         Ok(rpc_processor.output)
     }
 
-    pub fn get_funding_transactions(&self) -> anyhow::Result<Vec<BTCTransaction>> {
-        let next_block_redeem_script = self.redis_store.get_next_block_redeem_script()?;
-        let utxos = self.link_api.btc_get_utxos(next_block_redeem_script)?;
+    pub fn get_next_block_p2sh(&self, block_id: u64) -> anyhow::Result<String> {
+        let hint = self.redis_store.get_last_block_spend_hint(block_id)?;
+        let next_block_redeem_script_hash = btc_hash160(&hint.next_block_redeem_script);
+        let mut bytes = [0; 23];
+        bytes.copy_from_slice(&[0xa9, 0x14]);
+        bytes.copy_from_slice(&next_block_redeem_script_hash.0);
+        bytes.copy_from_slice(&[0x87]);
+        let script = Script::from_bytes(&bytes);
+        let next_block_p2sh = Address::from_script(&script, Network::DogeRegtest)?;
+        Ok(next_block_p2sh.to_string())
+    }
+
+    pub fn get_funding_transactions(&self, block_id: u64) -> anyhow::Result<Vec<BTCTransaction>> {
+        let next_block_p2sh = self.get_next_block_p2sh(block_id)?;
+        let utxos = self.link_api.btc_get_utxos(next_block_p2sh)?;
         let funding_transactions = utxos
             .into_iter()
             .map(|utxo| {
@@ -222,5 +227,29 @@ impl Orchestrator {
             })
             .collect::<anyhow::Result<Vec<_>>>()?;
         Ok(funding_transactions)
+    }
+
+    pub fn get_spend_hint(&self, funding_transactions: &Vec<BTCTransaction>) -> anyhow::Result<BlockSpendIntrospectionHint> {
+        todo!()
+        // let block_spend_tx = BTCTransaction {
+        //     version: 2,
+        //     inputs: vec![],
+        //     outputs: vec![],
+        //     locktime: 0
+        // };
+        // let sighash_preimage = block_spend_tx.get_sig_hash_preimage(input_index, prev_out_script, sighash_type);
+        // let last_block_spend_index = 0;
+        // let block_spend_index = 0;
+        // let current_spend_index = 0;
+        // let
+        //
+        // // BlockSpendIntrospectionHint {
+        // //     sighash_preimage: SigHashPreimage,
+        // //     last_block_spend_index: todo!(),
+        // //     block_spend_index: todo!(),
+        // //     current_spend_index: todo!(),
+        // //     funding_transactions: todo!(),
+        // //     next_block_redeem_script: todo!(),
+        // // }
     }
 }

@@ -172,7 +172,7 @@ fn prove_block_demo(transactions: &[BTCTransaction]) -> anyhow::Result<()> {
     timer.lap("end process state block 1 RPC");
     timer.lap("start process requests block 1");
 
-    let (block_1_job_ids, block_1_state_transition, block_1_end_jobs) =
+    let (_, block_1_job_ids, _, block_1_end_jobs) =
         block_1_planner.process_requests(&mut store, &mut proof_store, &block_1_requested)?;
     timer.lap("end process requests block 1");
     /*println!(

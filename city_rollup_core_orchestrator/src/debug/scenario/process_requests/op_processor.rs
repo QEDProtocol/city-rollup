@@ -58,6 +58,18 @@ impl<S: KVQBinaryStore> CityOrchestratorOpRequestProcessor<S> {
         }
     }
 
+    pub fn block_state(&self) -> CityL2BlockState {
+        CityL2BlockState {
+            checkpoint_id: self.checkpoint_id,
+            next_add_withdrawal_id: self.next_add_withdrawal_id,
+            next_process_withdrawal_id: self.next_process_withdrawal_id,
+            next_deposit_id: self.next_deposit_id,
+            total_deposits_claimed_epoch: self.total_deposits_claimed_epoch,
+            next_user_id: self.next_user_id,
+            end_balance: self.end_balance,
+        }
+    }
+
     pub fn process_add_deposit_request(
         &mut self,
         store: &mut S,

@@ -1,4 +1,5 @@
 use city_rollup_common::api::data::store::CityUserState;
+use city_rollup_common::introspection::rollup::introspection::BlockSpendIntrospectionHint;
 use city_rollup_common::qworker::job_id::QProvingJobDataID;
 use city_rollup_common::qworker::proof_store::QProofStoreReaderSync;
 use city_rollup_common::qworker::proof_store::QProofStoreWriterSync;
@@ -10,12 +11,11 @@ use redis::Commands;
 // Table
 pub const USER_STATE: &'static str = "user_state";
 pub const BLOCK_STATE: &'static str = "block_state";
+pub const BLOCK_SPEND_HINTS: &'static str = "block_spend_hints";
 
 // Field
 pub const LAST_BLOCK_ID: &'static str = "last_block_id";
 pub const LAST_BLOCK_TIMESTAMP: &'static str = "last_block_timestamp";
-
-pub const NEXT_BLOCK_REDEEM_SCRIPT: &'static str = "next_block_redeem_script";
 
 pub const PROOFS: &'static str = "proofs";
 pub const PROOF_COUNTERS: &'static str = "proof_counters";
@@ -45,7 +45,7 @@ impl RedisStore {
     pub fn get_user_state(&self, user_id: u64) -> anyhow::Result<CityUserState> {
         let mut connection = self.get_connection()?;
         let data: Vec<u8> = connection.hget(USER_STATE, user_id)?;
-        Ok(serde_json::from_slice(&data)?)
+        Ok(bincode::deserialize(&data)?)
     }
 
     pub fn get_block_state(&self) -> anyhow::Result<(u64, u64)> {
@@ -70,19 +70,21 @@ impl RedisStore {
         connection.hset(
             USER_STATE,
             user_state.user_id,
-            serde_json::to_vec(user_state)?,
+            bincode::serialize(user_state)?,
         )?;
         Ok(())
     }
 
-    pub fn get_next_block_redeem_script(&self) -> anyhow::Result<String> {
+    pub fn get_last_block_spend_hint(&self, block_id: u64) -> anyhow::Result<BlockSpendIntrospectionHint> {
         let mut connection = self.get_connection()?;
-        Ok(connection.get(NEXT_BLOCK_REDEEM_SCRIPT)?)
+        let hint_bytes: Vec<u8> = connection.hget(BLOCK_SPEND_HINTS, block_id)?;
+        Ok(bincode::deserialize(&hint_bytes)?)
     }
 
-    pub fn set_next_block_redeem_script(&self, value: String) -> anyhow::Result<()> {
+    pub fn set_block_spend_hint(&self, block_id: u64, hint: &BlockSpendIntrospectionHint) -> anyhow::Result<()> {
         let mut connection = self.get_connection()?;
-        connection.set(NEXT_BLOCK_REDEEM_SCRIPT, value)?;
+        let hint_bytes: Vec<u8> = bincode::serialize(hint)?;
+        connection.hset(BLOCK_SPEND_HINTS, block_id, hint_bytes)?;
         Ok(())
     }
 
