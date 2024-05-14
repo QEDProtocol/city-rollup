@@ -19,6 +19,8 @@ use plonky2::plonk::proof::ProofWithPublicInputsTarget;
 
 use super::pm_core::get_circuit_fingerprint_generic;
 use super::pm_custom::PMCircuitCustomizer;
+use crate::builder::verify::CircuitBuilderVerifyProofHelpers;
+
 
 #[derive(Debug)]
 pub struct OASProofMinifierDynamic<
@@ -89,6 +91,15 @@ where
             &verifier_data_target,
             base_circuit_common_data,
         );
+        if !is_constant_verifier_data {
+            let fingerprint_target =
+                builder.get_circuit_fingerprint::<C::Hasher>(&verifier_data_target);
+            let known_fingerprint =
+                builder.constant_hash(get_circuit_fingerprint_generic::<D, C::F, C>(
+                    base_circuit_verifier_data,
+                ));
+            builder.connect_hashes(fingerprint_target, known_fingerprint);
+        }
 
         if add_gates.is_some() {
             add_gates.unwrap().iter().for_each(|g| {

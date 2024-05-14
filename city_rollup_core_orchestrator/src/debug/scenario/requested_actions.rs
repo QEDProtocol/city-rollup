@@ -59,6 +59,7 @@ impl<F: RichField> CityScenarioRequestedActions<F> {
         Self {
             add_deposits: funding_transactions
                 .iter()
+                .skip(1)
                 .map(|tx| CityAddDepositRequest::new_from_transaction(tx))
                 .collect(),
             add_withdrawals: requested_from_rpc.add_withdrawals,

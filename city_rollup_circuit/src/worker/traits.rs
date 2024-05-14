@@ -20,6 +20,15 @@ pub trait QWorkerGenericProver<S: QProofStoreReaderSync, C: GenericConfig<D>, co
         job_id: QProvingJobDataID,
     ) -> anyhow::Result<ProofWithPublicInputs<C::F, C, D>>;
 }
+pub trait QWorkerGenericProverMut<S: QProofStoreReaderSync, C: GenericConfig<D>, const D: usize>:
+    QWorkerVerifyHelper<C, D>
+{
+    fn worker_prove_mut(
+        &mut self,
+        store: &S,
+        job_id: QProvingJobDataID,
+    ) -> anyhow::Result<ProofWithPublicInputs<C::F, C, D>>;
+}
 pub trait QWorkerCircuitSimpleWithDataSync<
     V: QWorkerVerifyHelper<C, D>,
     S: QProofStoreReaderSync,
@@ -61,6 +70,18 @@ pub trait QWorkerCircuitCustomWithDataSync<
     fn prove_q_worker_custom(
         &self,
         verify_helper: &V,
+        store: &S,
+        job_id: QProvingJobDataID,
+    ) -> anyhow::Result<ProofWithPublicInputs<C::F, C, D>>;
+}
+pub trait QWorkerCircuitMutCustomWithDataSync<
+    S: QProofStoreReaderSync,
+    C: GenericConfig<D>,
+    const D: usize,
+>
+{
+    fn prove_q_worker_mut_custom(
+        &mut self,
         store: &S,
         job_id: QProvingJobDataID,
     ) -> anyhow::Result<ProofWithPublicInputs<C::F, C, D>>;

@@ -6,7 +6,7 @@ pub fn varslice_size(len: usize) -> usize {
     varuint_size(len as u64) + len
 }
 
-#[derive(Serialize, Deserialize, PartialEq, Clone, Debug)]
+#[derive(Serialize, Deserialize, PartialEq, Clone, Debug, Hash, Eq, PartialOrd, Ord)]
 pub struct BTCTransactionLayout {
     pub input_script_sizes: Vec<usize>,
     pub output_script_sizes: Vec<usize>,

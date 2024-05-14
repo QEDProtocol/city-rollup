@@ -1,18 +1,21 @@
-use city_common_circuit::builder::core::CircuitBuilderHelpersCore;
-use city_common_circuit::builder::hash::core::CircuitBuilderHashCore;
-use city_common_circuit::debug::circuit_tracer::DebugCircuitTracer;
-use city_common_circuit::hash::base_types::hash256bytes::Hash256BytesTarget;
-use city_common_circuit::hash::merkle::partial::compute_partial_merkle_root_from_leaves_algebraic_circuit;
-use city_rollup_common::introspection::rollup::introspection_result::BTCRollupIntrospectionResultDeposit;
-use city_rollup_common::introspection::rollup::introspection_result::WITHDRAWAL_TYPE_P2PKH;
-use city_rollup_common::introspection::rollup::introspection_result::WITHDRAWAL_TYPE_P2SH;
-use plonky2::field::extension::Extendable;
-use plonky2::hash::hash_types::HashOutTarget;
-use plonky2::hash::hash_types::RichField;
-use plonky2::iop::target::Target;
-use plonky2::iop::witness::Witness;
-use plonky2::plonk::circuit_builder::CircuitBuilder;
-use plonky2::plonk::config::AlgebraicHasher;
+use city_common_circuit::{
+    builder::{core::CircuitBuilderHelpersCore, hash::core::CircuitBuilderHashCore},
+    debug::circuit_tracer::DebugCircuitTracer,
+    hash::{
+        base_types::hash256bytes::Hash256BytesTarget,
+        merkle::partial::compute_partial_merkle_root_from_leaves_algebraic_circuit,
+    },
+};
+use city_rollup_common::introspection::rollup::introspection_result::{
+    BTCRollupIntrospectionFinalizedResult, BTCRollupIntrospectionResultDeposit,
+    WITHDRAWAL_TYPE_P2PKH, WITHDRAWAL_TYPE_P2SH,
+};
+use plonky2::{
+    field::extension::Extendable,
+    hash::hash_types::{HashOutTarget, RichField},
+    iop::{target::Target, witness::Witness},
+    plonk::{circuit_builder::CircuitBuilder, config::AlgebraicHasher},
+};
 
 #[derive(Debug, Clone)]
 pub struct BTCRollupIntrospectionResultDepositGadget {
@@ -274,6 +277,35 @@ pub struct BTCRollupIntrospectionFinalizedResultGadget {
 }
 
 impl BTCRollupIntrospectionFinalizedResultGadget {
+    pub fn add_virtual_to<F: RichField + Extendable<D>, const D: usize>(
+        builder: &mut CircuitBuilder<F, D>,
+    ) -> Self {
+        let deposits_hash = builder.add_virtual_hash();
+        let withdrawals_hash = builder.add_virtual_hash();
+
+        let current_block_state_hash = builder.add_virtual_hash();
+        let next_block_state_hash = builder.add_virtual_hash();
+
+        let total_deposits_count = builder.add_virtual_target();
+        let total_withdrawals_count = builder.add_virtual_target();
+
+        let total_deposits_value = builder.add_virtual_target();
+        let total_withdrawals_value = builder.add_virtual_target();
+        let current_block_rollup_balance = builder.add_virtual_target();
+        let next_block_rollup_balance = builder.add_virtual_target();
+        Self {
+            deposits_hash,
+            withdrawals_hash,
+            current_block_state_hash,
+            next_block_state_hash,
+            total_deposits_count,
+            total_withdrawals_count,
+            total_deposits_value,
+            total_withdrawals_value,
+            current_block_rollup_balance,
+            next_block_rollup_balance,
+        }
+    }
     pub fn trace_combined_hash<
         H: AlgebraicHasher<F>,
         F: RichField + Extendable<D>,
@@ -353,5 +385,30 @@ impl BTCRollupIntrospectionFinalizedResultGadget {
             self.next_block_rollup_balance,
         ]);
         combined_hash
+    }
+    pub fn set_witness<W: Witness<F>, F: RichField>(
+        &self,
+        witness: &mut W,
+        result: &BTCRollupIntrospectionFinalizedResult<F>,
+    ) {
+        witness.set_hash_target(self.deposits_hash, result.deposits_hash.0);
+        witness.set_hash_target(self.withdrawals_hash, result.withdrawals_hash.0);
+        witness.set_hash_target(
+            self.current_block_state_hash,
+            result.current_block_state_hash.0,
+        );
+        witness.set_hash_target(self.next_block_state_hash, result.next_block_state_hash.0);
+
+        witness.set_target(self.total_deposits_count, result.total_deposits_count);
+        witness.set_target(self.total_withdrawals_count, result.total_withdrawals_count);
+        witness.set_target(self.total_withdrawals_value, result.total_withdrawals_value);
+        witness.set_target(
+            self.current_block_rollup_balance,
+            result.current_block_rollup_balance,
+        );
+        witness.set_target(
+            self.next_block_rollup_balance,
+            result.next_block_rollup_balance,
+        );
     }
 }
