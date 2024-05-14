@@ -108,3 +108,12 @@ bb8-redis = { version = "^0.15" }
 rsmq_async = { git = "https://github.com/QEDProtocol/rsmq-async-rs", rev = "1d61a9e665ce69f9c37752575c5b7b3566504a32", default-features = false, features = ["tokio-comp"] }
 r2d2 = "0.8.8"
 r2d2_redis = { git = "https://github.com/GopherJ/r2d2-redis", rev = "759effbce90d2edd7cbd6f94071b383140a8f622" }
+plonky2x = { git = "https://github.com/GopherJ/succinctx.git", rev = "a7fa3f5d42f933c398587f4aea33cb7846b94797" }
+ff = { package = "ff", version = "0.13", features = ["derive"] }
+num-derive = "0.3.3"
+
+[patch.'https://github.com/0xPolygonZero/plonky2.git']
+plonky2 = { git = "https://github.com/QEDProtocol/plonky2-hwa", rev = "6a8ca008da97890b67a84f64784cfbc488b5238d" }
+
+[patch.'https://github.com/succinctlabs/starkyx.git']
+starkyx = { git = "https://github.com/QEDProtocol/starkyx", rev = "a53ea1060c6256a8a26820e43fbe8d75233e8b29" }

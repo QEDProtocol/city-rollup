@@ -5,3 +5,4 @@ pub mod data;
 pub mod logging;
 pub mod math;
 pub mod tree_planner;
+pub mod bls12_381;

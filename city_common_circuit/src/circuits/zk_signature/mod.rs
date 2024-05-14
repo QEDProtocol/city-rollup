@@ -10,7 +10,6 @@ use plonky2::plonk::circuit_data::VerifierCircuitData;
 use plonky2::plonk::circuit_data::VerifierOnlyCircuitData;
 use plonky2::plonk::config::AlgebraicHasher;
 use plonky2::plonk::config::GenericConfig;
-use plonky2::plonk::config::GenericHashOut;
 use plonky2::plonk::proof::ProofWithPublicInputs;
 use serde::Deserialize;
 use serde::Serialize;

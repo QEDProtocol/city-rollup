@@ -32,3 +32,12 @@ tokio                 = { workspace = true }
 
 [build-dependencies]
 shadow-rs = { workspace = true }
+
+[[examples]]
+bin = "full_block.rs"
+
+[[examples]]
+bin = "hashes.rs"
+
+[[examples]]
+bin = "prove_sighash_0_hints.rs"

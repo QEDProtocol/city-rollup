@@ -11,3 +11,10 @@ serde_with        = { workspace = true }
 clap              = { workspace = true }
 hex               = { workspace = true }
 rand              = { workspace = true }
+ff                = { workspace = true }
+lazy_static       = { workspace = true }
+anyhow            = { workspace = true }
+plonky2           = { workspace = true }
+num               = { workspace = true }
+plonky2x          = { workspace = true }
+starkyx           = { workspace = true }
