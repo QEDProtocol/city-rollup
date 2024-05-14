@@ -1,8 +1,11 @@
-use city_common_circuit::circuits::l1_secp256k1_signature::L1Secp256K1SignatureCircuit;
-use city_common_circuit::circuits::traits::qstandard::QStandardCircuit;
-use city_common_circuit::circuits::traits::qstandard::QStandardCircuitProvableWithProofStoreSync;
-use city_common_circuit::proof_minifier::pm_core::get_circuit_fingerprint_generic;
-use city_common_circuit::treeprover::wrapper::TreeProverLeafCircuitWrapper;
+use city_common_circuit::{
+    circuits::{
+        l1_secp256k1_signature::L1Secp256K1SignatureCircuit,
+        traits::qstandard::{QStandardCircuit, QStandardCircuitProvableWithProofStoreSync},
+    },
+    proof_minifier::pm_core::get_circuit_fingerprint_generic,
+    treeprover::wrapper::TreeProverLeafCircuitWrapper,
+};
 use city_crypto::hash::qhashout::QHashOut;
 use city_rollup_common::qworker::job_witnesses::op::CRClaimL1DepositCircuitInput;
 use city_rollup_common::qworker::proof_store::QProofStoreReaderSync;

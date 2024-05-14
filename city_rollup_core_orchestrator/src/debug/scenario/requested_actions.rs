@@ -1,13 +1,16 @@
 use std::collections::HashSet;
 
-use city_rollup_common::api::data::block::requested_actions::CityAddDepositRequest;
-use city_rollup_common::api::data::block::requested_actions::CityAddWithdrawalRequest;
-use city_rollup_common::api::data::block::requested_actions::CityClaimDepositRequest;
-use city_rollup_common::api::data::block::requested_actions::CityProcessWithdrawalRequest;
-use city_rollup_common::api::data::block::requested_actions::CityRegisterUserRequest;
-use city_rollup_common::api::data::block::requested_actions::CityTokenTransferRequest;
-use city_rollup_common::api::data::store::CityL2BlockState;
-use city_rollup_common::introspection::transaction::BTCTransaction;
+use city_rollup_common::{
+    api::data::{
+        block::requested_actions::{
+            CityAddDepositRequest, CityAddWithdrawalRequest, CityClaimDepositRequest,
+            CityProcessWithdrawalRequest, CityRegisterUserRequest, CityTokenTransferRequest,
+        },
+        store::CityL2BlockState,
+    },
+    introspection::transaction::BTCTransaction,
+};
+
 use plonky2::hash::hash_types::RichField;
 use serde::Deserialize;
 use serde::Serialize;

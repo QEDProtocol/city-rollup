@@ -1,16 +1,21 @@
-use city_crypto::hash::merkle::treeprover::AggStateTransitionInput;
-use city_crypto::hash::merkle::treeprover::AggStateTransitionWithEventsInput;
-use city_crypto::hash::merkle::treeprover::AggWTLeafAggregator;
-use city_crypto::hash::merkle::treeprover::AggWTTELeafAggregator;
-use city_crypto::hash::qhashout::QHashOut;
-use city_crypto::hash::traits::hasher::MerkleHasher;
-use city_rollup_common::api::data::store::CityL2BlockState;
-use city_rollup_common::qworker::fingerprints::CRWorkerToolboxCoreCircuitFingerprints;
-use city_rollup_common::qworker::job_id::ProvingJobCircuitType;
-use city_rollup_common::qworker::job_id::QProvingJobDataID;
-use city_rollup_common::qworker::proof_store::QProofStore;
-use city_store::config::F;
-use city_store::store::city::base::CityStore;
+use city_crypto::hash::{
+    merkle::treeprover::{
+        AggStateTransitionInput, AggStateTransitionWithEventsInput, AggWTLeafAggregator,
+        AggWTTELeafAggregator,
+    },
+    qhashout::QHashOut,
+    traits::hasher::MerkleHasher,
+};
+use city_rollup_common::{
+    api::data::store::CityL2BlockState,
+    qworker::{
+        fingerprints::CRWorkerToolboxCoreCircuitFingerprints,
+        job_id::{ProvingJobCircuitType, QProvingJobDataID},
+        job_witnesses::agg::CRBlockStateTransitionCircuitInput,
+        proof_store::QProofStore,
+    },
+};
+use city_store::{config::F, store::city::base::CityStore};
 use kvq::traits::KVQBinaryStore;
 use plonky2::hash::poseidon::PoseidonHash;
 
@@ -39,7 +44,11 @@ impl<S: KVQBinaryStore, PS: QProofStore> CityOrchestratorBlockPlanner<S, PS> {
         store: &mut S,
         proof_store: &mut PS,
         requested_actions: &CityScenarioRequestedActions<F>,
-    ) -> anyhow::Result<(CityOpJobIds, CityRootStateTransitions<F>)> {
+    ) -> anyhow::Result<(
+        CityOpJobIds,
+        CityRootStateTransitions<F>,
+        Vec<QProvingJobDataID>,
+    )> {
         let start_deposit_tree_root =
             CityStore::get_deposit_tree_root(store, self.processor.checkpoint_id)?;
 
@@ -252,9 +261,14 @@ impl<S: KVQBinaryStore, PS: QProofStore> CityOrchestratorBlockPlanner<S, PS> {
             process_withdrawal_job_ids,
             add_deposit_job_ids,
         };
+
+        let end_user_state_tree_root =
+            CityStore::get_user_tree_root(store, self.processor.checkpoint_id)?;
+
         let transition = CityRootStateTransitions {
             start_deposit_tree_root,
             start_withdrawal_tree_root,
+            end_user_state_tree_root,
             register_users: root_transition_register_users,
             claim_deposits: root_transition_claim_deposits,
             token_transfers: root_transition_transfer_tokens,
@@ -262,6 +276,48 @@ impl<S: KVQBinaryStore, PS: QProofStore> CityOrchestratorBlockPlanner<S, PS> {
             process_withdrawals: root_transition_process_withdrawals,
             add_deposits: root_transition_add_deposits,
         };
-        Ok((job_ids, transition))
+
+        let root_ids = job_ids.get_root_proof_outputs();
+        let block_state_witness_part_1 = transition.get_block_state_witness_part_1(&root_ids);
+
+        let block_state_part_1_id =
+            QProvingJobDataID::block_agg_state_part_1_input_witness(self.processor.checkpoint_id);
+        proof_store.set_bytes_by_id(
+            block_state_part_1_id,
+            &bincode::serialize(&block_state_witness_part_1)?,
+        )?;
+
+        let block_state_witness_part_2 = transition.get_block_state_witness_part_2(&root_ids);
+
+        let block_state_part_2_id =
+            QProvingJobDataID::block_agg_state_part_2_input_witness(self.processor.checkpoint_id);
+        proof_store.set_bytes_by_id(
+            block_state_part_2_id,
+            &bincode::serialize(&block_state_witness_part_2)?,
+        )?;
+
+        let block_state_transition_input = CRBlockStateTransitionCircuitInput::from_steps(
+            block_state_part_1_id.get_output_id(),
+            &block_state_witness_part_1,
+            block_state_part_2_id.get_output_id(),
+            &block_state_witness_part_2,
+        );
+        let block_state_transition_id =
+            QProvingJobDataID::block_state_transition_input_witness(self.processor.checkpoint_id);
+
+        proof_store.set_bytes_by_id(
+            block_state_transition_id,
+            &bincode::serialize(&block_state_transition_input)?,
+        )?;
+
+        Ok((
+            job_ids,
+            transition,
+            vec![
+                block_state_part_1_id,
+                block_state_part_2_id,
+                block_state_transition_id,
+            ],
+        ))
     }
 }

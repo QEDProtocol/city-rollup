@@ -66,6 +66,18 @@ sign-hash:
 		--action-hash=010d831efabf0bd45a992f203683c1e38a5492054099b29596237efd5e5cdca8 \
 		--output=proof.txt
 
+.PHONY: full_block
+full_block:
+	@RUST_BACKTRACE=${TRACE_ENABLED} cargo run --package city-rollup-dev-cli --example full_block
+
+.PHONY: hashes
+hashes:
+	@RUST_BACKTRACE=${TRACE_ENABLED} cargo run --package city-rollup-dev-cli --example hashes
+
+.PHONY: prove_sighash_0_hints
+prove_sighash_0_hints:
+	@RUST_BACKTRACE=${TRACE_ENABLED} cargo run --package city-rollup-dev-cli --example prove_sighash_0_hints
+
 .PHONY: launch
 launch:
 	@docker-compose \
