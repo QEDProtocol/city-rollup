@@ -354,6 +354,19 @@ impl QProvingJobDataID {
             data_index: 0,
         }
     }
+    pub fn sighash_introspection_input_witness(block_id: u64, input_id: usize) -> Self {
+        Self {
+            topic: QJobTopic::GenerateStandardProof,
+            goal_id: block_id,
+            group_id: ProvingJobCircuitType::GenerateSigHashIntrospectionProof
+                .to_circuit_group_id(),
+            circuit_type: ProvingJobCircuitType::GenerateSigHashIntrospectionProof,
+            sub_group_id: 0,
+            task_index: input_id as u32,
+            data_type: ProvingJobDataType::InputWitness,
+            data_index: 0,
+        }
+    }
     pub fn get_input_proof_id(&self, data_index: u8) -> Self {
         Self {
             data_type: ProvingJobDataType::BaseInputProof,

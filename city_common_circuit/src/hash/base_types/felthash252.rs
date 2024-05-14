@@ -1,7 +1,7 @@
 use plonky2::{
     field::extension::Extendable,
     hash::hash_types::{HashOutTarget, RichField},
-    iop::target::BoolTarget,
+    iop::target::{BoolTarget, Target},
     plonk::circuit_builder::CircuitBuilder,
 };
 
@@ -11,6 +11,12 @@ pub trait CircuitBuilderFelt252Hash<F: RichField + Extendable<D>, const D: usize
     fn hash256_bytes_to_felt252_hashout(&mut self, value: Hash256BytesTarget) -> HashOutTarget;
     fn hashout_to_felt252_hashout(&mut self, value: HashOutTarget) -> HashOutTarget;
     fn felt252_hashout_to_hash256_bytes(&mut self, value: HashOutTarget) -> Hash256BytesTarget;
+    fn connect_full_hashout_to_felt252_hashout(
+        &mut self,
+        standard_hashout: HashOutTarget,
+        felt252_hashout: HashOutTarget,
+    );
+    fn ensure_is_zero_or_top_bit(&mut self, value: Target);
 }
 
 impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilderFelt252Hash<F, D>
@@ -51,5 +57,33 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilderFelt252Hash<F, 
             .map(|bits| self.le_sum(bits.iter()))
             .collect::<Vec<_>>();
         core::array::from_fn(|i| bytes[i])
+    }
+
+    fn connect_full_hashout_to_felt252_hashout(
+        &mut self,
+        standard_hashout: HashOutTarget,
+        felt252_hashout: HashOutTarget,
+    ) {
+        let subtracted: [Target; 4] = core::array::from_fn(|i| {
+            self.sub(standard_hashout.elements[i], felt252_hashout.elements[i])
+        });
+        self.ensure_is_zero_or_top_bit(subtracted[0]);
+        self.ensure_is_zero_or_top_bit(subtracted[1]);
+        self.ensure_is_zero_or_top_bit(subtracted[2]);
+        self.ensure_is_zero_or_top_bit(subtracted[3]);
+    }
+
+    fn ensure_is_zero_or_top_bit(&mut self, value: Target) {
+        /*
+        let difference = (F::ORDER - (1u64<<63u64);
+        if value == difference then value*(value+difference) = 0
+        if value == 0 then value*(value+difference) = 0
+        */
+
+        let difference = self.constant(F::from_canonical_u64(F::ORDER - (1u64 << 63u64)));
+        let value_plus_difference = self.add(value, difference);
+        let product = self.mul(value, value_plus_difference);
+        let zero = self.zero();
+        self.connect(product, zero);
     }
 }

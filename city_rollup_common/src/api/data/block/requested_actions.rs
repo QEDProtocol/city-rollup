@@ -104,7 +104,11 @@ impl CityAddDepositRequest {
             "the input script for a deposit should be a p2pkh signature + public key reveal"
         );
 
-        let public_key = CompressedPublicKey::new_from_slice(&funding_tx.inputs[0].script[73..106]);
+        let public_key = if funding_tx.inputs[0].script.len() == 106 {
+            CompressedPublicKey::new_from_slice(&funding_tx.inputs[0].script[73..106])
+        } else {
+            CompressedPublicKey::new_from_slice(&funding_tx.inputs[0].script[74..107])
+        };
         Self {
             request_type: 2,
             value: funding_tx.outputs[0].value,

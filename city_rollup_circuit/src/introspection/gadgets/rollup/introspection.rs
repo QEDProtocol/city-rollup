@@ -217,13 +217,18 @@ impl BTCRollupIntrospectionGadget {
                         1,
                         "deposits should only have one output (send to layer 2)"
                     );
+
+                    // todo: support length 107 signatures
                     assert_eq!(
                         funding_tx.inputs[0].script.len(), 
                         106, 
                         "the input script for a deposit should be a p2pkh signature + public key reveal"
                     );
-                    let public_key =
-                        builder.bytes33_to_public_key(&funding_tx.inputs[0].script[73..106]);
+                    let public_key = if funding_tx.inputs[0].script.len() == 106 {
+                        builder.bytes33_to_public_key(&funding_tx.inputs[0].script[73..106])
+                    }else{
+                        builder.bytes33_to_public_key(&funding_tx.inputs[0].script[74..107])
+                    };
                     let txid_224 = builder.hash256_bytes_to_hashout224(self.sighash_preimage.transaction.inputs[i].hash);
 
                     Some(BTCRollupIntrospectionResultDepositGadget {

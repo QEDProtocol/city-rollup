@@ -4,6 +4,7 @@ use city_crypto::hash::base_types::hash256::Hash256;
 use city_crypto::hash::core::btc::btc_hash256;
 use serde::{Deserialize, Serialize};
 
+use super::rollup::introspection::BlockSpendCoreConfig;
 use super::sighash::SigHashPreimage;
 use super::size::BTCTransactionLayout;
 use serde_with::serde_as;
@@ -15,11 +16,75 @@ pub struct BTCTransaction {
     pub locktime: u32,
 }
 
-#[derive(Serialize, Deserialize, PartialEq, Clone, Debug)]
+#[derive(Serialize, Deserialize, PartialEq, Clone, Debug, Hash, Eq, PartialOrd, Ord)]
 pub struct BTCTransactionConfig {
     pub layout: BTCTransactionLayout,
     pub locktime: u32,
     pub version: u32,
+}
+
+impl BTCTransactionConfig {
+    pub fn generate_funding_block_tx_from_template(
+        config: &BlockSpendCoreConfig,
+        last_block_num_deposits: usize,
+        last_block_num_withdrawals: usize,
+    ) -> Self {
+        let input_script_sizes =
+            vec![config.block_funding_script_size; last_block_num_deposits + 1];
+        let output_script_sizes = (0..(last_block_num_withdrawals + 1))
+            .map(|i| {
+                if i == config.block_spend_index {
+                    config.block_output_script_size
+                } else {
+                    config.withdrawal_output_script_size
+                }
+            })
+            .collect::<Vec<_>>();
+        Self {
+            layout: BTCTransactionLayout {
+                input_script_sizes,
+                output_script_sizes,
+            },
+            locktime: config.locktime,
+            version: config.version,
+        }
+    }
+    pub fn generate_current_block_sighash_tx_from_template(
+        config: &BlockSpendCoreConfig,
+        num_deposits: usize,
+        num_withdrawals: usize,
+        current_spend_index: usize,
+    ) -> Self {
+        let mut input_script_sizes = vec![0; num_deposits + 1];
+        input_script_sizes[current_spend_index] = config.block_sighash_script_size;
+        let output_script_sizes = (0..(num_withdrawals + 1))
+            .map(|i| {
+                if i == config.block_spend_index {
+                    config.block_output_script_size
+                } else {
+                    config.withdrawal_output_script_size
+                }
+            })
+            .collect::<Vec<_>>();
+        Self {
+            layout: BTCTransactionLayout {
+                input_script_sizes,
+                output_script_sizes,
+            },
+            locktime: config.locktime,
+            version: config.version,
+        }
+    }
+    pub fn generate_funding_deposit_tx_from_template(config: &BlockSpendCoreConfig) -> Self {
+        Self {
+            layout: BTCTransactionLayout {
+                input_script_sizes: vec![config.deposit_funding_script_size],
+                output_script_sizes: vec![config.block_output_script_size],
+            },
+            locktime: config.locktime,
+            version: config.version,
+        }
+    }
 }
 
 #[serde_as]

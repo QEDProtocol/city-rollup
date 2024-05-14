@@ -9,6 +9,7 @@ use city_rollup_circuit::{
 };
 use city_rollup_common::{
     api::data::{block::rpc_request::CityRegisterUserRPCRequest, store::CityL2BlockState},
+    config::sighash_wrapper_config::SIGHASH_WHITELIST_TREE_ROOT,
     introspection::{
         rollup::{
             constants::NETWORK_MAGIC_DOGE_REGTEST,
@@ -16,17 +17,18 @@ use city_rollup_common::{
         },
         transaction::BTCTransaction,
     },
-    qworker::memory_proof_store::SimpleProofStoreMemory,
+    qworker::{memory_proof_store::SimpleProofStoreMemory, proof_store::QProofStoreReaderSync},
 };
 use city_rollup_core_orchestrator::debug::scenario::{
     block_planner::planner::CityOrchestratorBlockPlanner,
     requested_actions::CityScenarioRequestedActions, rpc_processor::DebugRPCProcessor,
-    wallet::DebugScenarioWallet,
+    sighash::finalizer::SigHashFinalizer, wallet::DebugScenarioWallet,
 };
-use city_store::store::city::base::CityStore;
+use city_store::store::{city::base::CityStore, sighash::SigHashMerkleTree};
 use kvq::memory::simple::KVQSimpleMemoryBackingStore;
 use plonky2::{
     field::goldilocks_field::GoldilocksField,
+    hash::poseidon::PoseidonHash,
     plonk::{
         config::{AlgebraicHasher, GenericConfig, PoseidonGoldilocksConfig},
         proof::ProofWithPublicInputs,
@@ -103,17 +105,34 @@ where
     */
     Ok(proof)
 }
-fn prove_block_demo(transactions: &[BTCTransaction]) -> anyhow::Result<()> {
-    let network_magic = NETWORK_MAGIC_DOGE_REGTEST;
-
-    let toolbox_circuits = CRWorkerToolboxRootCircuits::<C, D>::new(network_magic);
-    //toolbox_circuits.print_op_common_data();
-
+fn prove_block_demo(hints: &[BlockSpendIntrospectionHint]) -> anyhow::Result<()> {
     const D: usize = 2;
     type C = PoseidonGoldilocksConfig;
     type F = GoldilocksField;
     type S = KVQSimpleMemoryBackingStore;
     type PS = SimpleProofStoreMemory;
+
+    let finalized = hints[0]
+        .get_introspection_result::<PoseidonHash, F>()
+        .get_finalized_result::<PoseidonHash>();
+    println!(
+        "finalized.current_block_state_hash: {} ({:?})",
+        finalized.current_block_state_hash.to_string(),
+        finalized.current_block_state_hash.0
+    );
+    println!(
+        "finalized.next_block_state_hash: {} ({:?})",
+        finalized.current_block_state_hash.to_string(),
+        finalized.current_block_state_hash.0
+    );
+
+    let network_magic = NETWORK_MAGIC_DOGE_REGTEST;
+
+    let toolbox_circuits =
+        CRWorkerToolboxRootCircuits::<C, D>::new(network_magic, SIGHASH_WHITELIST_TREE_ROOT);
+    //toolbox_circuits.print_op_common_data();
+
+    let sighash_whitelist_tree = SigHashMerkleTree::new();
     let mut proof_store = PS::new();
     let mut store = S::new();
     let mut timer = DebugTimer::new("prove_block_demo");
@@ -161,7 +180,7 @@ fn prove_block_demo(transactions: &[BTCTransaction]) -> anyhow::Result<()> {
 
     let block_1_requested = CityScenarioRequestedActions::new_from_requested_rpc(
         block_1_builder.output,
-        transactions,
+        &hints[0].funding_transactions,
         &block_0_state,
         2,
     );
@@ -175,6 +194,14 @@ fn prove_block_demo(transactions: &[BTCTransaction]) -> anyhow::Result<()> {
 
     let (block_1_job_ids, block_1_state_transition, block_1_end_jobs) =
         block_1_planner.process_requests(&mut store, &mut proof_store, &block_1_requested)?;
+
+    let sighash_jobs = SigHashFinalizer::finalize_sighashes::<PS>(
+        &mut proof_store,
+        sighash_whitelist_tree,
+        1,
+        *block_1_end_jobs.last().unwrap(),
+        hints,
+    )?;
     timer.lap("end process requests block 1");
     /*println!(
             "block_1_job_ids: {}",
@@ -195,9 +222,28 @@ fn prove_block_demo(transactions: &[BTCTransaction]) -> anyhow::Result<()> {
     }
     timer.lap("start proving end jobs");
 
-    for job in block_1_end_jobs {
-        worker.prove::<PS, _, C, D>(&mut proof_store, &toolbox_circuits, job)?;
+    for job in block_1_end_jobs.iter() {
+        worker.prove::<PS, _, C, D>(&mut proof_store, &toolbox_circuits, *job)?;
     }
+
+    timer.lap("start proving sighash jobs");
+
+    for job in sighash_jobs.sighash_introspection_job_ids.iter() {
+        worker.prove::<PS, _, C, D>(&mut proof_store, &toolbox_circuits, *job)?;
+    }
+
+    let sighash_proof = proof_store
+        .get_proof_by_id::<C, D>(sighash_jobs.sighash_introspection_job_ids[0].get_output_id())?;
+    println!(
+        "sighash_proof.public_inputs: {:?}",
+        sighash_proof.public_inputs
+    );
+    let state_root_proof =
+        proof_store.get_proof_by_id::<C, D>(block_1_end_jobs.last().unwrap().get_output_id())?;
+    println!(
+        "state_root_proof.public_inputs: {:?}",
+        state_root_proof.public_inputs
+    );
 
     timer.lap("end proving jobs");
     /*
@@ -213,12 +259,16 @@ fn prove_block_demo(transactions: &[BTCTransaction]) -> anyhow::Result<()> {
 }
 fn main() {
     let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    let path = format!("{}/examples/prove_sighash_0_hints.json", root.display());
+    let path = format!("{}/examples/full_block_hints_1.json", root.display());
     let file_data = fs::read(path).unwrap();
     let introspection_hints: Vec<BlockSpendIntrospectionHint> =
         serde_json::from_slice(&file_data).unwrap();
-    let transactions = introspection_hints[0].funding_transactions[1..].to_vec();
-    prove_block_demo(&transactions).unwrap();
+    let configs = introspection_hints
+        .iter()
+        .map(|x| x.get_config())
+        .collect::<Vec<_>>();
+    println!("configs: {}", serde_json::to_string(&configs).unwrap());
+    prove_block_demo(&introspection_hints).unwrap();
 
     //println!("Proof: {:?}", proof);
 }

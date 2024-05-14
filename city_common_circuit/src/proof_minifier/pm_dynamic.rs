@@ -16,6 +16,8 @@ use plonky2::{
     },
 };
 
+use crate::builder::verify::CircuitBuilderVerifyProofHelpers;
+
 use super::{pm_core::get_circuit_fingerprint_generic, pm_custom::PMCircuitCustomizer};
 
 #[derive(Debug)]
@@ -87,6 +89,15 @@ where
             &verifier_data_target,
             base_circuit_common_data,
         );
+        if !is_constant_verifier_data {
+            let fingerprint_target =
+                builder.get_circuit_fingerprint::<C::Hasher>(&verifier_data_target);
+            let known_fingerprint =
+                builder.constant_hash(get_circuit_fingerprint_generic::<D, C::F, C>(
+                    base_circuit_verifier_data,
+                ));
+            builder.connect_hashes(fingerprint_target, known_fingerprint);
+        }
 
         if add_gates.is_some() {
             add_gates.unwrap().iter().for_each(|g| {

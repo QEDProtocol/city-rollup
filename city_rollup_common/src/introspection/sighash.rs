@@ -5,7 +5,10 @@ use city_crypto::hash::{
 use plonky2::hash::hash_types::{HashOut, RichField};
 use serde::{Deserialize, Serialize};
 
-use super::transaction::{BTCTransaction, BTCTransactionConfig, BTCTransactionOutput};
+use super::{
+    rollup::introspection::BlockSpendCoreConfig,
+    transaction::{BTCTransaction, BTCTransactionConfig, BTCTransactionOutput},
+};
 /*
 
 
@@ -42,12 +45,30 @@ pub struct SigHashPreimage {
     pub sighash_type: u32,
 }
 
-#[derive(Serialize, Deserialize, PartialEq, Clone, Debug)]
+#[derive(Serialize, Deserialize, PartialEq, Clone, Debug, Hash, Eq, PartialOrd, Ord)]
 pub struct SigHashPreimageConfig {
     pub transaction_config: BTCTransactionConfig,
     pub sighash_type: u32,
 }
-
+impl SigHashPreimageConfig {
+    pub fn generate_from_template(
+        config: &BlockSpendCoreConfig,
+        num_deposits: usize,
+        num_withdrawals: usize,
+        current_spend_index: usize,
+    ) -> Self {
+        Self {
+            transaction_config:
+                BTCTransactionConfig::generate_current_block_sighash_tx_from_template(
+                    config,
+                    num_deposits,
+                    num_withdrawals,
+                    current_spend_index,
+                ),
+            sighash_type: config.sighash_type,
+        }
+    }
+}
 fn prepare_sighash_preimage_pre_segwit(
     transaction: &BTCTransaction,
     input_index: usize,
