@@ -1,11 +1,15 @@
-use city_crypto::field::conversions::bytes33_to_public_key;
-use city_crypto::hash::base_types::felt252::hash256_le_to_felt252_hashout;
-use city_crypto::hash::qhashout::QHashOut;
-use city_crypto::signature::secp256k1::core::hash256_to_hashout_u224;
-use plonky2::hash::hash_types::RichField;
-use plonky2::plonk::config::AlgebraicHasher;
-use serde::Deserialize;
-use serde::Serialize;
+use city_crypto::{
+    field::conversions::bytes33_to_public_key,
+    hash::{
+        base_types::{felt252::hash256_le_to_felt252_hashout, hash256::Hash256},
+        core::btc::btc_hash160,
+        qhashout::QHashOut,
+    },
+    signature::secp256k1::core::hash256_to_hashout_u224,
+};
+use plonky2::{hash::hash_types::RichField, plonk::config::AlgebraicHasher};
+use serde::{Deserialize, Serialize};
+
 use serde_with::serde_as;
 
 use super::introspection_result::BTCRollupIntrospectionResult;
@@ -117,6 +121,22 @@ impl BlockSpendIntrospectionHint {
                 &self.next_block_redeem_script[1..33],
             )),
         }
+    }
+    pub fn perform_sighash_hash_surgery(&self, new_state_hash: Hash256) -> Self {
+        let mut clone = self.clone();
+        clone.next_block_redeem_script[1..33].copy_from_slice(&new_state_hash.0);
+        let new_p2sh_address = btc_hash160(&clone.next_block_redeem_script);
+        clone
+            .sighash_preimage
+            .transaction
+            .outputs
+            .iter_mut()
+            .for_each(|output| {
+                if output.script.len() == 23 {
+                    output.script[2..22].copy_from_slice(&new_p2sh_address.0);
+                }
+            });
+        clone
     }
 }
 
@@ -490,7 +510,7 @@ impl BlockSpendIntrospectionGadgetConfig {
 
 #[cfg(test)]
 mod tests {
-    
+
 
     #[test]
     fn test_index_fast() -> anyhow::Result<()> {

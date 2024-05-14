@@ -1,10 +1,9 @@
-use city_crypto::hash::base_types::felt252::hash256_le_to_felt252_hashout;
-use city_crypto::hash::base_types::hash256::Hash256;
-use city_crypto::hash::core::btc::btc_hash256;
-use plonky2::hash::hash_types::HashOut;
-use plonky2::hash::hash_types::RichField;
-use serde::Deserialize;
-use serde::Serialize;
+use city_crypto::hash::{
+    base_types::{felt252::hash256_le_to_felt252_hashout_packed, hash256::Hash256},
+    core::btc::btc_hash256,
+};
+use plonky2::hash::hash_types::{HashOut, RichField};
+use serde::{Deserialize, Serialize};
 
 use crate::introspection::rollup::introspection::BlockSpendCoreConfig;
 
@@ -141,7 +140,7 @@ impl SigHashPreimage {
         btc_hash256(&self.to_bytes())
     }
     pub fn get_hash_felt252<F: RichField>(&self) -> HashOut<F> {
-        hash256_le_to_felt252_hashout::<F>(&self.get_hash().0)
+        hash256_le_to_felt252_hashout_packed::<F>(&self.get_hash().0)
     }
     pub fn get_sighash_config(&self) -> SigHashPreimageConfig {
         SigHashPreimageConfig {

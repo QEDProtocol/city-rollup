@@ -5,7 +5,7 @@ use city_rollup_common::api::data::btc_spend_info::SimpleRollupBTCSpendInfo;
 fn main() {
     let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let path = format!(
-        "{}/examples/covenant_js_output_example_2.json",
+        "{}/examples/covenant_js_output_example_3.json",
         root.display()
     );
     let file_data = fs::read(path).unwrap();

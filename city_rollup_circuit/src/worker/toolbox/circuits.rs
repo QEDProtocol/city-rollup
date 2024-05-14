@@ -335,6 +335,9 @@ where
             ProvingJobCircuitType::AggAddProcessL1WithdrawalAddL1Deposit => {
                 panic!("cannot get circuit data for AggAddProcessL1WithdrawalAddL1Deposit")
             }
+            ProvingJobCircuitType::WrapFinalSigHashProofBLS12381 => {
+                panic!("WrapFinalSigHashProofBLS12381 is not a standard circuit")
+            }
         }
     }
 
@@ -440,6 +443,7 @@ where
             ProvingJobCircuitType::Unknown => todo!(),
             ProvingJobCircuitType::AggUserRegisterClaimDepositL2Transfer => todo!(),
             ProvingJobCircuitType::AggAddProcessL1WithdrawalAddL1Deposit => todo!(),
+            ProvingJobCircuitType::WrapFinalSigHashProofBLS12381 => todo!(),
         }
     }
 }

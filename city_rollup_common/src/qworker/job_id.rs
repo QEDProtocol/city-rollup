@@ -98,6 +98,7 @@ pub enum ProvingJobCircuitType {
     GenerateSigHashIntrospectionProof = 33,
     GenerateFinalSigHashProof = 34,
     GenerateFinalSigHashProofGroth16 = 35,
+    WrapFinalSigHashProofBLS12381 = 36,
 
     AggUserRegisterClaimDepositL2Transfer = 40,
     AggAddProcessL1WithdrawalAddL1Deposit = 41,
@@ -143,6 +144,7 @@ impl TryFrom<u8> for ProvingJobCircuitType {
             33 => Ok(ProvingJobCircuitType::GenerateSigHashIntrospectionProof),
             34 => Ok(ProvingJobCircuitType::GenerateFinalSigHashProof),
             35 => Ok(ProvingJobCircuitType::GenerateFinalSigHashProofGroth16),
+            36 => Ok(ProvingJobCircuitType::WrapFinalSigHashProofBLS12381),
             40 => Ok(ProvingJobCircuitType::AggUserRegisterClaimDepositL2Transfer),
             41 => Ok(ProvingJobCircuitType::AggAddProcessL1WithdrawalAddL1Deposit),
             48 => Ok(ProvingJobCircuitType::DummyRegisterUserAggregate),
@@ -369,15 +371,26 @@ impl QProvingJobDataID {
             data_index: 0,
         }
     }
-    pub fn sighash_introspection_groth16_input_witness(block_id: u64) -> Self {
+    pub fn sighash_final_input_witness(block_id: u64, input_id: usize) -> Self {
         Self {
-            topic: QJobTopic::GenerateGroth16Proof,
+            topic: QJobTopic::GenerateStandardProof,
             goal_id: block_id,
-            group_id: ProvingJobCircuitType::GenerateFinalSigHashProofGroth16
-                .to_circuit_group_id(),
-            circuit_type: ProvingJobCircuitType::GenerateFinalSigHashProofGroth16,
+            group_id: ProvingJobCircuitType::GenerateFinalSigHashProof.to_circuit_group_id(),
+            circuit_type: ProvingJobCircuitType::GenerateFinalSigHashProof,
             sub_group_id: 0,
-            task_index: 0,
+            task_index: input_id as u32,
+            data_type: ProvingJobDataType::InputWitness,
+            data_index: 0,
+        }
+    }
+    pub fn wrap_sighash_final_bls3812_input_witness(block_id: u64, input_id: usize) -> Self {
+        Self {
+            topic: QJobTopic::GenerateStandardProof,
+            goal_id: block_id,
+            group_id: ProvingJobCircuitType::WrapFinalSigHashProofBLS12381.to_circuit_group_id(),
+            circuit_type: ProvingJobCircuitType::WrapFinalSigHashProofBLS12381,
+            sub_group_id: 0,
+            task_index: input_id as u32,
             data_type: ProvingJobDataType::InputWitness,
             data_index: 0,
         }

@@ -95,6 +95,7 @@ where
         );
 
         let proof_fingerprint = builder.get_circuit_fingerprint::<C::Hasher>(&verifier_data_target);
+
         builder.connect_hashes(proof_fingerprint, expected_sighash_proof_fingerprint);
 
         builder.register_public_inputs(&proof_target.public_inputs);

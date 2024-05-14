@@ -33,7 +33,50 @@ pub fn hash256_le_to_felt252_hashout<F: RichField>(hash: &[u8]) -> HashOut<F> {
         ],
     }
 }
+const fn u8_to_bits_le(value: u8) -> [u8; 8] {
+    [
+        (value >> 0) & 1,
+        (value >> 1) & 1,
+        (value >> 2) & 1,
+        (value >> 3) & 1,
+        (value >> 4) & 1,
+        (value >> 5) & 1,
+        (value >> 6) & 1,
+        (value >> 7) & 1,
+    ]
+}
+fn sum_le_bits(bits: &[u8]) -> u64 {
+    bits.iter().fold(0u64, |acc, &b| (acc << 1) | (b as u64))
+}
+pub fn hash256_le_to_felt252_hashout_packed<F: RichField>(hash: &[u8]) -> HashOut<F> {
+    let result = hash
+        .iter()
+        .map(|x| u8_to_bits_le(*x))
+        .flatten()
+        .collect::<Vec<_>>();
+    let a = F::from_canonical_u64(sum_le_bits(&result[0..63]));
+    let b = F::from_canonical_u64(sum_le_bits(&result[63..126]));
+    let c = F::from_canonical_u64(sum_le_bits(&result[126..189]));
+    let d = F::from_canonical_u64(sum_le_bits(&result[189..252]));
+    HashOut {
+        elements: [a, b, c, d],
+    }
+}
 pub fn felt252_hashout_to_hash256_le<F: RichField>(hash: HashOut<F>) -> Hash256 {
+    //let top_bit = 1u64 << 63u64;
+    let a = hash.elements[0].to_canonical_u64() & HASH_252_FELT_MASK;
+    let b = hash.elements[1].to_canonical_u64() & HASH_252_FELT_MASK;
+    let c = hash.elements[2].to_canonical_u64() & HASH_252_FELT_MASK;
+    let d = hash.elements[3].to_canonical_u64() & HASH_252_FELT_MASK;
+
+    let mut hash: [u8; 32] = [0; 32];
+    hash[0..8].copy_from_slice(&a.to_le_bytes());
+    hash[8..16].copy_from_slice(&b.to_le_bytes());
+    hash[16..24].copy_from_slice(&c.to_le_bytes());
+    hash[24..32].copy_from_slice(&d.to_le_bytes());
+    Hash256(hash)
+}
+pub fn felt252_hashout_to_hash256_le_packed<F: RichField>(hash: HashOut<F>) -> Hash256 {
     //let top_bit = 1u64 << 63u64;
     let a = hash.elements[0].to_canonical_u64() & HASH_252_FELT_MASK;
     let b = hash.elements[1].to_canonical_u64() & HASH_252_FELT_MASK;
@@ -58,7 +101,7 @@ mod test {
     use plonky2::field::types::Field;
     use plonky2::hash::hash_types::HashOut;
 
-    use crate::hash::base_types::felt252::felt252_hashout_to_hash256_le;
+    use crate::hash::base_types::felt252::felt252_hashout_to_hash256_le_packed;
 
     #[test]
     fn test1() {
@@ -75,7 +118,7 @@ mod test {
         println!("ho: {:?}", ho1);
         println!(
             "252: {}:",
-            felt252_hashout_to_hash256_le::<F>(ho1).to_hex_string()
+            felt252_hashout_to_hash256_le_packed::<F>(ho1).to_hex_string()
         );
     }
 }

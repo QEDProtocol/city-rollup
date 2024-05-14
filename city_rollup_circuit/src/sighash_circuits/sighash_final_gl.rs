@@ -74,7 +74,6 @@ where
             &sighash_wrapper_verifier_data_target,
             sighash_wrapper_common_data,
         );
-
         let introspection_finalized_result_gadget =
             BTCRollupIntrospectionFinalizedResultGadget::add_virtual_to(&mut builder);
 
@@ -121,7 +120,6 @@ where
                 block_state_transition_proof_target.public_inputs[7],
             ],
         };
-
         builder.connect_full_hashout_to_felt252_hashout(
             actual_current_block_start_hash,
             expected_current_block_start_hash_252,
@@ -130,7 +128,6 @@ where
             actual_current_block_end_hash,
             expected_current_block_end_hash_252,
         );
-
         let expected_withdrawals_event_hash =
             introspection_finalized_result_gadget.withdrawals_hash;
         let expected_deposits_event_hash = introspection_finalized_result_gadget.deposits_hash;
@@ -151,7 +148,6 @@ where
                 block_state_transition_proof_target.public_inputs[15],
             ],
         };
-
         builder.connect_hashes(
             actual_withdrawals_event_hash,
             expected_withdrawals_event_hash,
@@ -186,6 +182,15 @@ where
         block_state_transition_proof: &ProofWithPublicInputs<C::F, C, D>,
         sighash_wrapper_proof: &ProofWithPublicInputs<C::F, C, D>,
     ) -> anyhow::Result<ProofWithPublicInputs<C::F, C, D>> {
+        println!("input: {:?}", input);
+        println!(
+            "block_state_transition_proof.public_inputs: {:?}",
+            block_state_transition_proof.public_inputs
+        );
+        println!(
+            "sighash_wrapper_proof.public_inputs: {:?}",
+            sighash_wrapper_proof.public_inputs
+        );
         let mut pw = PartialWitness::new();
         pw.set_proof_with_pis_target(
             &self.block_state_transition_proof_target,
@@ -207,15 +212,15 @@ where
     C::Hasher: AlgebraicHasher<C::F>,
 {
     fn get_fingerprint(&self) -> QHashOut<C::F> {
-        self.fingerprint
+        QHashOut(self.minifier.get_fingerprint())
     }
 
     fn get_verifier_config_ref(&self) -> &VerifierOnlyCircuitData<C, D> {
-        &self.circuit_data.verifier_only
+        self.minifier.get_verifier_data()
     }
 
     fn get_common_circuit_data_ref(&self) -> &CommonCircuitData<C::F, D> {
-        &self.circuit_data.common
+        self.minifier.get_common_data()
     }
 }
 impl<

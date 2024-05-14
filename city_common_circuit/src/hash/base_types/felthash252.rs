@@ -9,6 +9,10 @@ use super::hash256bytes::Hash256BytesTarget;
 
 pub trait CircuitBuilderFelt252Hash<F: RichField + Extendable<D>, const D: usize> {
     fn hash256_bytes_to_felt252_hashout(&mut self, value: Hash256BytesTarget) -> HashOutTarget;
+    fn hash256_bytes_to_felt252_hashout_packed(
+        &mut self,
+        value: Hash256BytesTarget,
+    ) -> HashOutTarget;
     fn hashout_to_felt252_hashout(&mut self, value: HashOutTarget) -> HashOutTarget;
     fn felt252_hashout_to_hash256_bytes(&mut self, value: HashOutTarget) -> Hash256BytesTarget;
     fn connect_full_hashout_to_felt252_hashout(
@@ -34,6 +38,24 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilderFelt252Hash<F, 
 
         HashOutTarget {
             elements: [r2[0], r2[1], r2[2], r2[3]],
+        }
+    }
+
+    fn hash256_bytes_to_felt252_hashout_packed(
+        &mut self,
+        value: Hash256BytesTarget,
+    ) -> HashOutTarget {
+        let results = value
+            .iter()
+            .flat_map(|v| self.split_le(*v, 8))
+            .collect::<Vec<_>>();
+
+        let a = self.le_sum(results[0..63].iter());
+        let b = self.le_sum(results[63..126].iter());
+        let c = self.le_sum(results[126..189].iter());
+        let d = self.le_sum(results[189..252].iter());
+        HashOutTarget {
+            elements: [a, b, c, d],
         }
     }
 
@@ -64,13 +86,16 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilderFelt252Hash<F, 
         standard_hashout: HashOutTarget,
         felt252_hashout: HashOutTarget,
     ) {
+        let std = self.hashout_to_felt252_hashout(standard_hashout);
+        self.connect_hashes(std, felt252_hashout);
+        /*
         let subtracted: [Target; 4] = core::array::from_fn(|i| {
             self.sub(standard_hashout.elements[i], felt252_hashout.elements[i])
         });
         self.ensure_is_zero_or_top_bit(subtracted[0]);
         self.ensure_is_zero_or_top_bit(subtracted[1]);
         self.ensure_is_zero_or_top_bit(subtracted[2]);
-        self.ensure_is_zero_or_top_bit(subtracted[3]);
+        self.ensure_is_zero_or_top_bit(subtracted[3]);*/
     }
 
     fn ensure_is_zero_or_top_bit(&mut self, value: Target) {

@@ -131,7 +131,9 @@ where
 
         self.transition_gadget.set_witness(&mut pw, input);
 
-        self.circuit_data.prove(pw)
+        let inner_proof = self.circuit_data.prove(pw)?;
+        println!("proved_inner");
+        self.minifier_chain.prove(&inner_proof)
     }
 }
 
@@ -175,13 +177,11 @@ where
             store.get_proof_by_id(input.agg_user_register_claim_deposits_l2_transfer.proof_id)?;
         let agg_add_process_withdrawals_add_l1_deposit_proof =
             store.get_proof_by_id(input.agg_add_process_withdrawals_add_l1_deposit.proof_id)?;
-
-        let inner_proof = self.prove_base(
+        self.prove_base(
             &input,
             &agg_user_register_claim_deposits_l2_transfer_proof,
             &agg_add_process_withdrawals_add_l1_deposit_proof,
-        )?;
-        self.minifier_chain.prove(&inner_proof)
+        )
     }
 }
 

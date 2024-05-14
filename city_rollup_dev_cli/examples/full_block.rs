@@ -3,29 +3,32 @@ use std::path::PathBuf;
 
 use city_common::logging::debug_timer::DebugTimer;
 use city_common_circuit::field::cubic::CubicExtendable;
-use city_crypto::hash::base_types::hash256::Hash256;
-use city_crypto::hash::qhashout::QHashOut;
-use city_rollup_circuit::sighash_circuits::sighash::CRSigHashCircuit;
-use city_rollup_circuit::worker::prover::QWorkerStandardProver;
-use city_rollup_circuit::worker::toolbox::root::CRWorkerToolboxRootCircuits;
-use city_rollup_common::api::data::block::rpc_request::CityRegisterUserRPCRequest;
-use city_rollup_common::api::data::store::CityL2BlockState;
-use city_rollup_common::config::sighash_wrapper_config::SIGHASH_WHITELIST_TREE_ROOT;
-use city_rollup_common::introspection::rollup::constants::NETWORK_MAGIC_DOGE_REGTEST;
-use city_rollup_common::introspection::rollup::introspection::BlockSpendIntrospectionGadgetConfig;
-use city_rollup_common::introspection::rollup::introspection::BlockSpendIntrospectionHint;
-use city_rollup_common::qworker::job_id::QProvingJobDataID;
-use city_rollup_common::qworker::job_witnesses::sighash::CRSigHashFinalGLCircuitInput;
-use city_rollup_common::qworker::memory_proof_store::SimpleProofStoreMemory;
-use city_rollup_common::qworker::proof_store::QProofStoreReaderSync;
-use city_rollup_common::qworker::proof_store::QProofStoreWriterSync;
-use city_rollup_core_orchestrator::debug::scenario::block_planner::planner::CityOrchestratorBlockPlanner;
-use city_rollup_core_orchestrator::debug::scenario::requested_actions::CityScenarioRequestedActions;
-use city_rollup_core_orchestrator::debug::scenario::rpc_processor::DebugRPCProcessor;
-use city_rollup_core_orchestrator::debug::scenario::sighash::finalizer::SigHashFinalizer;
-use city_rollup_core_orchestrator::debug::scenario::wallet::DebugScenarioWallet;
-use city_store::store::city::base::CityStore;
-use city_store::store::sighash::SigHashMerkleTree;
+use city_crypto::hash::{
+    base_types::{
+        felt252::{felt252_hashout_to_hash256_le, hashout_to_felt252_hashout},
+        hash256::Hash256,
+    },
+    qhashout::QHashOut,
+};
+use city_rollup_circuit::{
+    sighash_circuits::sighash::CRSigHashCircuit,
+    worker::{prover::QWorkerStandardProver, toolbox::root::CRWorkerToolboxRootCircuits},
+};
+use city_rollup_common::{
+    api::data::{block::rpc_request::CityRegisterUserRPCRequest, store::CityL2BlockState},
+    config::sighash_wrapper_config::SIGHASH_WHITELIST_TREE_ROOT,
+    introspection::rollup::{
+        constants::NETWORK_MAGIC_DOGE_REGTEST,
+        introspection::{BlockSpendIntrospectionGadgetConfig, BlockSpendIntrospectionHint},
+    },
+    qworker::{memory_proof_store::SimpleProofStoreMemory, proof_store::QProofStoreReaderSync},
+};
+use city_rollup_core_orchestrator::debug::scenario::{
+    block_planner::planner::CityOrchestratorBlockPlanner,
+    requested_actions::CityScenarioRequestedActions, rpc_processor::DebugRPCProcessor,
+    sighash::finalizer::SigHashFinalizer, wallet::DebugScenarioWallet,
+};
+use city_store::store::{city::base::CityStore, sighash::SigHashMerkleTree};
 use kvq::memory::simple::KVQSimpleMemoryBackingStore;
 use plonky2::field::goldilocks_field::GoldilocksField;
 use plonky2::hash::poseidon::PoseidonHash;
@@ -114,6 +117,7 @@ fn prove_block_demo(hints: &[BlockSpendIntrospectionHint]) -> anyhow::Result<()>
     let finalized = hints[0]
         .get_introspection_result::<PoseidonHash, F>()
         .get_finalized_result::<PoseidonHash>();
+    println!("finalized: {:?}", finalized);
     println!(
         "finalized.current_block_state_hash: {} ({:?})",
         finalized.current_block_state_hash.to_string(),
@@ -121,17 +125,21 @@ fn prove_block_demo(hints: &[BlockSpendIntrospectionHint]) -> anyhow::Result<()>
     );
     println!(
         "finalized.next_block_state_hash: {} ({:?})",
-        finalized.current_block_state_hash.to_string(),
-        finalized.current_block_state_hash.0
+        finalized.next_block_state_hash.to_string(),
+        finalized.next_block_state_hash.0
     );
 
     let network_magic = NETWORK_MAGIC_DOGE_REGTEST;
 
+    let sighash_whitelist_tree = SigHashMerkleTree::new();
+    /*println!(
+        "sighash_whitelist_tree.root: {:?}",
+        sighash_whitelist_tree.root.0
+    );*/
     let toolbox_circuits =
         CRWorkerToolboxRootCircuits::<C, D>::new(network_magic, SIGHASH_WHITELIST_TREE_ROOT);
     //toolbox_circuits.print_op_common_data();
 
-    let sighash_whitelist_tree = SigHashMerkleTree::new();
     let mut proof_store = PS::new();
     let mut store = S::new();
     let mut timer = DebugTimer::new("prove_block_demo");
@@ -191,15 +199,21 @@ fn prove_block_demo(hints: &[BlockSpendIntrospectionHint]) -> anyhow::Result<()>
     timer.lap("end process state block 1 RPC");
     timer.lap("start process requests block 1");
 
-    let (_, block_1_job_ids, _, block_1_end_jobs) =
+    let (_, block_1_job_ids, _block_1_state_transition, block_1_end_jobs) =
         block_1_planner.process_requests(&mut store, &mut proof_store, &block_1_requested)?;
+    let final_state_root =
+        felt252_hashout_to_hash256_le(CityStore::<S>::get_city_root(&store, 1)?.0);
+    let modified_hints = hints
+        .iter()
+        .map(|x| x.perform_sighash_hash_surgery(final_state_root))
+        .collect::<Vec<_>>();
 
     let sighash_jobs = SigHashFinalizer::finalize_sighashes::<PS>(
         &mut proof_store,
         sighash_whitelist_tree,
         1,
         *block_1_end_jobs.last().unwrap(),
-        hints,
+        &modified_hints,
     )?;
     timer.lap("end process requests block 1");
     /*println!(
@@ -231,38 +245,15 @@ fn prove_block_demo(hints: &[BlockSpendIntrospectionHint]) -> anyhow::Result<()>
         worker.prove::<PS, _, C, D>(&mut proof_store, &toolbox_circuits, *job)?;
     }
 
-    let sighash_proof_id = sighash_jobs.sighash_introspection_job_ids[0].get_output_id();
-    let sighash_proof = proof_store
-        .get_proof_by_id::<C, D>(sighash_proof_id)?;
-
-    println!(
-        "sighash_proof.public_inputs: {:?}",
-        sighash_proof.public_inputs
-    );
-    let state_transition_proof_id = block_1_end_jobs.last().unwrap().get_output_id();
-    let state_root_proof =
-        proof_store.get_proof_by_id::<C, D>(state_transition_proof_id)?;
-    println!(
-        "state_root_proof.public_inputs: {:?}",
-        state_root_proof.public_inputs
-    );
-
-    timer.lap("start proving sighash g16 jobs");
-    let sighash_groth16_id = QProvingJobDataID::sighash_introspection_groth16_input_witness(1);
-
-    proof_store.set_bytes_by_id(
-        sighash_groth16_id,
-        &bincode::serialize(&CRSigHashFinalGLCircuitInput {
-            result: finalized,
-            state_transition_proof_id: state_transition_proof_id,
-            sighash_introspection_proof_id: sighash_proof_id,
-        })?,
-    )?;
-
-    worker.prove::<PS, _, C, D>(&mut proof_store, &toolbox_circuits, sighash_groth16_id)?;
-    let groth16_proof = proof_store
-        .get_bytes_by_id(sighash_groth16_id.get_output_id())?;
-    println!("groth16 proof: {}", std::str::from_utf8(&groth16_proof)?);
+    timer.lap("start proving final_gl jobs");
+    for job in sighash_jobs.sighash_final_gl_job_ids.iter() {
+        worker.prove::<PS, _, C, D>(&mut proof_store, &toolbox_circuits, *job)?;
+    }
+    /* todo: bls12381 wrapper
+        for job in sighash_jobs.wrap_sighash_final_bls12381_job_ids.iter() {
+            worker.prove::<PS, _, C, D>(&mut proof_store, &toolbox_circuits, *job)?;
+        }
+    */
 
     timer.lap("end proving jobs");
     /*
@@ -278,7 +269,7 @@ fn prove_block_demo(hints: &[BlockSpendIntrospectionHint]) -> anyhow::Result<()>
 }
 fn main() {
     let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    let path = format!("{}/examples/full_block_hints_1.json", root.display());
+    let path = format!("{}/examples/full_block_hints_3.json", root.display());
     let file_data = fs::read(path).unwrap();
     let introspection_hints: Vec<BlockSpendIntrospectionHint> =
         serde_json::from_slice(&file_data).unwrap();
