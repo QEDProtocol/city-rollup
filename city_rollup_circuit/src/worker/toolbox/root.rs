@@ -11,10 +11,7 @@ use city_crypto::{
     },
 };
 use city_rollup_common::qworker::{
-    fingerprints::CRWorkerToolboxRootCircuitFingerprints,
-    job_id::{ProvingJobCircuitType, QProvingJobDataID},
-    proof_store::QProofStoreReaderSync,
-    verifier::QWorkerVerifyHelper,
+    fingerprints::CRWorkerToolboxRootCircuitFingerprints, job_id::{ProvingJobCircuitType, QProvingJobDataID}, job_witnesses::sighash::CRSigHashFinalGLCircuitInput, proof_store::QProofStoreReaderSync, verifier::QWorkerVerifyHelper
 };
 use plonky2::{
     hash::hash_types::HashOut,
@@ -24,6 +21,8 @@ use plonky2::{
         proof::ProofWithPublicInputs,
     },
 };
+use gnark_plonky2_wrapper::{C, F};
+use gnark_plonky2_wrapper::D;
 
 use crate::{
     block_circuits::{
@@ -37,8 +36,7 @@ use crate::{
         sighash_final_gl::CRSigHashFinalGLCircuit, sighash_wrapper::CRSigHashWrapperCircuit,
     },
     worker::traits::{
-        QWorkerCircuitCustomWithDataSync, QWorkerCircuitMutCustomWithDataSync,
-        QWorkerGenericProver, QWorkerGenericProverMut,
+        QWorkerCircuitCompressWithDataSync, QWorkerCircuitCustomWithDataSync, QWorkerCircuitMutCustomWithDataSync, QWorkerGenericProver, QWorkerGenericProverMut
     },
 };
 
@@ -244,5 +242,42 @@ where
                 .prove_q_worker_custom(self, store, job_id),
             _ => self.core.worker_prove(store, job_id),
         }
+    }
+}
+
+
+
+impl<
+        S: QProofStoreReaderSync,
+    > QWorkerCircuitCompressWithDataSync<S> for CRWorkerToolboxRootCircuits<C, D> {
+    fn prove_q_worker_compress(
+        &self,
+        store: &S,
+        job_id: QProvingJobDataID,
+    ) -> anyhow::Result<String> {
+        let sighash_final_gl = CRSigHashFinalGLCircuit::<C, D>::new(
+            self.block_state_transition.get_verifier_config_ref(),
+            self.block_state_transition.get_common_circuit_data_ref(),
+            self.sighash_wrapper.get_verifier_config_ref(),
+            self.sighash_wrapper.get_common_circuit_data_ref(),
+        );
+
+        let input_data = store.get_bytes_by_id(job_id)?;
+        let input = bincode::deserialize::<CRSigHashFinalGLCircuitInput<F>>(&input_data)?;
+
+        let block_state_transition_proof =
+            store.get_proof_by_id(input.state_transition_proof_id)?;
+        let sighash_wrapper_proof = store.get_proof_by_id(input.sighash_introspection_proof_id)?;
+
+        let proof = sighash_final_gl.prove_base(
+            &input,
+            &block_state_transition_proof,
+            &sighash_wrapper_proof,
+        )?;
+
+        let g16_proof_str =
+            gnark_plonky2_wrapper::wrap_plonky2_proof(sighash_final_gl.circuit_data, &proof)?;
+
+        Ok(g16_proof_str)
     }
 }

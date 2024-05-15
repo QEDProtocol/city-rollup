@@ -18,7 +18,7 @@ city_crypto           = { path = "../city_crypto" }
 city_common_circuit   = { path = "../city_common_circuit" }
 city_common           = { path = "../city_common" }
 city_rollup_common    = { path = "../city_rollup_common" }
-
+gnark-plonky2-wrapper = { workspace = true }
 
 [dev-dependencies]
 criterion = "0.5.1"

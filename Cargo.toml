@@ -105,3 +105,12 @@ log = { version = "0.4.14", default-features = false }
 env_logger = { version = "0.9.0", default-features = false }
 hashbrown = { version = "0.14.3", default-features = false, features = ["ahash", "serde"] } # NOTE: When upgrading, see `ahash` dependency.
 url = "2.5.0"
+
+gnark-plonky2-wrapper = { git = "https://github.com/cf/gnark-plonky2-verifier", branch = "feat/poseidon-bls12-381-cgo" }
+
+
+[patch.'https://github.com/0xPolygonZero/plonky2.git']
+plonky2 = { git = "https://github.com/QEDProtocol/plonky2-hwa", rev = "6a8ca008da97890b67a84f64784cfbc488b5238d" }
+
+[patch.'https://github.com/succinctlabs/starkyx.git']
+starkyx = { git = "https://github.com/QEDProtocol/starkyx", rev = "a53ea1060c6256a8a26820e43fbe8d75233e8b29" }

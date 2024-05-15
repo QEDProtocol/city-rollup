@@ -73,6 +73,15 @@ pub trait QWorkerCircuitCustomWithDataSync<
         job_id: QProvingJobDataID,
     ) -> anyhow::Result<ProofWithPublicInputs<C::F, C, D>>;
 }
+pub trait QWorkerCircuitCompressWithDataSync<
+    S: QProofStoreReaderSync>
+{
+    fn prove_q_worker_compress(
+        &self,
+        store: &S,
+        job_id: QProvingJobDataID,
+    ) -> anyhow::Result<String>;
+}
 pub trait QWorkerCircuitMutCustomWithDataSync<
     S: QProofStoreReaderSync,
     C: GenericConfig<D>,

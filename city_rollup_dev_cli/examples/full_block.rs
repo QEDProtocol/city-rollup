@@ -250,11 +250,9 @@ fn prove_block_demo(hints: &[BlockSpendIntrospectionHint]) -> anyhow::Result<()>
     for job in sighash_jobs.sighash_final_gl_job_ids.iter() {
         worker.prove::<PS, _, C, D>(&mut proof_store, &toolbox_circuits, *job)?;
     }
-    /* todo: bls12381 wrapper
-        for job in sighash_jobs.wrap_sighash_final_bls12381_job_ids.iter() {
-            worker.prove::<PS, _, C, D>(&mut proof_store, &toolbox_circuits, *job)?;
-        }
-    */
+    for job in sighash_jobs.wrap_sighash_final_bls12381_job_ids.iter() {
+        worker.prove::<PS, _, C, D>(&mut proof_store, &toolbox_circuits, *job)?;
+    }
     let sighash_proof = proof_store
         .get_proof_by_id::<C, D>(sighash_jobs.sighash_introspection_job_ids[0].get_output_id())?;
     println!(
