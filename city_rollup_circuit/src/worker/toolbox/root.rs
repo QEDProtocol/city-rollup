@@ -262,7 +262,10 @@ impl<
             self.sighash_wrapper.get_common_circuit_data_ref(),
         );
 
-        let input_data = store.get_bytes_by_id(job_id)?;
+        let inner_job_id = store.get_bytes_by_id(job_id)?;
+        let inner_job = bincode::deserialize::<QProvingJobDataID>(&inner_job_id)?;
+
+        let input_data = store.get_bytes_by_id(inner_job)?;
         let input = bincode::deserialize::<CRSigHashFinalGLCircuitInput<F>>(&input_data)?;
 
         let block_state_transition_proof =
