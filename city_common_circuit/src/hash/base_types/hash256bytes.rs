@@ -42,6 +42,12 @@ impl<T: Witness<F>, F: PrimeField64> WitnessHash256Bytes<F> for T {
 pub trait CircuitBuilderHash256Bytes<F: RichField + Extendable<D>, const D: usize> {
     fn add_virtual_hash256_bytes_target(&mut self) -> Hash256BytesTarget;
     fn connect_hash256_bytes(&mut self, x: Hash256BytesTarget, y: Hash256BytesTarget);
+    fn connect_one_of_hash256_bytes(
+        &mut self,
+        x: Hash256BytesTarget,
+        y_0: Hash256BytesTarget,
+        y_1: Hash256BytesTarget,
+    );
     fn select_hash256_bytes(
         &mut self,
         b: BoolTarget,
@@ -126,6 +132,22 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilderHash256Bytes<F,
             .collect::<Vec<Target>>();
         HashOutTarget {
             elements: [result[0], result[1], result[2], result[3]],
+        }
+    }
+
+    fn connect_one_of_hash256_bytes(
+        &mut self,
+        x: Hash256BytesTarget,
+        y_0: Hash256BytesTarget,
+        y_1: Hash256BytesTarget,
+    ) {
+        let result: [Target; 32] = core::array::from_fn(|i| {
+            let x_minus_y_0 = self.sub(x[i], y_0[i]);
+            let x_minus_y_1 = self.sub(x[i], y_1[i]);
+            self.mul(x_minus_y_0, x_minus_y_1)
+        });
+        for i in 0..32 {
+            self.assert_zero(result[i]);
         }
     }
 }

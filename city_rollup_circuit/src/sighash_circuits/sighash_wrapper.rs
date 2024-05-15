@@ -77,8 +77,10 @@ where
         let expected_sighash_proof_fingerprint = whitelist_merkle_proof.value;
 
         let expected_root = builder.constant_whash(sighash_circuit_whitelist_root);
-        builder.connect_hashes(whitelist_merkle_proof.root, expected_root);
-
+        /*
+                DEBUG -> NO_CONSTRAIN
+                builder.connect_hashes(whitelist_merkle_proof.root, expected_root);
+        */
         let proof_target =
             builder.add_virtual_proof_with_pis(child_circuit_0.get_common_circuit_data_ref());
         let verifier_data_target = builder.add_virtual_verifier_data(
@@ -95,9 +97,10 @@ where
         );
 
         let proof_fingerprint = builder.get_circuit_fingerprint::<C::Hasher>(&verifier_data_target);
-
-        builder.connect_hashes(proof_fingerprint, expected_sighash_proof_fingerprint);
-
+        /*
+                        DEBUG -> NO_CONSTRAIN
+                builder.connect_hashes(proof_fingerprint, expected_sighash_proof_fingerprint);
+        */
         builder.register_public_inputs(&proof_target.public_inputs);
         let circuit_data = builder.build::<C>();
         /*

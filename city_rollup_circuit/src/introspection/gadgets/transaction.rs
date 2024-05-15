@@ -88,6 +88,7 @@ pub struct BTCTransactionBytesGadget {
     pub outputs: Vec<BTCTransactionBytesOutputGadget>,
     pub locktime: [Target; 4],
     pub last_hash: Option<Hash256BytesTarget>,
+    pub enable_der_pad: bool,
 }
 
 impl BTCTransactionBytesGadget {
@@ -97,6 +98,42 @@ impl BTCTransactionBytesGadget {
         version: u32,
         locktime: u32,
         same_script: bool,
+    ) -> Self {
+        Self::add_virtual_to_fixed_locktime_version_with_der(
+            builder,
+            layout,
+            version,
+            locktime,
+            same_script,
+            false,
+        )
+    }
+    pub fn add_virtual_to_complex<F: RichField + Extendable<D>, const D: usize>(
+        builder: &mut CircuitBuilder<F, D>,
+        layout: BTCTransactionLayout,
+        version: Option<u32>,
+        locktime: Option<u32>,
+        input_scripts: Option<Vec<Vec<Target>>>,
+    ) -> Self {
+        Self::add_virtual_to_complex_with_der(
+            builder,
+            layout,
+            version,
+            locktime,
+            input_scripts,
+            false,
+        )
+    }
+    pub fn add_virtual_to_fixed_locktime_version_with_der<
+        F: RichField + Extendable<D>,
+        const D: usize,
+    >(
+        builder: &mut CircuitBuilder<F, D>,
+        layout: BTCTransactionLayout,
+        version: u32,
+        locktime: u32,
+        same_script: bool,
+        enable_der_pad: bool,
     ) -> Self {
         let scripts = if same_script {
             let script = builder.add_virtual_targets(layout.input_script_sizes[0]);
@@ -129,14 +166,16 @@ impl BTCTransactionBytesGadget {
             outputs,
             locktime: locktime_t,
             last_hash: None,
+            enable_der_pad,
         }
     }
-    pub fn add_virtual_to_complex<F: RichField + Extendable<D>, const D: usize>(
+    pub fn add_virtual_to_complex_with_der<F: RichField + Extendable<D>, const D: usize>(
         builder: &mut CircuitBuilder<F, D>,
         layout: BTCTransactionLayout,
         version: Option<u32>,
         locktime: Option<u32>,
         input_scripts: Option<Vec<Vec<Target>>>,
+        enable_der_pad: bool,
     ) -> Self {
         let version_t: [Target; 4] = if version.is_some() {
             builder.constant_u32_bytes_le(version.unwrap())
@@ -184,6 +223,37 @@ impl BTCTransactionBytesGadget {
             outputs,
             locktime: locktime_t,
             last_hash: None,
+            enable_der_pad,
+        }
+    }
+
+    pub fn connect_to_hash_deposit<F: RichField + Extendable<D>, const D: usize>(
+        &self,
+        builder: &mut CircuitBuilder<F, D>,
+        domain: &mut Sha256AcceleratorDomain,
+        hash: Hash256BytesTarget,
+        enable_der_pad: bool,
+    ) {
+        let base_bytes = self.to_byte_targets(builder);
+        let base_hash = domain.btc_hash256(builder, &base_bytes);
+        if enable_der_pad
+            && self.enable_der_pad
+            && self.inputs.len() == 1
+            && self.outputs.len() == 1
+            && self.inputs[0].script.len() == 106
+        {
+            let mut clone_with_107 = self.clone();
+            clone_with_107.inputs[0].script = [
+                self.inputs[0].script[0..5].to_vec(),
+                vec![builder.zero()],
+                self.inputs[0].script[5..106].to_vec(),
+            ]
+            .concat();
+            let bytes = clone_with_107.to_byte_targets(builder);
+            let secondary_hash = domain.btc_hash256(builder, &bytes);
+            builder.connect_one_of_hash256_bytes(hash, base_hash, secondary_hash);
+        } else {
+            builder.connect_hash256_bytes(hash, base_hash);
         }
     }
 
