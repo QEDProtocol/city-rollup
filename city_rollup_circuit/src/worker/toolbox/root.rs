@@ -265,6 +265,6 @@ QWorkerGenericProverGroth16<S, PoseidonGoldilocksConfig, 2> for CRWorkerToolboxR
         let wrapper = SimpleWrapperDynamic::<PoseidonGoldilocksConfig, 2>::new(common_data, fingerprint, verifier_data.constants_sigmas_cap.height());
         let wrapper_proof = wrapper.prove_base(&inner_proof, &verifier_data)?;
         gnark_plonky2_wrapper::wrap_plonky2_proof(wrapper.circuit_data, &wrapper_proof)
-    
+
     }
 }
