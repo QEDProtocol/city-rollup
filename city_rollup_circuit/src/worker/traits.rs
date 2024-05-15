@@ -20,6 +20,15 @@ pub trait QWorkerGenericProver<S: QProofStoreReaderSync, C: GenericConfig<D>, co
         job_id: QProvingJobDataID,
     ) -> anyhow::Result<ProofWithPublicInputs<C::F, C, D>>;
 }
+pub trait QWorkerGenericProverGroth16<S: QProofStoreReaderSync, C: GenericConfig<D>, const D: usize>:
+    QWorkerVerifyHelper<C, D>
+{
+    fn worker_prove_groth16(
+        &self,
+        store: &S,
+        job_id: QProvingJobDataID,
+    ) -> anyhow::Result<String>;
+}
 pub trait QWorkerGenericProverMut<S: QProofStoreReaderSync, C: GenericConfig<D>, const D: usize>:
     QWorkerVerifyHelper<C, D>
 {
