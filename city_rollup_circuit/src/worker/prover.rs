@@ -3,11 +3,10 @@ use city_rollup_common::qworker::{
     job_id::{ProvingJobCircuitType, QProvingJobDataID},
     proof_store::QProofStore,
 };
-use plonky2::plonk::config::GenericConfig;
+use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
 
-use crate::worker::traits::QWorkerCircuitCompressWithDataSync;
 
-use super::traits::QWorkerGenericProver;
+use super::traits::{QWorkerGenericProver, QWorkerGenericProverGroth16};
 
 pub struct QWorkerStandardProver {
     pub timer: TraceTimer,
@@ -21,7 +20,7 @@ impl QWorkerStandardProver {
     }
     pub fn prove<
         S: QProofStore,
-        G: QWorkerGenericProver<S, C, D> + QWorkerCircuitCompressWithDataSync<S>,
+        G: QWorkerGenericProver<S, C, D> + QWorkerGenericProverGroth16<S, PoseidonGoldilocksConfig, 2>,
         C: GenericConfig<D>,
         const D: usize,
     >(
@@ -32,7 +31,7 @@ impl QWorkerStandardProver {
     ) -> anyhow::Result<QProvingJobDataID> {
         let output_id = match job_id.circuit_type {
             ProvingJobCircuitType::WrapFinalSigHashProofBLS12381 => {
-                let proof = <G as QWorkerCircuitCompressWithDataSync<S>>::prove_q_worker_compress(
+                let proof = G::worker_prove_groth16(
                     prover, store, job_id,
                 )?;
                 let output_id = job_id.get_output_id();

@@ -1,7 +1,7 @@
 use std::borrow::BorrowMut;
 
 use city_common_circuit::{
-    circuits::traits::qstandard::QStandardCircuit, field::cubic::CubicExtendable,
+    circuits::{simple_wrapper::SimpleWrapper, traits::qstandard::QStandardCircuit}, field::cubic::CubicExtendable,
 };
 use city_crypto::{
     field::qfield::QRichField,
@@ -17,7 +17,7 @@ use plonky2::{
     hash::hash_types::HashOut,
     plonk::{
         circuit_data::{CommonCircuitData, VerifierOnlyCircuitData},
-        config::{AlgebraicHasher, GenericConfig},
+        config::{AlgebraicHasher, GenericConfig, PoseidonGoldilocksConfig},
         proof::ProofWithPublicInputs,
     },
 };
@@ -36,7 +36,7 @@ use crate::{
         sighash_final_gl::CRSigHashFinalGLCircuit, sighash_wrapper::CRSigHashWrapperCircuit,
     },
     worker::traits::{
-        QWorkerCircuitCompressWithDataSync, QWorkerCircuitCustomWithDataSync, QWorkerCircuitMutCustomWithDataSync, QWorkerGenericProver, QWorkerGenericProverMut
+        QWorkerCircuitCompressWithDataSync, QWorkerCircuitCustomWithDataSync, QWorkerCircuitMutCustomWithDataSync, QWorkerGenericProver, QWorkerGenericProverGroth16, QWorkerGenericProverMut
     },
 };
 
@@ -247,37 +247,37 @@ where
 
 
 
-impl<
-        S: QProofStoreReaderSync,
-    > QWorkerCircuitCompressWithDataSync<S> for CRWorkerToolboxRootCircuits<C, D> {
-    fn prove_q_worker_compress(
+impl<S: QProofStoreReaderSync>
+QWorkerGenericProverGroth16<S, PoseidonGoldilocksConfig, 2> for CRWorkerToolboxRootCircuits<PoseidonGoldilocksConfig, 2>
+{
+    fn worker_prove_groth16(
         &self,
         store: &S,
         job_id: QProvingJobDataID,
     ) -> anyhow::Result<String> {
-        let sighash_final_gl = CRSigHashFinalGLCircuit::<C, D>::new(
-            self.block_state_transition.get_verifier_config_ref(),
-            self.block_state_transition.get_common_circuit_data_ref(),
-            self.sighash_wrapper.get_verifier_config_ref(),
-            self.sighash_wrapper.get_common_circuit_data_ref(),
-        );
-
         let input_data = store.get_bytes_by_id(job_id)?;
-        let input = bincode::deserialize::<CRSigHashFinalGLCircuitInput<F>>(&input_data)?;
+        let input_proof_id = bincode::deserialize::<QProvingJobDataID>(&input_data)?;
+        /*
+        if input_proof_id.circuit_type != ProvingJobCircuitType::GenerateFinalSigHashProof {
+            return Err(anyhow::anyhow!(
+                "Invalid circuit type for Groth16 proof: {:?}",
+                input_proof_id.circuit_type
+            ));
+        }
+        if job_id.circuit_type != ProvingJobCircuitType::WrapFinalSigHashProofBLS12381 {
+            return Err(anyhow::anyhow!(
+                "Invalid circuit type for Groth16 proof: {:?}",
+                job_id.circuit_type
+            ));
+        }*/
+        let (common_data, verifier_data, _fingerprint) = self.get_verifier_triplet_for_circuit_type(input_proof_id.circuit_type);
+        let inner_proof = store.get_proof_by_id(input_proof_id.get_output_id())?;
+        let wrapper = SimpleWrapper::<PoseidonGoldilocksConfig, 2>::new(common_data, verifier_data);
+        let wrapper_proof = wrapper.prove_base(&inner_proof)?;
 
-        let block_state_transition_proof =
-            store.get_proof_by_id(input.state_transition_proof_id)?;
-        let sighash_wrapper_proof = store.get_proof_by_id(input.sighash_introspection_proof_id)?;
+        gnark_plonky2_wrapper::wrap_plonky2_proof(wrapper.circuit_data, &wrapper_proof)
+        
 
-        let proof = sighash_final_gl.prove_base(
-            &input,
-            &block_state_transition_proof,
-            &sighash_wrapper_proof,
-        )?;
-
-        let g16_proof_str =
-            gnark_plonky2_wrapper::wrap_plonky2_proof(sighash_final_gl.circuit_data, &proof)?;
-
-        Ok(g16_proof_str)
+        
     }
 }
