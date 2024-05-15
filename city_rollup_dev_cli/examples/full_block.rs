@@ -272,6 +272,14 @@ fn prove_block_demo(hints: &[BlockSpendIntrospectionHint]) -> anyhow::Result<()>
         first_sighash_proof.public_inputs
     );
 
+    let first_wrap_sighash_final_gl_proof = proof_store
+        .get_bytes_by_id(sighash_jobs.wrap_sighash_final_bls12381_job_ids[0].get_output_id())?;
+    println!(
+        "first_wrap_sighash_final_gl_proof {:?}",
+        std::str::from_utf8(&first_wrap_sighash_final_gl_proof)?
+    );
+
+
     timer.lap("end proving jobs");
     /*
     let root_proof_ids = block_1_job_ids.get_root_proof_outputs();
