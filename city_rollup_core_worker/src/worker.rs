@@ -5,7 +5,8 @@ use city_common::cli::args::L2WorkerArgs;
 use city_macros::async_infinite_loop;
 use city_redis_store::RedisStore;
 use city_rollup_circuit::worker::prover::QWorkerStandardProver;
-use city_rollup_circuit::worker::toolbox::circuits::CRWorkerToolboxCoreCircuits;
+use city_rollup_circuit::worker::toolbox::root::CRWorkerToolboxRootCircuits;
+use city_rollup_common::config::sighash_wrapper_config::SIGHASH_WHITELIST_TREE_ROOT;
 use city_rollup_common::introspection::rollup::constants::get_network_magic_for_str;
 use city_rollup_common::qworker::job_id::QProvingJobDataID;
 use city_rollup_worker_dispatch::implementations::redis::RedisDispatcher;
@@ -23,7 +24,7 @@ pub async fn run(args: L2WorkerArgs) -> anyhow::Result<()> {
 
     let qworker = QWorkerStandardProver::new();
 
-    let toolbox = Arc::new(CRWorkerToolboxCoreCircuits::<C, D>::new(network_magic));
+    let toolbox = Arc::new(CRWorkerToolboxRootCircuits::<C, D>::new(network_magic, SIGHASH_WHITELIST_TREE_ROOT));
 
     async_infinite_loop!(PROVING_INTERVAL, {
         let mut proof_store = proof_store.clone();

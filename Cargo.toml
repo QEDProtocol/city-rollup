@@ -111,6 +111,7 @@ r2d2_redis = { git = "https://github.com/GopherJ/r2d2-redis", rev = "759effbce90
 plonky2x = { git = "https://github.com/GopherJ/succinctx.git", rev = "a7fa3f5d42f933c398587f4aea33cb7846b94797" }
 ff = { package = "ff", version = "0.13", features = ["derive"] }
 num-derive = "0.3.3"
+gnark-plonky2-wrapper = { git = "https://github.com/cf/gnark-plonky2-verifier", branch = "feat/poseidon-bls12-381-cgo" }
 
 [patch.'https://github.com/0xPolygonZero/plonky2.git']
 plonky2 = { git = "https://github.com/QEDProtocol/plonky2-hwa", rev = "6a8ca008da97890b67a84f64784cfbc488b5238d" }

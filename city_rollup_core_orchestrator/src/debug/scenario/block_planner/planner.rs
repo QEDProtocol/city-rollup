@@ -11,7 +11,7 @@ use city_rollup_common::{
     qworker::{
         fingerprints::CRWorkerToolboxCoreCircuitFingerprints,
         job_id::{ProvingJobCircuitType, QProvingJobDataID},
-        job_witnesses::agg::CRBlockStateTransitionCircuitInput,
+        job_witnesses::{agg::CRBlockStateTransitionCircuitInput},
         proof_store::QProofStore,
     },
 };

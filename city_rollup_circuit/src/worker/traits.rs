@@ -157,3 +157,10 @@ impl<
         }
     }
 }
+pub trait QWorkerCircuitCompressWithDataSync<S: QProofStoreReaderSync> {
+    fn prove_q_worker_compress(
+        &self,
+        store: &S,
+        job_id: QProvingJobDataID,
+    ) -> anyhow::Result<String>;
+}

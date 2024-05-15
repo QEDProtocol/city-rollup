@@ -14,8 +14,11 @@ use city_rollup_common::config::sighash_wrapper_config::SIGHASH_WHITELIST_TREE_R
 use city_rollup_common::introspection::rollup::constants::NETWORK_MAGIC_DOGE_REGTEST;
 use city_rollup_common::introspection::rollup::introspection::BlockSpendIntrospectionGadgetConfig;
 use city_rollup_common::introspection::rollup::introspection::BlockSpendIntrospectionHint;
+use city_rollup_common::qworker::job_id::QProvingJobDataID;
+use city_rollup_common::qworker::job_witnesses::sighash::CRSigHashFinalGLCircuitInput;
 use city_rollup_common::qworker::memory_proof_store::SimpleProofStoreMemory;
 use city_rollup_common::qworker::proof_store::QProofStoreReaderSync;
+use city_rollup_common::qworker::proof_store::QProofStoreWriterSync;
 use city_rollup_core_orchestrator::debug::scenario::block_planner::planner::CityOrchestratorBlockPlanner;
 use city_rollup_core_orchestrator::debug::scenario::requested_actions::CityScenarioRequestedActions;
 use city_rollup_core_orchestrator::debug::scenario::rpc_processor::DebugRPCProcessor;
@@ -209,7 +212,7 @@ fn prove_block_demo(hints: &[BlockSpendIntrospectionHint]) -> anyhow::Result<()>
             serde_json::to_string(&block_1_state_transition).unwrap()
         );
     */
-    let mut worker = QWorkerStandardProver::new();
+    let worker = QWorkerStandardProver::new();
     timer.lap("start proving op jobs");
 
     let all_job_ids = block_1_job_ids.plan_jobs();
@@ -228,18 +231,34 @@ fn prove_block_demo(hints: &[BlockSpendIntrospectionHint]) -> anyhow::Result<()>
         worker.prove::<PS, _, C, D>(&mut proof_store, &toolbox_circuits, *job)?;
     }
 
+    let sighash_proof_id = sighash_jobs.sighash_introspection_job_ids[0].get_output_id();
     let sighash_proof = proof_store
-        .get_proof_by_id::<C, D>(sighash_jobs.sighash_introspection_job_ids[0].get_output_id())?;
+        .get_proof_by_id::<C, D>(sighash_proof_id)?;
+
     println!(
         "sighash_proof.public_inputs: {:?}",
         sighash_proof.public_inputs
     );
+    let state_transition_proof_id = block_1_end_jobs.last().unwrap().get_output_id();
     let state_root_proof =
-        proof_store.get_proof_by_id::<C, D>(block_1_end_jobs.last().unwrap().get_output_id())?;
+        proof_store.get_proof_by_id::<C, D>(state_transition_proof_id)?;
     println!(
         "state_root_proof.public_inputs: {:?}",
         state_root_proof.public_inputs
     );
+
+    let sighash_groth16_id = QProvingJobDataID::sighash_introspection_groth16_input_witness(1);
+
+    proof_store.set_bytes_by_id(
+        sighash_groth16_id,
+        &bincode::serialize(&CRSigHashFinalGLCircuitInput {
+            result: finalized,
+            state_transition_proof_id: state_transition_proof_id,
+            sighash_introspection_proof_id: sighash_proof_id,
+        })?,
+    )?;
+
+    worker.prove::<PS, _, C, D>(&mut proof_store, &toolbox_circuits, sighash_groth16_id)?;
 
     timer.lap("end proving jobs");
     /*

@@ -490,7 +490,7 @@ impl BlockSpendIntrospectionGadgetConfig {
 
 #[cfg(test)]
 mod tests {
-    use super::SigHashGadgetId;
+    
 
     #[test]
     fn test_index_fast() -> anyhow::Result<()> {

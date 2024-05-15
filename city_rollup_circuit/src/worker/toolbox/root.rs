@@ -1,46 +1,32 @@
 use std::borrow::BorrowMut;
 
-use city_common_circuit::{
-    circuits::traits::qstandard::QStandardCircuit, field::cubic::CubicExtendable,
-};
-use city_crypto::{
-    field::qfield::QRichField,
-    hash::{
-        merkle::treeprover::TPCircuitFingerprintConfig, qhashout::QHashOut,
-        traits::hasher::MerkleZeroHasher,
-    },
-};
-use city_rollup_common::qworker::{
-    fingerprints::CRWorkerToolboxRootCircuitFingerprints,
-    job_id::{ProvingJobCircuitType, QProvingJobDataID},
-    proof_store::QProofStoreReaderSync,
-    verifier::QWorkerVerifyHelper,
-};
-use plonky2::{
-    hash::hash_types::HashOut,
-    plonk::{
-        circuit_data::{CommonCircuitData, VerifierOnlyCircuitData},
-        config::{AlgebraicHasher, GenericConfig},
-        proof::ProofWithPublicInputs,
-    },
-};
-
-use crate::{
-    block_circuits::{
-        root_aggregators::{
-            add_process_withdrawals_add_l1_deposit::CRAggAddProcessL1WithdrawalAddL1DepositCircuit,
-            user_register_claim_deposits_l2_transfer::CRAggUserRegisterClaimDepositL2TransferCircuit,
-        },
-        root_state_transition::block_state_transition::CRBlockStateTransitionCircuit,
-    },
-    sighash_circuits::sighash_wrapper::CRSigHashWrapperCircuit,
-    worker::traits::{
-        QWorkerCircuitCustomWithDataSync, QWorkerCircuitMutCustomWithDataSync,
-        QWorkerGenericProver, QWorkerGenericProverMut,
-    },
-};
+use city_common_circuit::circuits::traits::qstandard::QStandardCircuit;
+use city_common_circuit::field::cubic::CubicExtendable;
+use city_crypto::field::qfield::QRichField;
+use city_crypto::hash::merkle::treeprover::TPCircuitFingerprintConfig;
+use city_crypto::hash::qhashout::QHashOut;
+use city_crypto::hash::traits::hasher::MerkleZeroHasher;
+use city_rollup_common::qworker::fingerprints::CRWorkerToolboxRootCircuitFingerprints;
+use city_rollup_common::qworker::job_id::ProvingJobCircuitType;
+use city_rollup_common::qworker::job_id::QProvingJobDataID;
+use city_rollup_common::qworker::proof_store::QProofStoreReaderSync;
+use city_rollup_common::qworker::verifier::QWorkerVerifyHelper;
+use plonky2::hash::hash_types::HashOut;
+use plonky2::plonk::circuit_data::CommonCircuitData;
+use plonky2::plonk::circuit_data::VerifierOnlyCircuitData;
+use plonky2::plonk::config::AlgebraicHasher;
+use plonky2::plonk::config::GenericConfig;
+use plonky2::plonk::proof::ProofWithPublicInputs;
 
 use super::circuits::CRWorkerToolboxCoreCircuits;
+use crate::block_circuits::root_aggregators::add_process_withdrawals_add_l1_deposit::CRAggAddProcessL1WithdrawalAddL1DepositCircuit;
+use crate::block_circuits::root_aggregators::user_register_claim_deposits_l2_transfer::CRAggUserRegisterClaimDepositL2TransferCircuit;
+use crate::block_circuits::root_state_transition::block_state_transition::CRBlockStateTransitionCircuit;
+use crate::sighash_circuits::sighash_wrapper::CRSigHashWrapperCircuit;
+use crate::worker::traits::QWorkerCircuitCustomWithDataSync;
+use crate::worker::traits::QWorkerCircuitMutCustomWithDataSync;
+use crate::worker::traits::QWorkerGenericProver;
+use crate::worker::traits::QWorkerGenericProverMut;
 
 pub struct CRWorkerToolboxRootCircuits<C: GenericConfig<D> + 'static, const D: usize>
 where

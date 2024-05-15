@@ -3,7 +3,7 @@ use std::{fs, path::PathBuf};
 use city_crypto::hash::qhashout::QHashOut;
 use plonky2::{
     field::goldilocks_field::GoldilocksField,
-    hash::hash_types::{HashOut, RichField},
+    hash::hash_types::{RichField},
 };
 fn get_constant_hash_string<F: RichField>(hash: QHashOut<F>, suffix: &str) -> String {
     format!(

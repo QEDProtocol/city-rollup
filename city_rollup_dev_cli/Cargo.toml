@@ -29,6 +29,7 @@ dotenv                = { workspace = true }
 shadow-rs             = { workspace = true }
 thiserror             = { workspace = true }
 tokio                 = { workspace = true }
+bincode               = { workspace = true }
 
 [build-dependencies]
 shadow-rs = { workspace = true }

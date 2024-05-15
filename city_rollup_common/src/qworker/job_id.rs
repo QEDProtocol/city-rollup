@@ -369,6 +369,19 @@ impl QProvingJobDataID {
             data_index: 0,
         }
     }
+    pub fn sighash_introspection_groth16_input_witness(block_id: u64) -> Self {
+        Self {
+            topic: QJobTopic::GenerateGroth16Proof,
+            goal_id: block_id,
+            group_id: ProvingJobCircuitType::GenerateFinalSigHashProofGroth16
+                .to_circuit_group_id(),
+            circuit_type: ProvingJobCircuitType::GenerateFinalSigHashProofGroth16,
+            sub_group_id: 0,
+            task_index: 0,
+            data_type: ProvingJobDataType::InputWitness,
+            data_index: 0,
+        }
+    }
     pub fn get_input_proof_id(&self, data_index: u8) -> Self {
         Self {
             data_type: ProvingJobDataType::BaseInputProof,

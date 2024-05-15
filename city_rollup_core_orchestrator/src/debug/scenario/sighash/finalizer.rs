@@ -1,6 +1,6 @@
 use city_rollup_common::{
     introspection::{
-        rollup::introspection::BlockSpendIntrospectionHint, transaction::BTCTransaction,
+        rollup::introspection::BlockSpendIntrospectionHint,
     },
     qworker::{
         job_id::QProvingJobDataID, job_witnesses::sighash::CRSigHashWrapperCircuitInput,
@@ -8,7 +8,6 @@ use city_rollup_common::{
     },
 };
 use city_store::store::sighash::SigHashMerkleTree;
-use kvq::traits::KVQBinaryStore;
 
 pub struct SigHashFinalizer {
     pub sighash_introspection_job_ids: Vec<QProvingJobDataID>,

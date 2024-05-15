@@ -1,26 +1,31 @@
-use city_common_circuit::{
-    circuits::traits::qstandard::QStandardCircuit,
-    proof_minifier::pm_chain_dynamic::OASProofMinifierDynamicChain,
-};
+use city_common_circuit::circuits::traits::qstandard::QStandardCircuit;
+use city_common_circuit::proof_minifier::pm_chain_dynamic::OASProofMinifierDynamicChain;
 use city_crypto::hash::qhashout::QHashOut;
-use city_rollup_common::qworker::{
-    job_id::QProvingJobDataID, job_witnesses::agg::CRBlockStateTransitionCircuitInput,
-    proof_store::QProofStoreReaderSync, verifier::QWorkerVerifyHelper,
-};
-use plonky2::{
-    iop::witness::{PartialWitness, WitnessWrite},
-    plonk::{
-        circuit_builder::CircuitBuilder,
-        circuit_data::{CircuitConfig, CircuitData, CommonCircuitData, VerifierOnlyCircuitData},
-        config::{AlgebraicHasher, GenericConfig},
-        proof::{ProofWithPublicInputs, ProofWithPublicInputsTarget},
-    },
-};
+use city_rollup_common::qworker::job_id::QProvingJobDataID;
+use city_rollup_common::qworker::job_witnesses::agg::CRBlockStateTransitionCircuitInput;
+use city_rollup_common::qworker::job_witnesses::sighash::CRSigHashFinalGLCircuitInput;
+use city_rollup_common::qworker::proof_store::QProofStoreReaderSync;
+use city_rollup_common::qworker::verifier::QWorkerVerifyHelper;
+use gnark_plonky2_wrapper::C;
+use gnark_plonky2_wrapper::D;
+use gnark_plonky2_wrapper::F;
+use plonky2::iop::witness::PartialWitness;
+use plonky2::iop::witness::WitnessWrite;
+use plonky2::plonk::circuit_builder::CircuitBuilder;
+use plonky2::plonk::circuit_data::CircuitConfig;
+use plonky2::plonk::circuit_data::CircuitData;
+use plonky2::plonk::circuit_data::CommonCircuitData;
+use plonky2::plonk::circuit_data::VerifierOnlyCircuitData;
+use plonky2::plonk::config::AlgebraicHasher;
+use plonky2::plonk::config::GenericConfig;
+use plonky2::plonk::proof::ProofWithPublicInputs;
+use plonky2::plonk::proof::ProofWithPublicInputsTarget;
 
-use crate::{
-    state::block_state_transition::BlockStateTransitionGadget,
-    worker::traits::QWorkerCircuitCustomWithDataSync,
-};
+use crate::sighash_circuits::sighash_final_gl::CRSigHashFinalGLCircuit;
+use crate::state::block_state_transition::BlockStateTransitionGadget;
+use crate::worker::toolbox::root::CRWorkerToolboxRootCircuits;
+use crate::worker::traits::QWorkerCircuitCompressWithDataSync;
+use crate::worker::traits::QWorkerCircuitCustomWithDataSync;
 
 #[derive(Debug)]
 pub struct CRBlockStateTransitionCircuit<C: GenericConfig<D> + 'static, const D: usize>
@@ -177,5 +182,41 @@ where
             &agg_add_process_withdrawals_add_l1_deposit_proof,
         )?;
         self.minifier_chain.prove(&inner_proof)
+    }
+}
+
+
+impl<
+        S: QProofStoreReaderSync,
+    > QWorkerCircuitCompressWithDataSync<S> for CRWorkerToolboxRootCircuits<C, D> {
+    fn prove_q_worker_compress(
+        &self,
+        store: &S,
+        job_id: QProvingJobDataID,
+    ) -> anyhow::Result<String> {
+        let sighash_final_gl = CRSigHashFinalGLCircuit::<C, D>::new(
+            self.block_state_transition.get_verifier_config_ref(),
+            self.block_state_transition.get_common_circuit_data_ref(),
+            self.sighash_wrapper.get_verifier_config_ref(),
+            self.sighash_wrapper.get_common_circuit_data_ref(),
+        );
+
+        let input_data = store.get_bytes_by_id(job_id)?;
+        let input = bincode::deserialize::<CRSigHashFinalGLCircuitInput<F>>(&input_data)?;
+
+        let block_state_transition_proof =
+            store.get_proof_by_id(input.state_transition_proof_id)?;
+        let sighash_wrapper_proof = store.get_proof_by_id(input.sighash_introspection_proof_id)?;
+
+        let proof = sighash_final_gl.prove_base(
+            &input,
+            &block_state_transition_proof,
+            &sighash_wrapper_proof,
+        )?;
+
+        let g16_proof_str =
+            gnark_plonky2_wrapper::wrap_plonky2_proof(sighash_final_gl.circuit_data, &proof)?;
+
+        Ok(g16_proof_str)
     }
 }

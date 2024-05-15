@@ -12,7 +12,6 @@ use city_rollup_circuit::worker::toolbox::circuits::CRWorkerToolboxCoreCircuits;
 use city_rollup_common::api::data::block::rpc_request::CityRPCRequest;
 use city_rollup_common::api::data::store::CityL2BlockState;
 use city_rollup_common::introspection::rollup::constants::get_network_magic_for_str;
-use city_rollup_common::introspection::rollup::introspection::BlockSpendIntrospectionHint;
 use city_rollup_common::introspection::transaction::BTCTransaction;
 use city_rollup_common::link::link_api::BTCLinkAPI;
 use city_rollup_common::qworker::job_witnesses::op::CRAddL1DepositCircuitInput;
@@ -227,29 +226,5 @@ impl Orchestrator {
             })
             .collect::<anyhow::Result<Vec<_>>>()?;
         Ok(funding_transactions)
-    }
-
-    pub fn get_spend_hint(&self, funding_transactions: &Vec<BTCTransaction>) -> anyhow::Result<BlockSpendIntrospectionHint> {
-        todo!()
-        // let block_spend_tx = BTCTransaction {
-        //     version: 2,
-        //     inputs: vec![],
-        //     outputs: vec![],
-        //     locktime: 0
-        // };
-        // let sighash_preimage = block_spend_tx.get_sig_hash_preimage(input_index, prev_out_script, sighash_type);
-        // let last_block_spend_index = 0;
-        // let block_spend_index = 0;
-        // let current_spend_index = 0;
-        // let
-        //
-        // // BlockSpendIntrospectionHint {
-        // //     sighash_preimage: SigHashPreimage,
-        // //     last_block_spend_index: todo!(),
-        // //     block_spend_index: todo!(),
-        // //     current_spend_index: todo!(),
-        // //     funding_transactions: todo!(),
-        // //     next_block_redeem_script: todo!(),
-        // // }
     }
 }
