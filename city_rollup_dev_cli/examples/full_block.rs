@@ -247,6 +247,7 @@ fn prove_block_demo(hints: &[BlockSpendIntrospectionHint]) -> anyhow::Result<()>
         state_root_proof.public_inputs
     );
 
+    timer.lap("start proving sighash g16 jobs");
     let sighash_groth16_id = QProvingJobDataID::sighash_introspection_groth16_input_witness(1);
 
     proof_store.set_bytes_by_id(
@@ -259,6 +260,9 @@ fn prove_block_demo(hints: &[BlockSpendIntrospectionHint]) -> anyhow::Result<()>
     )?;
 
     worker.prove::<PS, _, C, D>(&mut proof_store, &toolbox_circuits, sighash_groth16_id)?;
+    let groth16_proof = proof_store
+        .get_bytes_by_id(sighash_groth16_id.get_output_id())?;
+    println!("groth16 proof: {}", std::str::from_utf8(&groth16_proof)?);
 
     timer.lap("end proving jobs");
     /*
