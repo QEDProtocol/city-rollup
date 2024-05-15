@@ -106,7 +106,7 @@ env_logger = { version = "0.9.0", default-features = false }
 hashbrown = { version = "0.14.3", default-features = false, features = ["ahash", "serde"] } # NOTE: When upgrading, see `ahash` dependency.
 url = "2.5.0"
 
-gnark-plonky2-wrapper = { git = "https://github.com/cf/gnark-plonky2-verifier", branch = "feat/poseidon-bls12-381-cgo" }
+gnark-plonky2-wrapper = { git = "https://github.com/cf/gnark-plonky2-verifier", rev = "c59e33fd8f1b407b355d7b9a74e34792e7c78f37" }
 
 
 [patch.'https://github.com/0xPolygonZero/plonky2.git']

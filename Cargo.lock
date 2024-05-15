@@ -2223,7 +2223,7 @@ dependencies = [
 [[package]]
 name = "gnark-plonky2-verifier-ffi"
 version = "0.1.0"
-source = "git+https://github.com/cf/gnark-plonky2-verifier?branch=feat/poseidon-bls12-381-cgo#dd20f119bf2aaac38f59d072e29055fb319dfbb7"
+source = "git+https://github.com/cf/gnark-plonky2-verifier?rev=c59e33fd8f1b407b355d7b9a74e34792e7c78f37#c59e33fd8f1b407b355d7b9a74e34792e7c78f37"
 dependencies = [
  "anyhow",
  "bindgen",
@@ -2234,7 +2234,7 @@ dependencies = [
 [[package]]
 name = "gnark-plonky2-wrapper"
 version = "0.1.0"
-source = "git+https://github.com/cf/gnark-plonky2-verifier?branch=feat/poseidon-bls12-381-cgo#dd20f119bf2aaac38f59d072e29055fb319dfbb7"
+source = "git+https://github.com/cf/gnark-plonky2-verifier?rev=c59e33fd8f1b407b355d7b9a74e34792e7c78f37#c59e33fd8f1b407b355d7b9a74e34792e7c78f37"
 dependencies = [
  "anyhow",
  "ff",
