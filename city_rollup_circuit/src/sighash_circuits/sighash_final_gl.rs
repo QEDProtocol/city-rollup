@@ -153,9 +153,22 @@ where
             expected_withdrawals_event_hash,
         );
         builder.connect_hashes(actual_deposits_event_hash, expected_deposits_event_hash);
+        let zero = builder.zero();
+        let bits_block_start_hash = expected_current_block_start_hash_252.elements.iter().map(|x|{
+            let mut bits = builder.split_le(*x, 63).iter().map(|b|{
+                b.target
+            }).collect::<Vec<_>>();
+            bits.push(zero);
+            bits
+        }).flatten().collect::<Vec<_>>();
+        let mut bits_sighash = sighash_252.elements.iter().map(|x|builder.split_le(*x, 63).iter().map(|b|{
+            b.target
+        }).collect::<Vec<_>>()).flatten().collect::<Vec<_>>();
+        bits_sighash.append(&mut vec![zero,zero,zero,zero]);
+        
 
-        builder.register_public_inputs(&expected_current_block_start_hash_252.elements);
-        builder.register_public_inputs(&sighash_252.elements);
+        builder.register_public_inputs(&bits_block_start_hash);
+        builder.register_public_inputs(&bits_sighash);
         let circuit_data = builder.build::<C>();
 
         let minifier = OASProofMinifierDynamicChain::new_with_dynamic_constant_verifier(

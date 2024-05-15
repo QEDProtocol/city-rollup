@@ -628,6 +628,7 @@ dependencies = [
  "city_store",
  "clap",
  "dotenv",
+ "gnark-plonky2-wrapper",
  "hex",
  "hex-literal",
  "k256",
