@@ -9,8 +9,10 @@ use super::ecdsa::gadgets::{
     nonnative::{CircuitBuilderNonNative, NonNativeTarget},
 };
 use crate::{
-    builder::hash::core::CircuitBuilderHashCore,
     crypto::secp256k1::ecdsa::gadgets::biguint::WitnessBigUint,
+    hash::base_types::hash256bytes::{
+        CircuitBuilderHash256Bytes, Hash256BytesTarget, WitnessHash256Bytes,
+    },
 };
 use city_crypto::{
     field::conversions::bytes33_to_public_key,
@@ -209,6 +211,7 @@ impl DogeQEDSignatureCombinedHashGadget {
 
 #[derive(Debug, Clone)]
 pub struct DogeQEDSignatureGadget {
+    pub msg_bytes_target: Hash256BytesTarget,
     pub msg_hash_target: HashOutTarget,
     pub msg_biguint_target: BigUintTarget,
     pub public_key_x_target: BigUintTarget,
@@ -223,13 +226,15 @@ impl DogeQEDSignatureGadget {
         builder: &mut CircuitBuilder<F, D>,
     ) -> Self {
         type CURVE = Secp256K1;
-        let msg_hash_target = builder.add_virtual_hash();
-        let msg_biguint_target = BigUintTarget {
-            limbs: builder.hashout_to_hash256_le(msg_hash_target).to_vec(),
-        };
-        let msg_target = NonNativeTarget {
-            value: msg_biguint_target,
-            _phantom: PhantomData::default(),
+        let msg_bytes_target = builder.add_virtual_hash256_bytes_target();
+        let msg_u32_targets = builder.hash256_bytes_to_hash256_be(msg_bytes_target);
+        let msg_hash_target = builder.hash256_bytes_to_hashout(msg_bytes_target);
+
+        let msg_target = NonNativeTarget::<Secp256K1Scalar> {
+            value: BigUintTarget {
+                limbs: msg_u32_targets.to_vec(),
+            },
+            _phantom: PhantomData,
         };
 
         let public_key_target =
@@ -297,6 +302,7 @@ impl DogeQEDSignatureGadget {
             .hash_n_to_hash_no_pad::<H>([pub_key_hash.elements, msg_hash_target.elements].concat());*/
 
         Self {
+            msg_bytes_target,
             msg_hash_target,
             msg_biguint_target: bigint_msg_target,
             public_key_x_target,
@@ -314,7 +320,14 @@ impl DogeQEDSignatureGadget {
         signature: &ECDSASignature<Secp256K1>,
         msg: QHashOut<F>,
     ) {
-        witness.set_hash_target(self.msg_hash_target, msg.0);
+        let msg_bytes = msg.to_le_bytes();
+        //msg_bytes.reverse();
+        witness.set_hash256_bytes_target(&self.msg_bytes_target, &msg_bytes);
+        //witness.set_hash_target(self.msg_hash_target, msg.0);
+        /*witness.set_biguint_target(
+            &self.msg_biguint_target,
+            &BigUint::from_bytes_be(&msg.to_le_bytes()),
+        );*/
         witness.set_biguint_target(
             &self.public_key_x_target,
             &biguint_from_array(public_key.0.x.0),
@@ -331,14 +344,20 @@ impl DogeQEDSignatureGadget {
 #[cfg(test)]
 mod tests {
 
+    use std::str::FromStr;
+
     use anyhow::Result;
-    use city_crypto::signature::secp256k1::curve::curve_types::{Curve, CurveScalar};
+    use city_crypto::hash::qhashout::QHashOut;
+    use city_crypto::signature::secp256k1::curve::curve_types::{AffinePoint, Curve, CurveScalar};
     use city_crypto::signature::secp256k1::curve::ecdsa::{
         sign_message, ECDSAPublicKey, ECDSASecretKey, ECDSASignature,
     };
     use city_crypto::signature::secp256k1::curve::secp256k1::Secp256K1;
+    use kvq::traits::KVQSerializable;
+    use num::BigUint;
+    use plonky2::field::secp256k1_base::Secp256K1Base;
     use plonky2::field::secp256k1_scalar::Secp256K1Scalar;
-    use plonky2::field::types::Sample;
+    use plonky2::field::types::{Field, Sample};
     use plonky2::hash::poseidon::PoseidonHash;
     use plonky2::iop::witness::PartialWitness;
     use plonky2::plonk::circuit_builder::CircuitBuilder;
@@ -350,7 +369,7 @@ mod tests {
         verify_message_circuit, ECDSAPublicKeyTarget, ECDSASignatureTarget,
     };
     use crate::crypto::secp256k1::ecdsa::gadgets::nonnative::CircuitBuilderNonNative;
-    use crate::crypto::secp256k1::gadget::Secp256K1CircuitGadget;
+    use crate::crypto::secp256k1::gadget::{DogeQEDSignatureGadget, Secp256K1CircuitGadget};
 
     fn test_ecdsa_circuit_with_config(config: CircuitConfig) -> Result<()> {
         const D: usize = 2;
@@ -412,6 +431,134 @@ mod tests {
         data.verify(proof)
     }
 
+    fn test_ecdsa_circuit_with_config_v3(config: CircuitConfig) -> Result<()> {
+        const D: usize = 2;
+        type C = PoseidonGoldilocksConfig;
+        type F = <C as GenericConfig<D>>::F;
+
+        // msg: 59516823202578934453231807837413051195901584431641309133515916306157505008006,
+        // r: 46382090830721986485537520884209456015459577346611904846198514025443704074929
+        // s: 1552372224772676730422293873878132316324342426499194332915447638702395075748
+        // public_key: [50013730234611584230439597283133877245741877311273264622332944843771023636024, 48141770895752452309672524515321122504921566623690759896527638748277211309772]
+
+        let mut builder = CircuitBuilder::<F, D>::new(config);
+        let sig_gadget = Secp256K1CircuitGadget::add_virtual_to::<F, D, PoseidonHash>(&mut builder);
+        builder.register_public_inputs(&sig_gadget.combined_hash.elements);
+        let data = builder.build::<C>();
+
+        let mut pw = PartialWitness::new();
+        let msg = Secp256K1Scalar::from_noncanonical_biguint(
+            BigUint::from_str(
+                "59516823202578934453231807837413051195901584431641309133515916306157505008006",
+            )
+            .unwrap(),
+        );
+        let r = Secp256K1Scalar::from_noncanonical_biguint(
+            BigUint::from_str(
+                "46382090830721986485537520884209456015459577346611904846198514025443704074929",
+            )
+            .unwrap(),
+        );
+
+        let s = Secp256K1Scalar::from_noncanonical_biguint(
+            BigUint::from_str(
+                "1552372224772676730422293873878132316324342426499194332915447638702395075748",
+            )
+            .unwrap(),
+        );
+        let pub_x = Secp256K1Base::from_noncanonical_biguint(
+            BigUint::from_str(
+                "50013730234611584230439597283133877245741877311273264622332944843771023636024",
+            )
+            .unwrap(),
+        );
+
+        let pub_y = Secp256K1Base::from_noncanonical_biguint(
+            BigUint::from_str(
+                "48141770895752452309672524515321122504921566623690759896527638748277211309772",
+            )
+            .unwrap(),
+        );
+
+        let pk = ECDSAPublicKey(AffinePoint::nonzero(pub_x, pub_y));
+
+        let sig = ECDSASignature { r, s };
+        sig_gadget.set_witness_public_keys_update(&mut pw, &pk, &sig, &msg);
+        let proof = data.prove(pw).unwrap();
+        data.verify(proof)
+    }
+
+    fn test_ecdsa_circuit_with_config_v4(config: CircuitConfig) -> Result<()> {
+        const D: usize = 2;
+        type C = PoseidonGoldilocksConfig;
+        type F = <C as GenericConfig<D>>::F;
+
+        // msg: 59516823202578934453231807837413051195901584431641309133515916306157505008006,
+        // r: 46382090830721986485537520884209456015459577346611904846198514025443704074929
+        // s: 1552372224772676730422293873878132316324342426499194332915447638702395075748
+        // public_key: [50013730234611584230439597283133877245741877311273264622332944843771023636024, 48141770895752452309672524515321122504921566623690759896527638748277211309772]
+
+        let mut builder = CircuitBuilder::<F, D>::new(config);
+        let sig_gadget = DogeQEDSignatureGadget::add_virtual_to::<PoseidonHash, F, D>(&mut builder);
+        builder.register_public_inputs(
+            &sig_gadget
+                .msg_biguint_target
+                .limbs
+                .iter()
+                .map(|x| x.0)
+                .collect::<Vec<_>>(),
+        );
+        //builder.register_public_inputs(&sig_gadget.combined_hash.elements);
+        let data = builder.build::<C>();
+
+        let mut pw = PartialWitness::new();
+        let msg = Secp256K1Scalar::from_noncanonical_biguint(
+            BigUint::from_str(
+                "59516823202578934453231807837413051195901584431641309133515916306157505008006",
+            )
+            .unwrap(),
+        );
+        let r = Secp256K1Scalar::from_noncanonical_biguint(
+            BigUint::from_str(
+                "46382090830721986485537520884209456015459577346611904846198514025443704074929",
+            )
+            .unwrap(),
+        );
+
+        let s = Secp256K1Scalar::from_noncanonical_biguint(
+            BigUint::from_str(
+                "1552372224772676730422293873878132316324342426499194332915447638702395075748",
+            )
+            .unwrap(),
+        );
+        let pub_x = Secp256K1Base::from_noncanonical_biguint(
+            BigUint::from_str(
+                "50013730234611584230439597283133877245741877311273264622332944843771023636024",
+            )
+            .unwrap(),
+        );
+
+        let pub_y = Secp256K1Base::from_noncanonical_biguint(
+            BigUint::from_str(
+                "48141770895752452309672524515321122504921566623690759896527638748277211309772",
+            )
+            .unwrap(),
+        );
+
+        let pk = ECDSAPublicKey(AffinePoint::nonzero(pub_x, pub_y));
+
+        let sig = ECDSASignature { r, s };
+        let ho = <QHashOut<F> as KVQSerializable>::from_bytes(
+            &hex::decode("83955402ec7f375d1d6e8f3bf59753fe0af1e7c62bb4b662716a2524d3e2d186")
+                .unwrap(),
+        )
+        .unwrap();
+        sig_gadget.set_witness_public_keys_update(&mut pw, &pk, &sig, ho);
+        let proof = data.prove(pw).unwrap();
+        println!("proof.public_inputs: {:?}", proof.public_inputs);
+        data.verify(proof)
+    }
+
     #[test]
     #[ignore]
     fn test_ecdsa_circuit_narrow() -> Result<()> {
@@ -422,6 +569,18 @@ mod tests {
     #[ignore]
     fn test_ecdsa_circuit_narrow_v2() -> Result<()> {
         test_ecdsa_circuit_with_config_v2(CircuitConfig::standard_ecc_config())
+    }
+
+    #[test]
+    #[ignore]
+    fn test_ecdsa_circuit_narrow_v3() -> Result<()> {
+        test_ecdsa_circuit_with_config_v3(CircuitConfig::standard_ecc_config())
+    }
+
+    #[test]
+    #[ignore]
+    fn test_ecdsa_circuit_narrow_v4() -> Result<()> {
+        test_ecdsa_circuit_with_config_v4(CircuitConfig::standard_ecc_config())
     }
 
     #[test]

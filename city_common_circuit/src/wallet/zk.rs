@@ -184,7 +184,7 @@ where
             hash_public_key,
             fixed_circuit,
         };
-        self.key_map.insert(hash_public_key, key);
+        self.key_map.insert(circuit_fingerprint_public_key, key);
         self.hash_public_key_to_fingerprint
             .insert(hash_public_key, circuit_fingerprint_public_key);
 

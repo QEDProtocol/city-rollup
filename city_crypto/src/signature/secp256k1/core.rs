@@ -7,7 +7,7 @@ use crate::{
     },
 };
 use k256::elliptic_curve::point::DecompressPoint;
-use k256::elliptic_curve::{group::GroupEncoding, sec1::ToEncodedPoint};
+use k256::elliptic_curve::sec1::ToEncodedPoint;
 use plonky2::{
     field::{secp256k1_base::Secp256K1Base, secp256k1_scalar::Secp256K1Scalar},
     hash::hash_types::{HashOut, RichField},
@@ -17,6 +17,7 @@ use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 
 pub fn secp256k1_scalar_from_bytes(bytes: &[u8], offset: usize) -> Secp256K1Scalar {
+    /*
     let mut arr = [0u64; 4];
     for i in 0..4 {
         arr[i] = u64::from_le_bytes(
@@ -25,18 +26,26 @@ pub fn secp256k1_scalar_from_bytes(bytes: &[u8], offset: usize) -> Secp256K1Scal
                 .unwrap(),
         );
     }
+    */
+
+    let arr: [u64; 4] = core::array::from_fn(|i| {
+        u64::from_be_bytes(
+            bytes[(3 - i) * 8 + offset..(3 - i + 1) * 8 + offset]
+                .try_into()
+                .unwrap(),
+        )
+    });
     Secp256K1Scalar(arr)
 }
 
 pub fn secp256k1_base_from_bytes(bytes: &[u8], offset: usize) -> Secp256K1Base {
-    let mut arr = [0u64; 4];
-    for i in 0..4 {
-        arr[i] = u64::from_le_bytes(
-            bytes[i * 8 + offset..(i + 1) * 8 + offset]
+    let arr: [u64; 4] = core::array::from_fn(|i| {
+        u64::from_be_bytes(
+            bytes[(3 - i) * 8 + offset..(3 - i + 1) * 8 + offset]
                 .try_into()
                 .unwrap(),
-        );
-    }
+        )
+    });
     Secp256K1Base(arr)
 }
 
@@ -68,7 +77,7 @@ impl<F: RichField> TryFrom<&QEDCompressedSecp256K1Signature> for QEDPreparedSecp
     fn try_from(value: &QEDCompressedSecp256K1Signature) -> Result<Self, Self::Error> {
         let mut message = [F::ZERO; 4];
         for i in 0..4 {
-            message[i] = F::from_canonical_u64(u64::from_le_bytes(
+            message[i] = F::from_noncanonical_u64(u64::from_le_bytes(
                 value.message.0[i * 8..(i + 1) * 8].try_into().unwrap(),
             ));
         }
@@ -77,7 +86,6 @@ impl<F: RichField> TryFrom<&QEDCompressedSecp256K1Signature> for QEDPreparedSecp
         let s = secp256k1_scalar_from_bytes(&value.signature, 32);
 
         let public_key_x = secp256k1_base_from_bytes(&value.public_key, 1);
-
         let public_key_point = k256::AffinePoint::decompress(
             value.public_key[1..33].into(),
             (value.public_key[0] & 0x1u8).into(),
@@ -85,11 +93,9 @@ impl<F: RichField> TryFrom<&QEDCompressedSecp256K1Signature> for QEDPreparedSecp
         if public_key_point.is_none().into() {
             return Err(anyhow::format_err!("Invalid public key"));
         }
-        let public_key_bytes = public_key_point
-            .unwrap()
-            .to_encoded_point(false)
-            .as_bytes()
-            .to_vec();
+        let public_key_point = public_key_point.unwrap();
+
+        let public_key_bytes = public_key_point.to_encoded_point(false).as_bytes().to_vec();
 
         let public_key_y = secp256k1_base_from_bytes(&public_key_bytes, 33);
 

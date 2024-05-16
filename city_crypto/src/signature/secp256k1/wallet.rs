@@ -59,7 +59,8 @@ impl Secp256K1WalletProvider for MemorySecp256K1Wallet {
         public_key: &CompressedPublicKey,
         message: QHashOut<F>,
     ) -> anyhow::Result<QEDCompressedSecp256K1Signature> {
-        let bytes: Hash256 = message.into();
+        let msg = message.to_le_bytes();
+        let bytes: Hash256 = Hash256(msg);
         self.sign(public_key, bytes)
     }
 
