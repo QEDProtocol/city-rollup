@@ -66,10 +66,10 @@ pub enum CityRPCRequest<F: RichField> {
 }
 
 impl<F: RichField> CityRegisterUserRPCRequest<F> {
-    pub fn new_batch(public_keys: &[QHashOut<F>]) -> Vec<Self> {
+    pub fn new_batch(rpc_node_id: u32, public_keys: &[QHashOut<F>]) -> Vec<(u32, Self)> {
         public_keys
             .iter()
-            .map(|pk| CityRegisterUserRPCRequest { public_key: *pk })
+            .map(|pk| (rpc_node_id, CityRegisterUserRPCRequest { public_key: *pk }))
             .collect()
     }
 }

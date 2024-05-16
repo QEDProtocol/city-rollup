@@ -1,52 +1,32 @@
-use std::{fs, path::PathBuf};
+use std::fs;
+use std::path::PathBuf;
 
-use city_common::{config::rollup_constants::DEPOSIT_FEE_AMOUNT, logging::debug_timer::DebugTimer};
-use city_common_circuit::{
-    field::cubic::CubicExtendable, wallet::zk::ZKSignatureBasicWalletProvider,
-};
-use city_crypto::hash::{
-    base_types::{
-        felt252::{felt252_hashout_to_hash256_le, hashout_to_felt252_hashout},
-        hash256::Hash256,
-    },
-    qhashout::QHashOut,
-};
-use city_rollup_circuit::{
-    sighash_circuits::sighash::CRSigHashCircuit,
-    worker::{prover::QWorkerStandardProver, toolbox::root::CRWorkerToolboxRootCircuits},
-};
-use city_rollup_common::{
-    api::data::{
-        block::rpc_request::{CityRegisterUserRPCRequest, CityTokenTransferRPCRequest},
-        btc_spend_info::SimpleRollupBTCSpendInfo,
-        store::CityL2BlockState,
-    },
-    config::sighash_wrapper_config::SIGHASH_WHITELIST_TREE_ROOT,
-    introspection::{
-        rollup::{
-            constants::NETWORK_MAGIC_DOGE_REGTEST,
-            introspection::{BlockSpendIntrospectionGadgetConfig, BlockSpendIntrospectionHint},
-            signature::QEDSigAction,
-        },
-        transaction::BTCTransaction,
-    },
-    qworker::{memory_proof_store::SimpleProofStoreMemory, proof_store::QProofStoreReaderSync},
-};
-use city_rollup_core_orchestrator::debug::scenario::{
-    block_planner::planner::CityOrchestratorBlockPlanner,
-    requested_actions::CityScenarioRequestedActions, rpc_processor::DebugRPCProcessor,
-    sighash::finalizer::SigHashFinalizer, wallet::DebugScenarioWallet,
-};
-use city_store::store::{city::base::CityStore, sighash::SigHashMerkleTree};
+use city_common::logging::debug_timer::DebugTimer;
+use city_common_circuit::wallet::zk::ZKSignatureBasicWalletProvider;
+use city_crypto::hash::base_types::felt252::felt252_hashout_to_hash256_le;
+use city_crypto::hash::base_types::hash256::Hash256;
+use city_crypto::hash::qhashout::QHashOut;
+use city_rollup_circuit::worker::prover::QWorkerStandardProver;
+use city_rollup_circuit::worker::toolbox::root::CRWorkerToolboxRootCircuits;
+use city_rollup_common::api::data::block::rpc_request::CityRegisterUserRPCRequest;
+use city_rollup_common::api::data::btc_spend_info::SimpleRollupBTCSpendInfo;
+use city_rollup_common::api::data::store::CityL2BlockState;
+use city_rollup_common::config::sighash_wrapper_config::SIGHASH_WHITELIST_TREE_ROOT;
+use city_rollup_common::introspection::rollup::constants::NETWORK_MAGIC_DOGE_REGTEST;
+use city_rollup_common::introspection::rollup::introspection::BlockSpendIntrospectionHint;
+use city_rollup_common::introspection::transaction::BTCTransaction;
+use city_rollup_common::qworker::memory_proof_store::SimpleProofStoreMemory;
+use city_rollup_core_orchestrator::debug::scenario::block_planner::planner::CityOrchestratorBlockPlanner;
+use city_rollup_core_orchestrator::debug::scenario::requested_actions::CityScenarioRequestedActions;
+use city_rollup_core_orchestrator::debug::scenario::rpc_processor::DebugRPCProcessor;
+use city_rollup_core_orchestrator::debug::scenario::sighash::finalizer::SigHashFinalizer;
+use city_rollup_core_orchestrator::debug::scenario::wallet::DebugScenarioWallet;
+use city_store::store::city::base::CityStore;
+use city_store::store::sighash::SigHashMerkleTree;
 use kvq::memory::simple::KVQSimpleMemoryBackingStore;
-use plonky2::{
-    field::goldilocks_field::GoldilocksField,
-    hash::poseidon::PoseidonHash,
-    plonk::{
-        config::{AlgebraicHasher, GenericConfig, PoseidonGoldilocksConfig},
-        proof::ProofWithPublicInputs,
-    },
-};
+use plonky2::field::goldilocks_field::GoldilocksField;
+use plonky2::hash::poseidon::PoseidonHash;
+use plonky2::plonk::config::PoseidonGoldilocksConfig;
 
 fn prove_block_demo(hints: &[BlockSpendIntrospectionHint]) -> anyhow::Result<()> {
     const D: usize = 2;
@@ -110,7 +90,7 @@ fn prove_block_demo(hints: &[BlockSpendIntrospectionHint]) -> anyhow::Result<()>
     timer.lap("end creating wallets");
 
     timer.lap("start setup initial state");
-    let register_user_rpc_events = CityRegisterUserRPCRequest::new_batch(&[
+    let register_user_rpc_events = CityRegisterUserRPCRequest::new_batch(0, &[
         user_0_public_key,
         user_1_public_key,
         user_2_public_key,
@@ -173,7 +153,7 @@ fn prove_block_demo(hints: &[BlockSpendIntrospectionHint]) -> anyhow::Result<()>
             serde_json::to_string(&block_1_state_transition).unwrap()
         );
     */
-    let mut worker = QWorkerStandardProver::new();
+    let worker = QWorkerStandardProver::new();
     timer.lap("start proving op jobs");
     /*
     let all_job_ids = block_1_job_ids.plan_jobs();
@@ -251,11 +231,11 @@ fn prove_block_demo(hints: &[BlockSpendIntrospectionHint]) -> anyhow::Result<()>
 
     block_2_builder.process_deposits(
         &mut proof_store,
-        &[claim_deposit_0_req, claim_deposit_1_req],
+        &[(0, claim_deposit_0_req), (0, claim_deposit_1_req)],
     )?;
     block_2_builder.process_transfers(
         &mut proof_store,
-        &[send_transfer_1_req, send_transfer_2_req],
+        &[(0, send_transfer_1_req), (0, send_transfer_2_req)],
     )?;
 
     let block_2_requested = CityScenarioRequestedActions::new_from_requested_rpc(

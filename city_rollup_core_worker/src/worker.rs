@@ -24,14 +24,21 @@ pub async fn run(args: L2WorkerArgs) -> anyhow::Result<()> {
 
     let qworker = QWorkerStandardProver::new();
 
-    let toolbox = Arc::new(CRWorkerToolboxRootCircuits::<C, D>::new(network_magic, SIGHASH_WHITELIST_TREE_ROOT));
+    let toolbox = Arc::new(CRWorkerToolboxRootCircuits::<C, D>::new(
+        network_magic,
+        SIGHASH_WHITELIST_TREE_ROOT,
+    ));
 
     async_infinite_loop!(PROVING_INTERVAL, {
         let mut proof_store = proof_store.clone();
         let mut redis_dispatcher = redis_dispatcher.clone();
-        if let Some((_, message)) = redis_dispatcher.receive_one(Q_JOB).await? {
+        if let Some((id, message)) = redis_dispatcher
+            .receive_one(Q_JOB, Some(Duration::from_millis(PROVING_INTERVAL)))
+            .await?
+        {
             let job_id: QProvingJobDataID = serde_json::from_slice(&message)?;
             qworker.prove(&mut proof_store, &*toolbox, job_id)?;
+            redis_dispatcher.delete_message(Q_JOB, id).await?;
         }
     });
 }

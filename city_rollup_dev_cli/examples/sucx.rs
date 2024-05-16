@@ -1,10 +1,10 @@
 use city_common_circuit::{
-    builder::hash::core::CircuitBuilderHashCore, circuits::{simple_wrapper::{constant::SimpleWrapper, dynamic::SimpleWrapperDynamic}, traits::qstandard::QStandardCircuit},
+    builder::hash::core::CircuitBuilderHashCore, circuits::{simple_wrapper::{dynamic::SimpleWrapperDynamic}, traits::qstandard::QStandardCircuit},
     proof_minifier::pm_core::get_circuit_fingerprint_generic,
 };
 use city_crypto::hash::qhashout::QHashOut;
 use plonky2::{
-    field::{goldilocks_field::GoldilocksField, types::PrimeField64}, hash::hash_types::HashOutTarget, iop::witness::{PartialWitness, WitnessWrite}, plonk::{
+    field::{goldilocks_field::GoldilocksField}, hash::hash_types::HashOutTarget, iop::witness::{PartialWitness, WitnessWrite}, plonk::{
         circuit_builder::CircuitBuilder,
         circuit_data::{CircuitConfig, CircuitData, CommonCircuitData, VerifierOnlyCircuitData},
         config::{AlgebraicHasher, GenericConfig, PoseidonGoldilocksConfig},

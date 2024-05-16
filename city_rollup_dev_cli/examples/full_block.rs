@@ -5,7 +5,7 @@ use city_common::logging::debug_timer::DebugTimer;
 use city_common_circuit::field::cubic::CubicExtendable;
 use city_crypto::hash::{
     base_types::{
-        felt252::{felt252_hashout_to_hash256_le},
+        felt252::felt252_hashout_to_hash256_le,
         hash256::Hash256,
     },
     qhashout::QHashOut,
@@ -163,7 +163,7 @@ fn prove_block_demo(hints: &[BlockSpendIntrospectionHint]) -> anyhow::Result<()>
     timer.lap("end creating wallets");
 
     timer.lap("start setup initial state");
-    let register_user_rpc_events = CityRegisterUserRPCRequest::new_batch(&[
+    let register_user_rpc_events = CityRegisterUserRPCRequest::new_batch(0, &[
         user_0_public_key,
         user_1_public_key,
         user_2_public_key,

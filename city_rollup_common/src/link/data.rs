@@ -9,8 +9,8 @@ pub struct BTCUTXOStatus {
     pub block_time: u64,
     pub confirmed: bool,
 }
-#[derive(Serialize, Deserialize, PartialEq, Clone, Copy, Debug)]
 
+#[derive(Serialize, Deserialize, PartialEq, Clone, Copy, Debug)]
 pub struct BTCUTXO {
     pub status: BTCUTXOStatus,
     pub txid: Hash256,

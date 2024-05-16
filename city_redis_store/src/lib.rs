@@ -1,5 +1,5 @@
 use city_rollup_common::api::data::store::CityUserState;
-use city_rollup_common::introspection::rollup::introspection::BlockSpendIntrospectionHint;
+use city_rollup_common::link::data::BTCUTXO;
 use city_rollup_common::qworker::job_id::QProvingJobDataID;
 use city_rollup_common::qworker::proof_store::QProofStoreReaderSync;
 use city_rollup_common::qworker::proof_store::QProofStoreWriterSync;
@@ -11,11 +11,14 @@ use redis::Commands;
 // Table
 pub const USER_STATE: &'static str = "user_state";
 pub const BLOCK_STATE: &'static str = "block_state";
-pub const BLOCK_SPEND_HINTS: &'static str = "block_spend_hints";
+pub const BLOCK_SPEND_INFO: &'static str = "block_spend_info";
 
 // Field
 pub const LAST_BLOCK_ID: &'static str = "last_block_id";
 pub const LAST_BLOCK_TIMESTAMP: &'static str = "last_block_timestamp";
+
+pub const CURRENT_BLOCK_REDEEM_SCRIPT: &'static str = "current_block_redeem_script";
+pub const LAST_BLOCK_SPEND_OUTPUT: &'static str = "last_block_spend_output";
 
 pub const PROOFS: &'static str = "proofs";
 pub const PROOF_COUNTERS: &'static str = "proof_counters";
@@ -75,16 +78,43 @@ impl RedisStore {
         Ok(())
     }
 
-    pub fn get_last_block_spend_hint(&self, block_id: u64) -> anyhow::Result<BlockSpendIntrospectionHint> {
+    pub fn get_current_block_redeem_script(&self) -> anyhow::Result<Vec<u8>> {
         let mut connection = self.get_connection()?;
-        let hint_bytes: Vec<u8> = connection.hget(BLOCK_SPEND_HINTS, block_id)?;
-        Ok(bincode::deserialize(&hint_bytes)?)
+        let next_block_redeem_script: Vec<u8> =
+            connection.hget(BLOCK_SPEND_INFO, CURRENT_BLOCK_REDEEM_SCRIPT)?;
+        Ok(next_block_redeem_script)
     }
 
-    pub fn set_block_spend_hint(&self, block_id: u64, hint: &BlockSpendIntrospectionHint) -> anyhow::Result<()> {
+    pub fn get_last_block_spend_output(&self) -> anyhow::Result<Option<BTCUTXO>> {
         let mut connection = self.get_connection()?;
-        let hint_bytes: Vec<u8> = bincode::serialize(hint)?;
-        connection.hset(BLOCK_SPEND_HINTS, block_id, hint_bytes)?;
+        let last_block_spend_outpoint: Option<Vec<u8>> =
+            connection.hget(BLOCK_SPEND_INFO, LAST_BLOCK_SPEND_OUTPUT)?;
+        Ok(last_block_spend_outpoint.and_then(|x|bincode::deserialize(&x).ok()))
+    }
+
+    pub fn set_last_block_spend_outpoint(
+        &self,
+        outpoint: BTCUTXO,
+    ) -> anyhow::Result<()> {
+        let mut connection = self.get_connection()?;
+        connection.hset(
+            BLOCK_SPEND_INFO,
+            LAST_BLOCK_SPEND_OUTPUT,
+            &bincode::serialize(&outpoint)?,
+        )?;
+        Ok(())
+    }
+
+    pub fn set_next_block_redeem_script(
+        &self,
+        next_block_redeem_script: &Vec<u8>,
+    ) -> anyhow::Result<()> {
+        let mut connection = self.get_connection()?;
+        connection.hset(
+            BLOCK_SPEND_INFO,
+            CURRENT_BLOCK_REDEEM_SCRIPT,
+            next_block_redeem_script,
+        )?;
         Ok(())
     }
 

@@ -71,16 +71,16 @@ impl ProvingWorkerListener for RedisDispatcher {
         Ok(())
     }
 
-    async fn receive_one(&mut self, topic: &str) -> anyhow::Result<Option<(String, Vec<u8>)>> {
-        match self.queue.receive_message(topic, Q_HIDDEN).await? {
+    async fn receive_one(&mut self, topic: &str, hidden: Option<Duration>) -> anyhow::Result<Option<(String, Vec<u8>)>> {
+        match self.queue.receive_message(topic, hidden).await? {
             Some(RsmqMessage { id, message, .. }) => Ok(Some((id, message))),
             None => Ok(None),
         }
     }
 
-    async fn receive_all(&mut self, topic: &str) -> anyhow::Result<Vec<(String, Vec<u8>)>> {
+    async fn receive_all(&mut self, topic: &str, hidden: Option<Duration>) -> anyhow::Result<Vec<(String, Vec<u8>)>> {
         let mut result = Vec::new();
-        while let Some(RsmqMessage { id, message, .. }) = self.queue.pop_message(topic).await? {
+        while let Some(RsmqMessage { id, message, .. }) = self.queue.receive_message(topic, hidden).await? {
             result.push((id, message));
         }
 

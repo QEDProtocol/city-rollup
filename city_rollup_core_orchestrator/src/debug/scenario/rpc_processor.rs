@@ -34,7 +34,6 @@ impl<F: RichField> CityScenarioRequestedActionsFromRPC<F> {
 
 pub struct DebugRPCProcessor<F: RichField + Extendable<D>, const D: usize> {
     pub checkpoint_id: u64,
-    pub rpc_node_id: u32,
     pub output: CityScenarioRequestedActionsFromRPC<F>,
 }
 
@@ -42,18 +41,18 @@ impl<F: RichField + Extendable<D>, const D: usize> DebugRPCProcessor<F, D> {
     pub fn new(checkpoint_id: u64) -> Self {
         Self {
             checkpoint_id: checkpoint_id,
-            rpc_node_id: 0,
             output: CityScenarioRequestedActionsFromRPC::new(),
         }
     }
     pub fn injest_rpc_claim_deposit<PS: QProofStore>(
         &self,
         ps: &mut PS,
+        rpc_node_id: u32,
         req: &CityClaimDepositRPCRequest,
     ) -> anyhow::Result<CityClaimDepositRequest> {
         let count = self.output.claim_l1_deposits.len() as u32;
         let signature_proof_id = QProvingJobDataID::claim_deposit_l1_signature_proof(
-            self.rpc_node_id,
+            rpc_node_id,
             self.checkpoint_id,
             count,
         );
@@ -70,6 +69,7 @@ impl<F: RichField + Extendable<D>, const D: usize> DebugRPCProcessor<F, D> {
     }
     pub fn injest_rpc_register_user(
         &self,
+        rpc_node_id: u32,
         req: &CityRegisterUserRPCRequest<F>,
     ) -> anyhow::Result<CityRegisterUserRequest<F>> {
         Ok(CityRegisterUserRequest::new(req.public_key))
@@ -77,11 +77,12 @@ impl<F: RichField + Extendable<D>, const D: usize> DebugRPCProcessor<F, D> {
     pub fn injest_rpc_token_transfer<PS: QProofStore>(
         &self,
         ps: &mut PS,
+        rpc_node_id: u32,
         req: &CityTokenTransferRPCRequest,
     ) -> anyhow::Result<CityTokenTransferRequest> {
         let count = self.output.token_transfers.len() as u32;
         let signature_proof_id = QProvingJobDataID::transfer_signature_proof(
-            self.rpc_node_id,
+            rpc_node_id,
             self.checkpoint_id,
             count,
         );
@@ -98,11 +99,12 @@ impl<F: RichField + Extendable<D>, const D: usize> DebugRPCProcessor<F, D> {
     pub fn injest_rpc_add_withdrawal<PS: QProofStore>(
         &self,
         ps: &mut PS,
+        rpc_node_id: u32,
         req: &CityAddWithdrawalRPCRequest,
     ) -> anyhow::Result<CityAddWithdrawalRequest> {
         let count = self.output.add_withdrawals.len() as u64;
         let signature_proof_id = QProvingJobDataID::withdrawal_signature_proof(
-            self.rpc_node_id,
+            rpc_node_id,
             self.checkpoint_id,
             count as u32,
         );
@@ -121,10 +123,11 @@ impl<F: RichField + Extendable<D>, const D: usize> DebugRPCProcessor<F, D> {
     pub fn process_withdrawals<PS: QProofStore>(
         &mut self,
         ps: &mut PS,
+        rpc_node_id: u32,
         reqs: &[CityAddWithdrawalRPCRequest],
     ) -> anyhow::Result<()> {
         for req in reqs {
-            let withdrawal = self.injest_rpc_add_withdrawal(ps, req)?;
+            let withdrawal = self.injest_rpc_add_withdrawal(ps, rpc_node_id, req)?;
             self.output.add_withdrawals.push(withdrawal);
         }
         Ok(())
@@ -132,10 +135,10 @@ impl<F: RichField + Extendable<D>, const D: usize> DebugRPCProcessor<F, D> {
     pub fn process_deposits<PS: QProofStore>(
         &mut self,
         ps: &mut PS,
-        reqs: &[CityClaimDepositRPCRequest],
+        reqs: &[(u32, CityClaimDepositRPCRequest)],
     ) -> anyhow::Result<()> {
-        for req in reqs {
-            let deposit = self.injest_rpc_claim_deposit(ps, req)?;
+        for (rpc_node_id, req) in reqs {
+            let deposit = self.injest_rpc_claim_deposit(ps, *rpc_node_id, req)?;
             self.output.claim_l1_deposits.push(deposit);
         }
         Ok(())
@@ -143,20 +146,20 @@ impl<F: RichField + Extendable<D>, const D: usize> DebugRPCProcessor<F, D> {
     pub fn process_transfers<PS: QProofStore>(
         &mut self,
         ps: &mut PS,
-        reqs: &[CityTokenTransferRPCRequest],
+        reqs: &[(u32, CityTokenTransferRPCRequest)],
     ) -> anyhow::Result<()> {
-        for req in reqs {
-            let xfer = self.injest_rpc_token_transfer(ps, req)?;
+        for (rpc_node_id, req) in reqs {
+            let xfer = self.injest_rpc_token_transfer(ps, *rpc_node_id, req)?;
             self.output.token_transfers.push(xfer);
         }
         Ok(())
     }
     pub fn process_register_users(
         &mut self,
-        reqs: &[CityRegisterUserRPCRequest<F>],
+        reqs: &[(u32, CityRegisterUserRPCRequest<F>)],
     ) -> anyhow::Result<()> {
-        for req in reqs {
-            let register = self.injest_rpc_register_user(req)?;
+        for (rpc_node_id, req) in reqs {
+            let register = self.injest_rpc_register_user(*rpc_node_id, req)?;
             self.output.register_users.push(register);
         }
         Ok(())
