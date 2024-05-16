@@ -30,7 +30,7 @@ impl QWorkerStandardProver {
         job_id: QProvingJobDataID,
     ) -> anyhow::Result<QProvingJobDataID> {
         let output_id = match job_id.circuit_type {
-            ProvingJobCircuitType::GenerateFinalSigHashProofGroth16 => {
+            ProvingJobCircuitType::WrapFinalSigHashProofBLS12381 => {
                 let proof = <G as QWorkerCircuitCompressWithDataSync<S>>::prove_q_worker_compress(
                     prover, store, job_id,
                 )?;
