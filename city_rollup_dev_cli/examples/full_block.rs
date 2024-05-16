@@ -5,7 +5,7 @@ use city_common::logging::debug_timer::DebugTimer;
 use city_common_circuit::field::cubic::CubicExtendable;
 use city_crypto::hash::{
     base_types::{
-        felt252::{felt252_hashout_to_hash256_le, hashout_to_felt252_hashout},
+        felt252::{felt252_hashout_to_hash256_le},
         hash256::Hash256,
     },
     qhashout::QHashOut,
