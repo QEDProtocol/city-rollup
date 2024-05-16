@@ -6,8 +6,8 @@ use crate::{
         secp256k1::Secp256K1,
     },
 };
-use k256::elliptic_curve::group::GroupEncoding;
 use k256::elliptic_curve::point::DecompressPoint;
+use k256::elliptic_curve::{group::GroupEncoding, sec1::ToEncodedPoint};
 use plonky2::{
     field::{secp256k1_base::Secp256K1Base, secp256k1_scalar::Secp256K1Scalar},
     hash::hash_types::{HashOut, RichField},
@@ -74,7 +74,8 @@ impl<F: RichField> TryFrom<&QEDCompressedSecp256K1Signature> for QEDPreparedSecp
         }
         let message_hash = QHashOut(HashOut { elements: message });
         let r = secp256k1_scalar_from_bytes(&value.signature, 0);
-        let s = secp256k1_scalar_from_bytes(&value.signature, 0);
+        let s = secp256k1_scalar_from_bytes(&value.signature, 32);
+
         let public_key_x = secp256k1_base_from_bytes(&value.public_key, 1);
 
         let public_key_point = k256::AffinePoint::decompress(
@@ -84,7 +85,12 @@ impl<F: RichField> TryFrom<&QEDCompressedSecp256K1Signature> for QEDPreparedSecp
         if public_key_point.is_none().into() {
             return Err(anyhow::format_err!("Invalid public key"));
         }
-        let public_key_bytes = public_key_point.unwrap().to_bytes().to_vec();
+        let public_key_bytes = public_key_point
+            .unwrap()
+            .to_encoded_point(false)
+            .as_bytes()
+            .to_vec();
+
         let public_key_y = secp256k1_base_from_bytes(&public_key_bytes, 33);
 
         Ok(Self {

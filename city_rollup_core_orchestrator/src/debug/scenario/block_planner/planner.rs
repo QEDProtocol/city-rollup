@@ -313,6 +313,9 @@ impl<S: KVQBinaryStore, PS: QProofStore> CityOrchestratorBlockPlanner<S, PS> {
             &bincode::serialize(&block_state_transition_input)?,
         )?;
 
+        let new_state = self.processor.op_processor.get_finalized_block_state();
+        CityStore::<S>::set_block_state(store, &new_state)?;
+
         Ok((
             job_ids,
             transition,

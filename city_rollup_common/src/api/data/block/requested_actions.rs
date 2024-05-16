@@ -40,7 +40,6 @@ impl CityTokenTransferRequest {
 pub struct CityClaimDepositRequest {
     request_type: u8,
     pub user_id: u64,
-    pub nonce: u64,
     pub deposit_id: u64,
     pub value: u64,
 
@@ -51,7 +50,6 @@ pub struct CityClaimDepositRequest {
 impl CityClaimDepositRequest {
     pub fn new(
         user_id: u64,
-        nonce: u64,
         deposit_id: u64,
         value: u64,
         txid: Hash256,
@@ -61,7 +59,6 @@ impl CityClaimDepositRequest {
         Self {
             request_type: 1,
             user_id,
-            nonce,
             deposit_id,
             value,
             txid,
@@ -98,9 +95,8 @@ impl CityAddDepositRequest {
             1,
             "deposits should only have one output (send to layer 2)"
         );
-        assert_eq!(
-            funding_tx.inputs[0].script.len(),
-            106,
+        assert!(
+            funding_tx.inputs[0].script.len() == 106 || funding_tx.inputs[0].script.len() == 107,
             "the input script for a deposit should be a p2pkh signature + public key reveal"
         );
 
