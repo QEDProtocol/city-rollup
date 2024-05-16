@@ -74,6 +74,10 @@ full_block:
 hashes:
 	@RUST_BACKTRACE=${TRACE_ENABLED} cargo run --package city-rollup-dev-cli --example hashes
 
+.PHONY: print_hints
+print_hints:
+	@RUST_BACKTRACE=${TRACE_ENABLED} cargo run --package city-rollup-dev-cli --example print_hints
+
 .PHONY: prove_sighash_0_hints
 prove_sighash_0_hints:
 	@RUST_BACKTRACE=${TRACE_ENABLED} cargo run --package city-rollup-dev-cli --example prove_sighash_0_hints

@@ -14,6 +14,7 @@ hex = { workspace = true }
 city_store            = { path = "../city_store" }
 city_common_circuit   = { path = "../city_common_circuit" }
 city_common           = { path = "../city_common" }
+city_macros           = { path = "../city_macros" }
 city_rollup_common    = { path = "../city_rollup_common" }
 city_rollup_worker_dispatch    = { path = "../city_rollup_worker_dispatch" }
 city_redis_store    = { path = "../city_redis_store" }

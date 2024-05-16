@@ -53,16 +53,6 @@ pub const MAX_WITHDRAWALS_PROCESSED_PER_BLOCK: usize = 10;
 
 define_table! { KV, &[u8], &[u8] }
 
-#[derive(Default)]
-pub struct CityScenarioInputWithJobIds<F: RichField> {
-    pub add_deposits: Vec<CircuitInputWithJobId<CRAddL1DepositCircuitInput<F>>>,
-    pub add_withdrawals: Vec<CircuitInputWithJobId<CRAddL1WithdrawalCircuitInput<F>>>,
-    pub claim_l1_deposits: Vec<CircuitInputWithJobId<CRClaimL1DepositCircuitInput<F>>>,
-    pub token_transfers: Vec<CircuitInputWithJobId<CRL2TransferCircuitInput<F>>>,
-    pub process_withdrawals: Vec<CircuitInputWithJobId<CRProcessL1WithdrawalCircuitInput<F>>>,
-    pub register_users: Vec<CircuitInputWithJobId<CRUserRegistrationCircuitInput<F>>>,
-}
-
 pub type L2BlockStateModel<'db, 'txn> = L2BlockStatesModel<
     L2_BLOCK_STATE_TABLE_TYPE,
     KVQReDBStore<Table<'db, 'txn, &'static [u8], &'static [u8]>>,
