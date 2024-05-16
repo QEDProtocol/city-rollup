@@ -7,10 +7,10 @@ pub const SIGHASH_CIRCUIT_MAX_WITHDRAWALS: usize = 4;
 pub const SIGHASH_CIRCUIT_MAX_DEPOSITS: usize = 4;
 pub const SIGHASH_WHITELIST_TREE_ROOT: QHashOut<F> = QHashOut(HashOut {
     elements: [
-        GoldilocksField(17245739607958533405),
-        GoldilocksField(14689877053327930718),
-        GoldilocksField(14974407059510034187),
-        GoldilocksField(15440951280080432599),
+        GoldilocksField(12940816122468106251),
+        GoldilocksField(13981198610266814245),
+        GoldilocksField(15532353775053087975),
+        GoldilocksField(13082917549369438806),
     ],
 });
 
