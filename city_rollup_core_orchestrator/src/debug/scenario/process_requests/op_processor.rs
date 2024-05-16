@@ -1,5 +1,6 @@
 use std::marker::PhantomData;
 
+use city_common::config::rollup_constants::{DEPOSIT_FEE_AMOUNT, WITHDRAWAL_FEE_AMOUNT};
 use city_crypto::hash::qhashout::QHashOut;
 use city_rollup_common::api::data::block::requested_actions::CityAddDepositRequest;
 use city_rollup_common::api::data::block::requested_actions::CityAddWithdrawalRequest;
@@ -32,6 +33,8 @@ pub struct CityOrchestratorOpRequestProcessor<S: KVQBinaryStore> {
     pub fingerprints: CRWorkerToolboxCoreCircuitFingerprints<F>,
     pub processed_withdrawal_hashes: Vec<QHashOut<F>>,
     pub added_deposit_hashes: Vec<QHashOut<F>>,
+    pub block_total_deposited: u64,
+    pub block_total_withdrawn: u64,
 
     _store: PhantomData<S>,
 }
@@ -53,20 +56,23 @@ impl<S: KVQBinaryStore> CityOrchestratorOpRequestProcessor<S> {
             fingerprints,
             added_deposit_hashes: Vec::new(),
             processed_withdrawal_hashes: Vec::new(),
+            block_total_deposited: 0,
+            block_total_withdrawn: 0,
 
             _store: PhantomData,
         }
     }
 
-    pub fn block_state(&self) -> CityL2BlockState {
+    pub fn get_finalized_block_state(&self) -> CityL2BlockState {
         CityL2BlockState {
             checkpoint_id: self.checkpoint_id,
             next_add_withdrawal_id: self.next_add_withdrawal_id,
             next_process_withdrawal_id: self.next_process_withdrawal_id,
             next_deposit_id: self.next_deposit_id,
-            total_deposits_claimed_epoch: self.total_deposits_claimed_epoch,
             next_user_id: self.next_user_id,
-            end_balance: self.end_balance,
+            total_deposits_claimed_epoch: self.total_deposits_claimed_epoch,
+            end_balance: self.last_block_state.end_balance + self.block_total_deposited
+                - self.block_total_withdrawn,
         }
     }
 
@@ -75,13 +81,17 @@ impl<S: KVQBinaryStore> CityOrchestratorOpRequestProcessor<S> {
         store: &mut S,
         req: &CityAddDepositRequest,
     ) -> anyhow::Result<CRAddL1DepositCircuitInput<F>> {
+        assert!(
+            req.value > DEPOSIT_FEE_AMOUNT,
+            "deposits must be larger than the deposit_fee amount"
+        );
         let deposit_id = self.next_deposit_id;
         let deposit_tree_delta_merkle_proof =
             CityStore::<S>::add_deposit_from_request(store, self.checkpoint_id, deposit_id, req)?;
         self.added_deposit_hashes
             .push(deposit_tree_delta_merkle_proof.new_value);
         self.next_deposit_id += 1;
-        self.end_balance += req.value;
+        self.block_total_deposited += req.value - DEPOSIT_FEE_AMOUNT;
         Ok(CRAddL1DepositCircuitInput {
             deposit_tree_delta_merkle_proof,
             allowed_circuit_hashes_root: self
@@ -100,9 +110,10 @@ impl<S: KVQBinaryStore> CityOrchestratorOpRequestProcessor<S> {
             store,
             self.checkpoint_id,
             req.user_id,
-            req.value,
+            req.value + WITHDRAWAL_FEE_AMOUNT,
             Some(req.nonce),
         )?;
+        self.block_total_withdrawn += req.value + WITHDRAWAL_FEE_AMOUNT;
         let withdrawal_tree_delta_merkle_proof =
             CityStore::<S>::add_withdrawal_to_tree_from_request(store, self.checkpoint_id, req)?;
         self.next_add_withdrawal_id += 1;
@@ -124,12 +135,16 @@ impl<S: KVQBinaryStore> CityOrchestratorOpRequestProcessor<S> {
     ) -> anyhow::Result<CRClaimL1DepositCircuitInput<F>> {
         let deposit_tree_delta_merkle_proof =
             CityStore::<S>::mark_deposit_as_claimed(store, self.checkpoint_id, req.deposit_id)?;
+        assert!(
+            req.value > DEPOSIT_FEE_AMOUNT,
+            "deposits must be larger than the deposit_fee amount"
+        );
         let user_tree_delta_merkle_proof = CityStore::<S>::increment_user_balance(
             store,
             self.checkpoint_id,
             req.user_id,
-            req.value,
-            Some(req.nonce),
+            req.value - DEPOSIT_FEE_AMOUNT,
+            None,
         )?;
         let deposit = BTCRollupIntrospectionResultDeposit::from_byte_representation(
             &req.public_key.0,

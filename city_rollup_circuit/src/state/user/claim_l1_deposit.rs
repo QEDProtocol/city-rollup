@@ -129,7 +129,7 @@ impl ClaimL1DepositSingleGadget {
         let sig_action_id = builder.constant_u64(SIG_ACTION_CLAIM_DEPOSIT_MAGIC);
         let network_magic_target = builder.constant_u64(network_magic);
         let user_id = claim_gadget.old_user_state.user_id;
-        let new_user_nonce = claim_gadget.old_user_state.nonce;
+        let nonce = builder.zero(); //nonce is 0 for claiming deposits
         let claimed_tx_id_224 = claim_gadget.deposit_gadget.txid_224;
         let deposit_amount = claim_gadget.deposit_amount;
         let deposit_fee = claim_gadget.deposit_amount;
@@ -139,7 +139,7 @@ impl ClaimL1DepositSingleGadget {
             network_magic_target,
             user_id,
             sig_action_id,
-            new_user_nonce,
+            nonce,
             &[
                 claimed_tx_id_224.elements[0],
                 claimed_tx_id_224.elements[1],

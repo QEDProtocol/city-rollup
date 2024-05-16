@@ -61,7 +61,6 @@ impl<F: RichField + Extendable<D>, const D: usize> DebugRPCProcessor<F, D> {
 
         Ok(CityClaimDepositRequest::new(
             req.user_id,
-            req.nonce,
             req.deposit_id,
             req.value,
             req.txid,

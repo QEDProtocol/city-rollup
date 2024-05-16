@@ -22,7 +22,6 @@ pub struct CityTokenTransferRPCRequest {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CityClaimDepositRPCRequest {
     pub user_id: u64,
-    pub nonce: u64,
     pub deposit_id: u64,
     pub value: u64,
 

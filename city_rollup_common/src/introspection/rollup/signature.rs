@@ -1,16 +1,24 @@
-use city_crypto::hash::base_types::hash256::Hash256;
-use city_crypto::hash::qhashout::QHashOut;
-use city_crypto::signature::secp256k1::core::hash256_to_hashout_u224;
-use plonky2::hash::hash_types::HashOut;
-use plonky2::hash::hash_types::RichField;
-use plonky2::plonk::config::AlgebraicHasher;
-use serde::Deserialize;
-use serde::Serialize;
+use city_crypto::{
+    hash::{
+        base_types::{hash160::Hash160, hash256::Hash256},
+        qhashout::QHashOut,
+    },
+    signature::secp256k1::core::hash256_to_hashout_u224,
+};
+use plonky2::{
+    hash::hash_types::{HashOut, RichField},
+    plonk::config::AlgebraicHasher,
+};
+use serde::{Deserialize, Serialize};
+
 use serde_with::serde_as;
 
-use super::constants::SIG_ACTION_CLAIM_DEPOSIT_MAGIC;
-use super::constants::SIG_ACTION_TRANSFER_MAGIC;
-use super::introspection_result::BTCRollupIntrospectionResultWithdrawal;
+use super::{
+    constants::{
+        SIG_ACTION_CLAIM_DEPOSIT_MAGIC, SIG_ACTION_TRANSFER_MAGIC, SIG_ACTION_WITHDRAW_MAGIC,
+    },
+    introspection_result::BTCRollupIntrospectionResultWithdrawal,
+};
 
 /*
 fn public_key_enc_to_felts<F: RichField>(hash: &[u8; 33]) -> [F; 9] {
@@ -75,13 +83,12 @@ impl<F: RichField> QEDSigAction<F> {
     pub fn new_claim_deposit_action(
         network_magic: u64,
         user: u64,
-        nonce: u64,
         transaction_id: Hash256,
         amount: u64,
         deposit_fee: u64,
     ) -> Self {
         let network_magic = F::from_canonical_u64(network_magic);
-        let nonce = F::from_canonical_u64(nonce);
+        let nonce = F::from_canonical_u64(0);
         let tx_hash_224 = hash256_to_hashout_u224(transaction_id);
         Self {
             network_magic,
@@ -120,20 +127,23 @@ impl<F: RichField> QEDSigAction<F> {
         network_magic: u64,
         user: u64,
         nonce: u64,
-        script: &[u8],
+        address: Hash160,
+        address_type_flag: u8,
         amount: u64,
         withdrawal_fee: u64,
     ) -> Self {
-        let withdrawal_amount = F::from_noncanonical_u64(amount);
         let withdrawal_hash =
-            BTCRollupIntrospectionResultWithdrawal::from_bytes(script, withdrawal_amount)
-                .get_hash::<H>();
+            BTCRollupIntrospectionResultWithdrawal::<F>::hash_from_public_key_hash(
+                amount,
+                address,
+                address_type_flag,
+            );
 
         let network_magic = F::from_canonical_u64(network_magic);
         let nonce = F::from_canonical_u64(nonce);
         Self {
             network_magic,
-            sig_action: F::from_canonical_u64(SIG_ACTION_TRANSFER_MAGIC),
+            sig_action: F::from_canonical_u64(SIG_ACTION_WITHDRAW_MAGIC),
             nonce,
             action_arguments: vec![
                 withdrawal_hash.0.elements[0],
@@ -158,6 +168,10 @@ impl<F: RichField> QEDSigAction<F> {
             arguments_hash.elements[3],
         ]);
         final_hash
+    }
+
+    pub fn get_qhash<H: AlgebraicHasher<F>>(&self) -> QHashOut<F> {
+        QHashOut(self.get_hash::<H>())
     }
 }
 pub static PRIVATE_KEY_CONSTANTS: [u64; 20] = [

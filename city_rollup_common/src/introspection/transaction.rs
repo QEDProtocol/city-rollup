@@ -17,7 +17,16 @@ pub struct BTCTransaction {
     pub outputs: Vec<BTCTransactionOutput>,
     pub locktime: u32,
 }
-
+impl BTCTransaction {
+    pub fn dummy() -> Self {
+        Self {
+            version: 2,
+            inputs: vec![],
+            outputs: vec![],
+            locktime: 0,
+        }
+    }
+}
 #[derive(Serialize, Deserialize, PartialEq, Clone, Debug, Hash, Eq, PartialOrd, Ord)]
 pub struct BTCTransactionConfig {
     pub layout: BTCTransactionLayout,

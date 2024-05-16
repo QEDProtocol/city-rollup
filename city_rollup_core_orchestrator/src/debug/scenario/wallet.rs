@@ -1,16 +1,37 @@
-use city_common::binaryhelpers::bytes::CompressedPublicKey;
-use city_common_circuit::circuits::l1_secp256k1_signature::L1Secp256K1SignatureCircuit;
-use city_common_circuit::wallet::zk::MemoryZKSignatureWallet;
-use city_common_circuit::wallet::zk::SimpleZKSignatureWallet;
-use city_common_circuit::wallet::zk::ZKSignatureWalletProvider;
-use city_crypto::hash::base_types::hash256::Hash256;
-use city_crypto::hash::qhashout::QHashOut;
-use city_crypto::signature::secp256k1::core::QEDCompressedSecp256K1Signature;
-use city_crypto::signature::secp256k1::wallet::MemorySecp256K1Wallet;
-use city_crypto::signature::secp256k1::wallet::Secp256K1WalletProvider;
-use plonky2::plonk::config::AlgebraicHasher;
-use plonky2::plonk::config::GenericConfig;
-use plonky2::plonk::proof::ProofWithPublicInputs;
+use city_common::{
+    binaryhelpers::bytes::CompressedPublicKey,
+    config::rollup_constants::{DEPOSIT_FEE_AMOUNT, WITHDRAWAL_FEE_AMOUNT},
+};
+use city_common_circuit::{
+    circuits::l1_secp256k1_signature::L1Secp256K1SignatureCircuit,
+    wallet::zk::{MemoryZKSignatureWallet, SimpleZKSignatureWallet, ZKSignatureWalletProvider},
+};
+use city_crypto::{
+    hash::{
+        base_types::{hash160::Hash160, hash256::Hash256},
+        qhashout::QHashOut,
+    },
+    signature::secp256k1::{
+        core::QEDCompressedSecp256K1Signature,
+        wallet::{MemorySecp256K1Wallet, Secp256K1WalletProvider},
+    },
+};
+use city_rollup_common::{
+    api::data::{
+        block::rpc_request::{
+            CityAddWithdrawalRPCRequest, CityClaimDepositRPCRequest, CityTokenTransferRPCRequest,
+        },
+        store::CityL1Deposit,
+    },
+    introspection::rollup::signature::QEDSigAction,
+};
+use plonky2::{
+    hash::poseidon::PoseidonHash,
+    plonk::{
+        config::{AlgebraicHasher, GenericConfig},
+        proof::ProofWithPublicInputs,
+    },
+};
 
 #[derive(Clone)]
 pub struct DebugScenarioWallet<C: GenericConfig<D> + 'static, const D: usize>
@@ -86,5 +107,86 @@ where
     ) -> anyhow::Result<ProofWithPublicInputs<C::F, C, D>> {
         let ecc_sig = self.sign_hash_secp256k1(public_key, message)?;
         self.secp256k1_circuit.prove(&ecc_sig)
+    }
+    pub fn sign_claim_deposit(
+        &self,
+        network_magic: u64,
+        user_id: u64,
+        l1_deposit: &CityL1Deposit,
+    ) -> anyhow::Result<CityClaimDepositRPCRequest> {
+        let sig_preimage = QEDSigAction::<C::F>::new_claim_deposit_action(
+            network_magic,
+            user_id,
+            l1_deposit.txid,
+            l1_deposit.value,
+            DEPOSIT_FEE_AMOUNT,
+        );
+        let hash = sig_preimage.get_qhash::<PoseidonHash>();
+        let proof = self.zk_sign_hash_secp256k1(l1_deposit.public_key, hash)?;
+
+        let signature_proof = bincode::serialize(&proof)?;
+        Ok(CityClaimDepositRPCRequest {
+            public_key: l1_deposit.public_key.0,
+            user_id,
+            deposit_id: l1_deposit.deposit_id,
+            value: l1_deposit.value,
+            txid: l1_deposit.txid,
+            signature_proof,
+        })
+    }
+    pub fn sign_l2_transfer(
+        &self,
+        public_key: QHashOut<C::F>,
+        network_magic: u64,
+        from: u64,
+        to: u64,
+        value: u64,
+        nonce: u64,
+    ) -> anyhow::Result<CityTokenTransferRPCRequest> {
+        let sig_preimage =
+            QEDSigAction::<C::F>::new_transfer_action(network_magic, from, nonce, to, value);
+        let hash = sig_preimage.get_qhash::<PoseidonHash>();
+        let proof = self.zk_sign(public_key, hash)?;
+
+        let signature_proof = bincode::serialize(&proof)?;
+        Ok(CityTokenTransferRPCRequest {
+            signature_proof,
+            to,
+            nonce,
+            user_id: from,
+            value: value,
+        })
+    }
+    pub fn sign_withdrawal(
+        &self,
+        public_key: QHashOut<C::F>,
+        network_magic: u64,
+        user_id: u64,
+        l1_address: Hash160,
+        value: u64,
+        nonce: u64,
+    ) -> anyhow::Result<CityAddWithdrawalRPCRequest> {
+        let sig_preimage: QEDSigAction<C::F> =
+            QEDSigAction::<C::F>::new_withdrawal_action::<PoseidonHash>(
+                network_magic,
+                user_id,
+                nonce,
+                l1_address,
+                0,
+                value,
+                WITHDRAWAL_FEE_AMOUNT,
+            );
+        let hash = sig_preimage.get_qhash::<PoseidonHash>();
+        let proof = self.zk_sign(public_key, hash)?;
+
+        let signature_proof = bincode::serialize(&proof)?;
+        Ok(CityAddWithdrawalRPCRequest {
+            signature_proof,
+            nonce,
+            user_id: user_id,
+            value: value,
+            destination_type: 0,
+            destination: l1_address,
+        })
     }
 }

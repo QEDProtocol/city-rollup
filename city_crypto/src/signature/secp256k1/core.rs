@@ -1,19 +1,21 @@
-use k256::elliptic_curve::group::GroupEncoding;
+use crate::{
+    hash::{base_types::hash256::Hash256, qhashout::QHashOut},
+    signature::secp256k1::curve::{
+        curve_types::AffinePoint,
+        ecdsa::{ECDSAPublicKey, ECDSASignature},
+        secp256k1::Secp256K1,
+    },
+};
 use k256::elliptic_curve::point::DecompressPoint;
-use plonky2::field::secp256k1_base::Secp256K1Base;
-use plonky2::field::secp256k1_scalar::Secp256K1Scalar;
-use plonky2::hash::hash_types::HashOut;
-use plonky2::hash::hash_types::RichField;
-use serde::Deserialize;
-use serde::Serialize;
+use k256::elliptic_curve::{sec1::ToEncodedPoint};
+use plonky2::{
+    field::{secp256k1_base::Secp256K1Base, secp256k1_scalar::Secp256K1Scalar},
+    hash::hash_types::{HashOut, RichField},
+};
+use serde::{Deserialize, Serialize};
+
 use serde_with::serde_as;
 
-use crate::hash::base_types::hash256::Hash256;
-use crate::hash::qhashout::QHashOut;
-use crate::signature::secp256k1::curve::curve_types::AffinePoint;
-use crate::signature::secp256k1::curve::ecdsa::ECDSAPublicKey;
-use crate::signature::secp256k1::curve::ecdsa::ECDSASignature;
-use crate::signature::secp256k1::curve::secp256k1::Secp256K1;
 
 pub fn secp256k1_scalar_from_bytes(bytes: &[u8], offset: usize) -> Secp256K1Scalar {
     let mut arr = [0u64; 4];
@@ -73,7 +75,8 @@ impl<F: RichField> TryFrom<&QEDCompressedSecp256K1Signature> for QEDPreparedSecp
         }
         let message_hash = QHashOut(HashOut { elements: message });
         let r = secp256k1_scalar_from_bytes(&value.signature, 0);
-        let s = secp256k1_scalar_from_bytes(&value.signature, 0);
+        let s = secp256k1_scalar_from_bytes(&value.signature, 32);
+
         let public_key_x = secp256k1_base_from_bytes(&value.public_key, 1);
 
         let public_key_point = k256::AffinePoint::decompress(
@@ -83,7 +86,12 @@ impl<F: RichField> TryFrom<&QEDCompressedSecp256K1Signature> for QEDPreparedSecp
         if public_key_point.is_none().into() {
             return Err(anyhow::format_err!("Invalid public key"));
         }
-        let public_key_bytes = public_key_point.unwrap().to_bytes().to_vec();
+        let public_key_bytes = public_key_point
+            .unwrap()
+            .to_encoded_point(false)
+            .as_bytes()
+            .to_vec();
+
         let public_key_y = secp256k1_base_from_bytes(&public_key_bytes, 33);
 
         Ok(Self {
