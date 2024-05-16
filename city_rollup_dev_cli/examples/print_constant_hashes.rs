@@ -21,7 +21,7 @@ fn get_constant_hashes_string<F: RichField>(hashes: &[QHashOut<F>]) -> String {
 
 fn main() {
     let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    let path = format!("{}/examples/config_permutations_2x2.json", root.display());
+    let path = format!("{}/examples/config_permutations_4x4.json", root.display());
     let file_data = fs::read(path).unwrap();
     let hashes: Vec<QHashOut<GoldilocksField>> = serde_json::from_slice(&file_data).unwrap();
     println!("[\n{}\n]", get_constant_hashes_string(&hashes));

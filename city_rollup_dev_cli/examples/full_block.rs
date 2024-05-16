@@ -132,10 +132,10 @@ fn prove_block_demo(hints: &[BlockSpendIntrospectionHint]) -> anyhow::Result<()>
     let network_magic = NETWORK_MAGIC_DOGE_REGTEST;
 
     let sighash_whitelist_tree = SigHashMerkleTree::new();
-    /*println!(
+    println!(
         "sighash_whitelist_tree.root: {:?}",
         sighash_whitelist_tree.root.0
-    );*/
+    );
     let toolbox_circuits =
         CRWorkerToolboxRootCircuits::<C, D>::new(network_magic, SIGHASH_WHITELIST_TREE_ROOT);
     //toolbox_circuits.print_op_common_data();

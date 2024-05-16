@@ -85,19 +85,30 @@ impl BTCRollupIntrospectionGadget {
         // start funding transactions
 
         let mut funding_transactions = Vec::with_capacity(config.funding_transaction_configs.len());
-        for funding_tx_config in config.funding_transaction_configs.iter() {
+        for (i, funding_tx_config) in config.funding_transaction_configs.iter().enumerate() {
             trace_timer.event(format!(
                 "funding_tx_config: {:?}",
                 funding_tx_config.layout.input_script_sizes
             ));
 
-            let funding_tx = BTCTransactionBytesGadget::add_virtual_to_fixed_locktime_version(
+            let funding_tx = if i != config.block_spend_index {
+                BTCTransactionBytesGadget::add_virtual_to_fixed_locktime_version_with_der(
                 builder,
                 funding_tx_config.layout.clone(),
                 funding_tx_config.version,
                 funding_tx_config.locktime,
                 false,
-            );
+                true,
+            )
+        }else{
+            BTCTransactionBytesGadget::add_virtual_to_fixed_locktime_version(
+                builder,
+                funding_tx_config.layout.clone(),
+                funding_tx_config.version,
+                funding_tx_config.locktime,
+                false,
+            )
+        };
             funding_transactions.push(funding_tx);
         }
         // end funding transactions
@@ -201,12 +212,17 @@ impl BTCRollupIntrospectionGadget {
             .iter()
             .zip(self.sighash_preimage.transaction.inputs.iter())
             .enumerate()
-            .for_each(|(_, (funding_tx, spend_tx))| {
-                let funding_tx_bytes = funding_tx.to_byte_targets(builder);
-                let funding_tx_hash = self.hash_domain.btc_hash256(builder, &funding_tx_bytes);
-                // ensure the funding transaction provided is actually the transaction that
-                // funded this utxo
-                builder.connect_hash256_bytes(funding_tx_hash, spend_tx.hash);
+            .for_each(|(i, (funding_tx, spend_tx))| {
+                if i != self.block_spend_index {
+                    // deposit, use der pad
+                    funding_tx.connect_to_hash_deposit(builder, &mut self.hash_domain, spend_tx.hash, true)
+                }else{
+
+                    let funding_tx_bytes = funding_tx.to_byte_targets(builder);
+                    let funding_tx_hash = self.hash_domain.btc_hash256(builder, &funding_tx_bytes);
+                    // ensure the funding transaction provided is actually the transaction that funded this utxo
+                    builder.connect_hash256_bytes(funding_tx_hash, spend_tx.hash);
+                }
             });
     }
     pub fn get_deposits<F: RichField + Extendable<D>, const D: usize>(
