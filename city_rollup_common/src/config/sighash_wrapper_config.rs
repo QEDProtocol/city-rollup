@@ -3,8 +3,8 @@ use plonky2::{field::goldilocks_field::GoldilocksField, hash::hash_types::HashOu
 
 type F = GoldilocksField;
 pub const SIGHASH_CIRCUIT_WHITELIST_TREE_HEIGHT: u8 = 16;
-pub const SIGHASH_CIRCUIT_MAX_WITHDRAWALS: usize = 2;
-pub const SIGHASH_CIRCUIT_MAX_DEPOSITS: usize = 2;
+pub const SIGHASH_CIRCUIT_MAX_WITHDRAWALS: usize = 4;
+pub const SIGHASH_CIRCUIT_MAX_DEPOSITS: usize = 4;
 pub const SIGHASH_WHITELIST_TREE_ROOT: QHashOut<F> = QHashOut(HashOut {
     elements: [
         GoldilocksField(2281708616773938568),
