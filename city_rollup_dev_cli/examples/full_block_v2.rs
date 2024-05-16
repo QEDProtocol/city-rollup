@@ -1,7 +1,9 @@
 use std::{fs, path::PathBuf};
 
 use city_common::{config::rollup_constants::DEPOSIT_FEE_AMOUNT, logging::debug_timer::DebugTimer};
-use city_common_circuit::field::cubic::CubicExtendable;
+use city_common_circuit::{
+    field::cubic::CubicExtendable, wallet::zk::ZKSignatureBasicWalletProvider,
+};
 use city_crypto::hash::{
     base_types::{
         felt252::{felt252_hashout_to_hash256_le, hashout_to_felt252_hashout},
@@ -98,6 +100,12 @@ fn prove_block_demo(hints: &[BlockSpendIntrospectionHint]) -> anyhow::Result<()>
     let user_0_public_key = wallet.add_zk_private_key(QHashOut::from_values(100, 100, 100, 100));
     let user_1_public_key = wallet.add_zk_private_key(QHashOut::from_values(101, 101, 101, 101));
     let user_2_public_key = wallet.add_zk_private_key(QHashOut::from_values(102, 102, 102, 102));
+
+    println!("pub keys: {:?}", wallet.zk_wallet.get_public_keys());
+
+    println!("user_0_public_key: {:?}", user_0_public_key);
+    println!("user_0_public_key: {:?}", user_1_public_key);
+    println!("user_0_public_key: {:?}", user_2_public_key);
 
     timer.lap("end creating wallets");
 

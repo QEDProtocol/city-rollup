@@ -19,6 +19,7 @@ pub trait CircuitBuilderHashCore<F: RichField + Extendable<D>, const D: usize> {
     fn constant_whash(&mut self, value: QHashOut<F>) -> HashOutTarget;
     fn constant_hash_str(&mut self, value: &str) -> HashOutTarget;
     fn hashout_to_hash256_le(&mut self, value: HashOutTarget) -> Hash256Target;
+    fn hashout_to_hash256_be(&mut self, value: HashOutTarget) -> Hash256Target;
     fn two_to_one_swapped<H: AlgebraicHasher<F>>(
         &mut self,
         left: HashOutTarget,
@@ -135,5 +136,23 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilderHashCore<F, D>
     fn ensure_hash_is_non_zero(&mut self, hash: HashOutTarget) {
         let zero_hash = self.constant_hash(HashOut::ZERO);
         self.ensure_hash_not_equal(hash, zero_hash)
+    }
+
+    fn hashout_to_hash256_be(&mut self, value: HashOutTarget) -> Hash256Target {
+        let (a_low, a_high) = self.split_low_high(value.elements[0], 32, 64);
+        let (b_low, b_high) = self.split_low_high(value.elements[1], 32, 64);
+        let (c_low, c_high) = self.split_low_high(value.elements[2], 32, 64);
+        let (d_low, d_high) = self.split_low_high(value.elements[3], 32, 64);
+
+        [
+            U32Target(d_high),
+            U32Target(d_low),
+            U32Target(c_high),
+            U32Target(c_low),
+            U32Target(b_high),
+            U32Target(b_low),
+            U32Target(a_high),
+            U32Target(a_low),
+        ]
     }
 }

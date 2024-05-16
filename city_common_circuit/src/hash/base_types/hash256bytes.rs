@@ -59,7 +59,9 @@ pub trait CircuitBuilderHash256Bytes<F: RichField + Extendable<D>, const D: usiz
         y: Hash256BytesTarget,
     ) -> Hash256BytesTarget;
     fn hash256_bytes_to_hash256(&mut self, x: Hash256BytesTarget) -> Hash256Target;
+    fn hash256_bytes_to_hash256_be(&mut self, x: Hash256BytesTarget) -> Hash256Target;
     fn hash256_bytes_to_hashout224(&mut self, x: Hash256BytesTarget) -> HashOutTarget;
+    fn hash256_bytes_to_hashout(&mut self, x: Hash256BytesTarget) -> HashOutTarget;
     fn hash256_bytes_to_u32_bits(&mut self, x: Hash256BytesTarget) -> [[BoolTarget; 32]; 8];
 }
 
@@ -152,6 +154,44 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilderHash256Bytes<F,
         });
         for i in 0..32 {
             self.assert_zero(result[i]);
+        }
+    }
+
+    fn hash256_bytes_to_hash256_be(&mut self, x: Hash256BytesTarget) -> Hash256Target {
+        //let mut y = x;
+        //y.reverse();
+        let result = x
+            .chunks_exact(4)
+            .map(|chunk| {
+                let c256 = self.constant(F::from_canonical_u32(0x100));
+                let mut value = chunk[0];
+                value = self.mul_add(value, c256, chunk[1]);
+                value = self.mul_add(value, c256, chunk[2]);
+                U32Target(self.mul_add(value, c256, chunk[3]))
+            })
+            .collect::<Vec<U32Target>>();
+        [
+            result[7], result[6], result[5], result[4], result[3], result[2], result[1], result[0],
+        ]
+    }
+
+    fn hash256_bytes_to_hashout(&mut self, x: Hash256BytesTarget) -> HashOutTarget {
+        let result = x
+            .chunks_exact(8)
+            .map(|chunk| {
+                let c256 = self.constant(F::from_canonical_u32(0x100));
+                let mut value = chunk[7];
+                value = self.mul_add(value, c256, chunk[6]);
+                value = self.mul_add(value, c256, chunk[5]);
+                value = self.mul_add(value, c256, chunk[4]);
+                value = self.mul_add(value, c256, chunk[3]);
+                value = self.mul_add(value, c256, chunk[2]);
+                value = self.mul_add(value, c256, chunk[1]);
+                self.mul_add(value, c256, chunk[0])
+            })
+            .collect::<Vec<Target>>();
+        HashOutTarget {
+            elements: [result[0], result[1], result[2], result[3]],
         }
     }
 }
