@@ -15,7 +15,9 @@ use plonky2::{
 
 use crate::{
     crypto::secp256k1::gadget::DogeQEDSignatureGadget,
-    proof_minifier::pm_chain::OASProofMinifierChain,
+    proof_minifier::{
+        pm_chain::OASProofMinifierChain, pm_chain_dynamic::OASProofMinifierDynamicChain,
+    },
 };
 
 use super::traits::qstandard::QStandardCircuit;
@@ -27,7 +29,7 @@ where
 {
     pub signature_gadget: DogeQEDSignatureGadget,
     pub base_circuit_data: CircuitData<C::F, C, D>,
-    pub minifier_chain: OASProofMinifierChain<D, C::F, C>,
+    pub minifier_chain: OASProofMinifierDynamicChain<D, C::F, C>,
 }
 impl<C: GenericConfig<D> + 'static, const D: usize> Clone for L1Secp256K1SignatureCircuit<C, D>
 where
@@ -50,11 +52,12 @@ where
         builder.register_public_inputs(&signature_gadget.combined_hash.elements);
         let circuit_data = builder.build::<C>();
 
-        let minifier_chain = OASProofMinifierChain::<D, C::F, C>::new(
-            &circuit_data.verifier_only,
-            &circuit_data.common,
-            2,
-        );
+        let minifier_chain =
+            OASProofMinifierDynamicChain::<D, C::F, C>::new_with_dynamic_constant_verifier(
+                &circuit_data.verifier_only,
+                &circuit_data.common,
+                &[true, false],
+            );
 
         Self {
             base_circuit_data: circuit_data,
@@ -68,6 +71,7 @@ where
     ) -> anyhow::Result<ProofWithPublicInputs<C::F, C, D>> {
         let prepared_signature: QEDPreparedSecp256K1Signature<C::F> =
             compressed_signature.try_into()?;
+        println!("message: {:?}", prepared_signature.message.0.elements);
 
         let mut timer = DebugTimer::new("DogeSecp256K1SignatureCircuit::Prove");
         timer.lap("start prove base");
@@ -79,6 +83,7 @@ where
             prepared_signature.message,
         );
         let base_proof = self.base_circuit_data.prove(pw)?;
+        println!("base_proof_public_inputs: {:?}", base_proof.public_inputs);
         timer.lap("end prove base");
         timer.lap("start minifier");
         let minified_proof = self.minifier_chain.prove(&base_proof)?;

@@ -1,7 +1,10 @@
 use std::borrow::BorrowMut;
 
 use city_common_circuit::{
-    circuits::{simple_wrapper::dynamic::SimpleWrapperDynamic, traits::qstandard::QStandardCircuit}, field::cubic::CubicExtendable,
+    circuits::{
+        simple_wrapper::dynamic::SimpleWrapperDynamic, traits::qstandard::QStandardCircuit,
+    },
+    field::cubic::CubicExtendable,
 };
 use city_crypto::{
     field::qfield::QRichField,
@@ -11,7 +14,11 @@ use city_crypto::{
     },
 };
 use city_rollup_common::qworker::{
-    fingerprints::CRWorkerToolboxRootCircuitFingerprints, job_id::{ProvingJobCircuitType, QProvingJobDataID}, job_witnesses::sighash::CRSigHashFinalGLCircuitInput, proof_store::QProofStoreReaderSync, verifier::QWorkerVerifyHelper
+    fingerprints::CRWorkerToolboxRootCircuitFingerprints,
+    job_id::{ProvingJobCircuitType, QProvingJobDataID},
+    job_witnesses::sighash::CRSigHashFinalGLCircuitInput,
+    proof_store::QProofStoreReaderSync,
+    verifier::QWorkerVerifyHelper,
 };
 use plonky2::{
     hash::hash_types::HashOut,
@@ -34,7 +41,8 @@ use crate::{
         sighash_final_gl::CRSigHashFinalGLCircuit, sighash_wrapper::CRSigHashWrapperCircuit,
     },
     worker::traits::{
-        QWorkerCircuitCustomWithDataSync, QWorkerCircuitMutCustomWithDataSync, QWorkerGenericProver, QWorkerGenericProverGroth16, QWorkerGenericProverMut
+        QWorkerCircuitCustomWithDataSync, QWorkerCircuitMutCustomWithDataSync,
+        QWorkerGenericProver, QWorkerGenericProverGroth16, QWorkerGenericProverMut,
     },
 };
 
@@ -188,6 +196,7 @@ where
         store: &S,
         job_id: QProvingJobDataID,
     ) -> anyhow::Result<ProofWithPublicInputs<C::F, C, D>> {
+        println!("proving_job: {:?}", job_id);
         let circuit_type = job_id.circuit_type;
         match circuit_type {
             ProvingJobCircuitType::AggUserRegisterClaimDepositL2Transfer => self
@@ -243,28 +252,26 @@ where
     }
 }
 
-
-
-impl<S: QProofStoreReaderSync>
-QWorkerGenericProverGroth16<S, PoseidonGoldilocksConfig, 2> for CRWorkerToolboxRootCircuits<PoseidonGoldilocksConfig, 2>
+impl<S: QProofStoreReaderSync> QWorkerGenericProverGroth16<S, PoseidonGoldilocksConfig, 2>
+    for CRWorkerToolboxRootCircuits<PoseidonGoldilocksConfig, 2>
 {
-    fn worker_prove_groth16(
-        &self,
-        store: &S,
-        job_id: QProvingJobDataID,
-    ) -> anyhow::Result<String> {
+    fn worker_prove_groth16(&self, store: &S, job_id: QProvingJobDataID) -> anyhow::Result<String> {
         let input_data = store.get_bytes_by_id(job_id)?;
         let input_proof_id = bincode::deserialize::<QProvingJobDataID>(&input_data)?;
-        let (common_data, verifier_data, fingerprint) = self.get_verifier_triplet_for_circuit_type(input_proof_id.circuit_type);
+        let (common_data, verifier_data, fingerprint) =
+            self.get_verifier_triplet_for_circuit_type(input_proof_id.circuit_type);
         let inner_proof = store.get_proof_by_id(input_proof_id.get_output_id())?;
-        
+
         /*
         let wrapper = SimpleWrapper::<PoseidonGoldilocksConfig, 2>::new(common_data, verifier_data);
         let wrapper_proof = wrapper.prove_base(&inner_proof)?;
         */
-        let wrapper = SimpleWrapperDynamic::<PoseidonGoldilocksConfig, 2>::new(common_data, fingerprint, verifier_data.constants_sigmas_cap.height());
+        let wrapper = SimpleWrapperDynamic::<PoseidonGoldilocksConfig, 2>::new(
+            common_data,
+            fingerprint,
+            verifier_data.constants_sigmas_cap.height(),
+        );
         let wrapper_proof = wrapper.prove_base(&inner_proof, &verifier_data)?;
         gnark_plonky2_wrapper::wrap_plonky2_proof(wrapper.circuit_data, &wrapper_proof)
-
     }
 }

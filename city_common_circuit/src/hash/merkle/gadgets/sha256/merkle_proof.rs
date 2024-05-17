@@ -4,7 +4,7 @@ use plonky2::iop::target::{BoolTarget, Target};
 use plonky2::plonk::circuit_builder::CircuitBuilder;
 
 use crate::builder::hash::sha256::CircuitBuilderHashSha256;
-use crate::hash::base_types::hash256::{CircuitBuilderHash, Hash256Target, WitnessHash256};
+use crate::hash::base_types::hash256::{CircuitBuilderHash256, Hash256Target, WitnessHash256};
 use crate::u32::arithmetic_u32::U32Target;
 
 pub fn compute_merkle_root<F: RichField + Extendable<D>, const D: usize>(
@@ -76,7 +76,7 @@ mod tests {
     use plonky2::plonk::circuit_data::CircuitConfig;
     use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
 
-    use crate::hash::base_types::hash256::{CircuitBuilderHash, WitnessHash256};
+    use crate::hash::base_types::hash256::{CircuitBuilderHash256, WitnessHash256};
     use crate::hash::merkle::gadgets::sha256::merkle_proof::MerkleProofSha256Gadget;
 
     #[test]

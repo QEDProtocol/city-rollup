@@ -24,11 +24,11 @@ pub trait TreeProverLeafCircuit<
     I: DeserializeOwned + Serialize + Clone + Debug + Send,
     C: GenericConfig<D>,
     const D: usize,
->: QStandardCircuitProvableWithProofStoreSync<S, I, C, D> + Clone + Send
+>: QStandardCircuitProvableWithProofStoreSync<S, I, C, D>
 {
 }
 impl<
-        SC: QStandardCircuitProvableWithProofStoreSync<S, I, C, D> + Clone + Send,
+        SC: QStandardCircuitProvableWithProofStoreSync<S, I, C, D>,
         S: QProofStoreReaderSync,
         I: DeserializeOwned + Serialize + Clone + Debug + Send,
         C: GenericConfig<D>,

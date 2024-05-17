@@ -13,6 +13,7 @@ use crate::{
     hash::base_types::hash256bytes::{
         CircuitBuilderHash256Bytes, Hash256BytesTarget, WitnessHash256Bytes,
     },
+    u32::arithmetic_u32::CircuitBuilderU32,
 };
 use city_crypto::{
     field::conversions::bytes33_to_public_key,
@@ -249,17 +250,14 @@ impl DogeQEDSignatureGadget {
         let bigint_msg_target = builder.nonnative_to_canonical_biguint(&msg_target);
         let public_key_x_target = builder.nonnative_to_canonical_biguint(&public_key_target.0.x);
         let public_key_y_target = builder.nonnative_to_canonical_biguint(&public_key_target.0.y);
-        /*
-        let msg_data_targets = bigint_msg_target
+
+        let public_key_x_endian_reversed = public_key_x_target
             .limbs
             .iter()
-            .map(|x| x.0)
-            .collect::<Vec<_>>();*/
-        let public_key_x_data_targets = public_key_x_target
-            .limbs
-            .iter()
-            .map(|x| x.0)
+            .map(|x| builder.u32_reverse_endian(*x).0)
+            .rev()
             .collect::<Vec<_>>();
+
         let public_key_y_data_targets = public_key_y_target
             .limbs
             .iter()
@@ -285,7 +283,7 @@ impl DogeQEDSignatureGadget {
             if i == 0 {
                 parity_byte
             } else {
-                public_key_x_data_targets[i - 1]
+                public_key_x_endian_reversed[i - 1]
             }
         });
 
@@ -294,12 +292,6 @@ impl DogeQEDSignatureGadget {
             compressed_public_key,
             msg_hash_target,
         );
-        /*
-        let pub_key_hash = builder
-            .hash_n_to_hash_no_pad::<H>([vec![parity_byte], public_key_x_data_targets].concat());
-
-        let combined_hash = builder
-            .hash_n_to_hash_no_pad::<H>([pub_key_hash.elements, msg_hash_target.elements].concat());*/
 
         Self {
             msg_bytes_target,

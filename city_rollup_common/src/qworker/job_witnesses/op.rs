@@ -1,3 +1,4 @@
+use city_common::config::rollup_constants::DEPOSIT_FEE_AMOUNT;
 use city_crypto::hash::{
     merkle::{
         core::DeltaMerkleProofCore,
@@ -11,13 +12,17 @@ use city_crypto::hash::{
 use kvq::traits::KVQSerializable;
 use plonky2::{
     hash::{hash_types::RichField, poseidon::PoseidonHash},
-    plonk::config::Hasher,
+    plonk::config::{AlgebraicHasher, Hasher},
 };
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::fmt::Debug;
 
 use crate::{
-    introspection::rollup::introspection_result::BTCRollupIntrospectionResultDeposit,
+    introspection::rollup::{
+        constants::{NETWORK_MAGIC_DOGE_REGTEST, SIG_ACTION_CLAIM_DEPOSIT_MAGIC},
+        introspection_result::BTCRollupIntrospectionResultDeposit,
+        signature::QEDSigAction,
+    },
     qworker::job_id::QProvingJobDataID,
 };
 
@@ -153,6 +158,25 @@ impl<F: RichField> KVQSerializable for CRClaimL1DepositCircuitInput<F> {
 
     fn from_bytes(bytes: &[u8]) -> anyhow::Result<Self> {
         bincode::deserialize(bytes).map_err(Into::into)
+    }
+}
+
+impl<F: RichField> CRClaimL1DepositCircuitInput<F> {
+    pub fn compute_desired_public_inputs<H: AlgebraicHasher<F>>(&self) -> QHashOut<F> {
+        let sig_action = QEDSigAction::<F> {
+            network_magic: F::from_canonical_u64(NETWORK_MAGIC_DOGE_REGTEST),
+            user: F::from_canonical_u64(self.user_tree_delta_merkle_proof.index >> 1),
+            sig_action: F::from_canonical_u64(SIG_ACTION_CLAIM_DEPOSIT_MAGIC),
+            nonce: F::ZERO,
+            action_arguments: vec![
+                self.deposit.txid_224.0.elements[1],
+                self.deposit.txid_224.0.elements[2],
+                self.deposit.txid_224.0.elements[3],
+                self.deposit.value,
+                F::from_canonical_u64(DEPOSIT_FEE_AMOUNT),
+            ],
+        };
+        QHashOut(sig_action.get_hash::<H>())
     }
 }
 

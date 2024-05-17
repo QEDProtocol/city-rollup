@@ -1,8 +1,7 @@
 use city_common::logging::trace_timer::TraceTimer;
 use city_common_circuit::{
     circuits::{
-        l1_secp256k1_signature::L1Secp256K1SignatureCircuit,
-        traits::qstandard::{QStandardCircuit, QStandardCircuitWithDefaultMinified},
+        l1_secp256k1_signature::L1Secp256K1SignatureCircuit, traits::qstandard::QStandardCircuit,
         zk_signature_wrapper::ZKSignatureWrapperCircuit,
     },
     treeprover::{
@@ -36,13 +35,14 @@ use plonky2::{
 
 use crate::{
     block_circuits::ops::{
-        add_l1_deposit::WCRAddL1DepositCircuit, add_l1_withdrawal::CRAddL1WithdrawalCircuit,
+        add_l1_deposit::CRAddL1DepositCircuit, add_l1_withdrawal::CRAddL1WithdrawalCircuit,
         claim_l1_deposit::CRClaimL1DepositCircuit, l2_transfer::circuit::CRL2TransferCircuit,
-        process_l1_withdrawal::WCRProcessL1WithdrawalCircuit,
-        register_user::WCRUserRegistrationCircuit,
+        process_l1_withdrawal::CRProcessL1WithdrawalCircuit,
+        register_user::CRUserRegistrationCircuit,
     },
     worker::traits::{
-        QWorkerCircuitAggWithDataSync, QWorkerCircuitSimpleWithDataSync, QWorkerGenericProver,
+        QWorkerCircuitAggWithDataSync, QWorkerCircuitSimpleWithDataSync,
+        QWorkerCircuitStandardWithDataSync, QWorkerGenericProver,
     },
 };
 
@@ -57,14 +57,14 @@ where
     pub l1_secp256k1_signature: L1Secp256K1SignatureCircuit<C, D>,
 
     // state transition operations
-    pub op_register_user: WCRUserRegistrationCircuit<C, D>,
+    pub op_register_user: CRUserRegistrationCircuit<C, D>,
     pub op_claim_l1_deposit: CRClaimL1DepositCircuit<C, D>, // signed
     pub op_l2_transfer: CRL2TransferCircuit<C, D>,          // signed
     pub op_add_l1_withdrawal: CRAddL1WithdrawalCircuit<C, D>, // signed
 
     // state transition with events operations
-    pub op_add_l1_deposit: WCRAddL1DepositCircuit<C, D>,
-    pub op_process_l1_withdrawal: WCRProcessL1WithdrawalCircuit<C, D>,
+    pub op_add_l1_deposit: CRAddL1DepositCircuit<C, D>,
+    pub op_process_l1_withdrawal: CRProcessL1WithdrawalCircuit<C, D>,
 
     // operation aggregators
     pub agg_state_transition: AggStateTransitionCircuit<C, D>,
@@ -84,13 +84,35 @@ where
         // user circuits
         let zk_signature_wrapper = ZKSignatureWrapperCircuit::new();
         trace_timer.lap("built zk_signature_wrapper");
+        println!(
+            "zk_signature_wrapper.gates: {:?}",
+            zk_signature_wrapper.get_common_circuit_data_ref().gates
+        );
+        println!(
+            "zk_signature_wrapper.gates: {:?}",
+            zk_signature_wrapper
+                .get_common_circuit_data_ref()
+                .gates
+                .iter()
+                .map(|p| p.0.id())
+                .collect::<Vec<_>>()
+        );
+        let coset_gate = zk_signature_wrapper
+            .get_common_circuit_data_ref()
+            .gates
+            .iter()
+            .find(|p| p.0.id().starts_with("CosetInterpolationGate "));
+        if coset_gate.is_none() {
+            panic!("coset gate not found in zk_signature_wrapper");
+        }
+        let coset_gate = coset_gate.unwrap();
 
         let l1_secp256k1_signature = L1Secp256K1SignatureCircuit::new();
         trace_timer.lap("built l1_secp256k1_signature");
 
         // state transition operations
-        let op_register_user =
-            WCRUserRegistrationCircuit::new_default_with_minifiers(network_magic, 1);
+        let op_register_user = CRUserRegistrationCircuit::new(coset_gate);
+        //WCRUserRegistrationCircuit::new_default_with_minifiers(network_magic, 1);
         trace_timer.lap("built op_register_user");
 
         let op_claim_l1_deposit = CRClaimL1DepositCircuit::new_with_signature_circuit_data_ref(
@@ -100,19 +122,25 @@ where
         );
         trace_timer.lap("built op_claim_l1_deposit");
 
-        let op_l2_transfer = CRL2TransferCircuit::new(network_magic);
+        let op_l2_transfer = CRL2TransferCircuit::new_with_sig_wrapper_data(
+            network_magic,
+            zk_signature_wrapper.get_common_circuit_data_ref(),
+            zk_signature_wrapper
+                .get_verifier_config_ref()
+                .constants_sigmas_cap
+                .height(),
+            zk_signature_wrapper.get_fingerprint(),
+        );
         trace_timer.lap("built op_l2_transfer");
 
         let op_add_l1_withdrawal = CRAddL1WithdrawalCircuit::new(network_magic);
         trace_timer.lap("built op_add_l1_withdrawal");
 
         // state transition with events operations
-        let op_add_l1_deposit =
-            WCRAddL1DepositCircuit::new_default_with_minifiers(network_magic, 1);
+        let op_add_l1_deposit = CRAddL1DepositCircuit::new(coset_gate);
         trace_timer.lap("built op_add_l1_deposit");
 
-        let op_process_l1_withdrawal =
-            WCRProcessL1WithdrawalCircuit::new_default_with_minifiers(network_magic, 1);
+        let op_process_l1_withdrawal = CRProcessL1WithdrawalCircuit::new(coset_gate);
         trace_timer.lap("built op_process_l1_withdrawal");
 
         // operation aggregators
@@ -124,7 +152,7 @@ where
                 .height(),
         );
         trace_timer.lap("built agg_state_transition");
-        let agg_state_transition_dummy = AggStateTransitionDummyCircuit::new();
+        let agg_state_transition_dummy = AggStateTransitionDummyCircuit::new(coset_gate);
         trace_timer.lap("built agg_state_transition_dummy");
 
         // operation aggregators
@@ -137,7 +165,7 @@ where
         );
         trace_timer.lap("built agg_state_transition_with_events");
         let agg_state_transition_with_events_dummy =
-            AggStateTransitionWithEventsDummyCircuit::new();
+            AggStateTransitionWithEventsDummyCircuit::new(coset_gate);
         trace_timer.lap("built agg_state_transition_with_events_dummy");
 
         let mut result = Self {
@@ -411,7 +439,7 @@ where
                 .prove_q_worker_agg(self, store, job_id),
             ProvingJobCircuitType::TransferTokensL2 => self
                 .op_l2_transfer
-                .prove_q_worker_simple(self, store, job_id),
+                .prove_q_worker_standard(self, store, job_id),
             ProvingJobCircuitType::TransferTokensL2Aggregate => self
                 .agg_state_transition
                 .prove_q_worker_agg(self, store, job_id),

@@ -21,6 +21,8 @@ use plonky2::{
     plonk::circuit_builder::CircuitBuilder,
 };
 
+use super::hash256bytes::{CircuitBuilderHash256Bytes, Hash256BytesTarget};
+
 pub type Hash256Target = [U32Target; 8];
 
 impl ToTargets for Hash256Target {
@@ -71,7 +73,7 @@ impl<T: Witness<F>, F: PrimeField64> WitnessHash256<F> for T {
     }
 }
 
-pub trait CircuitBuilderHash<F: RichField + Extendable<D>, const D: usize> {
+pub trait CircuitBuilderHash256<F: RichField + Extendable<D>, const D: usize> {
     fn add_virtual_hash256_target(&mut self) -> Hash256Target;
     fn connect_hash256(&mut self, x: Hash256Target, y: Hash256Target);
     fn select_hash256(
@@ -82,7 +84,7 @@ pub trait CircuitBuilderHash<F: RichField + Extendable<D>, const D: usize> {
     ) -> Hash256Target;
 }
 
-impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilderHash<F, D>
+impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilderHash256<F, D>
     for CircuitBuilder<F, D>
 {
     fn add_virtual_hash256_target(&mut self) -> Hash256Target {

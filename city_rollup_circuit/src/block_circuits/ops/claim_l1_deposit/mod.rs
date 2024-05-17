@@ -1,4 +1,8 @@
 use city_common_circuit::{
+    builder::{
+        hash::core::CircuitBuilderHashCore, pad_circuit::pad_circuit_degree,
+        verify::CircuitBuilderVerifyProofHelpers,
+    },
     circuits::{
         l1_secp256k1_signature::L1Secp256K1SignatureCircuit,
         traits::qstandard::{QStandardCircuit, QStandardCircuitProvableWithProofStoreSync},
@@ -10,12 +14,19 @@ use city_crypto::hash::qhashout::QHashOut;
 use city_rollup_common::qworker::{
     job_witnesses::op::CRClaimL1DepositCircuitInput, proof_store::QProofStoreReaderSync,
 };
+use hashbrown::HashMap;
 use plonky2::{
-    hash::hash_types::HashOutTarget,
-    iop::witness::{PartialWitness, WitnessWrite},
+    hash::{hash_types::HashOutTarget, poseidon::PoseidonHash},
+    iop::{
+        target::Target,
+        witness::{PartialWitness, WitnessWrite},
+    },
     plonk::{
         circuit_builder::CircuitBuilder,
-        circuit_data::{CircuitConfig, CircuitData, CommonCircuitData, VerifierOnlyCircuitData},
+        circuit_data::{
+            CircuitConfig, CircuitData, CommonCircuitData, VerifierCircuitTarget,
+            VerifierOnlyCircuitData,
+        },
         config::{AlgebraicHasher, GenericConfig},
         proof::{ProofWithPublicInputs, ProofWithPublicInputsTarget},
     },
@@ -30,6 +41,7 @@ where
 {
     pub claim_single_gadget: ClaimL1DepositSingleGadget,
     pub signature_proof_target: ProofWithPublicInputsTarget<D>,
+    pub signature_verifier_data_target: VerifierCircuitTarget,
 
     pub allowed_circuit_hashes_root_target: HashOutTarget,
     // end circuit targets
@@ -90,12 +102,25 @@ where
             &mut builder,
             network_magic,
         );
-        let expected_signature_combined_hash = claim_single_gadget.expected_l1_signature_hash;
+        let expected_signature_combined_hash =
+            claim_single_gadget.signature_combo_gadget.combined_hash;
 
         let signature_proof_target =
             builder.add_virtual_proof_with_pis(&signature_circuit_common_data);
-        let signature_verifier_data_target =
-            builder.constant_verifier_data(&signature_circuit_verifier_data);
+
+        let signature_verifier_data_target = builder.add_virtual_verifier_data(
+            signature_circuit_verifier_data
+                .constants_sigmas_cap
+                .height(),
+        );
+        let expected_sig_fingerprint =
+            builder.constant_hash(get_circuit_fingerprint_generic::<D, C::F, C>(
+                &signature_circuit_verifier_data,
+            ));
+        let computed_sig_fingerprint =
+            builder.get_circuit_fingerprint::<C::Hasher>(&signature_verifier_data_target);
+
+        builder.connect_hashes(computed_sig_fingerprint, expected_sig_fingerprint);
 
         let signature_proof_combined_hash = HashOutTarget {
             elements: [
@@ -107,6 +132,7 @@ where
         };
 
         // ensure the claim is signed with the correct public key for L1 deposit
+
         builder.connect_hashes(
             signature_proof_combined_hash,
             expected_signature_combined_hash,
@@ -124,6 +150,7 @@ where
         builder.register_public_inputs(&allowed_circuit_hashes_root_target.elements);
         builder
             .register_public_inputs(&claim_single_gadget.combined_state_transition_hash.elements);
+        pad_circuit_degree::<C::F, D>(&mut builder, 12);
 
         let circuit_data = builder.build::<C>();
 
@@ -131,6 +158,7 @@ where
         Self {
             claim_single_gadget,
             signature_proof_target,
+            signature_verifier_data_target,
             allowed_circuit_hashes_root_target,
             circuit_data,
             fingerprint,
@@ -144,6 +172,14 @@ where
         input: &CRClaimL1DepositCircuitInput<C::F>,
         signature_proof: &ProofWithPublicInputs<C::F, C, D>,
     ) -> anyhow::Result<ProofWithPublicInputs<C::F, C, D>> {
+        println!(
+            "input_hash: {:?}",
+            input
+                .compute_desired_public_inputs::<PoseidonHash>()
+                .0
+                .elements
+        );
+        println!("public_inputs: {:?}", signature_proof.public_inputs);
         let mut pw = PartialWitness::new();
         self.claim_single_gadget.claim_gadget.set_witness(
             &mut pw,
@@ -153,13 +189,18 @@ where
         );
 
         pw.set_proof_with_pis_target(&self.signature_proof_target, signature_proof);
-
+        pw.set_verifier_data_target(
+            &self.signature_verifier_data_target,
+            &self.signature_circuit_verifier_data,
+        );
         pw.set_hash_target(
             self.allowed_circuit_hashes_root_target,
             input.allowed_circuit_hashes_root.0,
         );
 
-        self.circuit_data.prove(pw)
+        let result = self.circuit_data.prove(pw)?;
+
+        Ok(result)
     }
 }
 impl<C: GenericConfig<D> + 'static, const D: usize> QStandardCircuit<C, D>
@@ -191,6 +232,14 @@ where
         input: &CRClaimL1DepositCircuitInput<C::F>,
     ) -> anyhow::Result<ProofWithPublicInputs<C::F, C, D>> {
         let signature_proof = store.get_proof_by_id(input.signature_proof_id)?;
+        println!(
+            "CRClaimL1DepositCircuitInput: public_inputs: {:?}",
+            signature_proof.public_inputs
+        );
+        println!(
+            "CRClaimL1DepositCircuitInput: input: {}",
+            serde_json::to_string(&input).unwrap()
+        );
         self.prove_base(input, &signature_proof)
     }
 }

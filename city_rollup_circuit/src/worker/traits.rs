@@ -22,11 +22,7 @@ pub trait QWorkerGenericProver<S: QProofStoreReaderSync, C: GenericConfig<D>, co
 pub trait QWorkerGenericProverGroth16<S: QProofStoreReaderSync, C: GenericConfig<D>, const D: usize>:
     QWorkerVerifyHelper<C, D>
 {
-    fn worker_prove_groth16(
-        &self,
-        store: &S,
-        job_id: QProvingJobDataID,
-    ) -> anyhow::Result<String>;
+    fn worker_prove_groth16(&self, store: &S, job_id: QProvingJobDataID) -> anyhow::Result<String>;
 }
 pub trait QWorkerGenericProverMut<S: QProofStoreReaderSync, C: GenericConfig<D>, const D: usize>:
     QWorkerVerifyHelper<C, D>
@@ -51,6 +47,32 @@ pub trait QWorkerCircuitSimpleWithDataSync<
         store: &S,
         job_id: QProvingJobDataID,
     ) -> anyhow::Result<ProofWithPublicInputs<C::F, C, D>>;
+}
+pub trait QWorkerCircuitStandardWithDataSync<
+    V: QWorkerVerifyHelper<C, D>,
+    S: QProofStoreReaderSync,
+    I: DeserializeOwned + Serialize + Clone,
+    C: GenericConfig<D>,
+    const D: usize,
+>
+{
+    fn prove_q_worker_standard_with_input(
+        &self,
+        input: &I,
+        verify_helper: &V,
+        store: &S,
+        job_id: QProvingJobDataID,
+    ) -> anyhow::Result<ProofWithPublicInputs<C::F, C, D>>;
+    fn prove_q_worker_standard(
+        &self,
+        verify_helper: &V,
+        store: &S,
+        job_id: QProvingJobDataID,
+    ) -> anyhow::Result<ProofWithPublicInputs<C::F, C, D>> {
+        let witness_data = store.get_bytes_by_id(job_id)?;
+        let input = bincode::deserialize(&witness_data)?;
+        self.prove_q_worker_standard_with_input(&input, verify_helper, store, job_id)
+    }
 }
 pub trait QWorkerCircuitAggWithDataSync<
     V: QWorkerVerifyHelper<C, D>,
@@ -82,9 +104,7 @@ pub trait QWorkerCircuitCustomWithDataSync<
         job_id: QProvingJobDataID,
     ) -> anyhow::Result<ProofWithPublicInputs<C::F, C, D>>;
 }
-pub trait QWorkerCircuitCompressWithDataSync<
-    S: QProofStoreReaderSync>
-{
+pub trait QWorkerCircuitCompressWithDataSync<S: QProofStoreReaderSync> {
     fn prove_q_worker_compress(
         &self,
         store: &S,

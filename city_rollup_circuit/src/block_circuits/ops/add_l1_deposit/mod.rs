@@ -1,6 +1,9 @@
 use city_common::config::rollup_constants::L1_DEPOSIT_TREE_HEIGHT;
 use city_common_circuit::{
-    builder::{hash::core::CircuitBuilderHashCore, pad_circuit::pad_circuit_degree},
+    builder::{
+        hash::core::CircuitBuilderHashCore,
+        pad_circuit::{pad_circuit_degree, CircuitBuilderCityCommonGates},
+    },
     circuits::traits::qstandard::{
         provable::QStandardCircuitProvable, QStandardCircuit,
         QStandardCircuitProvableWithProofStoreSync, QStandardCircuitWithDefault,
@@ -16,6 +19,7 @@ use city_rollup_common::qworker::{
     job_witnesses::op::CRAddL1DepositCircuitInput, proof_store::QProofStoreReaderSync,
 };
 use plonky2::{
+    gates::gate::GateRef,
     hash::hash_types::{HashOut, HashOutTarget},
     iop::witness::{PartialWitness, WitnessWrite},
     plonk::{
@@ -37,19 +41,11 @@ where
     pub circuit_data: CircuitData<C::F, C, D>,
     pub fingerprint: QHashOut<C::F>,
 }
-impl<C: GenericConfig<D>, const D: usize> Clone for CRAddL1DepositCircuit<C, D>
-where
-    C::Hasher: AlgebraicHasher<C::F> + MerkleZeroHasher<HashOut<C::F>>,
-{
-    fn clone(&self) -> Self {
-        Self::new()
-    }
-}
 impl<C: GenericConfig<D>, const D: usize> CRAddL1DepositCircuit<C, D>
 where
     C::Hasher: AlgebraicHasher<C::F> + MerkleZeroHasher<HashOut<C::F>>,
 {
-    pub fn new() -> Self {
+    pub fn new(coset_gate: &GateRef<C::F, D>) -> Self {
         let config = CircuitConfig::standard_recursion_config();
         let mut builder = CircuitBuilder::<C::F, D>::new(config);
         let delta_merkle_proof_gadget: DeltaMerkleProofGadget =
@@ -70,7 +66,8 @@ where
         builder.register_public_inputs(&state_transition_hash.elements);
         builder.register_public_inputs(&event_transition_hash.elements);
 
-        pad_circuit_degree::<C::F, D>(&mut builder, 13);
+        pad_circuit_degree::<C::F, D>(&mut builder, 12);
+        builder.add_city_common_gates(Some(coset_gate.clone()));
 
         let circuit_data = builder.build::<C>();
 
@@ -145,14 +142,5 @@ where
     }
 }
 
-impl<C: GenericConfig<D>, const D: usize> QStandardCircuitWithDefault
-    for CRAddL1DepositCircuit<C, D>
-where
-    C::Hasher: AlgebraicHasher<C::F> + MerkleZeroHasher<HashOut<C::F>>,
-{
-    fn new_default(_network_magic: u64) -> Self {
-        CRAddL1DepositCircuit::new()
-    }
-}
 pub type WCRAddL1DepositCircuit<C, const D: usize> =
     TreeProverLeafCircuitWrapper<CRAddL1DepositCircuit<C, D>, C, D>;

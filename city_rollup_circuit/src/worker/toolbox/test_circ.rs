@@ -9,11 +9,14 @@ use city_crypto::hash::{
     merkle::treeprover::TPCircuitFingerprintConfig, traits::hasher::MerkleZeroHasher,
 };
 use plonky2::{
+    gates::{coset_interpolation::CosetInterpolationGate, gate::GateRef},
     hash::hash_types::HashOut,
     plonk::config::{AlgebraicHasher, GenericConfig},
 };
 
-use crate::block_circuits::ops::register_user::WCRUserRegistrationCircuit;
+use crate::block_circuits::ops::register_user::{
+    CRUserRegistrationCircuit, WCRUserRegistrationCircuit,
+};
 
 use city_crypto::hash::qhashout::QHashOut;
 use plonky2::hash::hash_types::RichField;
@@ -52,7 +55,7 @@ where
         trace_timer.lap("start => build core toolbox circuits");
         // state transition operations
         let op_register_user =
-            WCRUserRegistrationCircuit::new_default_with_minifiers(network_magic, 1);
+            CRUserRegistrationCircuit::new(&GateRef::new(CosetInterpolationGate::new(4)));
         trace_timer.lap("built op_register_user");
 
         // operation aggregators

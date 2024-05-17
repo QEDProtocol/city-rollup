@@ -1,4 +1,5 @@
 use city_common_circuit::{
+    builder::pad_circuit::CircuitBuilderCityCommonGates,
     circuits::{
         traits::qstandard::{QStandardCircuit, QStandardCircuitProvableWithProofStoreSync},
         zk_signature_wrapper::ZKSignatureWrapperCircuit,
@@ -117,6 +118,7 @@ where
                 .elements,
         );
 
+        builder.add_city_common_gates(None);
         let circuit_data = builder.build::<C>();
 
         let fingerprint = QHashOut(get_circuit_fingerprint_generic(&circuit_data.verifier_only));

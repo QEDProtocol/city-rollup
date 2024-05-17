@@ -1,9 +1,12 @@
 use city_common::config::rollup_constants::L1_WITHDRAWAL_TREE_HEIGHT;
 use city_common_circuit::{
-    builder::{hash::core::CircuitBuilderHashCore, pad_circuit::pad_circuit_degree},
+    builder::{
+        hash::core::CircuitBuilderHashCore,
+        pad_circuit::{pad_circuit_degree, CircuitBuilderCityCommonGates},
+    },
     circuits::traits::qstandard::{
         provable::QStandardCircuitProvable, QStandardCircuit,
-        QStandardCircuitProvableWithProofStoreSync, QStandardCircuitWithDefault,
+        QStandardCircuitProvableWithProofStoreSync,
     },
     hash::merkle::gadgets::delta_merkle_proof::DeltaMerkleProofGadget,
     proof_minifier::pm_core::get_circuit_fingerprint_generic,
@@ -16,6 +19,7 @@ use city_rollup_common::qworker::{
     job_witnesses::op::CRProcessL1WithdrawalCircuitInput, proof_store::QProofStoreReaderSync,
 };
 use plonky2::{
+    gates::gate::GateRef,
     hash::hash_types::{HashOut, HashOutTarget},
     iop::witness::{PartialWitness, WitnessWrite},
     plonk::{
@@ -37,19 +41,11 @@ where
     pub circuit_data: CircuitData<C::F, C, D>,
     pub fingerprint: QHashOut<C::F>,
 }
-impl<C: GenericConfig<D>, const D: usize> Clone for CRProcessL1WithdrawalCircuit<C, D>
-where
-    C::Hasher: AlgebraicHasher<C::F> + MerkleZeroHasher<HashOut<C::F>>,
-{
-    fn clone(&self) -> Self {
-        Self::new()
-    }
-}
 impl<C: GenericConfig<D>, const D: usize> CRProcessL1WithdrawalCircuit<C, D>
 where
     C::Hasher: AlgebraicHasher<C::F> + MerkleZeroHasher<HashOut<C::F>>,
 {
-    pub fn new() -> Self {
+    pub fn new(coset_gate: &GateRef<C::F, D>) -> Self {
         let config = CircuitConfig::standard_recursion_config();
         let mut builder = CircuitBuilder::<C::F, D>::new(config);
         let delta_merkle_proof_gadget: DeltaMerkleProofGadget =
@@ -69,7 +65,9 @@ where
         builder.register_public_inputs(&state_transition_hash.elements);
         builder.register_public_inputs(&event_transition_hash.elements);
 
-        pad_circuit_degree::<C::F, D>(&mut builder, 13);
+        builder.add_city_common_gates(Some(coset_gate.clone()));
+
+        pad_circuit_degree::<C::F, D>(&mut builder, 12);
         let circuit_data = builder.build::<C>();
 
         let fingerprint = QHashOut(get_circuit_fingerprint_generic(&circuit_data.verifier_only));
@@ -145,14 +143,5 @@ where
     }
 }
 
-impl<C: GenericConfig<D>, const D: usize> QStandardCircuitWithDefault
-    for CRProcessL1WithdrawalCircuit<C, D>
-where
-    C::Hasher: AlgebraicHasher<C::F> + MerkleZeroHasher<HashOut<C::F>>,
-{
-    fn new_default(_network_magic: u64) -> Self {
-        CRProcessL1WithdrawalCircuit::new()
-    }
-}
 pub type WCRProcessL1WithdrawalCircuit<C, const D: usize> =
     TreeProverLeafCircuitWrapper<CRProcessL1WithdrawalCircuit<C, D>, C, D>;

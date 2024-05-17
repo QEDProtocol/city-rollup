@@ -1,5 +1,8 @@
 use city_common_circuit::{
-    builder::{core::CircuitBuilderHelpersCore, hash::core::CircuitBuilderHashCore},
+    builder::{
+        core::CircuitBuilderHelpersCore, hash::core::CircuitBuilderHashCore,
+        pad_circuit::pad_circuit_degree, verify::CircuitBuilderVerifyProofHelpers,
+    },
     circuits::{
         traits::qstandard::{QStandardCircuit, QStandardCircuitProvableWithProofStoreSync},
         zk_signature_wrapper::ZKSignatureWrapperCircuit,
@@ -10,7 +13,10 @@ use city_common_circuit::{
 use city_crypto::hash::qhashout::QHashOut;
 use city_rollup_common::{
     introspection::rollup::constants::SIG_ACTION_TRANSFER_MAGIC,
-    qworker::{job_witnesses::op::CRL2TransferCircuitInput, proof_store::QProofStoreReaderSync},
+    qworker::{
+        job_id::QProvingJobDataID, job_witnesses::op::CRL2TransferCircuitInput,
+        proof_store::QProofStoreReaderSync, verifier::QWorkerVerifyHelper,
+    },
 };
 use plonky2::{
     field::extension::Extendable,
@@ -18,7 +24,10 @@ use plonky2::{
     iop::witness::{PartialWitness, WitnessWrite},
     plonk::{
         circuit_builder::CircuitBuilder,
-        circuit_data::{CircuitConfig, CircuitData, CommonCircuitData, VerifierOnlyCircuitData},
+        circuit_data::{
+            CircuitConfig, CircuitData, CommonCircuitData, VerifierCircuitTarget,
+            VerifierOnlyCircuitData,
+        },
         config::{AlgebraicHasher, GenericConfig},
         proof::{ProofWithPublicInputs, ProofWithPublicInputsTarget},
     },
@@ -27,6 +36,7 @@ use plonky2::{
 use crate::{
     introspection::gadgets::rollup::signature::compute_sig_action_hash_circuit,
     state::user::l2_transfer_state_update::L2TransferStateUpdateGadget,
+    worker::traits::QWorkerCircuitStandardWithDataSync,
 };
 
 #[derive(Debug, Clone)]
@@ -88,28 +98,14 @@ where
 {
     pub l2_transfer_single_gadget: L2TransferSingleGadget,
     pub signature_proof_target: ProofWithPublicInputsTarget<D>,
+    pub signature_verifier_data_target: VerifierCircuitTarget,
 
     pub allowed_circuit_hashes_root_target: HashOutTarget,
     // end circuit targets
     pub circuit_data: CircuitData<C::F, C, D>,
     pub fingerprint: QHashOut<C::F>,
     pub network_magic: u64,
-
     // dependencies
-    pub signature_circuit_common_data: CommonCircuitData<C::F, D>,
-    pub signature_circuit_verifier_data: VerifierOnlyCircuitData<C, D>,
-}
-impl<C: GenericConfig<D> + 'static, const D: usize> Clone for CRL2TransferCircuit<C, D>
-where
-    C::Hasher: AlgebraicHasher<C::F>,
-{
-    fn clone(&self) -> Self {
-        Self::new_with_sig_wrapper_data(
-            self.network_magic,
-            self.signature_circuit_common_data.clone(),
-            self.signature_circuit_verifier_data.clone(),
-        )
-    }
 }
 impl<C: GenericConfig<D> + 'static, const D: usize> CRL2TransferCircuit<C, D>
 where
@@ -120,14 +116,16 @@ where
 
         Self::new_with_sig_wrapper_data(
             network_magic,
-            sig_wrapper.common,
-            sig_wrapper.verifier_only,
+            &sig_wrapper.common,
+            sig_wrapper.verifier_only.constants_sigmas_cap.height(),
+            QHashOut(get_circuit_fingerprint_generic(&sig_wrapper.verifier_only)),
         )
     }
     pub fn new_with_sig_wrapper_data(
         network_magic: u64,
-        signature_circuit_common_data: CommonCircuitData<C::F, D>,
-        signature_circuit_verifier_data: VerifierOnlyCircuitData<C, D>,
+        signature_circuit_common_data: &CommonCircuitData<C::F, D>,
+        signature_circuit_verifier_data_cap_height: usize,
+        signature_wrapper_fingerprint: QHashOut<C::F>,
     ) -> Self {
         let config = CircuitConfig::standard_recursion_config();
         let mut builder = CircuitBuilder::<C::F, D>::new(config);
@@ -139,7 +137,7 @@ where
         let signature_proof_target =
             builder.add_virtual_proof_with_pis(&signature_circuit_common_data);
         let signature_verifier_data_target =
-            builder.constant_verifier_data(&signature_circuit_verifier_data);
+            builder.add_virtual_verifier_data(signature_circuit_verifier_data_cap_height);
 
         let signature_proof_public_key = HashOutTarget {
             elements: [
@@ -176,7 +174,14 @@ where
             &signature_verifier_data_target,
             &signature_circuit_common_data,
         );
-
+        let actual_sig_wrapper_fingerprint =
+            builder.get_circuit_fingerprint::<C::Hasher>(&signature_verifier_data_target);
+        let expected_sig_wrapper_fingerprint =
+            builder.constant_hash(signature_wrapper_fingerprint.0);
+        builder.connect_hashes(
+            actual_sig_wrapper_fingerprint,
+            expected_sig_wrapper_fingerprint,
+        );
         let allowed_circuit_hashes_root_target = builder.add_virtual_hash();
 
         let state_transition_hash = builder.hash_two_to_one::<C::Hasher>(
@@ -187,6 +192,7 @@ where
         builder.register_public_inputs(&allowed_circuit_hashes_root_target.elements);
         builder.register_public_inputs(&state_transition_hash.elements);
 
+        pad_circuit_degree::<C::F, D>(&mut builder, 12);
         let circuit_data = builder.build::<C>();
 
         let fingerprint = QHashOut(get_circuit_fingerprint_generic(&circuit_data.verifier_only));
@@ -198,14 +204,14 @@ where
             circuit_data,
             fingerprint,
             network_magic,
-            signature_circuit_common_data,
-            signature_circuit_verifier_data,
+            signature_verifier_data_target,
         }
     }
     pub fn prove_base(
         &self,
         input: &CRL2TransferCircuitInput<C::F>,
         signature_proof: &ProofWithPublicInputs<C::F, C, D>,
+        signature_verifier_data: &VerifierOnlyCircuitData<C, D>,
     ) -> anyhow::Result<ProofWithPublicInputs<C::F, C, D>> {
         let mut pw = PartialWitness::new();
         self.l2_transfer_single_gadget
@@ -217,6 +223,10 @@ where
             );
 
         pw.set_proof_with_pis_target(&self.signature_proof_target, signature_proof);
+        pw.set_verifier_data_target(
+            &self.signature_verifier_data_target,
+            &signature_verifier_data,
+        );
         pw.set_hash_target(
             self.allowed_circuit_hashes_root_target,
             input.allowed_circuit_hashes_root.0,
@@ -243,19 +253,31 @@ where
     }
 }
 
-impl<S: QProofStoreReaderSync, C: GenericConfig<D> + 'static, const D: usize>
-    QStandardCircuitProvableWithProofStoreSync<S, CRL2TransferCircuitInput<C::F>, C, D>
+impl<
+        V: QWorkerVerifyHelper<C, D>,
+        S: QProofStoreReaderSync,
+        C: GenericConfig<D> + 'static,
+        const D: usize,
+    > QWorkerCircuitStandardWithDataSync<V, S, CRL2TransferCircuitInput<C::F>, C, D>
     for CRL2TransferCircuit<C, D>
 where
     C::Hasher: AlgebraicHasher<C::F>,
 {
-    fn prove_with_proof_store_sync(
+    fn prove_q_worker_standard_with_input(
         &self,
-        store: &S,
         input: &CRL2TransferCircuitInput<C::F>,
+        verify_helper: &V,
+        store: &S,
+        _job_id: QProvingJobDataID,
     ) -> anyhow::Result<ProofWithPublicInputs<C::F, C, D>> {
         let signature_proof = store.get_proof_by_id(input.signature_proof_id)?;
-        self.prove_base(input, &signature_proof)
+        self.prove_base(
+            input,
+            &signature_proof,
+            verify_helper
+                .get_verifier_triplet_for_circuit_type(input.signature_proof_id.circuit_type)
+                .1,
+        )
     }
 }
 

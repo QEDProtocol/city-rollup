@@ -79,7 +79,7 @@ fn prove_block_demo(hints: &[BlockSpendIntrospectionHint]) -> anyhow::Result<()>
     );
     let toolbox_circuits =
         CRWorkerToolboxRootCircuits::<C, D>::new(network_magic, SIGHASH_WHITELIST_TREE_ROOT);
-    //toolbox_circuits.print_op_common_data();
+    toolbox_circuits.print_op_common_data();
 
     let mut proof_store = PS::new();
     let mut store = S::new();

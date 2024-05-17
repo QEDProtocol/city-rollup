@@ -3,7 +3,7 @@ use plonky2::hash::hash_types::RichField;
 use plonky2::iop::target::Target;
 use plonky2::plonk::circuit_builder::CircuitBuilder;
 
-use crate::hash::base_types::hash256::{CircuitBuilderHash, Hash256Target, WitnessHash256};
+use crate::hash::base_types::hash256::{CircuitBuilderHash256, Hash256Target, WitnessHash256};
 
 use super::merkle_proof::compute_merkle_root;
 
@@ -69,7 +69,7 @@ mod tests {
     use plonky2::plonk::circuit_data::CircuitConfig;
     use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
 
-    use crate::hash::base_types::hash256::{CircuitBuilderHash, WitnessHash256};
+    use crate::hash::base_types::hash256::{CircuitBuilderHash256, WitnessHash256};
     use crate::hash::merkle::gadgets::sha256::delta_merkle_proof::DeltaMerkleProofSha256Gadget;
 
     #[test]

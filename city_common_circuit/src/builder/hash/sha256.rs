@@ -4,7 +4,7 @@ use plonky2::hash::hash_types::RichField;
 use plonky2::iop::target::BoolTarget;
 use plonky2::plonk::circuit_builder::CircuitBuilder;
 
-use crate::hash::base_types::hash256::{CircuitBuilderHash, Hash256Target};
+use crate::hash::base_types::hash256::{CircuitBuilderHash256, Hash256Target};
 use crate::traits::GenericCircuitMerkleHasher;
 use crate::u32::arithmetic_u32::{CircuitBuilderU32, U32Target};
 use crate::u32::interleaved_u32::CircuitBuilderB32;
@@ -438,7 +438,7 @@ mod tests {
     use std::time::Instant;
 
     use crate::builder::hash::sha256::sha256_digest_u32_array_with_byte_length;
-    use crate::hash::base_types::hash256::{CircuitBuilderHash, WitnessHash256};
+    use crate::hash::base_types::hash256::{CircuitBuilderHash256, WitnessHash256};
     use crate::u32::arithmetic_u32::CircuitBuilderU32;
     use crate::u32::witness::WitnessU32;
 

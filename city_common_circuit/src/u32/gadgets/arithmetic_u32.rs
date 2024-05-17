@@ -74,6 +74,7 @@ pub trait CircuitBuilderU32<F: RichField + Extendable<D>, const D: usize> {
     fn split_u32_bytes(&mut self, x: U32Target) -> [Target; 4];
 
     fn split_u32_bytes_be(&mut self, x: U32Target) -> [Target; 4];
+    fn u32_reverse_endian(&mut self, x: U32Target) -> U32Target;
 }
 
 impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilderU32<F, D>
@@ -280,6 +281,20 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilderU32<F, D>
     fn split_u32_bytes_be(&mut self, x: U32Target) -> [Target; 4] {
         let result = self.split_le_base::<8>(x.0, 4);
         [result[3], result[2], result[1], result[0]]
+    }
+
+    fn u32_reverse_endian(&mut self, x: U32Target) -> U32Target {
+        let bits = self.split_le(x.0, 32);
+        let real_bits = bits
+            .chunks_exact(8)
+            .into_iter()
+            .rev()
+            .flatten()
+            .collect::<Vec<_>>()
+            .into_iter()
+            .map(|x| *x)
+            .collect::<Vec<_>>();
+        U32Target(self.le_sum(real_bits.iter()))
     }
 }
 

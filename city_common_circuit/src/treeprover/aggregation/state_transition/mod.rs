@@ -18,7 +18,10 @@ use plonky2::{
 };
 
 use crate::{
-    builder::{hash::core::CircuitBuilderHashCore, verify::CircuitBuilderVerifyProofHelpers},
+    builder::{
+        hash::core::CircuitBuilderHashCore, pad_circuit::CircuitBuilderCityCommonGates,
+        verify::CircuitBuilderVerifyProofHelpers,
+    },
     circuits::traits::qstandard::QStandardCircuit,
     proof_minifier::pm_core::get_circuit_fingerprint_generic,
     treeprover::traits::TreeProverAggCircuit,
@@ -239,6 +242,7 @@ where
         builder.register_public_inputs(&header_gadget.allowed_circuit_hashes_root.elements);
         builder.register_public_inputs(&header_gadget.state_transition_hash.elements);
 
+        builder.add_city_common_gates(None);
         let circuit_data = builder.build::<C>();
 
         let fingerprint = QHashOut(get_circuit_fingerprint_generic(&circuit_data.verifier_only));

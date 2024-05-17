@@ -1,14 +1,19 @@
 use city_common::logging::debug_timer::DebugTimer;
-use city_crypto::hash::base_types::hash256::Hash256;
+use city_crypto::hash::{base_types::hash256::Hash256, qhashout::QHashOut};
 use city_rollup_common::{
     api::data::store::CityL1Deposit, introspection::rollup::constants::NETWORK_MAGIC_DOGE_REGTEST,
 };
 use city_rollup_core_orchestrator::debug::scenario::wallet::DebugScenarioWallet;
-use plonky2::plonk::config::PoseidonGoldilocksConfig;
+use plonky2::{
+    field::{goldilocks_field::GoldilocksField, types::Field},
+    hash::hash_types::HashOut,
+    plonk::config::PoseidonGoldilocksConfig,
+};
 
 fn prove_sig_demo() -> anyhow::Result<()> {
     const D: usize = 2;
     type C = PoseidonGoldilocksConfig;
+    type F = GoldilocksField;
     let network_magic = NETWORK_MAGIC_DOGE_REGTEST;
 
     //toolbox_circuits.print_op_common_data();
@@ -28,12 +33,30 @@ fn prove_sig_demo() -> anyhow::Result<()> {
         deposit_id: 0,
         checkpoint_id: 1,
         value: 100000000,
-        txid: Hash256::from_hex_string(
-            "aabbccddeeff00112233445566778899aabbccddeeff00112233445566778899",
-        )?,
+        txid: Hash256(
+            QHashOut(HashOut::<F> {
+                elements: [
+                    F::from_noncanonical_u64(3445860687603287005),
+                    F::from_noncanonical_u64(16402394832886008019),
+                    F::from_noncanonical_u64(13093881128284034227),
+                    F::from_noncanonical_u64(5162935472209379774),
+                ],
+            })
+            .to_le_bytes(),
+        ),
         public_key: deposit_0_public_key,
     };
-    let claim_deposit_0_req = wallet.sign_claim_deposit(network_magic, 0, &l1_deposit_0)?;
+    let claim_deposit_0_req = wallet.zk_sign_hash_secp256k1(
+        deposit_0_public_key,
+        QHashOut(HashOut::<F> {
+            elements: [
+                F::from_noncanonical_u64(3445860687603287005),
+                F::from_noncanonical_u64(16402394832886008019),
+                F::from_noncanonical_u64(13093881128284034227),
+                F::from_noncanonical_u64(5162935472209379774),
+            ],
+        }),
+    )?;
 
     Ok(())
 }
