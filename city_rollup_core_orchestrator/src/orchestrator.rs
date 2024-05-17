@@ -139,6 +139,24 @@ impl Orchestrator {
                 SIGHASH_CIRCUIT_MAX_WITHDRAWALS,
             );
 
+            let mut block_planner = CityOrchestratorBlockPlanner::new(
+                self.toolbox.get_fingerprint_config(),
+                prev_block_state,
+            );
+
+            let (next_block_state, agg_job_ids, _, block_end_job_ids) =
+                block_planner.process_requests(&mut store, &mut redis_store, &requested_actions)?;
+
+            let final_state_root =
+                felt252_hashout_to_hash256_le(CityStore::get_city_root(&store, next_block_state.checkpoint_id)?.0);
+            let next_block_redeem_script = self.get_next_block_redeem_script(&current_block_redeem_script, &final_state_root)?;
+
+            CityStore::set_block_state(&mut store, &next_block_state)?;
+
+            let mut accessed_users = requested_actions.accessed_users();
+            accessed_users.extend(prev_block_state.next_user_id..next_block_state.next_user_id);
+            self.cache_accessed_users(&mut store, block_id, accessed_users)?;
+
             let inputs = funding_utxos
                 .iter()
                 .map(|utxo| BTCTransactionInput {
@@ -162,10 +180,13 @@ impl Orchestrator {
                 })
                 .collect::<anyhow::Result<Vec<_>>>()?;
             if last_block_spend_index != -1 {
-                outputs.insert(0, BTCTransactionOutput {
-                    value: funding_utxos[last_block_spend_index as usize].value,
-                    script: current_block_redeem_script.clone() // p2sh
-                })
+                outputs.insert(
+                    0,
+                    BTCTransactionOutput {
+                        value: next_block_state.end_balance,
+                        script: self.get_block_p2sh(&next_block_redeem_script)?, // p2sh
+                    },
+                )
             }
             let input_len = inputs.len();
 
@@ -188,34 +209,18 @@ impl Orchestrator {
                     sighash_preimage: sighash_preimage.to_bytes(),
                     index: input_index,
                     txid: tx.inputs[input_index].hash,
-                    funding_tx: todo!(),
+                    funding_tx: funding_transactions[input_index].to_bytes(),
                 });
             }
 
             let spend_info = SimpleRollupBTCSpendInfo {
                 sighash_hints_for_spend_inputs,
-                next_block_redeem_script: current_block_redeem_script,
+                next_block_redeem_script: next_block_redeem_script,
             };
 
             let hints = spend_info.to_block_spend_hints()?;
 
-            let mut block_planner = CityOrchestratorBlockPlanner::new(
-                self.toolbox.get_fingerprint_config(),
-                prev_block_state,
-            );
-
-            let (next_block_state, agg_job_ids, _, block_end_job_ids) =
-                block_planner.process_requests(&mut store, &mut redis_store, &requested_actions)?;
-
-            CityStore::set_block_state(&mut store, &next_block_state)?;
-
-            let mut accessed_users = requested_actions.accessed_users();
-            accessed_users.extend(prev_block_state.next_user_id..next_block_state.next_user_id);
-            self.cache_accessed_users(&mut store, block_id, accessed_users)?;
-
             let sighash_whitelist_tree = SigHashMerkleTree::new();
-            let final_state_root =
-                felt252_hashout_to_hash256_le(CityStore::get_city_root(&store, 1)?.0);
             let modified_hints = hints
                 .iter()
                 .map(|x| x.perform_sighash_hash_surgery(final_state_root))
@@ -225,7 +230,7 @@ impl Orchestrator {
                 sighash_whitelist_tree,
                 1,
                 *block_end_job_ids.last().unwrap(),
-                &hints,
+                &modified_hints,
             )?;
 
             (agg_job_ids, block_end_job_ids, sighash_jobs)
@@ -303,24 +308,31 @@ impl Orchestrator {
         Ok(rpc_processor.output)
     }
 
-    pub fn get_current_block_p2sh(
+    pub fn get_next_block_redeem_script(
         &self,
         current_block_redeem_script: &[u8],
-    ) -> anyhow::Result<String> {
-        let current_block_redeem_script_hash = btc_hash160(&current_block_redeem_script);
+        next_block_state_hash: &Hash256,
+    ) -> anyhow::Result<Vec<u8>> {
+        let mut bytes = vec![];
+        bytes.copy_from_slice(&current_block_redeem_script[0..1]);
+        bytes.copy_from_slice(&next_block_state_hash.0);
+        bytes.extend_from_slice(&current_block_redeem_script[33..]);
+        Ok(bytes)
+    }
+
+    pub fn get_block_p2sh(
+        &self,
+        block_redeem_script: &[u8],
+    ) -> anyhow::Result<Vec<u8>> {
+        let current_block_redeem_script_hash = btc_hash160(&block_redeem_script);
         let mut bytes = [0; 23];
         bytes.copy_from_slice(&[0xa9, 0x14]);
         bytes.copy_from_slice(&current_block_redeem_script_hash.0);
         bytes.copy_from_slice(&[0x87]);
-        let script = Script::from_bytes(&bytes);
-        let next_block_p2sh = Address::from_script(&script, self.network)?;
-        Ok(next_block_p2sh.to_string())
+        Ok(bytes.to_vec())
     }
 
-    pub fn get_withdrawal_p2pkh(
-        &self,
-        address: &Hash160,
-    ) -> anyhow::Result<Vec<u8>> {
+    pub fn get_withdrawal_p2pkh(&self, address: &Hash160) -> anyhow::Result<Vec<u8>> {
         let mut bytes = [0; 23];
         bytes.copy_from_slice(&[0x76, 0xa9, 0x14]);
         bytes.copy_from_slice(&address.0);
@@ -333,7 +345,11 @@ impl Orchestrator {
         current_block_redeem_script: &[u8],
         last_block_spend_output: &Option<BTCOutpoint>,
     ) -> anyhow::Result<(Vec<BTCUTXO>, i32)> {
-        let current_block_p2sh = self.get_current_block_p2sh(current_block_redeem_script)?;
+        let current_block_p2sh = Address::from_script(
+            &Script::from_bytes(&self.get_block_p2sh(current_block_redeem_script)?),
+            self.network,
+        )?.to_string();
+
         let mut utxos = self.link_api.btc_get_utxos(current_block_p2sh)?;
         let mut last_block_spend_index = -1;
         let mut last_block_spend_utxo = None;
