@@ -51,10 +51,7 @@ impl QProofStoreWriterSync for SimpleProofStoreMemory {
         Ok(())
     }
 
-    fn inc_counter_by_id<C: GenericConfig<D>, const D: usize>(
-        &mut self,
-        id: QProvingJobDataID,
-    ) -> anyhow::Result<u32> {
+    fn inc_counter_by_id(&mut self, id: QProvingJobDataID) -> anyhow::Result<u32> {
         let zero = 0u32;
         let new_value = 1 + *(self.counters.get(&id).unwrap_or(&zero));
         self.counters.insert(id, new_value);

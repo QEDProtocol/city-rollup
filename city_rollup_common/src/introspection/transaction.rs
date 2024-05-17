@@ -3,7 +3,6 @@ use bitcoin::VarInt;
 use city_crypto::hash::base_types::hash160::Hash160;
 use city_crypto::hash::base_types::hash256::Hash256;
 use city_crypto::hash::core::btc::{btc_hash160, btc_hash256};
-use kvq::traits::KVQSerializable;
 use serde::{Deserialize, Serialize};
 
 use crate::block_template::BLOCK_SCRIPT_LENGTH;

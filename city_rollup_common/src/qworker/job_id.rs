@@ -10,6 +10,7 @@ pub enum QJobTopic {
     GenerateGroth16Proof = 1,
     BlockUserSignatureProof = 2,
     NotifyOrchestratorComplete = 3,
+    AggregateJobs = 4,
 }
 impl QJobTopic {
     pub fn to_u8(&self) -> u8 {
@@ -30,6 +31,7 @@ impl TryFrom<u8> for QJobTopic {
             1 => Ok(QJobTopic::GenerateGroth16Proof),
             2 => Ok(QJobTopic::BlockUserSignatureProof),
             3 => Ok(QJobTopic::NotifyOrchestratorComplete),
+            4 => Ok(QJobTopic::AggregateJobs),
             _ => Err(anyhow::format_err!("Invalid QJobTopic value: {}", value)),
         }
     }
@@ -315,6 +317,30 @@ impl QProvingJobDataID {
             group_id,
             sub_group_id,
             task_index,
+            data_type: ProvingJobDataType::InputWitness,
+            data_index: 0,
+        }
+    }
+    pub fn get_block_aggregate_jobs_group(block_id: u64, group_id: u32, task_index: u32) -> Self {
+        Self {
+            topic: QJobTopic::AggregateJobs,
+            goal_id: block_id,
+            group_id,
+            circuit_type: ProvingJobCircuitType::Unknown,
+            sub_group_id: 0,
+            task_index,
+            data_type: ProvingJobDataType::InputWitness,
+            data_index: 0,
+        }
+    }
+    pub fn notify_block_complete(block_id: u64) -> Self {
+        Self {
+            topic: QJobTopic::NotifyOrchestratorComplete,
+            goal_id: block_id,
+            group_id: 0,
+            circuit_type: ProvingJobCircuitType::Unknown,
+            sub_group_id: 0,
+            task_index: 0,
             data_type: ProvingJobDataType::InputWitness,
             data_index: 0,
         }

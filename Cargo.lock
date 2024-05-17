@@ -871,6 +871,7 @@ dependencies = [
  "city_common",
  "city_common_circuit",
  "city_crypto",
+ "city_rollup_circuit",
  "city_rollup_common",
  "criterion",
  "hex",
@@ -883,7 +884,6 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_with 3.8.1",
- "tokio",
  "url",
 ]
 
