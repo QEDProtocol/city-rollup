@@ -5,7 +5,9 @@ use city_crypto::hash::{
     },
     traits::hasher::{MerkleHasher, PoseidonHasher},
 };
-use city_rollup_common::block_template::{get_block_script_bytes, get_block_script_hash};
+use city_rollup_common::block_template::{
+    get_block_script_bytes, get_block_script_hash, BLOCK_SCRIPT_LENGTH,
+};
 use kvq::traits::KVQBinaryStoreReader;
 
 use crate::config::CityHash;
@@ -22,7 +24,10 @@ impl<S: KVQBinaryStoreReader> CityStore<S> {
         let pt2 = PoseidonHasher::two_to_one(&pt1, &deposit_root);
         Ok(pt2)
     }
-    pub fn get_city_block_script(store: &S, checkpoint_id: u64) -> anyhow::Result<Hash160> {
+    pub fn get_city_block_script(
+        store: &S,
+        checkpoint_id: u64,
+    ) -> anyhow::Result<[u8; BLOCK_SCRIPT_LENGTH]> {
         let start_root_state_hash = Self::get_city_root(
             store,
             if checkpoint_id == 0 {
@@ -34,7 +39,7 @@ impl<S: KVQBinaryStoreReader> CityStore<S> {
         let root_state_hash_bytes =
             felt252_hashout_to_hash256_le(hashout_to_felt252_hashout(start_root_state_hash.0)).0;
 
-        Ok(get_block_script_hash(
+        Ok(get_block_script_bytes(
             root_state_hash_bytes,
             checkpoint_id == 0,
         ))

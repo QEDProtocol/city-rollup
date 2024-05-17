@@ -1,10 +1,8 @@
-use city_crypto::hash::{
-    base_types::hash160::Hash160,
-    core::btc::{btc_hash160, btc_hash256},
-};
+use city_crypto::hash::{base_types::hash160::Hash160, core::btc::btc_hash160};
+use city_macros::const_concat_arrays_size;
 
 use super::config::{GENESIS_BLOCK_SCRIPT_TEMPLATE, STANDARD_BLOCK_SCRIPT_TEMPLATE};
-
+pub const BLOCK_SCRIPT_LENGTH: usize = const_concat_arrays_size!(GENESIS_BLOCK_SCRIPT_TEMPLATE);
 pub fn get_genesis_block_script_bytes(root_state_hash: [u8; 32]) -> [u8; 489] {
     let mut script = GENESIS_BLOCK_SCRIPT_TEMPLATE;
     script[1..33].copy_from_slice(&root_state_hash);
