@@ -66,5 +66,3 @@ impl QProofStoreWriterSync for SimpleProofStoreMemory {
         Ok(())
     }
 }
-
-impl QProofStore for SimpleProofStoreMemory {}

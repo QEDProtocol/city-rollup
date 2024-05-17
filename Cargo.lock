@@ -263,6 +263,30 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8c3c1a368f70d6cf7302d78f8f7093da241fb8e8807c05cc9e51a125895a6d5b"
 
 [[package]]
+name = "bb8"
+version = "0.8.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "df7c2093d15d6a1d33b1f972e1c5ea3177748742b97a5f392aa83a65262c6780"
+dependencies = [
+ "async-trait",
+ "futures-channel",
+ "futures-util",
+ "parking_lot",
+ "tokio",
+]
+
+[[package]]
+name = "bb8-redis"
+version = "0.15.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7eb4f141b33a750b5f667c445bd8588de10b8f2b045cd2aabc040ca746fb53ae"
+dependencies = [
+ "async-trait",
+ "bb8",
+ "redis",
+]
+
+[[package]]
 name = "bech32"
 version = "0.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -292,7 +316,7 @@ dependencies = [
  "bitflags 2.5.0",
  "cexpr",
  "clang-sys",
- "itertools 0.10.5",
+ "itertools 0.11.0",
  "lazy_static",
  "lazycell",
  "log",
@@ -635,6 +659,7 @@ dependencies = [
  "kvq",
  "plonky2",
  "rand",
+ "redb",
  "serde",
  "serde_json",
  "serde_with 3.8.1",
@@ -750,6 +775,31 @@ name = "city_macros"
 version = "0.1.0"
 
 [[package]]
+name = "city_redis_store"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "bb8-redis",
+ "bincode",
+ "bitcoin",
+ "city_rollup_common",
+ "criterion",
+ "hex",
+ "hex-literal",
+ "plonky2",
+ "postcard",
+ "r2d2",
+ "r2d2_redis",
+ "rand_chacha",
+ "redis",
+ "rsmq_async",
+ "serde",
+ "serde_json",
+ "serde_repr",
+]
+
+[[package]]
 name = "city_rollup_circuit"
 version = "0.1.0"
 dependencies = [
@@ -808,8 +858,10 @@ dependencies = [
  "city_common",
  "city_common_circuit",
  "city_crypto",
+ "city_redis_store",
  "city_rollup_common",
  "city_rollup_worker_dispatch",
+ "city_store",
  "criterion",
  "hex",
  "hex-literal",
@@ -839,6 +891,9 @@ dependencies = [
  "city_common",
  "city_common_circuit",
  "city_crypto",
+ "city_macros",
+ "city_redis_store",
+ "city_rollup_circuit",
  "city_rollup_common",
  "city_rollup_worker_dispatch",
  "city_store",
@@ -847,9 +902,11 @@ dependencies = [
  "hex-literal",
  "k256",
  "kvq",
+ "kvq_store_redb",
  "plonky2",
  "rand",
  "rand_chacha",
+ "redb",
  "redis",
  "reqwest",
  "serde",
@@ -868,7 +925,12 @@ dependencies = [
  "city_common",
  "city_common_circuit",
  "city_crypto",
+ "city_macros",
+ "city_redis_store",
+ "city_rollup_circuit",
  "city_rollup_common",
+ "city_rollup_worker_dispatch",
+ "city_store",
  "criterion",
  "hex",
  "hex-literal",
@@ -890,6 +952,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "async-trait",
+ "bb8-redis",
  "city_common",
  "city_crypto",
  "criterion",
@@ -902,6 +965,7 @@ dependencies = [
  "rand_chacha",
  "redis",
  "reqwest",
+ "rsmq_async",
  "serde",
  "serde_json",
  "serde_repr",
@@ -2921,7 +2985,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0c2a198fb6b0eada2a8df47933734e6d35d350665a33a3593d7164fa52c75c19"
 dependencies = [
  "cfg-if",
- "windows-targets 0.48.5",
+ "windows-targets 0.52.5",
 ]
 
 [[package]]
@@ -3790,10 +3854,36 @@ dependencies = [
 ]
 
 [[package]]
+name = "r2d2"
+version = "0.8.10"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "51de85fb3fb6524929c8a2eb85e6b6d363de4e8c48f9e2c2eac4944abc181c93"
+dependencies = [
+ "log",
+ "parking_lot",
+ "scheduled-thread-pool",
+]
+
+[[package]]
+name = "r2d2_redis"
+version = "0.15.0"
+source = "git+https://github.com/GopherJ/r2d2-redis?rev=759effbce90d2edd7cbd6f94071b383140a8f622#759effbce90d2edd7cbd6f94071b383140a8f622"
+dependencies = [
+ "r2d2",
+ "redis",
+]
+
+[[package]]
 name = "radium"
 version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "dc33ff2d4973d518d823d61aa239014831e521c75da58e3df4840d3f47749d09"
+
+[[package]]
+name = "radix_fmt"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ce082a9940a7ace2ad4a8b7d0b1eac6aa378895f18be598230c5f2284ac05426"
 
 [[package]]
 name = "rand"
@@ -4064,6 +4154,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "rsmq_async"
+version = "9.0.0"
+source = "git+https://github.com/QEDProtocol/rsmq-async-rs?rev=1d61a9e665ce69f9c37752575c5b7b3566504a32#1d61a9e665ce69f9c37752575c5b7b3566504a32"
+dependencies = [
+ "async-trait",
+ "bb8",
+ "lazy_static",
+ "radix_fmt",
+ "rand",
+ "redis",
+ "thiserror",
+]
+
+[[package]]
 name = "rustc-demangle"
 version = "0.1.23"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4195,6 +4299,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fbc91545643bcf3a0bbb6569265615222618bdf33ce4ffbbd13c4bbd4c093534"
 dependencies = [
  "windows-sys 0.52.0",
+]
+
+[[package]]
+name = "scheduled-thread-pool"
+version = "0.2.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3cbc66816425a074528352f5789333ecff06ca41b36b0b0efdfbb29edc391a19"
+dependencies = [
+ "parking_lot",
 ]
 
 [[package]]

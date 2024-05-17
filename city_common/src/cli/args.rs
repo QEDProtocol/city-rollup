@@ -22,6 +22,8 @@ pub struct RPCServerArgs {
     pub redis_uri: String,
     #[clap(short, env, long, default_value = "db", env)]
     pub db_path: String,
+    #[clap(short, env, long, default_value = "0", env)]
+    pub rpc_node_id: u32,
 }
 
 #[derive(Clone, Args)]
@@ -46,6 +48,8 @@ pub struct OrchestratorArgs {
     pub redis_uri: String,
     #[clap(short, env, long, default_value = "db", env)]
     pub db_path: String,
+    #[clap(short, long, default_value = "dogeregtest", env)]
+    pub network: String,
 }
 
 #[derive(Clone, Args)]
@@ -70,6 +74,8 @@ pub struct L2WorkerArgs {
     pub redis_uri: String,
     #[clap(short, env, long, default_value = "db", env)]
     pub db_path: String,
+    #[clap(short, long, default_value = "dogeregtest", env)]
+    pub network: String,
 }
 #[derive(Clone, Args)]
 pub struct L2TransferArgs {

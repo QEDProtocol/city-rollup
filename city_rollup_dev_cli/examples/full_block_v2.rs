@@ -88,11 +88,11 @@ fn prove_block_demo(hints: &[BlockSpendIntrospectionHint]) -> anyhow::Result<()>
     timer.lap("end setup initial state");
     timer.lap("start process state block 1 RPC");
     let mut block_1_builder = DebugRPCProcessor::<F, D>::new(1);
-    block_1_builder.process_register_users(&register_user_rpc_events)?;
+    block_1_builder.process_register_users(0, &register_user_rpc_events)?;
 
     let block_1_requested = CityScenarioRequestedActions::new_from_requested_rpc(
         block_1_builder.output,
-        &hints[0].funding_transactions,
+        hints[0].funding_transactions.iter(),
         &block_0_state,
         2,
     );
@@ -104,7 +104,7 @@ fn prove_block_demo(hints: &[BlockSpendIntrospectionHint]) -> anyhow::Result<()>
     timer.lap("end process state block 1 RPC");
     timer.lap("start process requests block 1");
 
-    let (block_1_job_ids, _block_1_state_transition, block_1_end_jobs) =
+    let (_, block_1_job_ids, _block_1_state_transition, block_1_end_jobs) =
         block_1_planner.process_requests(&mut store, &mut proof_store, &block_1_requested)?;
     let final_state_root =
         felt252_hashout_to_hash256_le(CityStore::<S>::get_city_root(&store, 1)?.0);
@@ -206,16 +206,18 @@ fn prove_block_demo(hints: &[BlockSpendIntrospectionHint]) -> anyhow::Result<()>
 
     block_2_builder.process_deposits(
         &mut proof_store,
+        0,
         &[claim_deposit_0_req, claim_deposit_1_req],
     )?;
     block_2_builder.process_transfers(
         &mut proof_store,
+        0,
         &[send_transfer_1_req, send_transfer_2_req],
     )?;
 
     let block_2_requested = CityScenarioRequestedActions::new_from_requested_rpc(
         block_2_builder.output,
-        &[BTCTransaction::dummy()],
+        [&BTCTransaction::dummy()].into_iter(),
         &block_1_state,
         4,
     );
@@ -227,7 +229,7 @@ fn prove_block_demo(hints: &[BlockSpendIntrospectionHint]) -> anyhow::Result<()>
     timer.lap("end process state block 2 RPC");
     timer.lap("start process requests block 2");
 
-    let (block_2_job_ids, _block_2_state_transition, block_2_end_jobs) =
+    let (_, block_2_job_ids, _block_2_state_transition, block_2_end_jobs) =
         block_2_planner.process_requests(&mut store, &mut proof_store, &block_2_requested)?;
 
     let all_job_ids = block_2_job_ids.plan_jobs();

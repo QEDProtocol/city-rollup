@@ -13,6 +13,7 @@ members = [
   "city_rollup_user_cli",
   "city_rollup_dev_cli",
   "city_rollup_core_node",
+  "city_redis_store",
   "city_rollup_core_worker",
   "city_rollup_worker_dispatch",
   "city_rollup_core_orchestrator"
@@ -105,6 +106,11 @@ log = { version = "0.4.14", default-features = false }
 env_logger = { version = "0.9.0", default-features = false }
 hashbrown = { version = "0.14.3", default-features = false, features = ["ahash", "serde"] } # NOTE: When upgrading, see `ahash` dependency.
 url = "2.5.0"
+bb8-redis = { version = "^0.15" }
+redis = { version = "^0.25", default-features = false, features = ["acl", "keep-alive", "script",  "aio"] }
+rsmq_async = { git = "https://github.com/QEDProtocol/rsmq-async-rs", rev = "1d61a9e665ce69f9c37752575c5b7b3566504a32", default-features = false, features = ["tokio-comp"] }
+r2d2 = "0.8.8"
+r2d2_redis = { git = "https://github.com/GopherJ/r2d2-redis", rev = "759effbce90d2edd7cbd6f94071b383140a8f622" }
 
 gnark-plonky2-wrapper = { git = "https://github.com/cf/gnark-plonky2-verifier", rev = "c59e33fd8f1b407b355d7b9a74e34792e7c78f37" }
 

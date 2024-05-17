@@ -27,6 +27,8 @@ pub trait QProofStoreWriterSync {
 
 pub trait QProofStore: QProofStoreReaderSync + QProofStoreWriterSync {}
 
+impl <T: QProofStoreReaderSync + QProofStoreWriterSync> QProofStore for T {}
+
 #[async_trait]
 pub trait QProofStoreReaderAsync {
     async fn get_proof_by_id<C: GenericConfig<D>, const D: usize>(
