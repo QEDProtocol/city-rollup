@@ -48,6 +48,7 @@ impl<S: KVQBinaryStore, PS: QProofStore> CityOrchestratorBlockPlanner<S, PS> {
         proof_store: &mut PS,
         requested_actions: &CityScenarioRequestedActions<F>,
     ) -> anyhow::Result<(
+        CityL2BlockState,
         CityOpJobIds,
         CityRootStateTransitions<F>,
         Vec<QProvingJobDataID>,
@@ -328,6 +329,7 @@ impl<S: KVQBinaryStore, PS: QProofStore> CityOrchestratorBlockPlanner<S, PS> {
         CityStore::<S>::set_block_state(store, &new_state)?;
 
         Ok((
+            self.processor.op_processor.get_finalized_block_state(),
             job_ids,
             transition,
             vec![

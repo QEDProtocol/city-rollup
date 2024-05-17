@@ -1,82 +1,93 @@
+use std::time::Duration;
+
 use anyhow::Result;
 use async_trait::async_trait;
-use redis::{aio::MultiplexedConnection, AsyncCommands, RedisResult};
+use bb8_redis::bb8::{self};
+use rsmq_async::PooledRsmq;
+use rsmq_async::RedisConnectionManager;
+use rsmq_async::RsmqConnection;
+use rsmq_async::RsmqMessage;
+use serde::Serialize;
 
-use crate::traits::proving_dispatcher::{KeyValueStoreWithInc, ProvingDispatcher};
-#[derive(Clone)]
-pub struct RedisStore {
-    connection: MultiplexedConnection,
-}
+use crate::traits::proving_dispatcher::ProvingDispatcher;
+use crate::traits::proving_worker::ProvingWorkerListener;
 
 #[derive(Clone)]
-pub struct RedisClient {
-    pub client: redis::Client,
+pub struct RedisDispatcher {
+    // we use queue here because pubsub is mpmc
+    queue: PooledRsmq,
 }
-impl RedisClient {
-    pub async fn get_store(&self) -> Result<RedisStore> {
-        RedisStore::new(self).await
+
+pub const Q_HIDDEN: Option<Duration> = Some(Duration::from_secs(600));
+pub const Q_DELAY: Option<Duration> = None;
+pub const Q_CAP: Option<i32> = Some(-1);
+
+pub const Q_TX: &'static str = "TX";
+pub const Q_JOB: &'static str = "JOB";
+
+impl RedisDispatcher {
+    pub async fn new(uri: &str) -> Result<Self> {
+        let client = redis::Client::open(uri)?;
+        let manager = RedisConnectionManager::from_client(client)?;
+        let pool = bb8::Pool::builder().build(manager).await?;
+        let queue = PooledRsmq::new_with_pool(pool, false, None);
+        Ok(Self { queue })
     }
-}
-impl RedisStore {
-    pub async fn new(client: &RedisClient) -> Result<Self> {
-        let connection = client.client.get_multiplexed_async_connection().await?;
-        Ok(Self { connection })
-    }
-    pub fn new_client(uri: &str) -> Result<RedisClient> {
-        Ok(RedisClient {
-            client: redis::Client::open(uri)?,
-        })
+
+    pub fn new_with_pool(pool: bb8::Pool<RedisConnectionManager>) -> Result<Self> {
+        let queue = PooledRsmq::new_with_pool(pool, false, None);
+        Ok(Self { queue })
     }
 }
 
 #[async_trait]
-impl KeyValueStoreWithInc for RedisStore {
-    async fn put(&mut self, key: &[u8], value: &[u8]) -> Result<()> {
-        self.connection.set(key, value).await?;
-        Ok(())
-    }
-
-    async fn put_many(&mut self, keys: &[Vec<u8>], values: &[Vec<u8>]) -> Result<()> {
-        let mut pipeline = redis::pipe();
-        for (key, value) in keys.iter().zip(values.iter()) {
-            pipeline.set(key, value);
+impl ProvingDispatcher for RedisDispatcher {
+    async fn dispatch(
+        &mut self,
+        topic: &str,
+        value: impl Serialize + Send + 'static,
+    ) -> Result<()> {
+        if matches!(
+            self.queue.get_queue_attributes(topic).await,
+            Err(rsmq_async::RsmqError::QueueNotFound)
+        ) {
+            // worker should be able to finish in 10 minutes, otherwise
+            // other worker will pick up the task
+            self.queue
+                .create_queue(topic, Q_HIDDEN, Q_DELAY, Q_CAP)
+                .await?;
         }
-        pipeline.query_async(&mut self.connection).await?;
+        println!("dispatching message to queue: {}", topic);
+        self.queue
+            .send_message(topic, serde_json::to_vec(&value)?, None)
+            .await?;
         Ok(())
-    }
-
-    async fn get(&mut self, key: &[u8]) -> Result<Vec<u8>> {
-        let result: RedisResult<Vec<u8>> = self.connection.get(key).await;
-        result.map_err(|e| e.into())
-    }
-
-    async fn get_many(&mut self, keys: &[Vec<u8>]) -> Result<Vec<u8>> {
-        let result: RedisResult<Vec<Vec<u8>>> = self.connection.get(keys).await;
-        result
-            .map(|values| values.into_iter().flatten().collect())
-            .map_err(|e| e.into())
-    }
-
-    async fn remove(&mut self, key: &[u8]) -> Result<bool> {
-        let result: RedisResult<bool> = self.connection.del(key).await;
-        result.map_err(|e| e.into())
-    }
-
-    async fn remove_many(&mut self, keys: &[Vec<u8>]) -> Result<usize> {
-        let result: RedisResult<usize> = self.connection.del(keys).await;
-        result.map_err(|e| e.into())
-    }
-
-    async fn inc(&mut self, key: &[u8], value: u32) -> Result<u32> {
-        let result: RedisResult<u32> = self.connection.incr(key, value).await;
-        result.map_err(|e| e.into())
     }
 }
 
 #[async_trait]
-impl ProvingDispatcher for RedisStore {
-    async fn dispatch(&mut self, topic: u32, key: &[u8]) -> Result<()> {
-        self.connection.publish(topic.to_string(), key).await?;
+impl ProvingWorkerListener for RedisDispatcher {
+    async fn subscribe(&mut self, _topic: &str) -> anyhow::Result<()> {
         Ok(())
+    }
+
+    async fn receive_one(&mut self, topic: &str, hidden: Option<Duration>) -> anyhow::Result<Option<(String, Vec<u8>)>> {
+        match self.queue.receive_message(topic, hidden).await? {
+            Some(RsmqMessage { id, message, .. }) => Ok(Some((id, message))),
+            None => Ok(None),
+        }
+    }
+
+    async fn receive_all(&mut self, topic: &str, hidden: Option<Duration>) -> anyhow::Result<Vec<(String, Vec<u8>)>> {
+        let mut result = Vec::new();
+        while let Some(RsmqMessage { id, message, .. }) = self.queue.receive_message(topic, hidden).await? {
+            result.push((id, message));
+        }
+
+        Ok(result)
+    }
+
+    async fn delete_message(&mut self, topic: &str, id: String) -> anyhow::Result<bool> {
+        Ok(self.queue.delete_message(topic, &id).await?)
     }
 }

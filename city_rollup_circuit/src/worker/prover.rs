@@ -8,6 +8,7 @@ use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
 
 use super::traits::{QWorkerGenericProver, QWorkerGenericProverGroth16};
 
+#[derive(Clone)]
 pub struct QWorkerStandardProver {
     pub timer: TraceTimer,
 }

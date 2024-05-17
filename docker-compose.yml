@@ -1,0 +1,31 @@
+version: '3.7'
+services:
+  bitide:
+    image: qedprotocol/bitide-doge:latest
+    ports:
+      - 1337:1337
+    volumes:
+      - "./chaindata/dogecoin:/app/.dogecoin"
+      - "./chaindata/electrs:/app/db"
+    networks:
+      testing_net:
+        ipv4_address: 172.16.238.11
+    restart: always
+
+  redis:
+    image: redis
+    volumes:
+      - "./redis-data:/data"
+    ports:
+      - 6379:6379
+    networks:
+      testing_net:
+        ipv4_address: 172.16.238.12
+    restart: always
+
+networks:
+  testing_net:
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.16.238.0/24

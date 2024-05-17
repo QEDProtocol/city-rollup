@@ -28,6 +28,7 @@ fn get_time_color(elapsed_ms: u64) -> &'static str {
     }
 }
 
+#[derive(Clone)]
 pub struct TraceTimer {
     pub start_time: Instant,
     pub name: String,

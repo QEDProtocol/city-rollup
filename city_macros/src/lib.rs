@@ -148,6 +148,47 @@ macro_rules! define_multimap_table {
     };
 }
 
+#[macro_export]
+macro_rules! async_infinite_loop {
+    ($interval:expr, $($body:tt)*) => {
+        loop {
+            if let Err(err) = (|| async {
+                $($body)*
+
+                Ok::<_, anyhow::Error>(())
+            })().await {
+                println!("Error: {:?}", err);
+            }
+
+            tokio::time::sleep(Duration::from_millis($interval)).await;
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! spawn_async_infinite_loop {
+    ($interval:expr, $($body:tt)*) => {
+        std::thread::spawn(move || {
+          let rt = tokio::runtime::Builder::new_multi_thread()
+            .enable_all()
+            .build()
+            .unwrap();
+
+            rt.block_on(async move {
+                loop {
+                    if let Err(err) = (|| async {
+                        $($body)*
+
+                        Ok::<_, anyhow::Error>(())
+                    })().await {
+                        println!("Error: {:?}", err);
+                    }
+                    tokio::time::sleep(Duration::from_millis($interval)).await;
+                }
+            });
+        })
+    };
+
 /*
 concat from https://github.com/inspier/array-concat/blob/bc9e8d0f9a2fcf177286369d976ec38a0a874cc2/src/lib.rs
 MIT License

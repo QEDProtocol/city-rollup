@@ -21,6 +21,7 @@ impl core::fmt::Display for BTCDataResolverError {
         write!(f, "error in BTCDataResolver: {}", self.message)
     }
 }
+impl std::error::Error for BTCDataResolverError {}
 pub trait BTCDataResolver {
     fn get_raw_transaction_sync(&self, txid: Hash256) -> Result<Vec<u8>, BTCDataResolverError>;
     fn get_utxos_sync(&self, address: String) -> Result<Vec<BTCUTXO>, BTCDataResolverError>;

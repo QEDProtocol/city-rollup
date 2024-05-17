@@ -1,25 +1,11 @@
 use async_trait::async_trait;
+use serde::Serialize;
 
 #[async_trait]
-pub trait KeyValueStoreWithInc {
-    async fn put(&mut self, key: &[u8], value: &[u8]) -> anyhow::Result<()>;
-    async fn put_many(&mut self, keys: &[Vec<u8>], values: &[Vec<u8>]) -> anyhow::Result<()>;
-
-    async fn get(&mut self, key: &[u8]) -> anyhow::Result<Vec<u8>>;
-    async fn get_many(&mut self, keys: &[Vec<u8>]) -> anyhow::Result<Vec<u8>>;
-
-    async fn remove(&mut self, key: &[u8]) -> anyhow::Result<bool>;
-    async fn remove_many(&mut self, keys: &[Vec<u8>]) -> anyhow::Result<usize>;
-
-    async fn inc(&mut self, key: &[u8], value: u32) -> anyhow::Result<u32>;
-}
-#[async_trait]
-pub trait ProvingDispatcher: KeyValueStoreWithInc {
-    async fn dispatch(&mut self, topic: u32, key: &[u8]) -> anyhow::Result<()>;
-}
-
-#[async_trait]
-pub trait ProvingWorkerListener: ProvingDispatcher {
-    async fn subscribe(&mut self, topic: u32) -> Self;
-    async fn get_next_message(&mut self) -> anyhow::Result<Vec<u8>>;
+pub trait ProvingDispatcher {
+    async fn dispatch(
+        &mut self,
+        topic: &str,
+        value: impl Serialize + Send + 'static,
+    ) -> anyhow::Result<()>;
 }
