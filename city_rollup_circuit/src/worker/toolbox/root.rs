@@ -16,7 +16,6 @@ use city_crypto::{
 use city_rollup_common::qworker::{
     fingerprints::CRWorkerToolboxRootCircuitFingerprints,
     job_id::{ProvingJobCircuitType, QProvingJobDataID},
-    job_witnesses::sighash::CRSigHashFinalGLCircuitInput,
     proof_store::QProofStoreReaderSync,
     verifier::QWorkerVerifyHelper,
 };

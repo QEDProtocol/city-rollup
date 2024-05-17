@@ -1,4 +1,4 @@
-use city_common::logging::{debug_timer::DebugTimer, trace_timer::TraceTimer};
+use city_common::logging::trace_timer::TraceTimer;
 use city_common_circuit::circuits::traits::qstandard::QStandardCircuit;
 use city_crypto::hash::qhashout::QHashOut;
 use city_rollup_circuit::sighash_circuits::sighash::CRSigHashCircuit;

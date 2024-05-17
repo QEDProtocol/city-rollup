@@ -1,8 +1,5 @@
 use city_common_circuit::{
-    builder::{
-        hash::core::CircuitBuilderHashCore, pad_circuit::pad_circuit_degree,
-        verify::CircuitBuilderVerifyProofHelpers,
-    },
+    builder::{pad_circuit::pad_circuit_degree, verify::CircuitBuilderVerifyProofHelpers},
     circuits::{
         l1_secp256k1_signature::L1Secp256K1SignatureCircuit,
         traits::qstandard::{QStandardCircuit, QStandardCircuitProvableWithProofStoreSync},
@@ -14,13 +11,9 @@ use city_crypto::hash::qhashout::QHashOut;
 use city_rollup_common::qworker::{
     job_witnesses::op::CRClaimL1DepositCircuitInput, proof_store::QProofStoreReaderSync,
 };
-use hashbrown::HashMap;
 use plonky2::{
     hash::{hash_types::HashOutTarget, poseidon::PoseidonHash},
-    iop::{
-        target::Target,
-        witness::{PartialWitness, WitnessWrite},
-    },
+    iop::witness::{PartialWitness, WitnessWrite},
     plonk::{
         circuit_builder::CircuitBuilder,
         circuit_data::{
@@ -232,14 +225,6 @@ where
         input: &CRClaimL1DepositCircuitInput<C::F>,
     ) -> anyhow::Result<ProofWithPublicInputs<C::F, C, D>> {
         let signature_proof = store.get_proof_by_id(input.signature_proof_id)?;
-        println!(
-            "CRClaimL1DepositCircuitInput: public_inputs: {:?}",
-            signature_proof.public_inputs
-        );
-        println!(
-            "CRClaimL1DepositCircuitInput: input: {}",
-            serde_json::to_string(&input).unwrap()
-        );
         self.prove_base(input, &signature_proof)
     }
 }

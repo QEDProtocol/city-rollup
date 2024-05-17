@@ -508,25 +508,3 @@ impl BlockSpendIntrospectionGadgetConfig {
         }
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::SigHashGadgetId;
-
-    #[test]
-    fn test_index_fast() -> anyhow::Result<()> {
-        let max_deposits = 3;
-        let max_withdrawals = 3;
-        let max_index = 81;
-
-        /*
-        for i in 0..max_index {
-            let standard = SigHashGadgetId::from_index(i, max_withdrawals, max_deposits)?;
-            let fast = SigHashGadgetId::from_index_fast2(i, max_withdrawals, max_deposits)?;
-            assert_eq!(standard, fast);
-        }
-        */
-
-        Ok(())
-    }
-}

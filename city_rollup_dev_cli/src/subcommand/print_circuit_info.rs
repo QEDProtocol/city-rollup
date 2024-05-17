@@ -5,7 +5,7 @@ use city_rollup_circuit::worker::toolbox::circuits::CRWorkerToolboxCoreCircuits;
 use city_rollup_common::introspection::rollup::constants::{
     NETWORK_MAGIC_DOGE_MAINNET, NETWORK_MAGIC_DOGE_REGTEST, NETWORK_MAGIC_DOGE_TESTNET,
 };
-use plonky2::{field::goldilocks_field::GoldilocksField, plonk::config::PoseidonGoldilocksConfig};
+use plonky2::plonk::config::PoseidonGoldilocksConfig;
 
 fn get_network_magic_for_str(network: String) -> anyhow::Result<u64> {
     match network.as_str() {
@@ -29,7 +29,6 @@ pub async fn run(args: PrintCircuitInfoArgs) -> Result<()> {
 
     const D: usize = 2;
     type C = PoseidonGoldilocksConfig;
-    type F = GoldilocksField;
     let network_magic = get_network_magic_for_str(args.network)?;
     let toolbox_circuits = CRWorkerToolboxCoreCircuits::<C, D>::new(network_magic);
     toolbox_circuits.print_op_common_data();

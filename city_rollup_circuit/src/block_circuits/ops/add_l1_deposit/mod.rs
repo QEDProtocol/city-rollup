@@ -6,7 +6,7 @@ use city_common_circuit::{
     },
     circuits::traits::qstandard::{
         provable::QStandardCircuitProvable, QStandardCircuit,
-        QStandardCircuitProvableWithProofStoreSync, QStandardCircuitWithDefault,
+        QStandardCircuitProvableWithProofStoreSync,
     },
     hash::merkle::gadgets::delta_merkle_proof::DeltaMerkleProofGadget,
     proof_minifier::pm_core::get_circuit_fingerprint_generic,

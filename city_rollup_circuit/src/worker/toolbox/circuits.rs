@@ -84,19 +84,6 @@ where
         // user circuits
         let zk_signature_wrapper = ZKSignatureWrapperCircuit::new();
         trace_timer.lap("built zk_signature_wrapper");
-        println!(
-            "zk_signature_wrapper.gates: {:?}",
-            zk_signature_wrapper.get_common_circuit_data_ref().gates
-        );
-        println!(
-            "zk_signature_wrapper.gates: {:?}",
-            zk_signature_wrapper
-                .get_common_circuit_data_ref()
-                .gates
-                .iter()
-                .map(|p| p.0.id())
-                .collect::<Vec<_>>()
-        );
         let coset_gate = zk_signature_wrapper
             .get_common_circuit_data_ref()
             .gates
@@ -133,7 +120,15 @@ where
         );
         trace_timer.lap("built op_l2_transfer");
 
-        let op_add_l1_withdrawal = CRAddL1WithdrawalCircuit::new(network_magic);
+        let op_add_l1_withdrawal = CRAddL1WithdrawalCircuit::new_with_signature_circuit_data(
+            network_magic,
+            zk_signature_wrapper.get_common_circuit_data_ref(),
+            zk_signature_wrapper
+                .get_verifier_config_ref()
+                .constants_sigmas_cap
+                .height(),
+            zk_signature_wrapper.get_fingerprint(),
+        );
         trace_timer.lap("built op_add_l1_withdrawal");
 
         // state transition with events operations
@@ -445,7 +440,7 @@ where
                 .prove_q_worker_agg(self, store, job_id),
             ProvingJobCircuitType::AddL1Withdrawal => self
                 .op_add_l1_withdrawal
-                .prove_q_worker_simple(self, store, job_id),
+                .prove_q_worker_standard(self, store, job_id),
             ProvingJobCircuitType::AddL1WithdrawalAggregate => self
                 .agg_state_transition
                 .prove_q_worker_agg(self, store, job_id),

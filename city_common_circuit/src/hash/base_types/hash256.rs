@@ -21,8 +21,6 @@ use plonky2::{
     plonk::circuit_builder::CircuitBuilder,
 };
 
-use super::hash256bytes::{CircuitBuilderHash256Bytes, Hash256BytesTarget};
-
 pub type Hash256Target = [U32Target; 8];
 
 impl ToTargets for Hash256Target {

@@ -4,8 +4,7 @@ use city_common_circuit::{
         pad_circuit::pad_circuit_degree, verify::CircuitBuilderVerifyProofHelpers,
     },
     circuits::{
-        traits::qstandard::{QStandardCircuit, QStandardCircuitProvableWithProofStoreSync},
-        zk_signature_wrapper::ZKSignatureWrapperCircuit,
+        traits::qstandard::QStandardCircuit, zk_signature_wrapper::ZKSignatureWrapperCircuit,
     },
     proof_minifier::pm_core::get_circuit_fingerprint_generic,
     treeprover::wrapper::TreeProverLeafCircuitWrapper,

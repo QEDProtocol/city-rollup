@@ -504,7 +504,7 @@ mod tests {
         let data = builder.build::<C>();
 
         let mut pw = PartialWitness::new();
-        let msg = Secp256K1Scalar::from_noncanonical_biguint(
+        let _msg = Secp256K1Scalar::from_noncanonical_biguint(
             BigUint::from_str(
                 "59516823202578934453231807837413051195901584431641309133515916306157505008006",
             )

@@ -1,24 +1,18 @@
 use std::{fs, path::PathBuf};
 
 use city_common::logging::debug_timer::DebugTimer;
-use city_common_circuit::field::cubic::CubicExtendable;
 use city_crypto::hash::{
-    base_types::{
-        felt252::{felt252_hashout_to_hash256_le, hashout_to_felt252_hashout},
-        hash256::Hash256,
-    },
+    base_types::{felt252::felt252_hashout_to_hash256_le, hash256::Hash256},
     qhashout::QHashOut,
 };
-use city_rollup_circuit::{
-    sighash_circuits::sighash::CRSigHashCircuit,
-    worker::{prover::QWorkerStandardProver, toolbox::root::CRWorkerToolboxRootCircuits},
+use city_rollup_circuit::worker::{
+    prover::QWorkerStandardProver, toolbox::root::CRWorkerToolboxRootCircuits,
 };
 use city_rollup_common::{
     api::data::{block::rpc_request::CityRegisterUserRPCRequest, store::CityL2BlockState},
     config::sighash_wrapper_config::SIGHASH_WHITELIST_TREE_ROOT,
     introspection::rollup::{
-        constants::NETWORK_MAGIC_DOGE_REGTEST,
-        introspection::{BlockSpendIntrospectionGadgetConfig, BlockSpendIntrospectionHint},
+        constants::NETWORK_MAGIC_DOGE_REGTEST, introspection::BlockSpendIntrospectionHint,
     },
     qworker::{memory_proof_store::SimpleProofStoreMemory, proof_store::QProofStoreReaderSync},
 };
@@ -30,84 +24,10 @@ use city_rollup_core_orchestrator::debug::scenario::{
 use city_store::store::{city::base::CityStore, sighash::SigHashMerkleTree};
 use kvq::memory::simple::KVQSimpleMemoryBackingStore;
 use plonky2::{
-    field::goldilocks_field::GoldilocksField,
-    hash::poseidon::PoseidonHash,
-    plonk::{
-        config::{AlgebraicHasher, GenericConfig, PoseidonGoldilocksConfig},
-        proof::ProofWithPublicInputs,
-    },
+    field::goldilocks_field::GoldilocksField, hash::poseidon::PoseidonHash,
+    plonk::config::PoseidonGoldilocksConfig,
 };
 
-fn generate_circuit<C: GenericConfig<D> + 'static, const D: usize>(
-    introspection_config: BlockSpendIntrospectionGadgetConfig,
-) -> CRSigHashCircuit<C, D>
-where
-    C::Hasher: AlgebraicHasher<C::F>,
-    C::F: CubicExtendable,
-{
-    CRSigHashCircuit::<C, D>::new(introspection_config)
-}
-
-fn prove_hint<C: GenericConfig<D> + 'static, const D: usize>(
-    hint: &BlockSpendIntrospectionHint,
-) -> anyhow::Result<ProofWithPublicInputs<C::F, C, D>>
-where
-    C::Hasher: AlgebraicHasher<C::F>,
-    C::F: CubicExtendable,
-{
-    let circuit = generate_circuit::<C, D>(hint.get_config());
-
-    let proof = circuit.prove_base(hint)?;
-
-    let result_finalized_hash = QHashOut::from_felt_slice(&proof.public_inputs[0..4]);
-    let result_sighash_felt252 = QHashOut::from_felt_slice(&proof.public_inputs[4..8]);
-
-    println!(
-        "result_finalized_hash: {}",
-        result_finalized_hash.to_string()
-    );
-    println!(
-        "result_sighash_felt252: {}",
-        result_sighash_felt252.to_string_le()
-    );
-
-    let expected_result = hint.get_introspection_result::<C::Hasher, C::F>();
-    let expected_finalized_result = expected_result.get_finalized_result::<C::Hasher>();
-    /*println!(
-        "expected_trace_result:\n{}",
-        serde_json::to_string_pretty(&expected_finalized_result).unwrap()
-    );*/
-
-    let expected_finalized_hash = expected_finalized_result.get_combined_hash::<C::Hasher>();
-    let expected_sighash_felt252 = expected_result.sighash_felt252;
-    let real_sighash = expected_result.sighash;
-
-    println!(
-        "expected_finalized_hash: {}",
-        expected_finalized_hash.to_string()
-    );
-    println!(
-        "expected_sighash_felt252: {}",
-        expected_sighash_felt252.to_string_le()
-    );
-    println!("real_sighash: {}", real_sighash.to_string());
-    /*
-        for (i, d) in expected_result.deposits.iter().enumerate() {
-            let preimage = vec![
-                d.txid_224.0.elements.to_vec(),
-                vec![d.value],
-                d.public_key.to_vec(),
-            ]
-            .concat()
-            .iter()
-            .map(|x| x.to_canonical_u64())
-            .collect::<Vec<_>>();
-            println!("deposit_{i}_preimage: {:?}", preimage);
-            println!("deposit_{i}_hash: {}", d.get_hash::<C::Hasher>());
-        }
-    */
-    Ok(proof)
-}
 fn prove_block_demo(hints: &[BlockSpendIntrospectionHint]) -> anyhow::Result<()> {
     const D: usize = 2;
     type C = PoseidonGoldilocksConfig;
@@ -149,11 +69,11 @@ fn prove_block_demo(hints: &[BlockSpendIntrospectionHint]) -> anyhow::Result<()>
 
     let mut wallet = DebugScenarioWallet::<C, D>::new();
 
-    let deposit_0_public_key = wallet.add_secp256k1_private_key(Hash256(hex_literal::hex!(
+    let _deposit_0_public_key = wallet.add_secp256k1_private_key(Hash256(hex_literal::hex!(
         "07e5cae38a63f487667075c54cb7791b86179e3becd9198e5ee0557eeffcda31"
     )))?;
 
-    let deposit_1_public_key = wallet.add_secp256k1_private_key(Hash256(hex_literal::hex!(
+    let _deposit_1_public_key = wallet.add_secp256k1_private_key(Hash256(hex_literal::hex!(
         "df5bf5d53e56b17602f49c56246b9e1196b2335f8571147fe2df70f3016c78a7"
     )))?;
 
@@ -278,7 +198,6 @@ fn prove_block_demo(hints: &[BlockSpendIntrospectionHint]) -> anyhow::Result<()>
         "first_wrap_sighash_final_gl_proof {:?}",
         std::str::from_utf8(&first_wrap_sighash_final_gl_proof)?
     );
-
 
     timer.lap("end proving jobs");
     /*

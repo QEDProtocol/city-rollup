@@ -1,28 +1,34 @@
 use city_common_circuit::{
-    builder::pad_circuit::CircuitBuilderCityCommonGates,
-    circuits::{
-        traits::qstandard::{QStandardCircuit, QStandardCircuitProvableWithProofStoreSync},
-        zk_signature_wrapper::ZKSignatureWrapperCircuit,
+    builder::{
+        pad_circuit::CircuitBuilderCityCommonGates, verify::CircuitBuilderVerifyProofHelpers,
     },
+    circuits::traits::qstandard::QStandardCircuit,
     proof_minifier::pm_core::get_circuit_fingerprint_generic,
 };
 use city_crypto::hash::{qhashout::QHashOut, traits::hasher::MerkleZeroHasher};
 
 use city_rollup_common::qworker::{
-    job_witnesses::op::CRAddL1WithdrawalCircuitInput, proof_store::QProofStoreReaderSync,
+    job_id::QProvingJobDataID, job_witnesses::op::CRAddL1WithdrawalCircuitInput,
+    proof_store::QProofStoreReaderSync, verifier::QWorkerVerifyHelper,
 };
 use plonky2::{
     hash::hash_types::{HashOut, HashOutTarget},
     iop::witness::{PartialWitness, WitnessWrite},
     plonk::{
         circuit_builder::CircuitBuilder,
-        circuit_data::{CircuitConfig, CircuitData, CommonCircuitData, VerifierOnlyCircuitData},
+        circuit_data::{
+            CircuitConfig, CircuitData, CommonCircuitData, VerifierCircuitTarget,
+            VerifierOnlyCircuitData,
+        },
         config::{AlgebraicHasher, GenericConfig},
         proof::{ProofWithPublicInputs, ProofWithPublicInputsTarget},
     },
 };
 
-use crate::state::user::add_l1_withdrawal::AddL1WithdrawalSingleGadget;
+use crate::{
+    state::user::add_l1_withdrawal::AddL1WithdrawalSingleGadget,
+    worker::traits::QWorkerCircuitStandardWithDataSync,
+};
 
 #[derive(Debug)]
 pub struct CRAddL1WithdrawalCircuit<C: GenericConfig<D> + 'static, const D: usize>
@@ -31,47 +37,24 @@ where
 {
     pub withdrawal_single_gadget: AddL1WithdrawalSingleGadget,
     pub signature_proof_target: ProofWithPublicInputsTarget<D>,
+    pub signature_verifier_data_target: VerifierCircuitTarget,
 
     pub allowed_circuit_hashes_root_target: HashOutTarget,
     // end circuit targets
     pub circuit_data: CircuitData<C::F, C, D>,
     pub fingerprint: QHashOut<C::F>,
     pub network_magic: u64,
-
     // start dependencies
-    pub signature_circuit_common_data: CommonCircuitData<C::F, D>,
-    pub signature_circuit_verifier_data: VerifierOnlyCircuitData<C, D>,
-}
-impl<C: GenericConfig<D> + 'static, const D: usize> Clone for CRAddL1WithdrawalCircuit<C, D>
-where
-    C::Hasher: AlgebraicHasher<C::F> + MerkleZeroHasher<HashOut<C::F>>,
-{
-    fn clone(&self) -> Self {
-        Self::new_with_signature_circuit_data(
-            self.network_magic,
-            self.signature_circuit_common_data.clone(),
-            self.signature_circuit_verifier_data.clone(),
-        )
-    }
 }
 impl<C: GenericConfig<D> + 'static, const D: usize> CRAddL1WithdrawalCircuit<C, D>
 where
     C::Hasher: AlgebraicHasher<C::F> + MerkleZeroHasher<HashOut<C::F>>,
 {
-    pub fn new(network_magic: u64) -> Self {
-        let zk_signature_wrapper_circuit_data =
-            ZKSignatureWrapperCircuit::<C, D>::new().circuit_data;
-
-        Self::new_with_signature_circuit_data(
-            network_magic,
-            zk_signature_wrapper_circuit_data.common,
-            zk_signature_wrapper_circuit_data.verifier_only,
-        )
-    }
     pub fn new_with_signature_circuit_data(
         network_magic: u64,
-        signature_circuit_common_data: CommonCircuitData<C::F, D>,
-        signature_circuit_verifier_data: VerifierOnlyCircuitData<C, D>,
+        signature_circuit_common_data: &CommonCircuitData<C::F, D>,
+        signature_circuit_verifier_data_cap_height: usize,
+        signature_wrapper_fingerprint: QHashOut<C::F>,
     ) -> Self {
         let config = CircuitConfig::standard_recursion_config();
         let mut builder = CircuitBuilder::<C::F, D>::new(config);
@@ -85,7 +68,7 @@ where
         let signature_proof_target =
             builder.add_virtual_proof_with_pis(&signature_circuit_common_data);
         let signature_verifier_data_target =
-            builder.constant_verifier_data(&signature_circuit_verifier_data);
+            builder.add_virtual_verifier_data(signature_circuit_verifier_data_cap_height);
 
         let signature_proof_combined_hash = HashOutTarget {
             elements: [
@@ -109,6 +92,14 @@ where
             &signature_circuit_common_data,
         );
 
+        let actual_sig_wrapper_fingerprint =
+            builder.get_circuit_fingerprint::<C::Hasher>(&signature_verifier_data_target);
+        let expected_sig_wrapper_fingerprint =
+            builder.constant_hash(signature_wrapper_fingerprint.0);
+        builder.connect_hashes(
+            actual_sig_wrapper_fingerprint,
+            expected_sig_wrapper_fingerprint,
+        );
         let allowed_circuit_hashes_root_target = builder.add_virtual_hash();
 
         builder.register_public_inputs(&allowed_circuit_hashes_root_target.elements);
@@ -129,14 +120,14 @@ where
             circuit_data,
             fingerprint,
             network_magic,
-            signature_circuit_common_data,
-            signature_circuit_verifier_data,
+            signature_verifier_data_target,
         }
     }
     pub fn prove_base(
         &self,
         input: &CRAddL1WithdrawalCircuitInput<C::F>,
         signature_proof: &ProofWithPublicInputs<C::F, C, D>,
+        signature_verifier_data: &VerifierOnlyCircuitData<C, D>,
     ) -> anyhow::Result<ProofWithPublicInputs<C::F, C, D>> {
         let mut pw = PartialWitness::new();
         self.withdrawal_single_gadget.withdrawal_gadget.set_witness(
@@ -146,6 +137,10 @@ where
         );
 
         pw.set_proof_with_pis_target(&self.signature_proof_target, signature_proof);
+        pw.set_verifier_data_target(
+            &self.signature_verifier_data_target,
+            signature_verifier_data,
+        );
 
         pw.set_hash_target(
             self.allowed_circuit_hashes_root_target,
@@ -172,19 +167,30 @@ where
         &self.circuit_data.common
     }
 }
-
-impl<S: QProofStoreReaderSync, C: GenericConfig<D> + 'static, const D: usize>
-    QStandardCircuitProvableWithProofStoreSync<S, CRAddL1WithdrawalCircuitInput<C::F>, C, D>
+impl<
+        V: QWorkerVerifyHelper<C, D>,
+        S: QProofStoreReaderSync,
+        C: GenericConfig<D> + 'static,
+        const D: usize,
+    > QWorkerCircuitStandardWithDataSync<V, S, CRAddL1WithdrawalCircuitInput<C::F>, C, D>
     for CRAddL1WithdrawalCircuit<C, D>
 where
     C::Hasher: AlgebraicHasher<C::F> + MerkleZeroHasher<HashOut<C::F>>,
 {
-    fn prove_with_proof_store_sync(
+    fn prove_q_worker_standard_with_input(
         &self,
-        store: &S,
         input: &CRAddL1WithdrawalCircuitInput<C::F>,
+        verify_helper: &V,
+        store: &S,
+        _job_id: QProvingJobDataID,
     ) -> anyhow::Result<ProofWithPublicInputs<C::F, C, D>> {
         let signature_proof = store.get_proof_by_id(input.signature_proof_id)?;
-        self.prove_base(input, &signature_proof)
+        self.prove_base(
+            input,
+            &signature_proof,
+            verify_helper
+                .get_verifier_triplet_for_circuit_type(input.signature_proof_id.circuit_type)
+                .1,
+        )
     }
 }

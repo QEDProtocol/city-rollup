@@ -7,7 +7,6 @@ use city_common_circuit::{
         hash::core::CircuitBuilderHashCore,
     },
     crypto::secp256k1::gadget::DogeQEDSignatureCombinedHashGadget,
-    debug::circuit_tracer::DebugCircuitTracer,
     hash::merkle::gadgets::delta_merkle_proof::DeltaMerkleProofGadget,
 };
 use city_crypto::hash::{merkle::core::DeltaMerkleProofCore, qhashout::QHashOut};
@@ -125,14 +124,12 @@ pub struct ClaimL1DepositSingleGadget {
     pub new_state_transition_hash: HashOutTarget,
     pub combined_state_transition_hash: HashOutTarget,
     pub claim_deposit_event_hash: HashOutTarget,
-    pub tracer: DebugCircuitTracer,
 }
 impl ClaimL1DepositSingleGadget {
     pub fn add_virtual_to<H: AlgebraicHasher<F>, F: RichField + Extendable<D>, const D: usize>(
         builder: &mut CircuitBuilder<F, D>,
         network_magic: u64,
     ) -> Self {
-        let mut tracer = DebugCircuitTracer::new();
         let claim_gadget = ClaimL1DepositGadget::add_virtual_to::<H, F, D>(builder);
         let sig_action_id = builder.constant_u64(SIG_ACTION_CLAIM_DEPOSIT_MAGIC);
         let network_magic_target = builder.constant_u64(network_magic);
@@ -142,15 +139,6 @@ impl ClaimL1DepositSingleGadget {
         let deposit_amount = claim_gadget.deposit_amount;
         let deposit_fee = builder.constant_u64(DEPOSIT_FEE_AMOUNT);
         let claim_l1_public_key = claim_gadget.deposit_gadget.public_key;
-        tracer.trace_vec("claim_l1_public_key", &claim_l1_public_key);
-        tracer.trace("network_magic_target", network_magic_target);
-        tracer.trace("user_id", user_id);
-        tracer.trace("sig_action_id", sig_action_id);
-        tracer.trace("nonce", nonce);
-
-        tracer.trace_vec("claimed_tx_id_224", &claimed_tx_id_224.elements);
-        tracer.trace("deposit_amount", deposit_amount);
-        tracer.trace("deposit_fee", deposit_fee);
 
         let sig_action_hash = compute_sig_action_hash_circuit::<H, F, D>(
             builder,
@@ -167,7 +155,6 @@ impl ClaimL1DepositSingleGadget {
                 deposit_fee,
             ],
         );
-        tracer.trace_vec("sig_action_hash", &sig_action_hash.elements);
 
         let signature_combo_gadget = DogeQEDSignatureCombinedHashGadget::add_virtual_to_known::<
             H,
@@ -175,17 +162,6 @@ impl ClaimL1DepositSingleGadget {
             D,
         >(builder, claim_l1_public_key, sig_action_hash);
 
-        tracer.trace_vec(
-            "signature_combo_gadget.public_key_hash",
-            &builder
-                .hash_n_to_hash_no_pad::<H>(claim_l1_public_key.to_vec())
-                .elements,
-        );
-
-        tracer.trace_vec(
-            "signature_combo_gadget.combined_hash.elements",
-            &signature_combo_gadget.combined_hash.elements,
-        );
         let old_state_transition_hash = builder.hash_two_to_one::<H>(
             claim_gadget.user_tree_delta_merkle_proof_gadget.old_root,
             claim_gadget.deposit_tree_delta_merkle_proof_gadget.old_root,
@@ -200,10 +176,6 @@ impl ClaimL1DepositSingleGadget {
 
         let claim_deposit_event_hash = claim_gadget.deposit_hash;
 
-        tracer.trace_vec(
-            "claim_deposit_event_hash.elements",
-            &claim_deposit_event_hash.elements,
-        );
         Self {
             claim_gadget,
             signature_combo_gadget,
@@ -212,7 +184,6 @@ impl ClaimL1DepositSingleGadget {
             new_state_transition_hash,
             combined_state_transition_hash: combined_transition_hash,
             claim_deposit_event_hash,
-            tracer,
         }
     }
 }

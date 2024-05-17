@@ -1,36 +1,27 @@
 use std::{fs, path::PathBuf};
 
-use city_common::{config::rollup_constants::DEPOSIT_FEE_AMOUNT, logging::debug_timer::DebugTimer};
-use city_common_circuit::{
-    field::cubic::CubicExtendable, wallet::zk::ZKSignatureBasicWalletProvider,
-};
+use city_common::logging::debug_timer::DebugTimer;
+use city_common_circuit::wallet::zk::ZKSignatureBasicWalletProvider;
 use city_crypto::hash::{
-    base_types::{
-        felt252::{felt252_hashout_to_hash256_le, hashout_to_felt252_hashout},
-        hash256::Hash256,
-    },
+    base_types::{felt252::felt252_hashout_to_hash256_le, hash256::Hash256},
     qhashout::QHashOut,
 };
-use city_rollup_circuit::{
-    sighash_circuits::sighash::CRSigHashCircuit,
-    worker::{prover::QWorkerStandardProver, toolbox::root::CRWorkerToolboxRootCircuits},
+use city_rollup_circuit::worker::{
+    prover::QWorkerStandardProver, toolbox::root::CRWorkerToolboxRootCircuits,
 };
 use city_rollup_common::{
     api::data::{
-        block::rpc_request::{CityRegisterUserRPCRequest, CityTokenTransferRPCRequest},
-        btc_spend_info::SimpleRollupBTCSpendInfo,
+        block::rpc_request::CityRegisterUserRPCRequest, btc_spend_info::SimpleRollupBTCSpendInfo,
         store::CityL2BlockState,
     },
     config::sighash_wrapper_config::SIGHASH_WHITELIST_TREE_ROOT,
     introspection::{
         rollup::{
-            constants::NETWORK_MAGIC_DOGE_REGTEST,
-            introspection::{BlockSpendIntrospectionGadgetConfig, BlockSpendIntrospectionHint},
-            signature::QEDSigAction,
+            constants::NETWORK_MAGIC_DOGE_REGTEST, introspection::BlockSpendIntrospectionHint,
         },
         transaction::BTCTransaction,
     },
-    qworker::{memory_proof_store::SimpleProofStoreMemory, proof_store::QProofStoreReaderSync},
+    qworker::memory_proof_store::SimpleProofStoreMemory,
 };
 use city_rollup_core_orchestrator::debug::scenario::{
     block_planner::planner::CityOrchestratorBlockPlanner,
@@ -40,12 +31,8 @@ use city_rollup_core_orchestrator::debug::scenario::{
 use city_store::store::{city::base::CityStore, sighash::SigHashMerkleTree};
 use kvq::memory::simple::KVQSimpleMemoryBackingStore;
 use plonky2::{
-    field::goldilocks_field::GoldilocksField,
-    hash::poseidon::PoseidonHash,
-    plonk::{
-        config::{AlgebraicHasher, GenericConfig, PoseidonGoldilocksConfig},
-        proof::ProofWithPublicInputs,
-    },
+    field::goldilocks_field::GoldilocksField, hash::poseidon::PoseidonHash,
+    plonk::config::PoseidonGoldilocksConfig,
 };
 
 fn prove_block_demo(hints: &[BlockSpendIntrospectionHint]) -> anyhow::Result<()> {
@@ -89,11 +76,11 @@ fn prove_block_demo(hints: &[BlockSpendIntrospectionHint]) -> anyhow::Result<()>
 
     let mut wallet = DebugScenarioWallet::<C, D>::new();
 
-    let deposit_0_public_key = wallet.add_secp256k1_private_key(Hash256(hex_literal::hex!(
+    let _deposit_0_public_key = wallet.add_secp256k1_private_key(Hash256(hex_literal::hex!(
         "e6baf19a8b0b9b8537b9354e178a0a42d0887371341d4b2303537c5d18d7bb87"
     )))?;
 
-    let deposit_1_public_key = wallet.add_secp256k1_private_key(Hash256(hex_literal::hex!(
+    let _deposit_1_public_key = wallet.add_secp256k1_private_key(Hash256(hex_literal::hex!(
         "51dfec6b389f5f033bbe815d5df995a20851227fd845a3be389ca9ad2b6924f0"
     )))?;
 
@@ -146,7 +133,7 @@ fn prove_block_demo(hints: &[BlockSpendIntrospectionHint]) -> anyhow::Result<()>
     timer.lap("end process state block 1 RPC");
     timer.lap("start process requests block 1");
 
-    let (block_1_job_ids, _block_1_state_transition, block_1_end_jobs) =
+    let (_block_1_job_ids, _block_1_state_transition, block_1_end_jobs) =
         block_1_planner.process_requests(&mut store, &mut proof_store, &block_1_requested)?;
     let final_state_root =
         felt252_hashout_to_hash256_le(CityStore::<S>::get_city_root(&store, 1)?.0);
@@ -155,7 +142,7 @@ fn prove_block_demo(hints: &[BlockSpendIntrospectionHint]) -> anyhow::Result<()>
         .map(|x| x.perform_sighash_hash_surgery(final_state_root))
         .collect::<Vec<_>>();
 
-    let sighash_jobs = SigHashFinalizer::finalize_sighashes::<PS>(
+    let _sighash_jobs = SigHashFinalizer::finalize_sighashes::<PS>(
         &mut proof_store,
         sighash_whitelist_tree,
         1,

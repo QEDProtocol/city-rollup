@@ -2,12 +2,12 @@ use plonky2::{
     field::extension::Extendable,
     gates::{
         arithmetic_base::ArithmeticGate, arithmetic_extension::ArithmeticExtensionGate,
-        base_sum::BaseSumGate, constant::ConstantGate, coset_interpolation::CosetInterpolationGate,
-        gate::GateRef, multiplication_extension::MulExtensionGate, noop::NoopGate,
-        poseidon::PoseidonGate, poseidon_mds::PoseidonMdsGate, random_access::RandomAccessGate,
-        reducing::ReducingGate, reducing_extension::ReducingExtensionGate,
+        base_sum::BaseSumGate, constant::ConstantGate, gate::GateRef,
+        multiplication_extension::MulExtensionGate, noop::NoopGate, poseidon::PoseidonGate,
+        poseidon_mds::PoseidonMdsGate, random_access::RandomAccessGate, reducing::ReducingGate,
+        reducing_extension::ReducingExtensionGate,
     },
-    hash::{hash_types::RichField, poseidon::Poseidon},
+    hash::hash_types::RichField,
     plonk::circuit_builder::CircuitBuilder,
 };
 

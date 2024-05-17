@@ -1,4 +1,4 @@
-use city_crypto::hash::{merkle::treeprover::StateTransitionTrackable, qhashout::QHashOut};
+use city_crypto::hash::qhashout::QHashOut;
 use city_rollup_common::qworker::job_witnesses::agg::CRAggUserRegisterClaimDepositL2TransferCircuitInput;
 use plonky2::{
     field::goldilocks_field::GoldilocksField, hash::poseidon::PoseidonHash, plonk::config::Hasher,

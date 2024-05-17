@@ -289,7 +289,6 @@ where
     let public_key = SimpleL2PrivateKey::new(private_key).get_public_key::<C::Hasher>();
     let sig_circuit = ZKSignatureCircuit::<C, D>::new(public_key);
     let proof_inner = sig_circuit.prove_base(private_key, action_hash)?;
-    println!("got proof inner");
     let wrapper_circuit = ZKSignatureWrapperCircuit::<C, D>::new();
     let proof = wrapper_circuit.prove_base(&proof_inner, sig_circuit.get_verifier_config_ref())?;
     wrapper_circuit.circuit_data.verify(proof.clone())?;
