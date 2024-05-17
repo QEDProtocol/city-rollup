@@ -1,5 +1,6 @@
 use city_rollup_common::api::data::store::CityUserState;
 use city_rollup_common::link::data::BTCOutpoint;
+use city_rollup_common::link::data::BTCUTXO;
 use city_rollup_common::qworker::job_id::QProvingJobDataID;
 use city_rollup_common::qworker::proof_store::QProofStoreReaderSync;
 use city_rollup_common::qworker::proof_store::QProofStoreWriterSync;
@@ -12,6 +13,7 @@ use redis::Commands;
 pub const USER_STATE: &'static str = "user_state";
 pub const BLOCK_STATE: &'static str = "block_state";
 pub const BLOCK_SPEND_INFO: &'static str = "block_spend_info";
+pub const STXO: &'static str = "spent_utxo"; // spent transaction outputs
 
 // Field
 pub const LAST_BLOCK_ID: &'static str = "last_block_id";
@@ -113,6 +115,24 @@ impl RedisStore {
             &bincode::serialize(&outpoint)?,
         )?;
         Ok(())
+    }
+
+    pub fn mark_utxos_as_spent(&self, utxos: &Vec<BTCUTXO>) -> anyhow::Result<()> {
+        let mut connection = self.get_connection()?;
+        let mut pipeline = redis::pipe();
+        pipeline.atomic();
+
+        for utxo in utxos {
+            pipeline.sadd(STXO, &bincode::serialize(utxo)?).ignore();
+        }
+
+        pipeline.query(&mut *connection)?;
+        Ok(())
+    }
+
+    pub fn check_if_spent_uxto(&self, utxo: &BTCUTXO) -> anyhow::Result<bool> {
+        let mut connection = self.get_connection()?;
+        Ok(connection.sismember(STXO, &bincode::serialize(utxo)?)?)
     }
 
     pub fn sequence_block(&self) -> anyhow::Result<u64> {

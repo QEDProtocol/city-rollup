@@ -121,7 +121,7 @@ impl Orchestrator {
 
             let txs = self.get_txs(block_id, &mut redis_store).await?;
             let prev_block_state =
-                L2BlockStateModel::get_block_state_by_id(&store, block_id).unwrap_or_default();
+                L2BlockStateModel::get_block_state_by_id(&store, block_id)?;
 
             let current_block_redeem_script = self.redis_store.get_current_block_redeem_script()?;
             let last_block_spend_output = self.redis_store.get_last_block_spend_output()?;
@@ -204,6 +204,7 @@ impl Orchestrator {
                 txid: tx.get_hash(), // TODO: fix this
                 vout: 0,
             })?;
+            self.redis_store.mark_utxos_as_spent(&funding_utxos)?;
 
             let mut sighash_hints_for_spend_inputs = vec![];
             for input_index in 0..input_len {
@@ -353,7 +354,13 @@ impl Orchestrator {
         )?
         .to_string();
 
-        let mut utxos = self.link_api.btc_get_utxos(current_block_p2sh)?;
+        let mut utxos = self
+            .link_api
+            .btc_get_utxos(current_block_p2sh)?
+            .into_iter()
+            .filter(|utxo| !matches!(self.redis_store.check_if_spent_uxto(&utxo), Ok(false)))
+            .collect::<Vec<_>>();
+
         let mut last_block_spend_index = -1;
         let mut last_block_spend_utxo = None;
         if let Some(last_block_spend_output) = last_block_spend_output {
