@@ -70,6 +70,10 @@ sign-hash:
 full_block:
 	@RUST_BACKTRACE=${TRACE_ENABLED} cargo run --package city-rollup-dev-cli --example full_block
 
+.PHONY: full_block2
+full_block2:
+	@RUST_BACKTRACE=${TRACE_ENABLED} cargo run --package city-rollup-dev-cli --example full_block_v2
+
 .PHONY: hashes
 hashes:
 	@RUST_BACKTRACE=${TRACE_ENABLED} cargo run --package city-rollup-dev-cli --example hashes
