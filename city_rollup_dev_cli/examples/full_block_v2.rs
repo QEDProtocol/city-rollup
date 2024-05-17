@@ -92,7 +92,7 @@ fn prove_block_demo(hints: &[BlockSpendIntrospectionHint]) -> anyhow::Result<()>
 
     let block_1_requested = CityScenarioRequestedActions::new_from_requested_rpc(
         block_1_builder.output,
-        hints[0].funding_transactions.iter(),
+        hints[0].funding_transactions.iter().skip(1),
         &block_0_state,
         2,
     );
@@ -217,7 +217,7 @@ fn prove_block_demo(hints: &[BlockSpendIntrospectionHint]) -> anyhow::Result<()>
 
     let block_2_requested = CityScenarioRequestedActions::new_from_requested_rpc(
         block_2_builder.output,
-        [&BTCTransaction::dummy()].into_iter(),
+        [&BTCTransaction::dummy()].into_iter().skip(1),
         &block_1_state,
         4,
     );

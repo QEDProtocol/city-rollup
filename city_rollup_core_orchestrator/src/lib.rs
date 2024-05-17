@@ -146,19 +146,16 @@ impl Orchestrator {
             let (next_block_state, agg_job_ids, _, block_end_job_ids) =
                 block_planner.process_requests(&mut store, &mut redis_store, &requested_actions)?;
 
+            // cache accessed users
+            let mut accessed_users = requested_actions.accessed_users();
+            accessed_users.extend(prev_block_state.next_user_id..next_block_state.next_user_id);
+            self.cache_accessed_users(&mut store, block_id, accessed_users)?;
+
             let final_state_root = felt252_hashout_to_hash256_le(
                 CityStore::get_city_root(&store, next_block_state.checkpoint_id)?.0,
             );
             let next_block_redeem_script =
                 self.get_next_block_redeem_script(&current_block_redeem_script, &final_state_root)?;
-
-            CityStore::set_block_state(&mut store, &next_block_state)?;
-            self.redis_store
-                .set_current_block_redeem_script(&next_block_redeem_script)?;
-
-            let mut accessed_users = requested_actions.accessed_users();
-            accessed_users.extend(prev_block_state.next_user_id..next_block_state.next_user_id);
-            self.cache_accessed_users(&mut store, block_id, accessed_users)?;
 
             let inputs = funding_utxos
                 .iter()
@@ -199,10 +196,15 @@ impl Orchestrator {
                 inputs,
                 outputs,
             };
+
+            CityStore::set_block_state(&mut store, &next_block_state)?;
+            self.redis_store
+                .set_current_block_redeem_script(&next_block_redeem_script)?;
             self.redis_store.set_last_block_spend_output(BTCOutpoint {
                 txid: tx.get_hash(), // TODO: fix this
                 vout: 0,
             })?;
+
             let mut sighash_hints_for_spend_inputs = vec![];
             for input_index in 0..input_len {
                 let sighash_preimage = tx.get_sig_hash_preimage(
