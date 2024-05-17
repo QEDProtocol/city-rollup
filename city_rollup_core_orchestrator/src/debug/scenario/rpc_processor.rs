@@ -71,7 +71,7 @@ impl<F: RichField + Extendable<D>, const D: usize> DebugRPCProcessor<F, D> {
     }
     pub fn injest_rpc_register_user(
         &self,
-        rpc_node_id: u32,
+        _rpc_node_id: u32,
         req: &CityRegisterUserRPCRequest<F>,
     ) -> anyhow::Result<CityRegisterUserRequest<F>> {
         Ok(CityRegisterUserRequest::new(req.public_key))
