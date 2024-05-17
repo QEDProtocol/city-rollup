@@ -17,3 +17,9 @@ pub struct BTCUTXO {
     pub value: u64,
     pub vout: u32,
 }
+
+#[derive(Serialize, Deserialize, PartialEq, Clone, Copy, Debug)]
+pub struct BTCOutpoint {
+    pub txid: Hash256,
+    pub vout: u32,
+}

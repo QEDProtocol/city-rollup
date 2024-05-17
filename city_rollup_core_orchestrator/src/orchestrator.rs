@@ -2,11 +2,17 @@ use std::collections::HashSet;
 use std::sync::Arc;
 use std::time::Duration;
 
+use bitcoin::opcodes::all::OP_CHECKSIG;
+use bitcoin::opcodes::all::OP_DUP;
+use bitcoin::opcodes::all::OP_EQUALVERIFY;
+use bitcoin::opcodes::all::OP_HASH160;
+use bitcoin::opcodes::all::OP_PUSHBYTES_20;
 use bitcoin::Address;
 use bitcoin::Network;
 use bitcoin::Script;
 use city_common::cli::args::OrchestratorArgs;
 use city_crypto::hash::base_types::felt252::felt252_hashout_to_hash256_le;
+use city_crypto::hash::base_types::hash160::Hash160;
 use city_crypto::hash::base_types::hash256::Hash256;
 use city_crypto::hash::core::btc::btc_hash160;
 use city_macros::define_table;
@@ -23,6 +29,7 @@ use city_rollup_common::introspection::sighash::SIGHASH_ALL;
 use city_rollup_common::introspection::transaction::BTCTransaction;
 use city_rollup_common::introspection::transaction::BTCTransactionInput;
 use city_rollup_common::introspection::transaction::BTCTransactionOutput;
+use city_rollup_common::link::data::BTCOutpoint;
 use city_rollup_common::link::data::BTCUTXO;
 use city_rollup_common::link::link_api::BTCLinkAPI;
 use city_rollup_worker_dispatch::implementations::redis::RedisDispatcher;
@@ -121,7 +128,7 @@ impl Orchestrator {
 
             let current_block_redeem_script = self.redis_store.get_current_block_redeem_script()?;
             let last_block_spend_output = self.redis_store.get_last_block_spend_output()?;
-            let funding_utxos =
+            let (funding_utxos, last_block_spend_index) =
                 self.get_funding_utxos(&current_block_redeem_script, &last_block_spend_output)?;
 
             let funding_transactions = self.get_funding_transactions(&funding_utxos)?;
@@ -132,7 +139,7 @@ impl Orchestrator {
                 SIGHASH_CIRCUIT_MAX_WITHDRAWALS,
             );
 
-            let mut inputs = funding_utxos
+            let inputs = funding_utxos
                 .iter()
                 .map(|utxo| BTCTransactionInput {
                     hash: utxo.txid,
@@ -150,25 +157,14 @@ impl Orchestrator {
 
                     Ok(BTCTransactionOutput {
                         value: withdrawal.value,
-                        script: todo!(), // p2pkh
+                        script: self.get_withdrawal_p2pkh(&withdrawal.address)?, // p2pkh
                     })
                 })
                 .collect::<anyhow::Result<Vec<_>>>()?;
-            if let Some(last_block_spend_output) = last_block_spend_output {
-                let mut script = vec![];
-                script.extend(current_block_redeem_script.clone());
-                inputs.insert(
-                    0,
-                    BTCTransactionInput {
-                        hash: last_block_spend_output.txid,
-                        index: last_block_spend_output.vout,
-                        script: script,
-                        sequence: 4294967295,
-                    },
-                );
-                outputs.push(BTCTransactionOutput {
-                    value: last_block_spend_output.value,
-                    script: todo!(), // p2sh
+            if last_block_spend_index != -1 {
+                outputs.insert(0, BTCTransactionOutput {
+                    value: funding_utxos[last_block_spend_index as usize].value,
+                    script: current_block_redeem_script.clone() // p2sh
                 })
             }
             let input_len = inputs.len();
@@ -307,36 +303,56 @@ impl Orchestrator {
         Ok(rpc_processor.output)
     }
 
-    pub fn get_next_block_p2sh(&self, next_block_redeem_script: &[u8]) -> anyhow::Result<String> {
-        let next_block_redeem_script_hash = btc_hash160(&next_block_redeem_script);
+    pub fn get_current_block_p2sh(
+        &self,
+        current_block_redeem_script: &[u8],
+    ) -> anyhow::Result<String> {
+        let current_block_redeem_script_hash = btc_hash160(&current_block_redeem_script);
         let mut bytes = [0; 23];
         bytes.copy_from_slice(&[0xa9, 0x14]);
-        bytes.copy_from_slice(&next_block_redeem_script_hash.0);
+        bytes.copy_from_slice(&current_block_redeem_script_hash.0);
         bytes.copy_from_slice(&[0x87]);
         let script = Script::from_bytes(&bytes);
         let next_block_p2sh = Address::from_script(&script, self.network)?;
         Ok(next_block_p2sh.to_string())
     }
 
+    pub fn get_withdrawal_p2pkh(
+        &self,
+        address: &Hash160,
+    ) -> anyhow::Result<Vec<u8>> {
+        let mut bytes = [0; 23];
+        bytes.copy_from_slice(&[0x76, 0xa9, 0x14]);
+        bytes.copy_from_slice(&address.0);
+        bytes.copy_from_slice(&[0x88, 0xac]);
+        Ok(bytes.to_vec())
+    }
+
     pub fn get_funding_utxos(
         &self,
         current_block_redeem_script: &[u8],
-        last_block_spend_output: &Option<BTCUTXO>,
-    ) -> anyhow::Result<Vec<BTCUTXO>> {
-        let next_block_p2sh = self.get_next_block_p2sh(current_block_redeem_script)?;
-        let mut utxos = self.link_api.btc_get_utxos(next_block_p2sh)?;
+        last_block_spend_output: &Option<BTCOutpoint>,
+    ) -> anyhow::Result<(Vec<BTCUTXO>, i32)> {
+        let current_block_p2sh = self.get_current_block_p2sh(current_block_redeem_script)?;
+        let mut utxos = self.link_api.btc_get_utxos(current_block_p2sh)?;
+        let mut last_block_spend_index = -1;
+        let mut last_block_spend_utxo = None;
         if let Some(last_block_spend_output) = last_block_spend_output {
-            if let Some(idx) = utxos
-                .iter()
-                .enumerate()
-                .find_map(|(idx, utxo)| (utxo == last_block_spend_output).then_some(idx))
-            {
-                utxos.swap_remove(idx);
+            if let Some(idx) = utxos.iter().enumerate().find_map(|(idx, utxo)| {
+                (utxo.txid == last_block_spend_output.txid
+                    && utxo.vout == last_block_spend_output.vout)
+                    .then_some(idx)
+            }) {
+                last_block_spend_utxo = Some(utxos.swap_remove(idx));
             }
         }
         utxos.sort_by_key(|utxo| (utxo.status.block_height, utxo.vout));
         utxos.truncate(SIGHASH_CIRCUIT_MAX_DEPOSITS);
-        Ok(utxos)
+        if let Some(last_block_spend_utxo) = last_block_spend_utxo {
+            utxos.insert(0, last_block_spend_utxo);
+            last_block_spend_index = 0;
+        }
+        Ok((utxos, last_block_spend_index))
     }
 
     pub fn get_tx(&self, txid: Hash256) -> anyhow::Result<BTCTransaction> {

@@ -1,4 +1,5 @@
 use city_rollup_common::api::data::store::CityUserState;
+use city_rollup_common::link::data::BTCOutpoint;
 use city_rollup_common::link::data::BTCUTXO;
 use city_rollup_common::qworker::job_id::QProvingJobDataID;
 use city_rollup_common::qworker::proof_store::QProofStoreReaderSync;
@@ -85,27 +86,7 @@ impl RedisStore {
         Ok(next_block_redeem_script)
     }
 
-    pub fn get_last_block_spend_output(&self) -> anyhow::Result<Option<BTCUTXO>> {
-        let mut connection = self.get_connection()?;
-        let last_block_spend_outpoint: Option<Vec<u8>> =
-            connection.hget(BLOCK_SPEND_INFO, LAST_BLOCK_SPEND_OUTPUT)?;
-        Ok(last_block_spend_outpoint.and_then(|x|bincode::deserialize(&x).ok()))
-    }
-
-    pub fn set_last_block_spend_outpoint(
-        &self,
-        outpoint: BTCUTXO,
-    ) -> anyhow::Result<()> {
-        let mut connection = self.get_connection()?;
-        connection.hset(
-            BLOCK_SPEND_INFO,
-            LAST_BLOCK_SPEND_OUTPUT,
-            &bincode::serialize(&outpoint)?,
-        )?;
-        Ok(())
-    }
-
-    pub fn set_next_block_redeem_script(
+    pub fn set_current_block_redeem_script(
         &self,
         next_block_redeem_script: &Vec<u8>,
     ) -> anyhow::Result<()> {
@@ -114,6 +95,23 @@ impl RedisStore {
             BLOCK_SPEND_INFO,
             CURRENT_BLOCK_REDEEM_SCRIPT,
             next_block_redeem_script,
+        )?;
+        Ok(())
+    }
+
+    pub fn get_last_block_spend_output(&self) -> anyhow::Result<Option<BTCOutpoint>> {
+        let mut connection = self.get_connection()?;
+        let last_block_spend_outpoint: Option<Vec<u8>> =
+            connection.hget(BLOCK_SPEND_INFO, LAST_BLOCK_SPEND_OUTPUT)?;
+        Ok(last_block_spend_outpoint.and_then(|x| bincode::deserialize(&x).ok()))
+    }
+
+    pub fn set_last_block_spend_outpoint(&self, outpoint: BTCOutpoint) -> anyhow::Result<()> {
+        let mut connection = self.get_connection()?;
+        connection.hset(
+            BLOCK_SPEND_INFO,
+            LAST_BLOCK_SPEND_OUTPUT,
+            &bincode::serialize(&outpoint)?,
         )?;
         Ok(())
     }
