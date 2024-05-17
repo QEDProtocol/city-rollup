@@ -200,7 +200,7 @@ impl Orchestrator {
                 outputs,
             };
             self.redis_store.set_last_block_spend_output(BTCOutpoint {
-                txid: tx.get_hash(),
+                txid: tx.get_hash(), // TODO: fix this
                 vout: 0,
             })?;
             let mut sighash_hints_for_spend_inputs = vec![];
