@@ -104,7 +104,7 @@ fn prove_block_demo(hints: &[BlockSpendIntrospectionHint]) -> anyhow::Result<()>
     timer.lap("end process state block 1 RPC");
     timer.lap("start process requests block 1");
 
-    let (_, block_1_job_ids, _block_1_state_transition, block_1_end_jobs) =
+    let (_, block_1_job_ids, _block_1_state_transition, block_1_end_jobs, _) =
         block_1_planner.process_requests(&mut store, &mut proof_store, &block_1_requested)?;
     let final_state_root =
         felt252_hashout_to_hash256_le(CityStore::<S>::get_city_root(&store, 1)?.0);
@@ -115,7 +115,7 @@ fn prove_block_demo(hints: &[BlockSpendIntrospectionHint]) -> anyhow::Result<()>
 
     let sighash_jobs = SigHashFinalizer::finalize_sighashes::<PS>(
         &mut proof_store,
-        sighash_whitelist_tree,
+        &sighash_whitelist_tree,
         1,
         *block_1_end_jobs.last().unwrap(),
         &modified_hints,
@@ -229,7 +229,7 @@ fn prove_block_demo(hints: &[BlockSpendIntrospectionHint]) -> anyhow::Result<()>
     timer.lap("end process state block 2 RPC");
     timer.lap("start process requests block 2");
 
-    let (_, block_2_job_ids, _block_2_state_transition, block_2_end_jobs) =
+    let (_, block_2_job_ids, _block_2_state_transition, block_2_end_jobs, _) =
         block_2_planner.process_requests(&mut store, &mut proof_store, &block_2_requested)?;
 
     let all_job_ids = block_2_job_ids.plan_jobs();

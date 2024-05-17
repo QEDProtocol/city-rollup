@@ -7,7 +7,7 @@ use city_crypto::hash::{
     traits::hasher::MerkleHasher,
 };
 use city_rollup_common::{
-    api::data::store::CityL2BlockState,
+    api::data::store::{CityL1Withdrawal, CityL2BlockState},
     qworker::{
         fingerprints::CRWorkerToolboxCoreCircuitFingerprints,
         job_id::{ProvingJobCircuitType, QProvingJobDataID},
@@ -52,6 +52,7 @@ impl<S: KVQBinaryStore, PS: QProofStore> CityOrchestratorBlockPlanner<S, PS> {
         CityOpJobIds,
         CityRootStateTransitions<F>,
         Vec<QProvingJobDataID>,
+        Vec<CityL1Withdrawal>,
     )> {
         let start_deposit_tree_root =
             CityStore::get_deposit_tree_root(store, self.processor.checkpoint_id)?;
@@ -194,6 +195,16 @@ impl<S: KVQBinaryStore, PS: QProofStore> CityOrchestratorBlockPlanner<S, PS> {
             } else {
                 dummy_state_root
             };
+        let processed_withdrawals = CityStore::get_withdrawals_by_id(
+            store,
+            self.processor.checkpoint_id,
+            &requested_actions
+                .process_withdrawals
+                .iter()
+                .map(|x| x.withdrawal_id)
+                .collect::<Vec<_>>(),
+        )?;
+
         let (process_withdrawal_job_ids, root_transition_process_withdrawals) =
             plan_tree_prover_from_leaves_with_events::<
                 PS,
@@ -326,6 +337,7 @@ impl<S: KVQBinaryStore, PS: QProofStore> CityOrchestratorBlockPlanner<S, PS> {
                 block_state_part_2_id,
                 block_state_transition_id,
             ],
+            processed_withdrawals,
         ))
     }
 }

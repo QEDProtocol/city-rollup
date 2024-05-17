@@ -1,3 +1,4 @@
+pub mod actors;
 pub mod block_planner;
 pub mod process_requests;
 pub mod requested_actions;

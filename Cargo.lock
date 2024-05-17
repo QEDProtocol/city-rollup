@@ -838,6 +838,7 @@ dependencies = [
  "criterion",
  "hex",
  "hex-literal",
+ "itertools 0.10.5",
  "k256",
  "kvq",
  "plonky2",

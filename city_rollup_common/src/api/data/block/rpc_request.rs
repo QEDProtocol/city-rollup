@@ -48,7 +48,7 @@ pub struct CityAddWithdrawalRPCRequest {
     pub signature_proof: Vec<u8>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 #[serde(bound = "")]
 pub struct CityRegisterUserRPCRequest<F: RichField> {
     pub public_key: QHashOut<F>,

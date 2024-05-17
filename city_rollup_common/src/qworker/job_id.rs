@@ -9,6 +9,7 @@ pub enum QJobTopic {
     GenerateStandardProof = 0,
     GenerateGroth16Proof = 1,
     BlockUserSignatureProof = 2,
+    NotifyOrchestratorComplete = 3,
 }
 impl QJobTopic {
     pub fn to_u8(&self) -> u8 {
@@ -28,6 +29,7 @@ impl TryFrom<u8> for QJobTopic {
             0 => Ok(QJobTopic::GenerateStandardProof),
             1 => Ok(QJobTopic::GenerateGroth16Proof),
             2 => Ok(QJobTopic::BlockUserSignatureProof),
+            3 => Ok(QJobTopic::NotifyOrchestratorComplete),
             _ => Err(anyhow::format_err!("Invalid QJobTopic value: {}", value)),
         }
     }
@@ -472,6 +474,20 @@ impl QProvingJobDataID {
         Self {
             data_type: ProvingJobDataType::Counter,
             data_index: 0,
+            ..*self
+        }
+    }
+    pub fn get_sub_group_counter_goal_id(&self) -> Self {
+        Self {
+            data_type: ProvingJobDataType::Counter,
+            data_index: 1,
+            ..*self
+        }
+    }
+    pub fn get_sub_group_counter_goal_next_jobs_id(&self) -> Self {
+        Self {
+            data_type: ProvingJobDataType::Counter,
+            data_index: 2,
             ..*self
         }
     }
