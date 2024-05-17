@@ -1,6 +1,8 @@
 use city_rollup_common::api::data::store::CityL2BlockState;
 use kvq::traits::{KVQBinaryStore, KVQBinaryStoreReader, KVQStoreAdapter, KVQStoreAdapterReader};
 
+use crate::models::kvq_merkle::model::CHECKPOINT_ID_FUZZY_SIZE;
+
 use super::data::L2BlockStateKeyCore;
 
 pub trait L2BlockStatesModelReaderCore<
@@ -11,6 +13,18 @@ pub trait L2BlockStatesModelReaderCore<
 {
     fn get_block_state_by_id(store: &S, checkpoint_id: u64) -> anyhow::Result<CityL2BlockState> {
         KVA::get_exact(store, &L2BlockStateKeyCore(checkpoint_id))
+    }
+    fn get_latest_block_state(store: &S) -> anyhow::Result<CityL2BlockState> {
+        let result = KVA::get_leq(
+            store,
+            &L2BlockStateKeyCore(0xffffffffffffffu64),
+            CHECKPOINT_ID_FUZZY_SIZE,
+        )?;
+        if result.is_some() {
+            Ok(result.unwrap())
+        } else {
+            anyhow::bail!("error getting latest block state")
+        }
     }
     fn get_block_states_by_id(
         store: &S,

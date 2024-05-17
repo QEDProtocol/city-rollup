@@ -1,8 +1,12 @@
 use bitcoin::consensus::{deserialize_partial, serialize};
 use bitcoin::VarInt;
+use city_crypto::hash::base_types::hash160::Hash160;
 use city_crypto::hash::base_types::hash256::Hash256;
-use city_crypto::hash::core::btc::btc_hash256;
+use city_crypto::hash::core::btc::{btc_hash160, btc_hash256};
+use kvq::traits::KVQSerializable;
 use serde::{Deserialize, Serialize};
+
+use crate::block_template::BLOCK_SCRIPT_LENGTH;
 
 use super::rollup::introspection::BlockSpendCoreConfig;
 use super::sighash::SigHashPreimage;
@@ -23,6 +27,9 @@ impl BTCTransaction {
             outputs: vec![],
             locktime: 0,
         }
+    }
+    pub fn is_dummy(&self) -> bool {
+        self.inputs.len() == 0 && self.outputs.len() == 0
     }
 }
 #[derive(Serialize, Deserialize, PartialEq, Clone, Debug, Hash, Eq, PartialOrd, Ord)]
@@ -126,11 +133,34 @@ impl BTCTransaction {
                 .collect(),
         }
     }
+    pub fn is_block_spend_for_state(&self, expected_address: Hash160) -> bool {
+        //let address = Hash160::from_bytes(&self.outputs[0].script[3..23]).unwrap();
+        /*address == next_address
+        && */
+        self.outputs[0].script.len() == 23
+            && self.inputs[0].script.len() > BLOCK_SCRIPT_LENGTH
+            && btc_hash160(
+                &self.inputs[0].script[(self.inputs[0].script.len() - BLOCK_SCRIPT_LENGTH)..],
+            ) == expected_address
+    }
+    pub fn is_p2pkh(&self) -> bool {
+        self.inputs.len() == 1
+            && self.outputs.len() == 1
+            && (self.inputs[0].script.len() == 106 || self.inputs[0].script.len() == 107)
+    }
     pub fn get_tx_config(&self) -> BTCTransactionConfig {
         BTCTransactionConfig {
             layout: self.get_layout(),
             locktime: self.locktime,
             version: self.version,
+        }
+    }
+    pub fn get_tx_input_empty(&self) -> BTCTransactionInput {
+        BTCTransactionInput {
+            hash: self.get_hash(),
+            index: 0,
+            script: vec![],
+            sequence: 4294967295,
         }
     }
     pub fn to_bytes(&self) -> Vec<u8> {

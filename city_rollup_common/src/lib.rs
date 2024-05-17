@@ -1,3 +1,4 @@
+pub mod actors;
 pub mod api;
 pub mod block_template;
 pub mod config;

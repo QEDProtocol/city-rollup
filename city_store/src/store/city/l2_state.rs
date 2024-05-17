@@ -12,6 +12,9 @@ impl<S: KVQBinaryStoreReader> CityStore<S> {
     pub fn get_block_state(store: &S, checkpoint_id: u64) -> anyhow::Result<CityL2BlockState> {
         L2BlockStateStore::get_block_state_by_id(store, checkpoint_id)
     }
+    pub fn get_latest_block_state(store: &S) -> anyhow::Result<CityL2BlockState> {
+        L2BlockStateStore::get_latest_block_state(store)
+    }
 }
 
 impl<S: KVQBinaryStore> CityStore<S> {

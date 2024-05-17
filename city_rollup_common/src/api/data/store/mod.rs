@@ -10,7 +10,10 @@ use plonky2::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::introspection::rollup::introspection_result::BTCRollupIntrospectionResultWithdrawal;
+use crate::introspection::{
+    rollup::introspection_result::BTCRollupIntrospectionResultWithdrawal,
+    transaction::BTCTransactionOutput,
+};
 
 type F = GoldilocksField;
 
@@ -230,6 +233,18 @@ impl CityL1Withdrawal {
             address: Hash160(address),
             address_type,
             value,
+        }
+    }
+    pub fn to_btc_tx_out(&self) -> BTCTransactionOutput {
+        BTCTransactionOutput {
+            value: self.value,
+            //"76a914"+"38ac"
+            script: [
+                vec![0x76u8, 0xA9u8, 0x14u8],
+                self.address.0.to_vec(),
+                vec![0x38u8, 0xACu8],
+            ]
+            .concat(),
         }
     }
 }

@@ -18,7 +18,7 @@ pub struct SigHashFinalizer {
 impl SigHashFinalizer {
     pub fn finalize_sighashes<PS: QProofStore>(
         proof_store: &mut PS,
-        sighash_whitelist_tree: SigHashMerkleTree,
+        sighash_whitelist_tree: &SigHashMerkleTree,
         checkpoint_id: u64,
         state_transition_root_job_id: QProvingJobDataID,
         hints: &[BlockSpendIntrospectionHint],

@@ -1,4 +1,5 @@
 use async_trait::async_trait;
+use itertools::Itertools;
 use plonky2::plonk::{config::GenericConfig, proof::ProofWithPublicInputs};
 
 use super::job_id::QProvingJobDataID;
@@ -23,6 +24,19 @@ pub trait QProofStoreWriterSync {
         &mut self,
         id: QProvingJobDataID,
     ) -> anyhow::Result<u32>;
+    fn write_next_jobs(
+        &mut self,
+        jobs: &[QProvingJobDataID],
+        next_jobs: &[QProvingJobDataID],
+    ) -> anyhow::Result<()> {
+        let counter_id = jobs[0].get_sub_group_counter_id();
+        let goal_id = counter_id.get_sub_group_counter_goal_id();
+        let next_jobs_id = counter_id.get_sub_group_counter_goal_next_jobs_id();
+        self.set_bytes_by_id(counter_id, &u32::to_le_bytes(0))?;
+        self.set_bytes_by_id(goal_id, &u32::to_le_bytes(jobs.len() as u32))?;
+        self.set_bytes_by_id(next_jobs_id, &bincode::serialize(next_jobs)?)?;
+        Ok(())
+    }
 }
 
 pub trait QProofStore: QProofStoreReaderSync + QProofStoreWriterSync {}
