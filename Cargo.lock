@@ -292,7 +292,7 @@ dependencies = [
  "bitflags 2.5.0",
  "cexpr",
  "clang-sys",
- "itertools 0.10.5",
+ "itertools 0.11.0",
  "lazy_static",
  "lazycell",
  "log",
@@ -729,6 +729,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "bitflags 2.5.0",
+ "bs58",
  "city_common",
  "hex",
  "itertools 0.10.5",
@@ -782,6 +783,7 @@ dependencies = [
  "bitcoin",
  "city_common",
  "city_crypto",
+ "city_macros",
  "criterion",
  "hex",
  "hex-literal",
@@ -2921,7 +2923,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0c2a198fb6b0eada2a8df47933734e6d35d350665a33a3593d7164fa52c75c19"
 dependencies = [
  "cfg-if",
- "windows-targets 0.48.5",
+ "windows-targets 0.52.5",
 ]
 
 [[package]]

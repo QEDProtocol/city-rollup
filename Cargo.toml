@@ -107,7 +107,7 @@ hashbrown = { version = "0.14.3", default-features = false, features = ["ahash",
 url = "2.5.0"
 
 gnark-plonky2-wrapper = { git = "https://github.com/cf/gnark-plonky2-verifier", rev = "c59e33fd8f1b407b355d7b9a74e34792e7c78f37" }
-
+bs58 = { version = "0.5.1", features = ["std", "check"] }
 
 [patch.'https://github.com/0xPolygonZero/plonky2.git']
 plonky2 = { git = "https://github.com/QEDProtocol/plonky2-hwa", rev = "6a8ca008da97890b67a84f64784cfbc488b5238d" }

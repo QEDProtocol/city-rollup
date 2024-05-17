@@ -7,6 +7,8 @@ use serde_with::serde_as;
 
 use crate::hash::merkle::core::{DeltaMerkleProofCore, MerkleProofCore};
 
+const P2SH_ADDRESS_CHECK58_VERSION: u8 = 0xc4;
+
 #[serde_as]
 #[derive(Serialize, Deserialize, PartialEq, Clone, Copy, Debug, Hash, Eq)]
 pub struct Hash160(#[serde_as(as = "serde_with::hex::Hex")] pub [u8; 20]);
@@ -27,6 +29,16 @@ impl Hash160 {
         let mut array = [0u8; 20];
         array.copy_from_slice(&bytes);
         Ok(Self(array))
+    }
+    pub fn to_check_base58(&self, version: u8) -> String {
+        bs58::encode(&self.0)
+            .with_check_version(version)
+            .into_string()
+    }
+    pub fn to_p2sh_address(&self) -> String {
+        bs58::encode(&self.0)
+            .with_check_version(P2SH_ADDRESS_CHECK58_VERSION)
+            .into_string()
     }
 }
 
