@@ -162,7 +162,7 @@ impl SimpleActorOrchestrator {
                 add_withdrawals,
                 token_transfers,
             },
-            &deposit_utxos,
+            deposit_utxos.iter(),
             &last_block,
             SIGHASH_CIRCUIT_MAX_WITHDRAWALS,
         );
@@ -172,7 +172,7 @@ impl SimpleActorOrchestrator {
         timer.lap("end process state block 1 RPC");
         timer.lap("start process requests block 1");
 
-        let (block_op_job_ids, _block_state_transition, block_end_jobs, withdrawals) =
+        let (_, block_op_job_ids, _block_state_transition, block_end_jobs, withdrawals) =
             block_planner.process_requests(store, proof_store, &block_requested)?;
         let final_state_root =
             felt252_hashout_to_hash256_le(CityStore::<S>::get_city_root(&store, 1)?.0);

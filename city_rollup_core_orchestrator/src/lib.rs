@@ -143,7 +143,7 @@ impl Orchestrator {
                 prev_block_state,
             );
 
-            let (next_block_state, agg_job_ids, _, block_end_job_ids) =
+            let (next_block_state, agg_job_ids, _, block_end_job_ids, withdrawals) =
                 block_planner.process_requests(&mut store, &mut redis_store, &requested_actions)?;
 
             // cache accessed users
@@ -233,7 +233,7 @@ impl Orchestrator {
             let sighash_whitelist_tree = SigHashMerkleTree::new();
             let sighash_job_ids = SigHashFinalizer::finalize_sighashes::<RedisStore>(
                 &mut self.redis_store,
-                sighash_whitelist_tree,
+                &sighash_whitelist_tree,
                 next_block_state.checkpoint_id,
                 *block_end_job_ids.last().unwrap(),
                 &hints,

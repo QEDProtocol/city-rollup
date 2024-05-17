@@ -188,7 +188,7 @@ macro_rules! spawn_async_infinite_loop {
             });
         })
     };
-
+}
 /*
 concat from https://github.com/inspier/array-concat/blob/bc9e8d0f9a2fcf177286369d976ec38a0a874cc2/src/lib.rs
 MIT License
