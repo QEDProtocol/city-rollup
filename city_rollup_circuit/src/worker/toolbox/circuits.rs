@@ -102,10 +102,14 @@ where
         //WCRUserRegistrationCircuit::new_default_with_minifiers(network_magic, 1);
         trace_timer.lap("built op_register_user");
 
-        let op_claim_l1_deposit = CRClaimL1DepositCircuit::new_with_signature_circuit_data_ref(
+        let op_claim_l1_deposit = CRClaimL1DepositCircuit::new_with_signature_circuit_data(
             network_magic,
             l1_secp256k1_signature.minifier_chain.get_common_data(),
-            l1_secp256k1_signature.get_verifier_config_ref(),
+            l1_secp256k1_signature
+                .get_verifier_config_ref()
+                .constants_sigmas_cap
+                .height(),
+            l1_secp256k1_signature.get_fingerprint(),
         );
         trace_timer.lap("built op_claim_l1_deposit");
 
@@ -428,7 +432,7 @@ where
                 .prove_q_worker_agg(self, store, job_id),
             ProvingJobCircuitType::ClaimL1Deposit => self
                 .op_claim_l1_deposit
-                .prove_q_worker_simple(self, store, job_id),
+                .prove_q_worker_standard(self, store, job_id),
             ProvingJobCircuitType::ClaimL1DepositAggregate => self
                 .agg_state_transition
                 .prove_q_worker_agg(self, store, job_id),

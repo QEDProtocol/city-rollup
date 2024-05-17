@@ -248,11 +248,6 @@ fn main() {
     let file_data = fs::read(path).unwrap();
     let simple_spend_info: SimpleRollupBTCSpendInfo = serde_json::from_slice(&file_data).unwrap();
     let introspection_hints = simple_spend_info.to_block_spend_hints().unwrap();
-    let configs = introspection_hints
-        .iter()
-        .map(|x| x.get_config())
-        .collect::<Vec<_>>();
-    println!("configs: {}", serde_json::to_string(&configs).unwrap());
     prove_block_demo(&introspection_hints).unwrap();
 
     //println!("Proof: {:?}", proof);

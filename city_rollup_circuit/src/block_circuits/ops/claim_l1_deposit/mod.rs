@@ -1,15 +1,13 @@
 use city_common_circuit::{
     builder::{pad_circuit::pad_circuit_degree, verify::CircuitBuilderVerifyProofHelpers},
-    circuits::{
-        l1_secp256k1_signature::L1Secp256K1SignatureCircuit,
-        traits::qstandard::{QStandardCircuit, QStandardCircuitProvableWithProofStoreSync},
-    },
+    circuits::traits::qstandard::QStandardCircuit,
     proof_minifier::pm_core::get_circuit_fingerprint_generic,
     treeprover::wrapper::TreeProverLeafCircuitWrapper,
 };
 use city_crypto::hash::qhashout::QHashOut;
 use city_rollup_common::qworker::{
-    job_witnesses::op::CRClaimL1DepositCircuitInput, proof_store::QProofStoreReaderSync,
+    job_id::QProvingJobDataID, job_witnesses::op::CRClaimL1DepositCircuitInput,
+    proof_store::QProofStoreReaderSync, verifier::QWorkerVerifyHelper,
 };
 use plonky2::{
     hash::{hash_types::HashOutTarget, poseidon::PoseidonHash},
@@ -25,7 +23,10 @@ use plonky2::{
     },
 };
 
-use crate::state::user::claim_l1_deposit::ClaimL1DepositSingleGadget;
+use crate::{
+    state::user::claim_l1_deposit::ClaimL1DepositSingleGadget,
+    worker::traits::QWorkerCircuitStandardWithDataSync,
+};
 
 #[derive(Debug)]
 pub struct CRClaimL1DepositCircuit<C: GenericConfig<D> + 'static, const D: usize>
@@ -41,53 +42,16 @@ where
     pub circuit_data: CircuitData<C::F, C, D>,
     pub fingerprint: QHashOut<C::F>,
     pub network_magic: u64,
-
-    // start dependencies
-    pub signature_circuit_common_data: CommonCircuitData<C::F, D>,
-    pub signature_circuit_verifier_data: VerifierOnlyCircuitData<C, D>,
-}
-impl<C: GenericConfig<D> + 'static, const D: usize> Clone for CRClaimL1DepositCircuit<C, D>
-where
-    C::Hasher: AlgebraicHasher<C::F>,
-{
-    fn clone(&self) -> Self {
-        Self::new_with_signature_circuit_data(
-            self.network_magic,
-            self.signature_circuit_common_data.clone(),
-            self.signature_circuit_verifier_data.clone(),
-        )
-    }
 }
 impl<C: GenericConfig<D> + 'static, const D: usize> CRClaimL1DepositCircuit<C, D>
 where
     C::Hasher: AlgebraicHasher<C::F>,
 {
-    pub fn new(network_magic: u64) -> Self {
-        let l1_signature_circuit_data = L1Secp256K1SignatureCircuit::<C, D>::new()
-            .minifier_chain
-            .get_into_circuit_data();
-
-        Self::new_with_signature_circuit_data(
-            network_magic,
-            l1_signature_circuit_data.common,
-            l1_signature_circuit_data.verifier_only,
-        )
-    }
-    pub fn new_with_signature_circuit_data_ref(
-        network_magic: u64,
-        signature_circuit_common_data: &CommonCircuitData<C::F, D>,
-        signature_circuit_verifier_data: &VerifierOnlyCircuitData<C, D>,
-    ) -> Self {
-        Self::new_with_signature_circuit_data(
-            network_magic,
-            signature_circuit_common_data.clone(),
-            signature_circuit_verifier_data.clone(),
-        )
-    }
     pub fn new_with_signature_circuit_data(
         network_magic: u64,
-        signature_circuit_common_data: CommonCircuitData<C::F, D>,
-        signature_circuit_verifier_data: VerifierOnlyCircuitData<C, D>,
+        signature_circuit_common_data: &CommonCircuitData<C::F, D>,
+        signature_circuit_verifier_data_cap_height: usize,
+        signature_wrapper_fingerprint: QHashOut<C::F>,
     ) -> Self {
         let config = CircuitConfig::standard_recursion_config();
         let mut builder = CircuitBuilder::<C::F, D>::new(config);
@@ -101,15 +65,9 @@ where
         let signature_proof_target =
             builder.add_virtual_proof_with_pis(&signature_circuit_common_data);
 
-        let signature_verifier_data_target = builder.add_virtual_verifier_data(
-            signature_circuit_verifier_data
-                .constants_sigmas_cap
-                .height(),
-        );
-        let expected_sig_fingerprint =
-            builder.constant_hash(get_circuit_fingerprint_generic::<D, C::F, C>(
-                &signature_circuit_verifier_data,
-            ));
+        let signature_verifier_data_target =
+            builder.add_virtual_verifier_data(signature_circuit_verifier_data_cap_height);
+        let expected_sig_fingerprint = builder.constant_hash(signature_wrapper_fingerprint.0);
         let computed_sig_fingerprint =
             builder.get_circuit_fingerprint::<C::Hasher>(&signature_verifier_data_target);
 
@@ -156,14 +114,13 @@ where
             circuit_data,
             fingerprint,
             network_magic,
-            signature_circuit_common_data,
-            signature_circuit_verifier_data,
         }
     }
     pub fn prove_base(
         &self,
         input: &CRClaimL1DepositCircuitInput<C::F>,
         signature_proof: &ProofWithPublicInputs<C::F, C, D>,
+        signature_verifier_data: &VerifierOnlyCircuitData<C, D>,
     ) -> anyhow::Result<ProofWithPublicInputs<C::F, C, D>> {
         println!(
             "input_hash: {:?}",
@@ -184,7 +141,7 @@ where
         pw.set_proof_with_pis_target(&self.signature_proof_target, signature_proof);
         pw.set_verifier_data_target(
             &self.signature_verifier_data_target,
-            &self.signature_circuit_verifier_data,
+            &signature_verifier_data,
         );
         pw.set_hash_target(
             self.allowed_circuit_hashes_root_target,
@@ -213,19 +170,31 @@ where
         &self.circuit_data.common
     }
 }
-impl<S: QProofStoreReaderSync, C: GenericConfig<D> + 'static, const D: usize>
-    QStandardCircuitProvableWithProofStoreSync<S, CRClaimL1DepositCircuitInput<C::F>, C, D>
+impl<
+        V: QWorkerVerifyHelper<C, D>,
+        S: QProofStoreReaderSync,
+        C: GenericConfig<D> + 'static,
+        const D: usize,
+    > QWorkerCircuitStandardWithDataSync<V, S, CRClaimL1DepositCircuitInput<C::F>, C, D>
     for CRClaimL1DepositCircuit<C, D>
 where
     C::Hasher: AlgebraicHasher<C::F>,
 {
-    fn prove_with_proof_store_sync(
+    fn prove_q_worker_standard_with_input(
         &self,
-        store: &S,
         input: &CRClaimL1DepositCircuitInput<C::F>,
+        verify_helper: &V,
+        store: &S,
+        _job_id: QProvingJobDataID,
     ) -> anyhow::Result<ProofWithPublicInputs<C::F, C, D>> {
         let signature_proof = store.get_proof_by_id(input.signature_proof_id)?;
-        self.prove_base(input, &signature_proof)
+        self.prove_base(
+            input,
+            &signature_proof,
+            verify_helper
+                .get_verifier_triplet_for_circuit_type(input.signature_proof_id.circuit_type)
+                .1,
+        )
     }
 }
 
