@@ -113,7 +113,7 @@ r2d2 = "0.8.8"
 r2d2_redis = { git = "https://github.com/GopherJ/r2d2-redis", rev = "759effbce90d2edd7cbd6f94071b383140a8f622" }
 
 gnark-plonky2-wrapper = { git = "https://github.com/cf/gnark-plonky2-verifier", rev = "c59e33fd8f1b407b355d7b9a74e34792e7c78f37" }
-
+bs58 = { version = "0.5.1", features = ["std", "check"] }
 
 [patch.'https://github.com/0xPolygonZero/plonky2.git']
 plonky2 = { git = "https://github.com/QEDProtocol/plonky2-hwa", rev = "6a8ca008da97890b67a84f64784cfbc488b5238d" }

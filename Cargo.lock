@@ -755,6 +755,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "bitflags 2.5.0",
+ "bs58",
  "city_common",
  "hex",
  "itertools 0.10.5",
@@ -833,6 +834,7 @@ dependencies = [
  "bitcoin",
  "city_common",
  "city_crypto",
+ "city_macros",
  "criterion",
  "hex",
  "hex-literal",
