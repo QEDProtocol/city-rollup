@@ -1,7 +1,6 @@
 use std::{fs, path::PathBuf};
 
 use city_common::logging::debug_timer::DebugTimer;
-use city_common_circuit::wallet::zk::ZKSignatureBasicWalletProvider;
 use city_crypto::hash::{
     base_types::{felt252::felt252_hashout_to_hash256_le, hash256::Hash256},
     qhashout::QHashOut,
@@ -30,10 +29,7 @@ use city_rollup_core_orchestrator::debug::scenario::{
 };
 use city_store::store::{city::base::CityStore, sighash::SigHashMerkleTree};
 use kvq::memory::simple::KVQSimpleMemoryBackingStore;
-use plonky2::{
-    field::goldilocks_field::GoldilocksField, hash::poseidon::PoseidonHash,
-    plonk::config::PoseidonGoldilocksConfig,
-};
+use plonky2::{field::goldilocks_field::GoldilocksField, plonk::config::PoseidonGoldilocksConfig};
 
 fn prove_block_demo(hints: &[BlockSpendIntrospectionHint]) -> anyhow::Result<()> {
     const D: usize = 2;
@@ -42,31 +38,12 @@ fn prove_block_demo(hints: &[BlockSpendIntrospectionHint]) -> anyhow::Result<()>
     type S = KVQSimpleMemoryBackingStore;
     type PS = SimpleProofStoreMemory;
 
-    let finalized = hints[0]
-        .get_introspection_result::<PoseidonHash, F>()
-        .get_finalized_result::<PoseidonHash>();
-    println!("finalized: {:?}", finalized);
-    println!(
-        "finalized.current_block_state_hash: {} ({:?})",
-        finalized.current_block_state_hash.to_string(),
-        finalized.current_block_state_hash.0
-    );
-    println!(
-        "finalized.next_block_state_hash: {} ({:?})",
-        finalized.next_block_state_hash.to_string(),
-        finalized.next_block_state_hash.0
-    );
-
     let network_magic = NETWORK_MAGIC_DOGE_REGTEST;
 
     let sighash_whitelist_tree = SigHashMerkleTree::new();
-    println!(
-        "sighash_whitelist_tree.root: {:?}",
-        sighash_whitelist_tree.root.0
-    );
     let toolbox_circuits =
         CRWorkerToolboxRootCircuits::<C, D>::new(network_magic, SIGHASH_WHITELIST_TREE_ROOT);
-    toolbox_circuits.print_op_common_data();
+    //toolbox_circuits.print_op_common_data();
 
     let mut proof_store = PS::new();
     let mut store = S::new();
@@ -87,12 +64,6 @@ fn prove_block_demo(hints: &[BlockSpendIntrospectionHint]) -> anyhow::Result<()>
     let user_0_public_key = wallet.add_zk_private_key(QHashOut::from_values(100, 100, 100, 100));
     let user_1_public_key = wallet.add_zk_private_key(QHashOut::from_values(101, 101, 101, 101));
     let user_2_public_key = wallet.add_zk_private_key(QHashOut::from_values(102, 102, 102, 102));
-
-    println!("pub keys: {:?}", wallet.zk_wallet.get_public_keys());
-
-    println!("user_0_public_key: {:?}", user_0_public_key);
-    println!("user_0_public_key: {:?}", user_1_public_key);
-    println!("user_0_public_key: {:?}", user_2_public_key);
 
     timer.lap("end creating wallets");
 
@@ -133,7 +104,7 @@ fn prove_block_demo(hints: &[BlockSpendIntrospectionHint]) -> anyhow::Result<()>
     timer.lap("end process state block 1 RPC");
     timer.lap("start process requests block 1");
 
-    let (_block_1_job_ids, _block_1_state_transition, block_1_end_jobs) =
+    let (block_1_job_ids, _block_1_state_transition, block_1_end_jobs) =
         block_1_planner.process_requests(&mut store, &mut proof_store, &block_1_requested)?;
     let final_state_root =
         felt252_hashout_to_hash256_le(CityStore::<S>::get_city_root(&store, 1)?.0);
@@ -142,7 +113,7 @@ fn prove_block_demo(hints: &[BlockSpendIntrospectionHint]) -> anyhow::Result<()>
         .map(|x| x.perform_sighash_hash_surgery(final_state_root))
         .collect::<Vec<_>>();
 
-    let _sighash_jobs = SigHashFinalizer::finalize_sighashes::<PS>(
+    let sighash_jobs = SigHashFinalizer::finalize_sighashes::<PS>(
         &mut proof_store,
         sighash_whitelist_tree,
         1,
@@ -162,7 +133,7 @@ fn prove_block_demo(hints: &[BlockSpendIntrospectionHint]) -> anyhow::Result<()>
     */
     let mut worker = QWorkerStandardProver::new();
     timer.lap("start proving op jobs");
-    /*
+
     let all_job_ids = block_1_job_ids.plan_jobs();
     for job in all_job_ids {
         worker.prove::<PS, _, C, D>(&mut proof_store, &toolbox_circuits, job)?;
@@ -183,35 +154,32 @@ fn prove_block_demo(hints: &[BlockSpendIntrospectionHint]) -> anyhow::Result<()>
     for job in sighash_jobs.sighash_final_gl_job_ids.iter() {
         worker.prove::<PS, _, C, D>(&mut proof_store, &toolbox_circuits, *job)?;
     }
+    /*
     for job in sighash_jobs.wrap_sighash_final_bls12381_job_ids.iter() {
         worker.prove::<PS, _, C, D>(&mut proof_store, &toolbox_circuits, *job)?;
     }
-    let sighash_proof = proof_store
-        .get_proof_by_id::<C, D>(sighash_jobs.sighash_introspection_job_ids[0].get_output_id())?;
-    println!(
-        "sighash_proof.public_inputs: {:?}",
-        sighash_proof.public_inputs
-    );
-    let state_root_proof =
-        proof_store.get_proof_by_id::<C, D>(block_1_end_jobs.last().unwrap().get_output_id())?;
-    println!(
-        "state_root_proof.public_inputs: {:?}",
-        state_root_proof.public_inputs
-    );
-    let first_sighash_proof = proof_store
-        .get_proof_by_id::<C, D>(sighash_jobs.sighash_final_gl_job_ids[0].get_output_id())?;
-    println!(
-        "first_sighash_proof.public_inputs: {:?}",
-        first_sighash_proof.public_inputs
-    );
-    let first_wrap_sighash_final_gl_proof = proof_store
-        .get_bytes_by_id(sighash_jobs.wrap_sighash_final_bls12381_job_ids[0].get_output_id())?;
-    println!(
-        "first_wrap_sighash_final_gl_proof {:?}",
-        std::str::from_utf8(&first_wrap_sighash_final_gl_proof)?
-    );
-    */
 
+    */
+    /*
+        let state_root_proof =
+            proof_store.get_proof_by_id::<C, D>(block_1_end_jobs.last().unwrap().get_output_id())?;
+        println!(
+            "state_root_proof.public_inputs: {:?}",
+            state_root_proof.public_inputs
+        );
+        let first_sighash_proof = proof_store
+            .get_proof_by_id::<C, D>(sighash_jobs.sighash_final_gl_job_ids[0].get_output_id())?;
+        println!(
+            "first_sighash_proof.public_inputs: {:?}",
+            first_sighash_proof.public_inputs
+        );
+        let first_wrap_sighash_final_gl_proof = proof_store
+            .get_bytes_by_id(sighash_jobs.wrap_sighash_final_bls12381_job_ids[0].get_output_id())?;
+        println!(
+            "first_wrap_sighash_final_gl_proof {:?}",
+            std::str::from_utf8(&first_wrap_sighash_final_gl_proof)?
+        );
+    */
     timer.lap("end proving jobs");
     /*
     let root_proof_ids = block_1_job_ids.get_root_proof_outputs();
