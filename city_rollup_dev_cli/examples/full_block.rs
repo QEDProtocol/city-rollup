@@ -187,7 +187,7 @@ fn prove_block_demo(hints: &[BlockSpendIntrospectionHint]) -> anyhow::Result<()>
 
     let block_1_requested = CityScenarioRequestedActions::new_from_requested_rpc(
         block_1_builder.output,
-        &hints[0].funding_transactions,
+        hints[0].funding_transactions.iter(),
         &block_0_state,
         2,
     );

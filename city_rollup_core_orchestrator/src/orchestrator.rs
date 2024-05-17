@@ -134,7 +134,7 @@ impl Orchestrator {
             let funding_transactions = self.get_funding_transactions(&funding_utxos)?;
             let requested_actions = CityScenarioRequestedActions::new_from_requested_rpc(
                 txs,
-                &funding_transactions,
+                funding_transactions.iter().skip(if last_block_spend_index != -1 { 1 } else { 0 }),
                 &prev_block_state,
                 SIGHASH_CIRCUIT_MAX_WITHDRAWALS,
             );

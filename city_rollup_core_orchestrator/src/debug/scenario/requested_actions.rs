@@ -38,9 +38,9 @@ impl<F: RichField> CityScenarioRequestedActions<F> {
             register_users: Vec::new(),
         }
     }
-    pub fn new_from_requested_rpc(
+    pub fn new_from_requested_rpc<'a>(
         requested_from_rpc: CityScenarioRequestedActionsFromRPC<F>,
-        funding_transactions: &[BTCTransaction],
+        funding_transactions: impl Iterator<Item = &'a BTCTransaction>,
         last_block_state: &CityL2BlockState,
         max_withdrawals_processed_per_block: usize,
     ) -> Self {
@@ -58,8 +58,6 @@ impl<F: RichField> CityScenarioRequestedActions<F> {
             .collect();
         Self {
             add_deposits: funding_transactions
-                .iter()
-                .skip(1)
                 .map(|tx| CityAddDepositRequest::new_from_transaction(tx))
                 .collect(),
             add_withdrawals: requested_from_rpc.add_withdrawals,
