@@ -335,7 +335,7 @@ impl Orchestrator {
     }
 
     pub fn get_withdrawal_p2pkh(&self, address: &Hash160) -> anyhow::Result<Vec<u8>> {
-        let mut bytes = [0; 23];
+        let mut bytes = [0; 25];
         bytes.copy_from_slice(&[0x76, 0xa9, 0x14]);
         bytes.copy_from_slice(&address.0);
         bytes.copy_from_slice(&[0x88, 0xac]);
