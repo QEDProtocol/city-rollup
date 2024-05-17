@@ -106,7 +106,7 @@ impl RedisStore {
         Ok(last_block_spend_outpoint.and_then(|x| bincode::deserialize(&x).ok()))
     }
 
-    pub fn set_last_block_spend_outpoint(&self, outpoint: BTCOutpoint) -> anyhow::Result<()> {
+    pub fn set_last_block_spend_output(&self, outpoint: BTCOutpoint) -> anyhow::Result<()> {
         let mut connection = self.get_connection()?;
         connection.hset(
             BLOCK_SPEND_INFO,

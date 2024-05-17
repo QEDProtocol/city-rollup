@@ -119,7 +119,7 @@ impl Orchestrator {
         println!("current building block: {}", block_id);
 
         let mut redis_store = self.redis_store.clone();
-        let (agg_job_ids, block_end_job_ids, sighash_jobs) = {
+        let (agg_job_ids, block_end_job_ids, sighash_job_ids) = {
             let mut store = KVQReDBStore::new(wxn.open_table(KV)?);
 
             let txs = self.get_txs(block_id, &mut redis_store).await?;
@@ -134,7 +134,9 @@ impl Orchestrator {
             let funding_transactions = self.get_funding_transactions(&funding_utxos)?;
             let requested_actions = CityScenarioRequestedActions::new_from_requested_rpc(
                 txs,
-                funding_transactions.iter().skip(if last_block_spend_index != -1 { 1 } else { 0 }),
+                funding_transactions
+                    .iter()
+                    .skip(if last_block_spend_index != -1 { 1 } else { 0 }),
                 &prev_block_state,
                 SIGHASH_CIRCUIT_MAX_WITHDRAWALS,
             );
@@ -147,11 +149,15 @@ impl Orchestrator {
             let (next_block_state, agg_job_ids, _, block_end_job_ids) =
                 block_planner.process_requests(&mut store, &mut redis_store, &requested_actions)?;
 
-            let final_state_root =
-                felt252_hashout_to_hash256_le(CityStore::get_city_root(&store, next_block_state.checkpoint_id)?.0);
-            let next_block_redeem_script = self.get_next_block_redeem_script(&current_block_redeem_script, &final_state_root)?;
+            let final_state_root = felt252_hashout_to_hash256_le(
+                CityStore::get_city_root(&store, next_block_state.checkpoint_id)?.0,
+            );
+            let next_block_redeem_script =
+                self.get_next_block_redeem_script(&current_block_redeem_script, &final_state_root)?;
 
             CityStore::set_block_state(&mut store, &next_block_state)?;
+            self.redis_store
+                .set_current_block_redeem_script(&next_block_redeem_script)?;
 
             let mut accessed_users = requested_actions.accessed_users();
             accessed_users.extend(prev_block_state.next_user_id..next_block_state.next_user_id);
@@ -196,6 +202,10 @@ impl Orchestrator {
                 inputs,
                 outputs,
             };
+            self.redis_store.set_last_block_spend_output(BTCOutpoint {
+                txid: tx.get_hash(),
+                vout: 0,
+            })?;
             let mut sighash_hints_for_spend_inputs = vec![];
             for input_index in 0..input_len {
                 let sighash_preimage = tx.get_sig_hash_preimage(
@@ -221,19 +231,15 @@ impl Orchestrator {
             let hints = spend_info.to_block_spend_hints()?;
 
             let sighash_whitelist_tree = SigHashMerkleTree::new();
-            let modified_hints = hints
-                .iter()
-                .map(|x| x.perform_sighash_hash_surgery(final_state_root))
-                .collect::<Vec<_>>();
-            let sighash_jobs = SigHashFinalizer::finalize_sighashes::<RedisStore>(
+            let sighash_job_ids = SigHashFinalizer::finalize_sighashes::<RedisStore>(
                 &mut self.redis_store,
                 sighash_whitelist_tree,
-                1,
+                next_block_state.checkpoint_id,
                 *block_end_job_ids.last().unwrap(),
-                &modified_hints,
+                &hints,
             )?;
 
-            (agg_job_ids, block_end_job_ids, sighash_jobs)
+            (agg_job_ids, block_end_job_ids, sighash_job_ids)
         };
 
         for job in agg_job_ids.plan_jobs() {
@@ -244,11 +250,11 @@ impl Orchestrator {
             self.dispatcher.dispatch(Q_JOB, job).await?;
         }
 
-        for job in sighash_jobs.sighash_final_gl_job_ids {
+        for job in sighash_job_ids.sighash_final_gl_job_ids {
             self.dispatcher.dispatch(Q_JOB, job).await?;
         }
 
-        for job in sighash_jobs.wrap_sighash_final_bls12381_job_ids {
+        for job in sighash_job_ids.wrap_sighash_final_bls12381_job_ids {
             self.dispatcher.dispatch(Q_JOB, job).await?;
         }
 
@@ -320,10 +326,7 @@ impl Orchestrator {
         Ok(bytes)
     }
 
-    pub fn get_block_p2sh(
-        &self,
-        block_redeem_script: &[u8],
-    ) -> anyhow::Result<Vec<u8>> {
+    pub fn get_block_p2sh(&self, block_redeem_script: &[u8]) -> anyhow::Result<Vec<u8>> {
         let current_block_redeem_script_hash = btc_hash160(&block_redeem_script);
         let mut bytes = [0; 23];
         bytes.copy_from_slice(&[0xa9, 0x14]);
@@ -348,7 +351,8 @@ impl Orchestrator {
         let current_block_p2sh = Address::from_script(
             &Script::from_bytes(&self.get_block_p2sh(current_block_redeem_script)?),
             self.network,
-        )?.to_string();
+        )?
+        .to_string();
 
         let mut utxos = self.link_api.btc_get_utxos(current_block_p2sh)?;
         let mut last_block_spend_index = -1;
