@@ -5,7 +5,7 @@ use city_common::{
 use city_crypto::hash::base_types::{felt252::felt252_hashout_to_hash256_le, hash160::Hash160};
 use city_rollup_common::{
     actors::traits::{OrchestratorEventReceiverSync, QBitcoinAPISync},
-    api::data::{block::requested_actions::CityProcessWithdrawalRequest, store::CityL1Withdrawal},
+    api::data::{store::CityL1Withdrawal},
     config::sighash_wrapper_config::SIGHASH_CIRCUIT_MAX_WITHDRAWALS,
     introspection::{
         rollup::introspection::BlockSpendIntrospectionHint,
@@ -19,7 +19,6 @@ use city_store::{
     store::{city::base::CityStore, sighash::SigHashMerkleTree},
 };
 use kvq::traits::KVQBinaryStore;
-use plonky2::{field::goldilocks_field::GoldilocksField, hash::hash_types::RichField};
 
 use crate::debug::scenario::{
     block_planner::planner::CityOrchestratorBlockPlanner,

@@ -1,6 +1,5 @@
 use city_crypto::hash::base_types::{hash160::Hash160, hash256::Hash256};
 use plonky2::hash::hash_types::RichField;
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
 use crate::{
     api::data::{

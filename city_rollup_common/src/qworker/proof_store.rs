@@ -1,5 +1,4 @@
 use async_trait::async_trait;
-use itertools::Itertools;
 use plonky2::plonk::{config::GenericConfig, proof::ProofWithPublicInputs};
 
 use super::job_id::QProvingJobDataID;
