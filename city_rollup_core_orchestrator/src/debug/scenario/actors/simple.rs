@@ -4,7 +4,11 @@ use city_common::{
 };
 use city_crypto::hash::base_types::hash160::Hash160;
 use city_rollup_common::{
-    actors::traits::{OrchestratorEventReceiverSync, QBitcoinAPISync},
+    actors::{
+        requested_actions::CityScenarioRequestedActions,
+        rpc_processor::CityScenarioRequestedActionsFromRPC,
+        traits::{OrchestratorEventReceiverSync, QBitcoinAPISync},
+    },
     api::data::store::CityL1Withdrawal,
     config::sighash_wrapper_config::SIGHASH_CIRCUIT_MAX_WITHDRAWALS,
     introspection::{
@@ -24,9 +28,7 @@ use city_store::{
 use kvq::traits::KVQBinaryStore;
 
 use crate::debug::scenario::{
-    block_planner::planner::CityOrchestratorBlockPlanner,
-    requested_actions::CityScenarioRequestedActions,
-    rpc_processor::CityScenarioRequestedActionsFromRPC, sighash::finalizer::SigHashFinalizer,
+    block_planner::planner::CityOrchestratorBlockPlanner, sighash::finalizer::SigHashFinalizer,
 };
 
 pub struct SimpleActorOrchestrator {

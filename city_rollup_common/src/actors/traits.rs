@@ -36,7 +36,6 @@ pub trait OrchestratorRPCEventSenderSync<F: RichField> {
         &mut self,
         event: &CityTokenTransferRPCRequest,
     ) -> anyhow::Result<()>;
-    fn notify_rpc_produce_block(&mut self) -> anyhow::Result<()>;
 }
 
 #[async_trait::async_trait]

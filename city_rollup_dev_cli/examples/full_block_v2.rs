@@ -9,6 +9,7 @@ use city_rollup_circuit::worker::{
     prover::QWorkerStandardProver, toolbox::root::CRWorkerToolboxRootCircuits,
 };
 use city_rollup_common::{
+    actors::{requested_actions::CityScenarioRequestedActions, rpc_processor::QRPCProcessor},
     api::data::{
         block::rpc_request::CityRegisterUserRPCRequest, btc_spend_info::SimpleRollupBTCSpendInfo,
         store::CityL2BlockState,
@@ -23,9 +24,8 @@ use city_rollup_common::{
     qworker::memory_proof_store::SimpleProofStoreMemory,
 };
 use city_rollup_core_orchestrator::debug::scenario::{
-    block_planner::planner::CityOrchestratorBlockPlanner,
-    requested_actions::CityScenarioRequestedActions, rpc_processor::DebugRPCProcessor,
-    sighash::finalizer::SigHashFinalizer, wallet::DebugScenarioWallet,
+    block_planner::planner::CityOrchestratorBlockPlanner, sighash::finalizer::SigHashFinalizer,
+    wallet::DebugScenarioWallet,
 };
 use city_store::store::{city::base::CityStore, sighash::SigHashMerkleTree};
 use kvq::memory::simple::KVQSimpleMemoryBackingStore;
@@ -87,7 +87,7 @@ fn prove_block_demo(hints: &[BlockSpendIntrospectionHint]) -> anyhow::Result<()>
 
     timer.lap("end setup initial state");
     timer.lap("start process state block 1 RPC");
-    let mut block_1_builder = DebugRPCProcessor::<F, D>::new(1);
+    let mut block_1_builder = QRPCProcessor::<F, D>::new(1);
     block_1_builder.process_register_users(0, &register_user_rpc_events)?;
 
     let block_1_requested = CityScenarioRequestedActions::new_from_requested_rpc(
@@ -193,7 +193,7 @@ fn prove_block_demo(hints: &[BlockSpendIntrospectionHint]) -> anyhow::Result<()>
 
     let block_1_state = CityStore::<S>::get_block_state(&store, 1)?;
     println!("block_1_state: {:?}", block_1_state);
-    let mut block_2_builder = DebugRPCProcessor::<F, D>::new(2);
+    let mut block_2_builder = QRPCProcessor::<F, D>::new(2);
 
     let l1_deposit_0 = CityStore::<S>::get_deposit_by_id(&store, 1, 0)?;
     let l1_deposit_1 = CityStore::<S>::get_deposit_by_id(&store, 1, 1)?;
