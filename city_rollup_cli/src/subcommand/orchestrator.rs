@@ -12,8 +12,8 @@ pub async fn run(args: OrchestratorArgs) -> Result<()> {
 ",
         build::PKG_VERSION
     );
-    //let indexer = city_indexer::Indexer::new(args).await?;
-    //indexer.listen().await?;
-    city_rollup_core_orchestrator::debug::run_debug_demo(args);
+    let mut orchestrator =
+        city_rollup_core_orchestrator::Orchestrator::new(args).await?;
+    orchestrator.run().await?;
     Ok(())
 }

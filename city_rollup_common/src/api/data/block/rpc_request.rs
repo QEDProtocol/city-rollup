@@ -62,3 +62,13 @@ impl<F: RichField> CityRegisterUserRPCRequest<F> {
             .collect()
     }
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(bound = "")]
+#[serde(untagged)]
+pub enum CityRPCRequest<F: RichField> {
+    CityTokenTransferRPCRequest((u32, CityTokenTransferRPCRequest)),
+    CityClaimDepositRPCRequest((u32, CityClaimDepositRPCRequest)),
+    CityAddWithdrawalRPCRequest((u32, CityAddWithdrawalRPCRequest)),
+    CityRegisterUserRPCRequest((u32, CityRegisterUserRPCRequest<F>)),
+}

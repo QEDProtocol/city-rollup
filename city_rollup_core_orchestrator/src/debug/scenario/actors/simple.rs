@@ -164,7 +164,7 @@ impl SimpleActorOrchestrator {
                 add_withdrawals,
                 token_transfers,
             },
-            &deposit_utxos,
+            deposit_utxos.iter(),
             &last_block,
             SIGHASH_CIRCUIT_MAX_WITHDRAWALS,
         );
@@ -174,7 +174,7 @@ impl SimpleActorOrchestrator {
         timer.lap("end process state block 1 RPC");
         timer.lap("start process requests block 1");
 
-        let (block_op_job_ids, _block_state_transition, _block_end_jobs, withdrawals) =
+        let (block_state, block_op_job_ids, _block_state_transition, _block_end_jobs, withdrawals) =
             block_planner.process_requests(store, proof_store, &block_requested)?;
         let next_address = CityStore::get_city_block_deposit_address(store, checkpoint_id)?;
         let next_script = CityStore::get_city_block_script(store, checkpoint_id)?;
@@ -354,6 +354,8 @@ impl SimpleActorOrchestrator {
             block_op_job_ids.add_deposit_job_ids[0].to_vec(),
         ]
         .concat();
+
+        CityStore::set_block_state(store, &block_state)?;
         Ok(leaf_jobs)
     }
 }

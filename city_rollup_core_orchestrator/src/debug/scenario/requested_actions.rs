@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use city_rollup_common::{
     api::data::{
         block::requested_actions::{
@@ -35,9 +37,9 @@ impl<F: RichField> CityScenarioRequestedActions<F> {
             register_users: Vec::new(),
         }
     }
-    pub fn new_from_requested_rpc(
+    pub fn new_from_requested_rpc<'a>(
         requested_from_rpc: CityScenarioRequestedActionsFromRPC<F>,
-        funding_transactions: &[BTCTransaction],
+        funding_transactions: impl Iterator<Item = &'a BTCTransaction>,
         last_block_state: &CityL2BlockState,
         max_withdrawals_processed_per_block: usize,
     ) -> Self {
@@ -55,8 +57,6 @@ impl<F: RichField> CityScenarioRequestedActions<F> {
             .collect();
         Self {
             add_deposits: funding_transactions
-                .iter()
-                .skip(1)
                 .map(|tx| CityAddDepositRequest::new_from_transaction(tx))
                 .collect(),
             add_withdrawals: requested_from_rpc.add_withdrawals,
@@ -65,5 +65,21 @@ impl<F: RichField> CityScenarioRequestedActions<F> {
             process_withdrawals,
             register_users: requested_from_rpc.register_users,
         }
+    }
+    pub fn accessed_users(&self) -> HashSet<u64> {
+        let mut res = HashSet::new();
+
+        for add_withdrawal in &self.add_withdrawals {
+            res.insert(add_withdrawal.user_id);
+        }
+        for claim_l1_deposit in &self.claim_l1_deposits {
+            res.insert(claim_l1_deposit.user_id);
+        }
+        for token_transfer in &self.token_transfers {
+            res.insert(token_transfer.user_id);
+            res.insert(token_transfer.to);
+        }
+
+        res
     }
 }

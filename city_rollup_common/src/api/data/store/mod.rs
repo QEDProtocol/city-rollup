@@ -17,7 +17,7 @@ use crate::introspection::{
 
 type F = GoldilocksField;
 
-#[derive(Debug, Clone, Serialize, Deserialize, Copy, Hash, Eq, PartialEq)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize, Copy, Hash, Eq, PartialEq)]
 pub struct CityL2BlockState {
     pub checkpoint_id: u64,
 
