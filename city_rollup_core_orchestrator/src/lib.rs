@@ -15,6 +15,9 @@ use city_crypto::hash::core::btc::btc_hash160;
 use city_macros::define_table;
 use city_redis_store::RedisStore;
 use city_rollup_circuit::worker::toolbox::circuits::CRWorkerToolboxCoreCircuits;
+use city_rollup_common::actors::requested_actions::CityScenarioRequestedActions;
+use city_rollup_common::actors::rpc_processor::CityScenarioRequestedActionsFromRPC;
+use city_rollup_common::actors::rpc_processor::QRPCProcessor;
 use city_rollup_common::api::data::block::rpc_request::CityRPCRequest;
 use city_rollup_common::api::data::btc_spend_info::SimpleRollupBTCSpendInfo;
 use city_rollup_common::api::data::btc_spend_info::SimpleRollupBlockSpendSigHashHint;
@@ -51,9 +54,6 @@ use redb::Table;
 use redb::TableDefinition;
 
 use crate::debug::scenario::block_planner::planner::CityOrchestratorBlockPlanner;
-use crate::debug::scenario::requested_actions::CityScenarioRequestedActions;
-use crate::debug::scenario::rpc_processor::CityScenarioRequestedActionsFromRPC;
-use crate::debug::scenario::rpc_processor::DebugRPCProcessor;
 use crate::debug::scenario::sighash::finalizer::SigHashFinalizer;
 
 pub const BLOCK_BUILDING_INTERVAL: u64 = 1000;
@@ -120,8 +120,7 @@ impl Orchestrator {
             let mut store = KVQReDBStore::new(wxn.open_table(KV)?);
 
             let txs = self.get_txs(block_id, &mut redis_store).await?;
-            let prev_block_state =
-                L2BlockStateModel::get_block_state_by_id(&store, block_id)?;
+            let prev_block_state = L2BlockStateModel::get_block_state_by_id(&store, block_id)?;
 
             let current_block_redeem_script = self.redis_store.get_current_block_redeem_script()?;
             let last_block_spend_output = self.redis_store.get_last_block_spend_output()?;
@@ -282,7 +281,7 @@ impl Orchestrator {
         checkpoint_id: u64,
         proof_store: &mut RedisStore,
     ) -> Result<CityScenarioRequestedActionsFromRPC<F>, anyhow::Error> {
-        let rpc_processor = DebugRPCProcessor::<F, D>::new(checkpoint_id);
+        let rpc_processor = QRPCProcessor::<F, D>::new(checkpoint_id);
         for (id, message) in self
             .dispatcher
             .receive_all(Q_TX, Some(Duration::from_secs(2)))

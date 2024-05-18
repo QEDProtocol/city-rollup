@@ -1,4 +1,4 @@
-use city_rollup_common::{
+use crate::{
     api::data::block::{
         requested_actions::{
             CityAddWithdrawalRequest, CityClaimDepositRequest, CityRegisterUserRequest,
@@ -34,12 +34,12 @@ impl<F: RichField> CityScenarioRequestedActionsFromRPC<F> {
     }
 }
 
-pub struct DebugRPCProcessor<F: RichField + Extendable<D>, const D: usize> {
+pub struct QRPCProcessor<F: RichField + Extendable<D>, const D: usize> {
     pub checkpoint_id: u64,
     pub output: CityScenarioRequestedActionsFromRPC<F>,
 }
 
-impl<F: RichField + Extendable<D>, const D: usize> DebugRPCProcessor<F, D> {
+impl<F: RichField + Extendable<D>, const D: usize> QRPCProcessor<F, D> {
     pub fn new(checkpoint_id: u64) -> Self {
         Self {
             checkpoint_id: checkpoint_id,
@@ -83,11 +83,8 @@ impl<F: RichField + Extendable<D>, const D: usize> DebugRPCProcessor<F, D> {
         req: &CityTokenTransferRPCRequest,
     ) -> anyhow::Result<CityTokenTransferRequest> {
         let count = self.output.token_transfers.len() as u32;
-        let signature_proof_id = QProvingJobDataID::transfer_signature_proof(
-            rpc_node_id,
-            self.checkpoint_id,
-            count,
-        );
+        let signature_proof_id =
+            QProvingJobDataID::transfer_signature_proof(rpc_node_id, self.checkpoint_id, count);
         ps.set_bytes_by_id(signature_proof_id, &req.signature_proof)?;
 
         Ok(CityTokenTransferRequest::new(
@@ -105,11 +102,8 @@ impl<F: RichField + Extendable<D>, const D: usize> DebugRPCProcessor<F, D> {
         req: &CityAddWithdrawalRPCRequest,
     ) -> anyhow::Result<CityAddWithdrawalRequest> {
         let count = self.output.add_withdrawals.len() as u32;
-        let signature_proof_id = QProvingJobDataID::transfer_signature_proof(
-            rpc_node_id,
-            self.checkpoint_id,
-            count,
-        );
+        let signature_proof_id =
+            QProvingJobDataID::transfer_signature_proof(rpc_node_id, self.checkpoint_id, count);
         ps.set_bytes_by_id(signature_proof_id, &req.signature_proof)?;
 
         Ok(CityAddWithdrawalRequest::new(

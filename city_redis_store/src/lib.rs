@@ -206,10 +206,7 @@ impl QProofStoreWriterSync for RedisStore {
         Ok(())
     }
 
-    fn inc_counter_by_id<C: plonky2::plonk::config::GenericConfig<D>, const D: usize>(
-        &mut self,
-        id: QProvingJobDataID,
-    ) -> anyhow::Result<u32> {
+    fn inc_counter_by_id(&mut self, id: QProvingJobDataID) -> anyhow::Result<u32> {
         let mut conn = self.get_connection()?;
         let value: u32 = conn.hincr(PROOF_COUNTERS, <[u8; 24]>::from(&id).to_vec(), 1)?;
         Ok(value)

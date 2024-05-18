@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use city_rollup_common::{
+use crate::{
     api::data::{
         block::requested_actions::{
             CityAddDepositRequest, CityAddWithdrawalRequest, CityClaimDepositRequest,

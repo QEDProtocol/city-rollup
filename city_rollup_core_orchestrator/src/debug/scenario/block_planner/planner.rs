@@ -7,6 +7,7 @@ use city_crypto::hash::{
     traits::hasher::MerkleHasher,
 };
 use city_rollup_common::{
+    actors::requested_actions::CityScenarioRequestedActions,
     api::data::store::{CityL1Withdrawal, CityL2BlockState},
     qworker::{
         fingerprints::CRWorkerToolboxCoreCircuitFingerprints,
@@ -19,10 +20,7 @@ use city_store::{config::F, store::city::base::CityStore};
 use kvq::traits::KVQBinaryStore;
 use plonky2::hash::poseidon::PoseidonHash;
 
-use crate::debug::scenario::{
-    process_requests::block_processor::CityOrchestratorBlockProcessor,
-    requested_actions::CityScenarioRequestedActions,
-};
+use crate::debug::scenario::process_requests::block_processor::CityOrchestratorBlockProcessor;
 
 use super::{
     transition::{CityOpJobIds, CityRootStateTransitions},

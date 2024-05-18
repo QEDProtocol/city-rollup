@@ -36,7 +36,6 @@ pub trait OrchestratorRPCEventSenderSync<F: RichField> {
         &mut self,
         event: &CityTokenTransferRPCRequest,
     ) -> anyhow::Result<()>;
-    fn notify_rpc_produce_block(&mut self) -> anyhow::Result<()>;
 }
 
 #[async_trait::async_trait]
@@ -105,16 +104,17 @@ pub trait OrchestratorEventReceiverSync<F: RichField> {
     fn flush_token_transfers(&mut self) -> anyhow::Result<Vec<CityTokenTransferRequest>>;
     fn wait_for_produce_block(&mut self) -> anyhow::Result<bool>;
 }
-pub trait WorkerEventReceiverSync<F: RichField> {
+pub trait WorkerEventReceiverSync {
     fn wait_for_next_job(&mut self) -> anyhow::Result<QProvingJobDataID>;
-    fn notify_job_completed(&mut self, job: QProvingJobDataID) -> anyhow::Result<Option<()>>;
+    fn enqueue_jobs(&mut self, jobs: &[QProvingJobDataID]) -> anyhow::Result<()>;
+    fn notify_core_goal_completed(&mut self, job: QProvingJobDataID) -> anyhow::Result<()>;
 }
 
-pub trait WorkerEventTransmitterSync<F: RichField> {
+pub trait WorkerEventTransmitterSync {
     fn notify_jobs(&mut self, jobs: &[QProvingJobDataID]) -> anyhow::Result<QProvingJobDataID>;
 }
 
-pub trait LastBlockNodeStateQueryAPISync<F: RichField> {
+pub trait LastBlockNodeStateQueryAPISync {
     fn get_user(&self, checkpoint_id: u64, user_id: u64) -> anyhow::Result<CityUserState>;
     fn get_deposit(&self, checkpoint_id: u64, deposit_id: u64) -> anyhow::Result<CityL1Deposit>;
     fn get_withdrawal(
@@ -126,7 +126,7 @@ pub trait LastBlockNodeStateQueryAPISync<F: RichField> {
 }
 
 #[async_trait::async_trait]
-pub trait LastBlockNodeStateQueryAPIAsync<F: RichField> {
+pub trait LastBlockNodeStateQueryAPIAsync {
     fn get_user_async(&self, checkpoint_id: u64, user_id: u64) -> anyhow::Result<CityUserState>;
     fn get_deposit_async(
         &self,
@@ -144,13 +144,13 @@ pub trait LastBlockNodeStateQueryAPIAsync<F: RichField> {
         deposit_id: u64,
     ) -> anyhow::Result<CityL2BlockState>;
 }
-pub trait CurrentBlockNodeStateQueryAPIReaderSync<F: RichField> {
+pub trait CurrentBlockNodeStateQueryAPIReaderSync {
     fn get_user_balance(&self, user_id: u64) -> anyhow::Result<u64>;
     fn get_withdrawal_count(&self, checkpoint_id: u64) -> anyhow::Result<u64>;
     fn get_user_count(&self, checkpoint_id: u64) -> anyhow::Result<u64>;
 }
 
-pub trait CurrentBlockNodeStateQueryAPIWriterSync<F: RichField> {
+pub trait CurrentBlockNodeStateQueryAPIWriterSync {
     fn inc_user_balance(&self, user_id: u64, amount: u64) -> anyhow::Result<u64>;
     fn dec_user_balance(&self, user_id: u64, amount: u64) -> anyhow::Result<u64>;
     fn inc_withdrawal_count(&self, checkpoint_id: u64) -> anyhow::Result<u64>;
