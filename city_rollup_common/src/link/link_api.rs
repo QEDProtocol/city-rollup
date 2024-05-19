@@ -1,13 +1,18 @@
-use std::str::FromStr;
+use std::{collections::HashSet, str::FromStr};
 
 use city_common::data::u8bytes::U8Bytes;
 use city_crypto::hash::base_types::hash256::Hash256;
 use reqwest::blocking::ClientBuilder;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
-use crate::errors::data_resolver::BTCDataResolverError;
+use crate::{
+    errors::data_resolver::BTCDataResolverError, introspection::transaction::BTCTransaction,
+};
 
-use super::data::BTCUTXO;
+use super::{
+    data::{BTCAddress160, BTCTransactionWithVout, BTCUTXO},
+    tx::QBitcoinAPISync,
+};
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, PartialOrd, Eq)]
 pub struct BTCLinkRPCConfig {
@@ -184,7 +189,62 @@ impl BTCLinkAPI {
     pub fn btc_get_raw_transaction(&self, txid: Hash256) -> Result<U8Bytes, BTCDataResolverError> {
         self.send_command("getrawtransaction", "1.0", (txid,))
     }
+    pub fn btc_send_raw_transaction(&self, bytes: &[u8]) -> Result<Hash256, BTCDataResolverError> {
+        self.send_command("sendrawtransaction", "1.0", (hex::encode(bytes),))
+    }
     pub fn btc_get_utxos(&self, address: String) -> Result<Vec<BTCUTXO>, BTCDataResolverError> {
         self.get_electrs(format!("address/{}/utxo", address))
+    }
+}
+
+impl QBitcoinAPISync for BTCLinkAPI {
+    fn get_funding_transactions(
+        &self,
+        address: BTCAddress160,
+    ) -> anyhow::Result<Vec<BTCTransaction>> {
+        let utxos = self.btc_get_utxos(address.to_string())?;
+
+        HashSet::<Hash256>::from_iter(utxos.iter().map(|x| x.txid))
+            .into_iter()
+            .map(|txid| {
+                let raw = self.btc_get_raw_transaction(txid)?;
+                BTCTransaction::from_bytes(&raw.0)
+            })
+            .collect::<anyhow::Result<Vec<BTCTransaction>>>()
+    }
+
+    fn get_utxos(&self, address: BTCAddress160) -> anyhow::Result<Vec<BTCUTXO>> {
+        self.btc_get_utxos(address.to_string())
+            .map_err(|e| anyhow::format_err!("{}", e.message))
+    }
+
+    fn get_funding_transactions_with_vout(
+        &self,
+        address: BTCAddress160,
+    ) -> anyhow::Result<Vec<BTCTransactionWithVout>> {
+        let utxos = self.btc_get_utxos(address.to_string())?;
+        let transactions = utxos
+            .iter()
+            .map(|utxo| {
+                let txid = utxo.txid;
+                let tx = self.btc_get_raw_transaction(txid)?;
+                Ok(BTCTransactionWithVout {
+                    transaction: BTCTransaction::from_bytes(&tx.0)?,
+                    vout: utxo.vout,
+                })
+            })
+            .collect::<anyhow::Result<Vec<BTCTransactionWithVout>>>()?;
+        Ok(transactions)
+    }
+
+    fn get_transaction(&self, txid: Hash256) -> anyhow::Result<BTCTransaction> {
+        let raw = self.btc_get_raw_transaction(txid)?;
+        BTCTransaction::from_bytes(&raw.0)
+    }
+
+    fn send_transaction(&self, tx: &BTCTransaction) -> anyhow::Result<Hash256> {
+        let bytes = tx.to_bytes();
+        let txid = self.btc_send_raw_transaction(&bytes)?;
+        Ok(txid)
     }
 }

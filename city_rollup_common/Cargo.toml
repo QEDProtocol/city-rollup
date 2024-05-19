@@ -12,6 +12,7 @@ serde = { workspace = true }
 serde_with = { workspace = true }
 hex = { workspace = true }
 rand = { workspace = true }
+bs58 = { workspace = true }
 bitcoin = { workspace = true }
 reqwest = { workspace = true }
 itertools = { workspace = true }

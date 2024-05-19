@@ -28,6 +28,33 @@ impl BTCTransaction {
             locktime: 0,
         }
     }
+    pub fn from_partial(
+        inputs: Vec<BTCTransactionInputWithoutScript>,
+        outputs: Vec<BTCTransactionOutput>,
+    ) -> Self {
+        Self {
+            version: 2,
+            inputs: inputs
+                .into_iter()
+                .map(|x| BTCTransactionInput {
+                    hash: x.hash,
+                    index: x.index,
+                    script: vec![],
+                    sequence: x.sequence,
+                })
+                .collect(),
+            outputs: outputs,
+            locktime: 0,
+        }
+    }
+    pub fn from_io(inputs: Vec<BTCTransactionInput>, outputs: Vec<BTCTransactionOutput>) -> Self {
+        Self {
+            version: 2,
+            inputs: inputs,
+            outputs: outputs,
+            locktime: 0,
+        }
+    }
     pub fn is_dummy(&self) -> bool {
         self.inputs.len() == 0 && self.outputs.len() == 0
     }
@@ -42,6 +69,21 @@ impl BTCTransaction {
                 } else {
                     None
                 }
+            })
+            .collect()
+    }
+    pub fn get_sighash_preimages(&self, script: &[u8], sighash_type: u32) -> Vec<SigHashPreimage> {
+        (0..self.inputs.len())
+            .map(|i| SigHashPreimage::for_transaction_pre_segwit(&self, i, script, sighash_type))
+            .collect()
+    }
+    pub fn get_sighashes(&self, script: &[u8], sighash_type: u32) -> Vec<Hash256> {
+        (0..self.inputs.len())
+            .map(|i| {
+                btc_hash256(
+                    &SigHashPreimage::for_transaction_pre_segwit(&self, i, script, sighash_type)
+                        .to_bytes(),
+                )
             })
             .collect()
     }

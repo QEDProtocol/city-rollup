@@ -839,6 +839,7 @@ dependencies = [
  "async-trait",
  "bincode",
  "bitcoin",
+ "bs58",
  "city_common",
  "city_crypto",
  "city_macros",

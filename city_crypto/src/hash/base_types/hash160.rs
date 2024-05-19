@@ -7,8 +7,8 @@ use serde_with::serde_as;
 
 use crate::hash::merkle::core::{DeltaMerkleProofCore, MerkleProofCore};
 
-const P2SH_ADDRESS_CHECK58_VERSION: u8 = 0x71;
-const P2PKH_ADDRESS_CHECK58_VERSION: u8 = 0xc4;
+pub const P2SH_ADDRESS_CHECK58_VERSION: u8 = 0x71;
+pub const P2PKH_ADDRESS_CHECK58_VERSION: u8 = 0xc4;
 
 #[serde_as]
 #[derive(Serialize, Deserialize, PartialEq, Clone, Copy, Debug, Hash, Eq, Ord, PartialOrd)]
@@ -39,6 +39,11 @@ impl Hash160 {
     pub fn to_p2sh_address(&self) -> String {
         bs58::encode(&self.0)
             .with_check_version(P2SH_ADDRESS_CHECK58_VERSION)
+            .into_string()
+    }
+    pub fn to_p2pkh_address(&self) -> String {
+        bs58::encode(&self.0)
+            .with_check_version(P2PKH_ADDRESS_CHECK58_VERSION)
             .into_string()
     }
 }
