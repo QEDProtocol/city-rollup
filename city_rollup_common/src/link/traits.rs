@@ -10,6 +10,9 @@ pub trait QBitcoinAPISync {
         address: BTCAddress160,
     ) -> anyhow::Result<Vec<BTCTransaction>>;
     fn get_utxos(&self, address: BTCAddress160) -> anyhow::Result<Vec<BTCUTXO>>;
+    fn estimate_fee_rate(&self, n_blocks: u32) -> anyhow::Result<u64>;
+    fn reset_cached_fee_rate(&mut self, n_blocks: u32) -> anyhow::Result<u64>;
+    fn get_cached_fee_rate(&self) -> anyhow::Result<u64>;
     fn get_partial_utxos(&self, address: BTCAddress160) -> anyhow::Result<Vec<PartialBTCUTXO>> {
         Ok(self
             .get_utxos(address)?

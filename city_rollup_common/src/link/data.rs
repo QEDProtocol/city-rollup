@@ -1,8 +1,12 @@
 use std::str::FromStr;
 
-use city_crypto::hash::base_types::{
-    hash160::{Hash160, P2PKH_ADDRESS_CHECK58_VERSION, P2SH_ADDRESS_CHECK58_VERSION},
-    hash256::Hash256,
+use city_common::binaryhelpers::bytes::CompressedPublicKey;
+use city_crypto::hash::{
+    base_types::{
+        hash160::{Hash160, P2PKH_ADDRESS_CHECK58_VERSION, P2SH_ADDRESS_CHECK58_VERSION},
+        hash256::Hash256,
+    },
+    core::btc::btc_hash160,
 };
 use serde::{Deserialize, Serialize};
 use serde_repr::{Deserialize_repr, Serialize_repr};
@@ -10,9 +14,27 @@ use serde_repr::{Deserialize_repr, Serialize_repr};
 use crate::introspection::transaction::{BTCTransaction, BTCTransactionOutput};
 
 #[derive(Serialize, Deserialize, PartialEq, Clone, Copy, Debug)]
+pub struct BTCFeeRateEstimate {
+    pub feerate: f64,
+    pub blocks: i32,
+}
+impl BTCFeeRateEstimate {
+    pub fn to_feerate_u64(&self) -> u64 {
+        if self.feerate <= 0.0f64 {
+            1
+        } else {
+            (self.feerate * 100_000_000.0) as u64
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, PartialEq, Clone, Copy, Debug)]
 pub struct BTCUTXOStatus {
+    #[serde(default)]
     pub block_hash: Hash256,
+    #[serde(default)]
     pub block_height: u64,
+    #[serde(default)]
     pub block_time: u64,
     pub confirmed: bool,
 }
@@ -135,6 +157,12 @@ impl BTCAddress160 {
             address: Hash160(hash_160_bytes),
         })
     }
+    pub fn from_p2pkh_key(key: CompressedPublicKey) -> Self {
+        Self {
+            address_type: BTCAddressType::P2PKH,
+            address: btc_hash160(&key.0),
+        }
+    }
     pub fn new_p2pkh(address: Hash160) -> Self {
         Self {
             address_type: BTCAddressType::P2PKH,
@@ -143,7 +171,7 @@ impl BTCAddress160 {
     }
     pub fn new_p2sh(address: Hash160) -> Self {
         Self {
-            address_type: BTCAddressType::P2PKH,
+            address_type: BTCAddressType::P2SH,
             address,
         }
     }

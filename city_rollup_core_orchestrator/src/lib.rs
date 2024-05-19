@@ -159,7 +159,7 @@ impl Orchestrator {
             let inputs = funding_utxos
                 .iter()
                 .map(|utxo| BTCTransactionInput {
-                    hash: utxo.txid,
+                    hash: utxo.txid.reversed(),
                     index: utxo.vout,
                     script: current_block_redeem_script.clone(),
                     sequence: 4294967295,

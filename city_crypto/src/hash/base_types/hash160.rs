@@ -7,8 +7,8 @@ use serde_with::serde_as;
 
 use crate::hash::merkle::core::{DeltaMerkleProofCore, MerkleProofCore};
 
-pub const P2SH_ADDRESS_CHECK58_VERSION: u8 = 0x71;
-pub const P2PKH_ADDRESS_CHECK58_VERSION: u8 = 0xc4;
+pub const P2SH_ADDRESS_CHECK58_VERSION: u8 = 0xc4;
+pub const P2PKH_ADDRESS_CHECK58_VERSION: u8 = 0x6f;
 
 #[serde_as]
 #[derive(Serialize, Deserialize, PartialEq, Clone, Copy, Debug, Hash, Eq, Ord, PartialOrd)]

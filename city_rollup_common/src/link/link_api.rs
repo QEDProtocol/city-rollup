@@ -10,9 +10,15 @@ use crate::{
 };
 
 use super::{
-    data::{BTCAddress160, BTCTransactionWithVout, BTCUTXO},
+    data::{BTCAddress160, BTCFeeRateEstimate, BTCTransactionWithVout, BTCUTXO},
     traits::{QBitcoinAPIFunderSync, QBitcoinAPISync},
 };
+
+fn format_u64_8_decimal_places(value: u64) -> String {
+    let integer_part = value / 100_000_000;
+    let fractional_part = value % 100_000_000;
+    format!("{}.{}", integer_part, format!("{:08}", fractional_part))
+}
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, PartialOrd, Eq)]
 pub struct BTCLinkRPCConfig {
@@ -79,6 +85,7 @@ pub struct BTCLinkAPI {
     pub rpc_config: BTCLinkRPCConfig,
     pub electrs_url: String,
     pub no_proxy: bool,
+    pub last_fee_rate: u64,
 }
 
 impl BTCLinkAPI {
@@ -87,6 +94,7 @@ impl BTCLinkAPI {
             rpc_config: BTCLinkRPCConfig::new(&rpc_url),
             electrs_url,
             no_proxy: true,
+            last_fee_rate: 0,
         }
     }
     pub fn new_str(rpc_url: &str, electrs_url: &str) -> Self {
@@ -94,6 +102,7 @@ impl BTCLinkAPI {
             rpc_config: BTCLinkRPCConfig::new(rpc_url),
             electrs_url: electrs_url.to_string(),
             no_proxy: true,
+            last_fee_rate: 0,
         }
     }
     pub fn new_with_proxy(rpc_url: String, electrs_url: String) -> Self {
@@ -101,6 +110,7 @@ impl BTCLinkAPI {
             rpc_config: BTCLinkRPCConfig::new(&rpc_url),
             electrs_url,
             no_proxy: false,
+            last_fee_rate: 0,
         }
     }
     pub fn new_str_with_proxy(rpc_url: &str, electrs_url: &str) -> Self {
@@ -108,6 +118,7 @@ impl BTCLinkAPI {
             rpc_config: BTCLinkRPCConfig::new(rpc_url),
             electrs_url: electrs_url.to_string(),
             no_proxy: false,
+            last_fee_rate: 0,
         }
     }
     pub fn send_command<T: Serialize, R: DeserializeOwned>(
@@ -225,11 +236,29 @@ impl BTCLinkAPI {
     pub fn btc_send_to_address(
         &self,
         address: String,
-        amount: u64,
+        amount: f64,
         wallet_name: Option<String>,
     ) -> Result<Hash256, BTCDataResolverError> {
         if self.is_doge() {
-            self.send_command("sendtoaddress", "1.0", (address, amount, "", "", true))
+            self.send_command("sendtoaddress", "1.0", (address, amount, "", "", false))
+        } else {
+            let wallet = wallet_name.unwrap_or("default".to_string());
+            self.send_command_with_path(
+                &format!("wallet/{}", wallet),
+                "sendtoaddress",
+                "1.0",
+                (address, amount),
+            )
+        }
+    }
+    pub fn btc_send_to_address_str(
+        &self,
+        address: String,
+        amount: String,
+        wallet_name: Option<String>,
+    ) -> Result<Hash256, BTCDataResolverError> {
+        if self.is_doge() {
+            self.send_command("sendtoaddress", "1.0", (address, amount, "", "", false))
         } else {
             let wallet = wallet_name.unwrap_or("default".to_string());
             self.send_command_with_path(
@@ -260,6 +289,12 @@ impl BTCLinkAPI {
     pub fn btc_get_utxos(&self, address: String) -> Result<Vec<BTCUTXO>, BTCDataResolverError> {
         self.get_electrs(format!("address/{}/utxo", address))
     }
+    pub fn btc_estimate_smart_fee_rate(
+        &self,
+        n_blocks: u32,
+    ) -> Result<BTCFeeRateEstimate, BTCDataResolverError> {
+        self.send_command("estimatesmartfee", "1.0", (n_blocks,))
+    }
 }
 
 impl QBitcoinAPISync for BTCLinkAPI {
@@ -279,7 +314,7 @@ impl QBitcoinAPISync for BTCLinkAPI {
     }
 
     fn get_utxos(&self, address: BTCAddress160) -> anyhow::Result<Vec<BTCUTXO>> {
-        self.btc_get_utxos(address.to_string())
+        self.btc_get_utxos(address.to_address_string())
             .map_err(|e| anyhow::format_err!("{}", e.message))
     }
 
@@ -312,13 +347,36 @@ impl QBitcoinAPISync for BTCLinkAPI {
         let txid = self.btc_send_raw_transaction(&bytes)?;
         Ok(txid)
     }
+
+    fn reset_cached_fee_rate(&mut self, n_blocks: u32) -> anyhow::Result<u64> {
+        let fee_rate = self.btc_estimate_smart_fee_rate(n_blocks)?.to_feerate_u64();
+        self.last_fee_rate = fee_rate;
+        Ok(fee_rate)
+    }
+
+    fn get_cached_fee_rate(&self) -> anyhow::Result<u64> {
+        if self.last_fee_rate != 0 {
+            Ok(self.last_fee_rate)
+        } else {
+            self.estimate_fee_rate(1)
+        }
+    }
+
+    fn estimate_fee_rate(&self, n_blocks: u32) -> anyhow::Result<u64> {
+        Ok(self.btc_estimate_smart_fee_rate(n_blocks)?.to_feerate_u64())
+    }
 }
 
 impl QBitcoinAPIFunderSync for BTCLinkAPI {
     fn fund_address(&self, address: BTCAddress160, amount: u64) -> anyhow::Result<Hash256> {
-        self.mine_blocks(1)?;
-        self.btc_send_to_address(address.to_address_string(), amount, None)
-            .map_err(|err| anyhow::format_err!("Failed to fund address: {}", err.message))
+        self.mine_blocks(((amount / (100_000u64 * 100_000_000u64)) + 1) as u32)?;
+
+        self.btc_send_to_address_str(
+            address.to_address_string(),
+            format_u64_8_decimal_places(amount),
+            None,
+        )
+        .map_err(|err| anyhow::format_err!("Failed to fund address: {}", err.message))
     }
 
     fn mine_blocks(&self, count: u32) -> anyhow::Result<()> {

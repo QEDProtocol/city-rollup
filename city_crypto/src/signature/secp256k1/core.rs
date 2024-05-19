@@ -80,7 +80,7 @@ pub fn u256_to_der(u256: &[u8]) -> Vec<u8> {
 impl QEDCompressedSecp256K1Signature {
     pub fn to_btc_script(&self) -> Vec<u8> {
         let r = u256_to_der(&self.signature[0..32]);
-        let s = u256_to_der(&self.signature[0..32]);
+        let s = u256_to_der(&self.signature[32..64]);
         let combined_rs_length = (r.len() + s.len()) as u8;
         let sig_stack_raw = [
             vec![combined_rs_length + 3, 0x30u8, combined_rs_length],

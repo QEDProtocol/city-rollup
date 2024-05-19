@@ -18,6 +18,11 @@ use crate::{
 #[serde_as]
 #[derive(Serialize, Deserialize, PartialEq, Clone, Copy, Debug, Eq, Hash, PartialOrd, Ord)]
 pub struct Hash256(#[serde_as(as = "serde_with::hex::Hex")] pub [u8; 32]);
+impl Default for Hash256 {
+    fn default() -> Self {
+        Self([0u8; 32])
+    }
+}
 
 impl Hash256 {
     pub fn from_hex_string(s: &str) -> Result<Self, FromHexError> {
@@ -34,6 +39,12 @@ impl Hash256 {
         let mut bytes = [0u8; 32];
         rand::thread_rng().fill_bytes(&mut bytes);
         Hash256(bytes)
+    }
+    pub fn is_zero(&self) -> bool {
+        self.0.iter().all(|&x| x == 0)
+    }
+    pub fn reversed(&self) -> Self {
+        Hash256(core::array::from_fn(|i| self.0[31 - i]))
     }
 }
 

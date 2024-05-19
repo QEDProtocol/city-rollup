@@ -25,7 +25,7 @@ use super::{
 pub fn create_p2pkh_tx<W: Secp256K1WalletProvider>(
     wallet: &W,
     address: Hash160,
-    inputs: Vec<BTCTransactionInputWithoutScript>,
+    inputs: &[BTCTransactionInputWithoutScript],
     outputs: Vec<BTCTransactionOutput>,
 ) -> anyhow::Result<BTCTransaction> {
     let inputs_len = inputs.len();
@@ -113,12 +113,32 @@ pub fn send_entire_balance_simple_p2pkh<W: Secp256K1WalletProvider, A: QBitcoinA
     let tx_inputs = inputs
         .iter()
         .map(|x| BTCTransactionInputWithoutScript {
-            hash: x.txid,
+            hash: x.txid.reversed(),
             index: x.vout,
             sequence: 0xffffffff,
         })
-        .collect();
-    let tx = create_p2pkh_tx(wallet, from, tx_inputs, outputs)?;
+        .collect::<Vec<BTCTransactionInputWithoutScript>>();
+    let tx = create_p2pkh_tx(wallet, from, &tx_inputs, outputs)?;
+    println!("tx: {}", hex::encode(tx.to_bytes()));
+    api.send_transaction(&tx)
+}
+pub fn send_p2pkh_exact_value<W: Secp256K1WalletProvider, A: QBitcoinAPISync>(
+    api: &A,
+    wallet: &W,
+    from: Hash160,
+    to: BTCAddress160,
+    inputs: &[BTCTransactionInputWithoutScript],
+    value: u64,
+) -> anyhow::Result<Hash256> {
+    let tx = create_p2pkh_tx(
+        wallet,
+        from,
+        inputs,
+        vec![BTCTransactionOutput {
+            value,
+            script: to.to_btc_script(),
+        }],
+    )?;
     api.send_transaction(&tx)
 }
 pub fn setup_genesis_block<W: Secp256K1WalletProvider, A: QBitcoinAPISync>(
@@ -138,8 +158,8 @@ pub fn setup_genesis_block<W: Secp256K1WalletProvider, A: QBitcoinAPISync>(
     let tx_0 = create_p2pkh_tx(
         wallet,
         funder,
-        vec![BTCTransactionInputWithoutScript {
-            hash: funding_txid,
+        &vec![BTCTransactionInputWithoutScript {
+            hash: funding_txid.reversed(),
             index: 0,
             sequence: 0xffffffff,
         }],
@@ -163,7 +183,7 @@ pub fn setup_genesis_block<W: Secp256K1WalletProvider, A: QBitcoinAPISync>(
     ];
 
     let tx_inputs = vec![BTCTransactionInput {
-        hash: txid_0,
+        hash: txid_0.reversed(),
         index: 0,
         sequence: 0xffffffff,
         script: encode_binary_witness_script_for_p2sh(&genesis_block_script, witness.into_iter()),
@@ -178,7 +198,7 @@ pub fn setup_genesis_block<W: Secp256K1WalletProvider, A: QBitcoinAPISync>(
         locktime: 0,
     };
     let txid_1 = api.send_transaction(&tx_1)?;
-    tx_1.inputs[0].hash = txid_1;
+    tx_1.inputs[0].hash = txid_1.reversed();
     tx_1.inputs[0].index = 0;
     tx_1.outputs[0].value -= fee;
     let txid_2 = api.send_transaction(&tx_1)?;
