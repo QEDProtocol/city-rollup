@@ -109,7 +109,7 @@ pub trait WorkerEventReceiverSync {
 }
 
 pub trait WorkerEventTransmitterSync {
-    fn notify_jobs(&mut self, jobs: &[QProvingJobDataID]) -> anyhow::Result<QProvingJobDataID>;
+    fn enqueue_jobs(&mut self, jobs: &[QProvingJobDataID]) -> anyhow::Result<()>;
 }
 
 pub trait LastBlockNodeStateQueryAPISync {

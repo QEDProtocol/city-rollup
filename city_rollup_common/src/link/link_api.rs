@@ -366,6 +366,26 @@ impl QBitcoinAPISync for BTCLinkAPI {
     fn estimate_fee_rate(&self, n_blocks: u32) -> anyhow::Result<u64> {
         Ok(self.btc_estimate_smart_fee_rate(n_blocks)?.to_feerate_u64())
     }
+
+    fn get_confirmed_funding_transactions_with_vout(
+        &self,
+        address: BTCAddress160,
+    ) -> anyhow::Result<Vec<BTCTransactionWithVout>> {
+        let utxos = self.btc_get_utxos(address.to_string())?;
+        let transactions = utxos
+            .into_iter()
+            .filter(|x| x.status.confirmed)
+            .map(|utxo| {
+                let txid = utxo.txid;
+                let tx = self.btc_get_raw_transaction(txid)?;
+                Ok(BTCTransactionWithVout {
+                    transaction: BTCTransaction::from_bytes(&tx.0)?,
+                    vout: utxo.vout,
+                })
+            })
+            .collect::<anyhow::Result<Vec<BTCTransactionWithVout>>>()?;
+        Ok(transactions)
+    }
 }
 
 impl QBitcoinAPIFunderSync for BTCLinkAPI {

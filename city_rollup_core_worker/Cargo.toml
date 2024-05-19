@@ -14,6 +14,7 @@ hex = { workspace = true }
 rand = { workspace = true }
 bitcoin = { workspace = true }
 reqwest = { workspace = true }
+bincode = { workspace = true }
 url = { workspace = true }
 k256 = { workspace = true }
 city_crypto           = { path = "../city_crypto" }

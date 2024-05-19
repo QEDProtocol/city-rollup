@@ -28,9 +28,11 @@ impl SimpleActorWorker {
         if job_id.topic == QJobTopic::GenerateStandardProof {
             let _ = match job_id.circuit_type {
                 ProvingJobCircuitType::WrapFinalSigHashProofBLS12381 => {
+                    // TODO: implement conversion from proof to bytes
                     let proof = G::worker_prove_groth16(prover, store, job_id)?;
                     let output_id = job_id.get_output_id();
-                    store.set_bytes_by_id(output_id, proof.as_bytes())?;
+                    store.set_bytes_by_id(output_id, &bincode::serialize(&proof)?)?;
+
                     output_id
                 }
                 _ => {

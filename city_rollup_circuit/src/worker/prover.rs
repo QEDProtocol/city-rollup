@@ -5,7 +5,6 @@ use city_rollup_common::qworker::{
 };
 use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
 
-
 use super::traits::{QWorkerGenericProver, QWorkerGenericProverGroth16};
 
 #[derive(Clone)]
@@ -32,11 +31,9 @@ impl QWorkerStandardProver {
     ) -> anyhow::Result<QProvingJobDataID> {
         let output_id = match job_id.circuit_type {
             ProvingJobCircuitType::WrapFinalSigHashProofBLS12381 => {
-                let proof = G::worker_prove_groth16(
-                    prover, store, job_id,
-                )?;
+                let proof = G::worker_prove_groth16(prover, store, job_id)?;
                 let output_id = job_id.get_output_id();
-                store.set_bytes_by_id(output_id, proof.as_bytes())?;
+                store.set_bytes_by_id(output_id, &bincode::serialize(&proof)?)?;
                 output_id
             }
             _ => {

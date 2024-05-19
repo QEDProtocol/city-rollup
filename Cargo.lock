@@ -933,6 +933,7 @@ name = "city_rollup_core_worker"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "bincode",
  "bitcoin",
  "city_common",
  "city_common_circuit",

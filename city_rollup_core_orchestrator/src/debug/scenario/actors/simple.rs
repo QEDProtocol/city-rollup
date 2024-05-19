@@ -2,13 +2,15 @@ use city_common::{
     config::rollup_constants::{BLOCK_SCRIPT_SPEND_BASE_FEE_AMOUNT, WITHDRAWAL_FEE_AMOUNT},
     logging::debug_timer::DebugTimer,
 };
-use city_crypto::hash::base_types::hash160::Hash160;
+use city_crypto::hash::base_types::{hash160::Hash160, hash256::Hash256};
 use city_rollup_common::{
     actors::{
         requested_actions::CityScenarioRequestedActions,
-        rpc_processor::CityScenarioRequestedActionsFromRPC, traits::OrchestratorEventReceiverSync,
+        rpc_processor::CityScenarioRequestedActionsFromRPC,
+        traits::{OrchestratorEventReceiverSync, WorkerEventTransmitterSync},
     },
     api::data::store::CityL1Withdrawal,
+    block_template::{data::CityGroth16ProofData, BLOCK_GROTH16_ENCODED_VERIFIER_DATA},
     config::sighash_wrapper_config::SIGHASH_CIRCUIT_MAX_WITHDRAWALS,
     introspection::{
         rollup::introspection::BlockSpendIntrospectionHint,
@@ -26,11 +28,17 @@ use city_store::{
     store::{city::base::CityStore, sighash::SigHashMerkleTree},
 };
 use kvq::traits::KVQBinaryStore;
+use serde::{Deserialize, Serialize};
 
 use crate::debug::scenario::{
     block_planner::planner::CityOrchestratorBlockPlanner, sighash::finalizer::SigHashFinalizer,
 };
-
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+pub struct SimpleActorOrchestratorProduceBlockStep1Result {
+    pub checkpoint_id: u64,
+    pub num_input_witnesses: usize,
+    pub template_transaction: BTCTransaction,
+}
 pub struct SimpleActorOrchestrator {
     pub fingerprints: CRWorkerToolboxCoreCircuitFingerprints<F>,
 }
@@ -119,7 +127,38 @@ pub fn create_hints_for_block(
     Ok(spend_hints)
 }
 impl SimpleActorOrchestrator {
-    pub fn produce_block<
+    pub fn step_1_produce_block_enqueue_jobs<
+        PS: QProofStore,
+        S: KVQBinaryStore,
+        BTC: QBitcoinAPISync,
+        ER: OrchestratorEventReceiverSync<F>,
+        WQ: WorkerEventTransmitterSync,
+    >(
+        proof_store: &mut PS,
+        store: &mut S,
+        event_receiver: &mut ER,
+        worker_queue: &mut WQ,
+        btc_api: &mut BTC,
+        fingerprints: &CRWorkerToolboxCoreCircuitFingerprints<F>,
+        sighash_whitelist_tree: &SigHashMerkleTree,
+    ) -> anyhow::Result<SimpleActorOrchestratorProduceBlockStep1Result> {
+        let (leaf_jobs, checkpoint_id, num_input_witnesses, template_transaction) =
+            Self::step_1_produce_block_enqueue_jobs_internal(
+                proof_store,
+                store,
+                event_receiver,
+                btc_api,
+                fingerprints,
+                sighash_whitelist_tree,
+            )?;
+        worker_queue.enqueue_jobs(&leaf_jobs)?;
+        Ok(SimpleActorOrchestratorProduceBlockStep1Result {
+            checkpoint_id,
+            num_input_witnesses,
+            template_transaction,
+        })
+    }
+    fn step_1_produce_block_enqueue_jobs_internal<
         PS: QProofStore,
         S: KVQBinaryStore,
         BTC: QBitcoinAPISync,
@@ -131,7 +170,7 @@ impl SimpleActorOrchestrator {
         btc_api: &mut BTC,
         fingerprints: &CRWorkerToolboxCoreCircuitFingerprints<F>,
         sighash_whitelist_tree: &SigHashMerkleTree,
-    ) -> anyhow::Result<Vec<QProvingJobDataID>> {
+    ) -> anyhow::Result<(Vec<QProvingJobDataID>, u64, usize, BTCTransaction)> {
         let mut timer = DebugTimer::new("produce_block");
         let last_block = CityStore::get_latest_block_state(store)?;
         let last_block_address =
@@ -145,8 +184,14 @@ impl SimpleActorOrchestrator {
         let add_withdrawals = event_receiver.flush_add_withdrawals()?;
         let token_transfers = event_receiver.flush_token_transfers()?;
 
-        let utxos =
-            btc_api.get_funding_transactions(BTCAddress160::new_p2sh(last_block_address))?;
+        let utxos = btc_api
+            .get_confirmed_funding_transactions_with_vout(BTCAddress160::new_p2sh(
+                last_block_address,
+            ))?
+            .into_iter()
+            .filter(|x| x.vout == 0)
+            .map(|x| x.transaction)
+            .collect::<Vec<BTCTransaction>>();
         let mut deposit_utxos = vec![BTCTransaction::dummy()];
         let mut last_block_utxo = BTCTransaction::dummy();
         for utxo in utxos.into_iter() {
@@ -189,7 +234,9 @@ impl SimpleActorOrchestrator {
             &deposit_utxos,
             &withdrawals,
         )?;
-        let agg_jobs_for_inputs = (0..(deposit_utxos.len() - 1))
+        let tpl_transaction = hints[0].sighash_preimage.transaction.clone();
+        let num_input_witnesses = deposit_utxos.len(); // 1 dummy, but also need the last block
+        let agg_jobs_for_inputs: Vec<QProvingJobDataID> = (0..num_input_witnesses)
             .map(|i| QProvingJobDataID::get_block_aggregate_jobs_group(checkpoint_id, 1, i as u32))
             .collect::<Vec<_>>();
 
@@ -198,7 +245,7 @@ impl SimpleActorOrchestrator {
             &[QProvingJobDataID::notify_block_complete(checkpoint_id)],
         )?;
 
-        let per_input_jobs = (0..(deposit_utxos.len() - 1))
+        let per_input_jobs = (0..num_input_witnesses)
             .map(|i| {
                 (
                     QProvingJobDataID::wrap_sighash_final_bls3812_input_witness(checkpoint_id, i),
@@ -359,6 +406,54 @@ impl SimpleActorOrchestrator {
         .concat();
 
         CityStore::set_block_state(store, &block_state)?;
-        Ok(leaf_jobs)
+
+        Ok((
+            leaf_jobs,
+            checkpoint_id,
+            num_input_witnesses,
+            tpl_transaction,
+        ))
+    }
+    pub fn step_2_produce_block_finalize_and_transact_internal<
+        PS: QProofStore,
+        S: KVQBinaryStore,
+        BTC: QBitcoinAPISync,
+    >(
+        proof_store: &mut PS,
+        store: &mut S,
+        btc_api: &mut BTC,
+        part_1_result: &SimpleActorOrchestratorProduceBlockStep1Result,
+    ) -> anyhow::Result<Hash256> {
+        let mut final_tx = part_1_result.template_transaction.clone();
+        let block_script = final_tx.inputs[0].script.clone();
+        let g16_proof_output_ids = (0..part_1_result.num_input_witnesses)
+            .map(|i| {
+                QProvingJobDataID::wrap_sighash_final_bls3812_input_witness(
+                    part_1_result.checkpoint_id,
+                    i,
+                )
+            })
+            .collect::<Vec<_>>();
+        let proof_outputs = g16_proof_output_ids
+            .into_iter()
+            .map(|x| {
+                let bytes = proof_store.get_bytes_by_id(x)?;
+                let proof = bincode::deserialize::<CityGroth16ProofData>(&bytes)?;
+                Ok(proof)
+            })
+            .collect::<anyhow::Result<Vec<CityGroth16ProofData>>>()?;
+        let input_scripts = proof_outputs
+            .into_iter()
+            .map(|proof_output| {
+                proof_output
+                    .encode_witness_script(&BLOCK_GROTH16_ENCODED_VERIFIER_DATA[0], &block_script)
+            })
+            .collect::<Vec<_>>();
+
+        for (i, input_script) in input_scripts.into_iter().enumerate() {
+            final_tx.inputs[i].script = input_script;
+        }
+        let txid = btc_api.send_transaction(&final_tx)?;
+        Ok(txid)
     }
 }

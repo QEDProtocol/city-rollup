@@ -18,6 +18,10 @@ pub trait QBitcoinAPISync {
         &self,
         address: BTCAddress160,
     ) -> anyhow::Result<Vec<BTCTransaction>>;
+    fn get_confirmed_funding_transactions_with_vout(
+        &self,
+        address: BTCAddress160,
+    ) -> anyhow::Result<Vec<BTCTransactionWithVout>>;
     fn get_utxos(&self, address: BTCAddress160) -> anyhow::Result<Vec<BTCUTXO>>;
     fn estimate_fee_rate(&self, n_blocks: u32) -> anyhow::Result<u64>;
     fn reset_cached_fee_rate(&mut self, n_blocks: u32) -> anyhow::Result<u64>;
