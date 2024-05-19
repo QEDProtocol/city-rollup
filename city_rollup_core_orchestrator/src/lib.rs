@@ -142,7 +142,7 @@ impl Orchestrator {
                 prev_block_state,
             );
 
-            let (next_block_state, agg_job_ids, _, block_end_job_ids, withdrawals) =
+            let (next_block_state, agg_job_ids, _, block_end_job_ids, _withdrawals) =
                 block_planner.process_requests(&mut store, &mut redis_store, &requested_actions)?;
 
             // cache accessed users
