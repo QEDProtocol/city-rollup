@@ -103,7 +103,7 @@ fn prove_block_demo(hints: &[BlockSpendIntrospectionHint]) -> anyhow::Result<()>
 
     timer.lap("end setup initial state");
     timer.lap("start process state block 1 RPC");
-    let mut block_1_builder = QRPCProcessor::<F, D>::new(1);
+    let mut block_1_builder = QRPCProcessor::<F>::new(1);
     block_1_builder.process_register_users(0, &register_user_rpc_events)?;
 
     let block_1_requested = CityScenarioRequestedActions::new_from_requested_rpc(

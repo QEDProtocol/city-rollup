@@ -4,10 +4,21 @@ use city_common::binaryhelpers::bytes::CompressedPublicKey;
 use k256::ecdsa::signature::hazmat::PrehashSigner;
 use plonky2::hash::hash_types::RichField;
 
-use crate::hash::{base_types::hash256::Hash256, qhashout::QHashOut};
+use crate::hash::{
+    base_types::{hash160::Hash160, hash256::Hash256},
+    core::btc::btc_hash160,
+    qhashout::QHashOut,
+};
 
 use super::core::QEDCompressedSecp256K1Signature;
-
+pub trait CompressedPublicKeyToP2PKH {
+    fn to_p2pkh_address(&self) -> Hash160;
+}
+impl CompressedPublicKeyToP2PKH for CompressedPublicKey {
+    fn to_p2pkh_address(&self) -> Hash160 {
+        btc_hash160(&self.0)
+    }
+}
 pub trait Secp256K1WalletProvider {
     fn sign(
         &self,
@@ -20,11 +31,14 @@ pub trait Secp256K1WalletProvider {
         message: QHashOut<F>,
     ) -> anyhow::Result<QEDCompressedSecp256K1Signature>;
     fn contains_public_key(&self, public_key: &CompressedPublicKey) -> bool;
+    fn contains_p2pkh_address(&self, p2pkh_address: &Hash160) -> bool;
+    fn get_public_key_for_p2pkh(&self, p2pkh: &Hash160) -> Option<CompressedPublicKey>;
     fn get_public_keys(&self) -> Vec<CompressedPublicKey>;
 }
 #[derive(Debug, Clone)]
 pub struct MemorySecp256K1Wallet {
     key_map: HashMap<CompressedPublicKey, k256::ecdsa::SigningKey>,
+    p2pkh_key_map: HashMap<Hash160, CompressedPublicKey>,
 }
 
 impl Secp256K1WalletProvider for MemorySecp256K1Wallet {
@@ -71,12 +85,21 @@ impl Secp256K1WalletProvider for MemorySecp256K1Wallet {
     fn get_public_keys(&self) -> Vec<CompressedPublicKey> {
         self.key_map.keys().cloned().collect()
     }
+
+    fn contains_p2pkh_address(&self, p2pkh_address: &Hash160) -> bool {
+        self.p2pkh_key_map.contains_key(p2pkh_address)
+    }
+
+    fn get_public_key_for_p2pkh(&self, p2pkh: &Hash160) -> Option<CompressedPublicKey> {
+        self.p2pkh_key_map.get(p2pkh).cloned()
+    }
 }
 
 impl MemorySecp256K1Wallet {
     pub fn new() -> Self {
         Self {
             key_map: HashMap::new(),
+            p2pkh_key_map: HashMap::new(),
         }
     }
     pub fn add_private_key(&mut self, private_key: Hash256) -> anyhow::Result<CompressedPublicKey> {
@@ -92,7 +115,8 @@ impl MemorySecp256K1Wallet {
             anyhow::bail!("public key length is not 33")
         }
         let pub_compressed = CompressedPublicKey(compressed);
-
+        let p2pkh = pub_compressed.to_p2pkh_address();
+        self.p2pkh_key_map.insert(p2pkh, pub_compressed);
         self.key_map.insert(pub_compressed, signing_key);
         Ok(pub_compressed)
     }

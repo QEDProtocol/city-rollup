@@ -7,10 +7,11 @@ use serde_with::serde_as;
 
 use crate::hash::merkle::core::{DeltaMerkleProofCore, MerkleProofCore};
 
-const P2SH_ADDRESS_CHECK58_VERSION: u8 = 0xc4;
+const P2SH_ADDRESS_CHECK58_VERSION: u8 = 0x71;
+const P2PKH_ADDRESS_CHECK58_VERSION: u8 = 0xc4;
 
 #[serde_as]
-#[derive(Serialize, Deserialize, PartialEq, Clone, Copy, Debug, Hash, Eq)]
+#[derive(Serialize, Deserialize, PartialEq, Clone, Copy, Debug, Hash, Eq, Ord, PartialOrd)]
 pub struct Hash160(#[serde_as(as = "serde_with::hex::Hex")] pub [u8; 20]);
 
 impl Hash160 {

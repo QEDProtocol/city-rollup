@@ -281,7 +281,7 @@ impl Orchestrator {
         checkpoint_id: u64,
         proof_store: &mut RedisStore,
     ) -> Result<CityScenarioRequestedActionsFromRPC<F>, anyhow::Error> {
-        let rpc_processor = QRPCProcessor::<F, D>::new(checkpoint_id);
+        let rpc_processor = QRPCProcessor::<F>::new(checkpoint_id);
         for (id, message) in self
             .dispatcher
             .receive_all(Q_TX, Some(Duration::from_secs(2)))

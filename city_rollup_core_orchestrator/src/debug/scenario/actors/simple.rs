@@ -6,8 +6,7 @@ use city_crypto::hash::base_types::hash160::Hash160;
 use city_rollup_common::{
     actors::{
         requested_actions::CityScenarioRequestedActions,
-        rpc_processor::CityScenarioRequestedActionsFromRPC,
-        traits::{OrchestratorEventReceiverSync, QBitcoinAPISync},
+        rpc_processor::CityScenarioRequestedActionsFromRPC, traits::OrchestratorEventReceiverSync,
     },
     api::data::store::CityL1Withdrawal,
     config::sighash_wrapper_config::SIGHASH_CIRCUIT_MAX_WITHDRAWALS,
@@ -16,6 +15,7 @@ use city_rollup_common::{
         sighash::{SigHashPreimage, SIGHASH_ALL},
         transaction::{BTCTransaction, BTCTransactionInput, BTCTransactionOutput},
     },
+    link::{data::BTCAddress160, tx::QBitcoinAPISync},
     qworker::{
         fingerprints::CRWorkerToolboxCoreCircuitFingerprints, job_id::QProvingJobDataID,
         proof_store::QProofStore,
@@ -145,7 +145,8 @@ impl SimpleActorOrchestrator {
         let add_withdrawals = event_receiver.flush_add_withdrawals()?;
         let token_transfers = event_receiver.flush_token_transfers()?;
 
-        let utxos = btc_api.get_utxos(last_block_address)?;
+        let utxos =
+            btc_api.get_funding_transactions(BTCAddress160::new_p2sh(last_block_address))?;
         let mut deposit_utxos = vec![BTCTransaction::dummy()];
         let mut last_block_utxo = BTCTransaction::dummy();
         for utxo in utxos.into_iter() {

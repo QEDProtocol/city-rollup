@@ -6,6 +6,7 @@ use city_crypto::hash::core::btc::{btc_hash160, btc_hash256};
 use serde::{Deserialize, Serialize};
 
 use crate::block_template::BLOCK_SCRIPT_LENGTH;
+use crate::link::data::{AddressToBTCScript, BTCAddress160};
 
 use super::rollup::introspection::BlockSpendCoreConfig;
 use super::sighash::SigHashPreimage;
@@ -29,6 +30,20 @@ impl BTCTransaction {
     }
     pub fn is_dummy(&self) -> bool {
         self.inputs.len() == 0 && self.outputs.len() == 0
+    }
+    pub fn get_vouts_for_address(&self, address: &BTCAddress160) -> Vec<u32> {
+        let address_script = address.to_btc_script();
+        self.outputs
+            .iter()
+            .enumerate()
+            .filter_map(|(i, output)| {
+                if output.script.eq(&address_script) {
+                    Some(i as u32)
+                } else {
+                    None
+                }
+            })
+            .collect()
     }
 }
 #[derive(Serialize, Deserialize, PartialEq, Clone, Debug, Hash, Eq, PartialOrd, Ord)]
@@ -110,6 +125,23 @@ pub struct BTCTransactionOutput {
     pub script: Vec<u8>,
 }
 
+#[derive(Serialize, Deserialize, PartialEq, Clone, Debug)]
+pub struct BTCTransactionInputWithoutScript {
+    pub hash: Hash256,
+    pub index: u32,
+    pub sequence: u32,
+    // TODO: implement witnesses for advanced transactions supported by bitcoin
+    // pub witness: Vec<u8>,
+}
+impl BTCTransactionInputWithoutScript {
+    pub fn new(hash: Hash256, index: u32, sequence: u32) -> Self {
+        Self {
+            hash,
+            index,
+            sequence,
+        }
+    }
+}
 #[serde_as]
 #[derive(Serialize, Deserialize, PartialEq, Clone, Debug)]
 pub struct BTCTransactionInput {

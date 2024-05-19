@@ -1,4 +1,7 @@
-use city_crypto::hash::base_types::{hash160::Hash160, hash256::Hash256};
+use city_crypto::{
+    hash::base_types::{hash160::Hash160, hash256::Hash256},
+    signature::secp256k1::wallet::Secp256K1WalletProvider,
+};
 use plonky2::hash::hash_types::RichField;
 
 use crate::{
@@ -155,9 +158,4 @@ pub trait CurrentBlockNodeStateQueryAPIWriterSync {
     fn dec_user_balance(&self, user_id: u64, amount: u64) -> anyhow::Result<u64>;
     fn inc_withdrawal_count(&self, checkpoint_id: u64) -> anyhow::Result<u64>;
     fn inc_user_count(&self, checkpoint_id: u64) -> anyhow::Result<u64>;
-}
-
-pub trait QBitcoinAPISync {
-    fn get_utxos(&mut self, address: Hash160) -> anyhow::Result<Vec<BTCTransaction>>;
-    fn send_transaction(&mut self, tx: &BTCTransaction) -> anyhow::Result<Hash256>;
 }
