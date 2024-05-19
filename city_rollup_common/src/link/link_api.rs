@@ -11,7 +11,7 @@ use crate::{
 
 use super::{
     data::{BTCAddress160, BTCTransactionWithVout, BTCUTXO},
-    tx::QBitcoinAPISync,
+    traits::{QBitcoinAPIFunderSync, QBitcoinAPISync},
 };
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, PartialOrd, Eq)]
@@ -20,6 +20,8 @@ pub struct BTCLinkRPCConfig {
     pub url: String,
     pub user: String,
     pub password: String,
+    pub is_doge: bool,
+    pub is_regtest: bool,
 }
 impl BTCLinkRPCConfig {
     pub fn new(rpc_url: &str) -> Self {
@@ -41,11 +43,16 @@ impl BTCLinkRPCConfig {
         let user = url.username().to_string();
         let password = url.password().unwrap_or("").to_string();
 
+        let is_doge = network.to_ascii_lowercase().contains("doge");
+        let is_regtest = network.to_ascii_lowercase().contains("regtest");
+
         Self {
             url: final_url,
             user,
             password,
             network,
+            is_doge,
+            is_regtest,
         }
     }
     pub fn has_basic_auth(&self) -> bool {
@@ -109,6 +116,15 @@ impl BTCLinkAPI {
         version: &str,
         params: T,
     ) -> Result<R, BTCDataResolverError> {
+        self.send_command_with_path("", method, version, params)
+    }
+    pub fn send_command_with_path<T: Serialize, R: DeserializeOwned>(
+        &self,
+        path: &str,
+        method: &str,
+        version: &str,
+        params: T,
+    ) -> Result<R, BTCDataResolverError> {
         let cmd: BTCLinkRPCCommand<T> = BTCLinkRPCCommand {
             jsonrpc: version.to_string(),
             method: method.to_string(),
@@ -123,14 +139,14 @@ impl BTCLinkAPI {
         } else {
             ClientBuilder::new().build().expect("Client::new()")
         };
-
+        let rpc_url = format!("{}{}", &self.rpc_config.url, path);
         let base = if self.rpc_config.has_basic_auth() {
-            client.post(&self.rpc_config.url).basic_auth(
+            client.post(&rpc_url).basic_auth(
                 self.rpc_config.user.to_string(),
                 Some(self.rpc_config.password.to_string()),
             )
         } else {
-            client.post(&self.rpc_config.url)
+            client.post(&rpc_url)
         };
         let result = base
             .json(&cmd)
@@ -186,8 +202,57 @@ impl BTCLinkAPI {
             })?,
         )
     }
+    pub fn is_doge(&self) -> bool {
+        self.rpc_config.is_doge
+    }
+    pub fn is_regtest(&self) -> bool {
+        self.rpc_config.is_regtest
+    }
     pub fn btc_get_raw_transaction(&self, txid: Hash256) -> Result<U8Bytes, BTCDataResolverError> {
         self.send_command("getrawtransaction", "1.0", (txid,))
+    }
+    pub fn btc_get_new_addresss(
+        &self,
+        wallet_name: Option<String>,
+    ) -> Result<String, BTCDataResolverError> {
+        if self.is_doge() {
+            self.send_command("getnewaddress", "1.0", ())
+        } else {
+            let wallet = wallet_name.unwrap_or("default".to_string());
+            self.send_command_with_path(&format!("wallet/{}", wallet), "getnewaddress", "1.0", ())
+        }
+    }
+    pub fn btc_send_to_address(
+        &self,
+        address: String,
+        amount: u64,
+        wallet_name: Option<String>,
+    ) -> Result<Hash256, BTCDataResolverError> {
+        if self.is_doge() {
+            self.send_command("sendtoaddress", "1.0", (address, amount, "", "", true))
+        } else {
+            let wallet = wallet_name.unwrap_or("default".to_string());
+            self.send_command_with_path(
+                &format!("wallet/{}", wallet),
+                "sendtoaddress",
+                "1.0",
+                (address, amount),
+            )
+        }
+    }
+    pub fn btc_generate_to_address(
+        &self,
+        nblocks: u32,
+        address: String,
+    ) -> Result<Vec<Hash256>, BTCDataResolverError> {
+        self.send_command("generatetoaddress", "1.0", (nblocks, address))
+    }
+    pub fn btc_mine_blocks(
+        &self,
+        nblocks: u32,
+        address: Option<String>,
+    ) -> Result<Vec<Hash256>, BTCDataResolverError> {
+        self.btc_generate_to_address(nblocks, address.unwrap_or(self.btc_get_new_addresss(None)?))
     }
     pub fn btc_send_raw_transaction(&self, bytes: &[u8]) -> Result<Hash256, BTCDataResolverError> {
         self.send_command("sendrawtransaction", "1.0", (hex::encode(bytes),))
@@ -246,5 +311,25 @@ impl QBitcoinAPISync for BTCLinkAPI {
         let bytes = tx.to_bytes();
         let txid = self.btc_send_raw_transaction(&bytes)?;
         Ok(txid)
+    }
+}
+
+impl QBitcoinAPIFunderSync for BTCLinkAPI {
+    fn fund_address(&self, address: BTCAddress160, amount: u64) -> anyhow::Result<Hash256> {
+        self.mine_blocks(1)?;
+        self.btc_send_to_address(address.to_address_string(), amount, None)
+            .map_err(|err| anyhow::format_err!("Failed to fund address: {}", err.message))
+    }
+
+    fn mine_blocks(&self, count: u32) -> anyhow::Result<()> {
+        self.btc_mine_blocks(count, None)
+            .map_err(|err| anyhow::format_err!("Failed to mine blocks: {}", err.message))?;
+        Ok(())
+    }
+
+    fn mine_blocks_to_address(&self, count: u32, address: BTCAddress160) -> anyhow::Result<()> {
+        self.btc_mine_blocks(count, Some(address.to_address_string()))
+            .map_err(|err| anyhow::format_err!("Failed to mine blocks: {}", err.message))?;
+        todo!()
     }
 }
