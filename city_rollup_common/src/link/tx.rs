@@ -7,7 +7,9 @@ use city_crypto::{
 };
 
 use crate::{
-    block_template::{get_genesis_block_script_bytes, BLOCK_GROTH16_ENCODED_VERIFIER_DATA},
+    block_template::{
+        get_block_script_hash, get_genesis_block_script_bytes, BLOCK_GROTH16_ENCODED_VERIFIER_DATA,
+    },
     introspection::{
         sighash::{SigHashPreimage, SIGHASH_ALL},
         transaction::{
@@ -50,35 +52,27 @@ pub fn create_p2pkh_tx<W: Secp256K1WalletProvider>(
     Ok(base_tx)
 }
 pub fn encode_binary_stack_item(item: &[u8]) -> Vec<u8> {
-    if item.len() < 0x76 {
+    if item.len() < 0x4c {
         let mut result = Vec::with_capacity(item.len() + 1);
         result.push(item.len() as u8);
         result.extend_from_slice(item);
         result
     } else if item.len() < 0x100 {
         let mut result = Vec::with_capacity(item.len() + 2);
-        result.push(0x76);
+        result.push(0x4c);
         result.push(item.len() as u8);
         result.extend_from_slice(item);
         result
     } else if item.len() < 0x10000 {
         let mut result = Vec::with_capacity(item.len() + 3);
-        result.push(0x77);
+        result.push(0x4d);
         result.push(item.len() as u8);
         result.push((item.len() >> 8) as u8);
-        result.extend_from_slice(item);
-        result
-    } else if item.len() < 0x1000000 {
-        let mut result = Vec::with_capacity(item.len() + 4);
-        result.push(0x78);
-        result.push(item.len() as u8);
-        result.push((item.len() >> 8) as u8);
-        result.push((item.len() >> 16) as u8);
         result.extend_from_slice(item);
         result
     } else {
         let mut result = Vec::with_capacity(item.len() + 5);
-        result.push(0x79);
+        result.push(0x4e);
         result.push(item.len() as u8);
         result.push((item.len() >> 8) as u8);
         result.push((item.len() >> 16) as u8);
@@ -202,5 +196,12 @@ pub fn setup_genesis_block<W: Secp256K1WalletProvider, A: QBitcoinAPISync>(
     tx_1.inputs[0].index = 0;
     tx_1.outputs[0].value -= fee;
     let txid_2 = api.send_transaction(&tx_1)?;
-    Ok(txid_2)
+    let block_1_address = BTCAddress160::new_p2sh(get_block_script_hash(genesis_hash.0, false));
+    tx_1.inputs[0].hash = txid_2.reversed();
+    tx_1.inputs[0].index = 0;
+    tx_1.outputs = vec![BTCTransactionOutput {
+        value: base_value - fee * 4,
+        script: block_1_address.to_btc_script(),
+    }];
+    api.send_transaction(&tx_1)
 }

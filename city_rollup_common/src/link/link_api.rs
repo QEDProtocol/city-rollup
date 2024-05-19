@@ -344,6 +344,7 @@ impl QBitcoinAPISync for BTCLinkAPI {
 
     fn send_transaction(&self, tx: &BTCTransaction) -> anyhow::Result<Hash256> {
         let bytes = tx.to_bytes();
+        //println!("send_transaction: {}", hex::encode(&bytes));
         let txid = self.btc_send_raw_transaction(&bytes)?;
         Ok(txid)
     }
@@ -371,12 +372,16 @@ impl QBitcoinAPIFunderSync for BTCLinkAPI {
     fn fund_address(&self, address: BTCAddress160, amount: u64) -> anyhow::Result<Hash256> {
         self.mine_blocks(((amount / (100_000u64 * 100_000_000u64)) + 1) as u32)?;
 
-        self.btc_send_to_address_str(
-            address.to_address_string(),
-            format_u64_8_decimal_places(amount),
-            None,
-        )
-        .map_err(|err| anyhow::format_err!("Failed to fund address: {}", err.message))
+        let txid = self
+            .btc_send_to_address_str(
+                address.to_address_string(),
+                format_u64_8_decimal_places(amount),
+                None,
+            )
+            .map_err(|err| anyhow::format_err!("Failed to fund address: {}", err.message))?;
+
+        self.mine_blocks(((amount / (100_000u64 * 100_000_000u64)) + 1) as u32)?;
+        Ok(txid)
     }
 
     fn mine_blocks(&self, count: u32) -> anyhow::Result<()> {

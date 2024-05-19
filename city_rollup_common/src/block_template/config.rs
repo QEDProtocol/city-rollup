@@ -18,7 +18,9 @@ const OP_2DROP: u8 = 0x6d;
 
 // Action Instructions
 const OP_0NOTEQUAL: u8 = 0x92;
-const OP_CHECKGROTH16VERIFY: u8 = 0x61; // // 0xb3 is actually groth16, but 0x61 is nop and can be used for testing without verifying proofs
+
+// note: OP_CHECKGROTH16VERIFY is 0xb3, but 0x61 is OP_NOP and can be used for testing without verifying proofs
+const OP_CHECKGROTH16VERIFY: u8 = 0x61;
 
 //  size = 3 + 1 + 32 + 1 + 5*(2+80) + 9 = 456
 const STANDARD_BLOCK_SCRIPT_BODY: [u8; 456] = city_macros::const_concat_arrays!(

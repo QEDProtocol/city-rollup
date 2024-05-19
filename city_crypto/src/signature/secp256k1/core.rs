@@ -66,7 +66,7 @@ pub fn u256_to_der(u256: &[u8]) -> Vec<u8> {
     assert_eq!(u256.len(), 32);
     let mut result = vec![];
     result.push(0x02u8);
-    if result[0] & 0x80 != 0 {
+    if (u256[0] & 0x80) != 0 {
         result.push((u256.len() + 1) as u8);
         result.push(0);
         result.extend_from_slice(u256);

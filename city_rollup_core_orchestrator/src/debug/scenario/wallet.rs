@@ -39,7 +39,7 @@ where
     C::Hasher: AlgebraicHasher<C::F>,
 {
     pub zk_wallet: MemoryZKSignatureWallet<C, D, SimpleZKSignatureWallet<C, D>>,
-    pub secp256k1_circuit: L1Secp256K1SignatureCircuit<C, D>,
+    pub secp256k1_circuit: Option<L1Secp256K1SignatureCircuit<C, D>>,
     pub secp256k1_wallet: MemorySecp256K1Wallet,
 }
 
@@ -51,7 +51,19 @@ where
         Self {
             zk_wallet: MemoryZKSignatureWallet::<C, D, SimpleZKSignatureWallet<C, D>>::new_memory(),
             secp256k1_wallet: MemorySecp256K1Wallet::new(),
-            secp256k1_circuit: L1Secp256K1SignatureCircuit::new(),
+            secp256k1_circuit: Some(L1Secp256K1SignatureCircuit::new()),
+        }
+    }
+    pub fn new_fast_setup() -> Self {
+        Self {
+            zk_wallet: MemoryZKSignatureWallet::<C, D, SimpleZKSignatureWallet<C, D>>::new_memory(),
+            secp256k1_wallet: MemorySecp256K1Wallet::new(),
+            secp256k1_circuit: None,
+        }
+    }
+    pub fn setup_circuits(&mut self) {
+        if self.secp256k1_circuit.is_none() {
+            self.secp256k1_circuit = Some(L1Secp256K1SignatureCircuit::new());
         }
     }
     pub fn add_zk_private_key(&mut self, private_key: QHashOut<C::F>) -> QHashOut<C::F> {
@@ -98,7 +110,7 @@ where
         message: Hash256,
     ) -> anyhow::Result<ProofWithPublicInputs<C::F, C, D>> {
         let ecc_sig = self.sign_secp256k1(public_key, message)?;
-        self.secp256k1_circuit.prove(&ecc_sig)
+        self.secp256k1_circuit.as_ref().unwrap().prove(&ecc_sig)
     }
     pub fn zk_sign_hash_secp256k1(
         &self,
@@ -106,7 +118,7 @@ where
         message: QHashOut<C::F>,
     ) -> anyhow::Result<ProofWithPublicInputs<C::F, C, D>> {
         let ecc_sig = self.sign_hash_secp256k1(public_key, message)?;
-        self.secp256k1_circuit.prove(&ecc_sig)
+        self.secp256k1_circuit.as_ref().unwrap().prove(&ecc_sig)
     }
     pub fn sign_claim_deposit(
         &self,
