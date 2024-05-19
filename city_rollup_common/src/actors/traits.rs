@@ -110,6 +110,7 @@ pub trait WorkerEventReceiverSync {
 
 pub trait WorkerEventTransmitterSync {
     fn enqueue_jobs(&mut self, jobs: &[QProvingJobDataID]) -> anyhow::Result<()>;
+    fn wait_for_block_proving_jobs(&mut self, checkpoint_id: u64) -> anyhow::Result<bool>;
 }
 
 pub trait LastBlockNodeStateQueryAPISync {

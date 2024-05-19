@@ -41,7 +41,7 @@ impl<S: KVQBinaryStoreReader> CityStore<S> {
 
         Ok(get_block_script_bytes(
             root_state_hash_bytes,
-            checkpoint_id == 0,
+            checkpoint_id < 2,
         ))
     }
     pub fn get_city_block_deposit_address(
@@ -61,7 +61,7 @@ impl<S: KVQBinaryStoreReader> CityStore<S> {
 
         Ok(get_block_script_hash(
             root_state_hash_bytes,
-            checkpoint_id == 0,
+            checkpoint_id < 2,
         ))
     }
     pub fn get_city_block_deposit_address_string(

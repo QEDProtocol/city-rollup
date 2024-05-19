@@ -277,7 +277,7 @@ impl<S: QProofStoreReaderSync> QWorkerGenericProverGroth16<S, PoseidonGoldilocks
             fingerprint,
             verifier_data.constants_sigmas_cap.height(),
         );
-        let wrapper_proof = wrapper.prove_base(&inner_proof, &verifier_data)?;
+        let _wrapper_proof = wrapper.prove_base(&inner_proof, &verifier_data)?;
         // todo, implement prover for g16
         // let proof_string =  gnark_plonky2_wrapper::wrap_plonky2_proof(wrapper.circuit_data, &wrapper_proof)?;
         // let proof_data = serde_json::from_str::<CityGroth16ProofData>(&proof_string)?;

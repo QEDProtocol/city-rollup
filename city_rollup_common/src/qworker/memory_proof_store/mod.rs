@@ -25,18 +25,36 @@ impl QProofStoreReaderSync for SimpleProofStoreMemory {
         &self,
         id: QProvingJobDataID,
     ) -> anyhow::Result<ProofWithPublicInputs<C::F, C, D>> {
-        let data = self
-            .proofs
-            .get(&id)
-            .ok_or_else(|| anyhow::anyhow!("Proof not found"))?;
+        println!(
+            "SimpleProofStoreMemory::get_proof_by_id: {}",
+            hex::encode(id.to_fixed_bytes())
+        );
+        println!("SimpleProofStoreMemory::get_proof_by_id: {:?}", id,);
+        let data = self.proofs.get(&id).ok_or_else(|| {
+            anyhow::anyhow!(
+                "Proof not found. Wanted {}, Have: {:?}",
+                hex::encode(id.to_fixed_bytes()),
+                self.proofs
+                    .keys()
+                    .map(|k| hex::encode(k.to_fixed_bytes()))
+                    .collect::<Vec<String>>()
+            )
+        })?;
         Ok(bincode::deserialize(data)?)
     }
 
     fn get_bytes_by_id(&self, id: QProvingJobDataID) -> anyhow::Result<Vec<u8>> {
-        let data = self
-            .proofs
-            .get(&id)
-            .ok_or_else(|| anyhow::anyhow!("Proof not found"))?;
+        let data = self.proofs.get(&id).ok_or_else(|| {
+            anyhow::anyhow!(
+                "Data not found. Wanted {} ({:?}), Have: {:?}",
+                hex::encode(id.to_fixed_bytes()),
+                id,
+                self.proofs
+                    .keys()
+                    .map(|k| hex::encode(k.to_fixed_bytes()))
+                    .collect::<Vec<String>>()
+            )
+        })?;
         Ok(data.to_vec())
     }
 }
@@ -53,6 +71,10 @@ impl QProofStoreWriterSync for SimpleProofStoreMemory {
 
     fn inc_counter_by_id(&mut self, id: QProvingJobDataID) -> anyhow::Result<u32> {
         let zero = 0u32;
+        let ctr = self.counters.get(&id);
+        if ctr.is_none() {
+            println!("ctr is none, {:?}", id);
+        }
         let new_value = 1 + *(self.counters.get(&id).unwrap_or(&zero));
         self.counters.insert(id, new_value);
         Ok(new_value)

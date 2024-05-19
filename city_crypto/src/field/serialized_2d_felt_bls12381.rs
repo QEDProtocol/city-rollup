@@ -34,6 +34,11 @@ impl Serialized2DFeltBLS12381 {
     pub fn is_zero(&self) -> bool {
         self.0.iter().all(|&x| x == 0)
     }
+    pub fn from_slice(data: &[u8]) -> Self {
+        let mut array = [0u8; 48];
+        array.copy_from_slice(data);
+        Self(array)
+    }
 }
 
 impl Display for Serialized2DFeltBLS12381 {

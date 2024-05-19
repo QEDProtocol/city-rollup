@@ -657,6 +657,7 @@ dependencies = [
  "city_rollup_common",
  "city_rollup_core_node",
  "city_rollup_core_orchestrator",
+ "city_rollup_core_worker",
  "city_store",
  "clap",
  "dotenv",
