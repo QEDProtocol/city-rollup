@@ -15,7 +15,7 @@ use city_rollup_common::{
         sighash::{SigHashPreimage, SIGHASH_ALL},
         transaction::{BTCTransaction, BTCTransactionInput, BTCTransactionOutput},
     },
-    link::{data::BTCAddress160, tx::QBitcoinAPISync},
+    link::{data::BTCAddress160, traits::QBitcoinAPISync},
     qworker::{
         fingerprints::CRWorkerToolboxCoreCircuitFingerprints, job_id::QProvingJobDataID,
         proof_store::QProofStore,

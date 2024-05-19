@@ -1,7 +1,3 @@
-use city_crypto::{
-    hash::base_types::{hash160::Hash160, hash256::Hash256},
-    signature::secp256k1::wallet::Secp256K1WalletProvider,
-};
 use plonky2::hash::hash_types::RichField;
 
 use crate::{
@@ -18,7 +14,6 @@ use crate::{
         },
         store::{CityL1Deposit, CityL1Withdrawal, CityL2BlockState, CityUserState},
     },
-    introspection::transaction::BTCTransaction,
     qworker::job_id::QProvingJobDataID,
 };
 

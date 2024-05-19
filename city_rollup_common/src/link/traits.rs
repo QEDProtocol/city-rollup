@@ -1,4 +1,4 @@
-use city_crypto::hash::base_types::{hash160::Hash160, hash256::Hash256};
+use city_crypto::hash::base_types::hash256::Hash256;
 
 use crate::introspection::transaction::BTCTransaction;
 
