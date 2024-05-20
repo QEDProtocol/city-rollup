@@ -39,10 +39,10 @@ impl SimpleActorWorker {
         event_receiver: &mut ER,
         prover: &G,
     ) -> anyhow::Result<()> {
-        let mut timer = TraceTimer::new("process_next_job");
+        //let mut timer = TraceTimer::new("process_next_job");
         let job = event_receiver.wait_for_next_job()?;
         Self::process_job(store, event_receiver, prover, job)?;
-        timer.lap("processed next job");
+        //timer.lap("processed next job");
         Ok(())
     }
     fn process_job<
@@ -59,7 +59,6 @@ impl SimpleActorWorker {
         job_id: QProvingJobDataID,
     ) -> anyhow::Result<()> {
         let mut timer = TraceTimer::new("process_job");
-        println!("processing job {:?}", job_id);
         if job_id.topic == QJobTopic::GenerateStandardProof {
             let _ = match job_id.circuit_type {
                 ProvingJobCircuitType::WrapFinalSigHashProofBLS12381 => {
@@ -84,19 +83,18 @@ impl SimpleActorWorker {
         }
 
         let goal_counter = store.get_goal_by_job_id(job_id)?;
-        println!("goal_counter: {}", goal_counter);
         if goal_counter != 0 {
             let result = store.inc_counter_by_id(job_id.get_sub_group_counter_id())?;
-            println!("current_counter: {}", result);
             if result == goal_counter {
                 let jobs = store.get_next_jobs_by_job_id(job_id)?;
-                println!("next_jobs: {:?}", jobs);
+                println!("[{:?}] enqueuing_jobs: {:?}", job_id, jobs);
                 event_receiver.enqueue_jobs(&jobs)?;
             }
         }
         timer.event(format!(
-            "processed job {}",
-            hex::encode(job_id.to_fixed_bytes())
+            "processed job {} ({:?})",
+            hex::encode(job_id.to_fixed_bytes()),
+            job_id
         ));
 
         Ok(())

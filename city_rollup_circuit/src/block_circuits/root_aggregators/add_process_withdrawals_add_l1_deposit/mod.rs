@@ -179,44 +179,35 @@ where
         op_add_l1_deposit_verifier_data: &VerifierOnlyCircuitData<C, D>,
     ) -> anyhow::Result<ProofWithPublicInputs<C::F, C, D>> {
         let mut pw = PartialWitness::new();
-        println!("setting proof for op_add_l1_withdrawal_proof");
 
         pw.set_proof_with_pis_target::<C, D>(
             &self.op_add_l1_withdrawal_proof,
             op_add_l1_withdrawal_proof,
         );
-        println!("setting verifier data for op_add_l1_withdrawal_proof");
         pw.set_verifier_data_target::<C, D>(
             &self.op_add_l1_withdrawal_verifier_data,
             op_add_l1_withdrawal_verifier_data,
         );
 
-        println!("setting proof for op_process_l1_withdrawal_proof");
-
         pw.set_proof_with_pis_target::<C, D>(
             &self.op_process_l1_withdrawal_proof,
             op_process_l1_withdrawal_proof,
         );
-        println!("setting verifier data for op_process_l1_withdrawal_verifier_data");
 
         pw.set_verifier_data_target::<C, D>(
             &self.op_process_l1_withdrawal_verifier_data,
             op_process_l1_withdrawal_verifier_data,
         );
 
-        println!("setting proof for op_add_l1_deposit_proof");
-
         pw.set_proof_with_pis_target::<C, D>(
             &self.op_add_l1_deposit_proof,
             op_add_l1_deposit_proof,
         );
 
-        println!("setting verifier data for op_add_l1_deposit_verifier_data");
         pw.set_verifier_data_target::<C, D>(
             &self.op_add_l1_deposit_verifier_data,
             op_add_l1_deposit_verifier_data,
         );
-        println!("proofs finished!");
 
         self.transition_gadget.set_witness(&mut pw, input);
 

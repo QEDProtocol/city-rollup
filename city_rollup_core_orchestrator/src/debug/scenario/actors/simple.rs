@@ -219,7 +219,6 @@ impl SimpleActorOrchestrator {
         fingerprints: &CRWorkerToolboxCoreCircuitFingerprints<F>,
         sighash_whitelist_tree: &SigHashMerkleTree,
     ) -> anyhow::Result<(Vec<QProvingJobDataID>, u64, usize, BTCTransaction)> {
-        let mut timer = DebugTimer::new("produce_block");
         let last_block = CityStore::get_latest_block_state(store)?;
         let last_block_address =
             CityStore::get_city_block_deposit_address(store, last_block.checkpoint_id - 1)?;
@@ -229,20 +228,20 @@ impl SimpleActorOrchestrator {
             CityStore::get_city_block_script(store, last_block.checkpoint_id + 1)?;
 
         let checkpoint_id = last_block.checkpoint_id + 1;
+        let mut timer = DebugTimer::new(&format!("produce_block [{}]", checkpoint_id));
 
         let register_users = event_receiver.flush_register_users()?;
         let claim_l1_deposits = event_receiver.flush_claim_deposits()?;
         let add_withdrawals = event_receiver.flush_add_withdrawals()?;
         let token_transfers = event_receiver.flush_token_transfers()?;
-        println!("checkpoint:{}", checkpoint_id);
-        println!(
+        /*println!(
             "last_block_address: {}",
             BTCAddress160::new_p2sh(last_block_address,).to_address_string()
         );
         println!(
             "current_block_address: {}",
             BTCAddress160::new_p2sh(current_block_address,).to_address_string()
-        );
+        );*/
         let utxos = btc_api
             .get_confirmed_funding_transactions_with_vout(BTCAddress160::new_p2sh(
                 current_block_address,
@@ -254,7 +253,7 @@ impl SimpleActorOrchestrator {
         let mut deposit_utxos = vec![];
         let mut last_block_utxo = BTCTransaction::dummy();
         for utxo in utxos.into_iter() {
-            println!("utxo: {}", hex::encode(&utxo.to_bytes()));
+            //println!("utxo: {}", hex::encode(&utxo.to_bytes()));
             if utxo.is_p2pkh() {
                 deposit_utxos.push(utxo);
             } else if utxo.is_block_spend_for_state(last_block_address) {
@@ -282,13 +281,20 @@ impl SimpleActorOrchestrator {
 
         let mut block_planner =
             CityOrchestratorBlockPlanner::<S, PS>::new(fingerprints.clone(), last_block);
-        timer.lap("end process state block 1 RPC");
-        timer.lap("start process requests block 1");
+        timer.lap(&format!("end process state block {} RPC", checkpoint_id));
+        timer.lap(&format!(
+            "start process requests block {} RPC",
+            checkpoint_id
+        ));
 
         let (block_state, block_op_job_ids, _block_state_transition, _block_end_jobs, withdrawals) =
             block_planner.process_requests(store, proof_store, &block_requested)?;
-        let next_address = CityStore::get_city_block_deposit_address(store, checkpoint_id)?;
-        let next_script = CityStore::get_city_block_script(store, checkpoint_id)?;
+        let next_address = CityStore::get_city_block_deposit_address(store, checkpoint_id + 1)?;
+        let next_script = CityStore::get_city_block_script(store, checkpoint_id + 1)?;
+        /*println!(
+            "next_address: {}",
+            BTCAddress160::new_p2sh(next_address).to_address_string()
+        );*/
         let hints = create_hints_for_block(
             &current_block_script,
             next_address,
@@ -499,7 +505,7 @@ impl SimpleActorOrchestrator {
             .into_iter()
             .map(|x| {
                 let bytes = proof_store.get_bytes_by_id(x)?;
-                println!("proof_output_bytes: {}", hex::encode(&bytes));
+                //println!("proof_output_bytes: {}", hex::encode(&bytes));
                 let proof = bincode::deserialize::<CityGroth16ProofData>(&bytes)?;
                 Ok(proof)
             })

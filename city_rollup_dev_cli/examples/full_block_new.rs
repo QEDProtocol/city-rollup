@@ -1,4 +1,6 @@
-use city_common::{logging::debug_timer::DebugTimer, units::UNIT_BTC};
+use city_common::{
+    cli::message::CITY_ROLLUP_BANNER, logging::debug_timer::DebugTimer, units::UNIT_BTC,
+};
 use city_crypto::hash::{base_types::hash256::Hash256, qhashout::QHashOut};
 use city_rollup_circuit::worker::toolbox::root::CRWorkerToolboxRootCircuits;
 use city_rollup_common::{
@@ -20,6 +22,7 @@ use city_store::store::{city::base::CityStore, sighash::SigHashMerkleTree};
 use kvq::memory::simple::KVQSimpleMemoryBackingStore;
 use plonky2::{field::goldilocks_field::GoldilocksField, plonk::config::PoseidonGoldilocksConfig};
 fn run_full_block() -> anyhow::Result<()> {
+    println!("{}", CITY_ROLLUP_BANNER);
     let mut api = BTCLinkAPI::new_str(
         "http://devnet:devnet@localhost:1337/bitcoin-rpc/?network=dogeRegtest",
         "http://localhost:1337/api",
@@ -42,6 +45,14 @@ fn run_full_block() -> anyhow::Result<()> {
     let mut timer = DebugTimer::new("prove_block_demo");
     let mut worker_event_processor = CityEventProcessorMemory::new();
     let mut rpc_queue = DevMemoryCoordinatatorRPCQueue::<F>::new();
+
+    /*
+    let start_state_root = CityStore::get_city_root(&store, 1)?;
+    println!(
+        "start_state_root: {} ({:?})",
+        start_state_root.to_string(),
+        start_state_root.0
+    );*/
 
     timer.lap("start creating wallets");
 
@@ -102,7 +113,11 @@ fn run_full_block() -> anyhow::Result<()> {
         setup_fee,
         genesis_state_hash.to_felt252_hash256(),
     )?;
-    println!("txid_fund_genesis: {}", txid_fund_genesis.to_hex_string());
+    println!(
+        "funded genesis block with txid: {}",
+        txid_fund_genesis.to_hex_string()
+    );
+    //println!("txid_fund_genesis: {}", txid_fund_genesis.to_hex_string());
     let block_2_address =
         BTCAddress160::new_p2sh(CityStore::get_city_block_deposit_address(&store, 2)?);
 
@@ -162,6 +177,12 @@ fn run_full_block() -> anyhow::Result<()> {
         &fingerprints,
         &sighash_whitelist_tree,
     )?;
+    let end_state_root = CityStore::get_city_root(&store, 2)?;
+    println!(
+        "end_state_root: {} ({:?})",
+        end_state_root.to_string(),
+        end_state_root.0
+    );
     loop {
         if worker_event_processor.job_queue.is_empty() {
             break;
@@ -175,7 +196,7 @@ fn run_full_block() -> anyhow::Result<()> {
         &orchestrator_result_step_1,
     )?;
     println!(
-        "produced block: {}",
+        "produced block, sent to : {}",
         orchestrator_result_step_2.to_hex_string()
     );
     api.mine_blocks(1)?;

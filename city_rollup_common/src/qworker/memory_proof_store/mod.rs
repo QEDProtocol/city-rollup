@@ -25,11 +25,6 @@ impl QProofStoreReaderSync for SimpleProofStoreMemory {
         &self,
         id: QProvingJobDataID,
     ) -> anyhow::Result<ProofWithPublicInputs<C::F, C, D>> {
-        println!(
-            "SimpleProofStoreMemory::get_proof_by_id: {}",
-            hex::encode(id.to_fixed_bytes())
-        );
-        println!("SimpleProofStoreMemory::get_proof_by_id: {:?}", id,);
         let data = self.proofs.get(&id).ok_or_else(|| {
             anyhow::anyhow!(
                 "Proof not found. Wanted {}, Have: {:?}",

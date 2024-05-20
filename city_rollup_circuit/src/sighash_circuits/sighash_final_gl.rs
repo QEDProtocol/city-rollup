@@ -154,18 +154,33 @@ where
         );
         builder.connect_hashes(actual_deposits_event_hash, expected_deposits_event_hash);
         let zero = builder.zero();
-        let bits_block_start_hash = expected_current_block_start_hash_252.elements.iter().map(|x|{
-            let mut bits = builder.split_le(*x, 63).iter().map(|b|{
-                b.target
-            }).collect::<Vec<_>>();
-            bits.push(zero);
-            bits
-        }).flatten().collect::<Vec<_>>();
-        let mut bits_sighash = sighash_252.elements.iter().map(|x|builder.split_le(*x, 63).iter().map(|b|{
-            b.target
-        }).collect::<Vec<_>>()).flatten().collect::<Vec<_>>();
-        bits_sighash.append(&mut vec![zero,zero,zero,zero]);
-        
+        let bits_block_start_hash = expected_current_block_start_hash_252
+            .elements
+            .iter()
+            .map(|x| {
+                let mut bits = builder
+                    .split_le(*x, 63)
+                    .iter()
+                    .map(|b| b.target)
+                    .collect::<Vec<_>>();
+                bits.push(zero);
+                bits
+            })
+            .flatten()
+            .collect::<Vec<_>>();
+        let mut bits_sighash = sighash_252
+            .elements
+            .iter()
+            .map(|x| {
+                builder
+                    .split_le(*x, 63)
+                    .iter()
+                    .map(|b| b.target)
+                    .collect::<Vec<_>>()
+            })
+            .flatten()
+            .collect::<Vec<_>>();
+        bits_sighash.append(&mut vec![zero, zero, zero, zero]);
 
         builder.register_public_inputs(&bits_block_start_hash);
         builder.register_public_inputs(&bits_sighash);
@@ -195,6 +210,7 @@ where
         block_state_transition_proof: &ProofWithPublicInputs<C::F, C, D>,
         sighash_wrapper_proof: &ProofWithPublicInputs<C::F, C, D>,
     ) -> anyhow::Result<ProofWithPublicInputs<C::F, C, D>> {
+        /*
         println!("input: {:?}", input);
         println!(
             "block_state_transition_proof.public_inputs: {:?}",
@@ -203,7 +219,7 @@ where
         println!(
             "sighash_wrapper_proof.public_inputs: {:?}",
             sighash_wrapper_proof.public_inputs
-        );
+        );*/
         let mut pw = PartialWitness::new();
         pw.set_proof_with_pis_target(
             &self.block_state_transition_proof_target,

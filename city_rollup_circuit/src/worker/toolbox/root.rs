@@ -198,7 +198,6 @@ where
         store: &S,
         job_id: QProvingJobDataID,
     ) -> anyhow::Result<ProofWithPublicInputs<C::F, C, D>> {
-        println!("proving_job: {:?}", job_id);
         let circuit_type = job_id.circuit_type;
         match circuit_type {
             ProvingJobCircuitType::AggUserRegisterClaimDepositL2Transfer => self
