@@ -3,19 +3,14 @@ use city_macros::define_table;
 use city_redis_store::RedisStore;
 use city_rollup_circuit::worker::toolbox::circuits::CRWorkerToolboxCoreCircuits;
 use city_rollup_common::{
-    actors::{rpc_processor::QRPCProcessor, traits::OrchestratorEventReceiverSync},
-    introspection::rollup::constants::get_network_magic_for_str,
-    link::link_api::BTCLinkAPI,
+    actors::rpc_processor::QRPCProcessor,
+    introspection::rollup::constants::get_network_magic_for_str, link::link_api::BTCLinkAPI,
 };
 use city_rollup_core_worker::event_processor::CityEventProcessor;
 use city_rollup_worker_dispatch::implementations::redis::RedisDispatcher;
 use city_store::store::{city::base::CityStore, sighash::SigHashMerkleTree};
-use kvq::traits::KVQBinaryStore;
 use kvq_store_redb::KVQReDBStore;
-use plonky2::{
-    field::goldilocks_field::GoldilocksField, hash::hash_types::RichField,
-    plonk::config::PoseidonGoldilocksConfig,
-};
+use plonky2::{field::goldilocks_field::GoldilocksField, plonk::config::PoseidonGoldilocksConfig};
 use redb::{Database, TableDefinition};
 
 use crate::{
