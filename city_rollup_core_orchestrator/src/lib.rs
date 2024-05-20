@@ -7,7 +7,7 @@ use city_rollup_common::{
     introspection::rollup::constants::get_network_magic_for_str, link::link_api::BTCLinkAPI,
 };
 use city_rollup_core_worker::event_processor::CityEventProcessor;
-use city_rollup_worker_dispatch::implementations::redis::RedisDispatcher;
+use city_rollup_worker_dispatch::implementations::redis::RedisQueue;
 use city_store::store::{city::base::CityStore, sighash::SigHashMerkleTree};
 use kvq_store_redb::KVQReDBStore;
 use plonky2::{field::goldilocks_field::GoldilocksField, plonk::config::PoseidonGoldilocksConfig};
@@ -29,8 +29,8 @@ type F = GoldilocksField;
 pub fn run(args: OrchestratorArgs) -> anyhow::Result<()> {
     let mut proof_store = RedisStore::new(&args.redis_uri)?;
     let database = Database::create(&args.db_path)?;
-    let dispatcher = RedisDispatcher::new(&args.redis_uri)?;
-    let mut event_processor = CityEventProcessor::new(dispatcher.clone());
+    let queue = RedisQueue::new(&args.redis_uri)?;
+    let mut event_processor = CityEventProcessor::new(queue.clone());
     let toolbox = CRWorkerToolboxCoreCircuits::<C, D>::new(get_network_magic_for_str(
         args.network.to_string(),
     )?);
@@ -45,7 +45,7 @@ pub fn run(args: OrchestratorArgs) -> anyhow::Result<()> {
             let mut store = KVQReDBStore::new(wxn.open_table(KV)?);
             let block_state = CityStore::get_latest_block_state(&store)?;
             let mut event_receiver = CityEventReceiver::<F>::new(
-                dispatcher.clone(),
+                queue.clone(),
                 QRPCProcessor::new(block_state.checkpoint_id),
                 proof_store.clone(),
             );

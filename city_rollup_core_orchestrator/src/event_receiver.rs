@@ -14,7 +14,7 @@ use city_rollup_common::api::data::block::rpc_request::{
 };
 use city_rollup_common::qworker::proof_store::QProofStore;
 use city_rollup_worker_dispatch::implementations::redis::{
-    QueueCmd, RedisDispatcher, Q_CMD,
+    QueueCmd, RedisQueue, Q_CMD,
     Q_RPC_ADD_WITHDRAWAL, Q_RPC_CLAIM_DEPOSIT, Q_RPC_REGISTER_USER, Q_RPC_TOKEN_TRANSFER,
 };
 use city_rollup_worker_dispatch::traits::proving_dispatcher::ProvingDispatcher;
@@ -23,19 +23,19 @@ use plonky2::hash::hash_types::RichField;
 use serde::de::DeserializeOwned;
 
 pub struct CityEventReceiver<F: RichField> {
-    dispatcher: RedisDispatcher,
+    tx_queue: RedisQueue,
     rpc_processor: QRPCProcessor<F>,
     proof_store: RedisStore,
 }
 
 impl<F: RichField> CityEventReceiver<F> {
     pub fn new(
-        dispatcher: RedisDispatcher,
+        tx_queue: RedisQueue,
         rpc_processor: QRPCProcessor<F>,
         proof_store: RedisStore,
     ) -> Self {
         Self {
-            dispatcher,
+            tx_queue,
             rpc_processor,
             proof_store,
         }
@@ -46,7 +46,7 @@ impl<F: RichField> CityEventReceiver<F> {
         topic: &str,
     ) -> anyhow::Result<Vec<T>> {
         Ok(self
-            .dispatcher
+            .tx_queue
             .pop_all(topic)?
             .into_iter()
             .map(|v| Ok(serde_json::from_slice(&v)?))
@@ -142,7 +142,7 @@ impl<F: RichField> OrchestratorEventReceiverSync<F> for CityEventReceiver<F> {
     fn wait_for_produce_block(&mut self) -> anyhow::Result<bool> {
         loop {
             match self
-                .dispatcher
+                .tx_queue
                 .pop_one(Q_CMD)?
                 .map(|v| serde_json::from_slice::<QueueCmd>(&v))
             {
@@ -162,7 +162,7 @@ impl<F: RichField> OrchestratorRPCEventSenderSync<F> for CityEventReceiver<F> {
         &mut self,
         event: &CityClaimDepositRPCRequest,
     ) -> anyhow::Result<()> {
-        self.dispatcher
+        self.tx_queue
             .dispatch(Q_RPC_CLAIM_DEPOSIT, event.clone())?;
         Ok(())
     }
@@ -171,7 +171,7 @@ impl<F: RichField> OrchestratorRPCEventSenderSync<F> for CityEventReceiver<F> {
         &mut self,
         event: &CityRegisterUserRPCRequest<F>,
     ) -> anyhow::Result<()> {
-        self.dispatcher
+        self.tx_queue
             .dispatch(Q_RPC_REGISTER_USER, event.clone())?;
         Ok(())
     }
@@ -180,7 +180,7 @@ impl<F: RichField> OrchestratorRPCEventSenderSync<F> for CityEventReceiver<F> {
         &mut self,
         event: &CityAddWithdrawalRPCRequest,
     ) -> anyhow::Result<()> {
-        self.dispatcher
+        self.tx_queue
             .dispatch(Q_RPC_ADD_WITHDRAWAL, event.clone())?;
         Ok(())
     }
@@ -189,13 +189,13 @@ impl<F: RichField> OrchestratorRPCEventSenderSync<F> for CityEventReceiver<F> {
         &mut self,
         event: &CityTokenTransferRPCRequest,
     ) -> anyhow::Result<()> {
-        self.dispatcher
+        self.tx_queue
             .dispatch(Q_RPC_TOKEN_TRANSFER, event.clone())?;
         Ok(())
     }
 
     fn notify_rpc_produce_block(&mut self) -> anyhow::Result<()> {
-        self.dispatcher.dispatch(Q_CMD, QueueCmd::ProduceBlock)?;
+        self.tx_queue.dispatch(Q_CMD, QueueCmd::ProduceBlock)?;
         Ok(())
     }
 }

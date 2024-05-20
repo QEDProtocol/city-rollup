@@ -1,21 +1,21 @@
+use std::time::Duration;
+
 use city_rollup_common::{
     actors::traits::{WorkerEventReceiverSync, WorkerEventTransmitterSync},
     qworker::job_id::QProvingJobDataID,
 };
 use city_rollup_worker_dispatch::{
-    implementations::redis::{QueueNotification, RedisDispatcher, Q_JOB, Q_NOTIFICATIONS},
+    implementations::redis::{QueueNotification, RedisQueue, Q_JOB, Q_NOTIFICATIONS},
     traits::{proving_dispatcher::ProvingDispatcher, proving_worker::ProvingWorkerListener},
 };
 
 pub struct CityEventProcessor {
-    pub job_queue: RedisDispatcher,
-    pub core_job_completed: bool,
+    pub job_queue: RedisQueue,
 }
 impl CityEventProcessor {
-    pub fn new(dispatcher: RedisDispatcher) -> Self {
+    pub fn new(dispatcher: RedisQueue) -> Self {
         Self {
             job_queue: dispatcher,
-            core_job_completed: true,
         }
     }
 }
@@ -29,7 +29,6 @@ impl WorkerEventReceiverSync for CityEventProcessor {
     }
 
     fn enqueue_jobs(&mut self, jobs: &[QProvingJobDataID]) -> anyhow::Result<()> {
-        self.core_job_completed = false;
         for job in jobs {
             self.job_queue.dispatch(Q_JOB, job.clone())?;
         }
@@ -37,7 +36,6 @@ impl WorkerEventReceiverSync for CityEventProcessor {
     }
 
     fn notify_core_goal_completed(&mut self, _job: QProvingJobDataID) -> anyhow::Result<()> {
-        self.core_job_completed = true;
         self.job_queue.dispatch(Q_NOTIFICATIONS, QueueNotification::CoreJobCompleted)?;
         Ok(())
     }
@@ -52,10 +50,18 @@ impl WorkerEventTransmitterSync for CityEventProcessor {
     }
 
     fn wait_for_block_proving_jobs(&mut self, _checkpoint_id: u64) -> anyhow::Result<bool> {
-        if !self.core_job_completed {
-            anyhow::bail!("core job not yet completed!");
+        loop {
+            match self
+                .job_queue
+                .pop_one(Q_NOTIFICATIONS)?
+                .map(|v| serde_json::from_slice::<QueueNotification>(&v))
+            {
+                Some(Ok(QueueNotification::CoreJobCompleted)) => return Ok::<_, anyhow::Error>(true),
+                Some(Err(_)) | None => {
+                    std::thread::sleep(Duration::from_millis(500));
+                    continue;
+                }
+            }
         }
-        //println!("CityEventProcessor::wait_for_block_proving_jobs is a no-op since its for local (sync) testing only.");
-        Ok(false)
     }
 }

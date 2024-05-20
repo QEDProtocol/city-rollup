@@ -287,7 +287,6 @@ macro_rules! const_concat_arrays {
     });
 }
 
-
 #[macro_export]
 macro_rules! capture {
     ($x:ident, $($body:tt)*) => {

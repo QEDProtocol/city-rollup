@@ -17,7 +17,7 @@ use crate::traits::proving_dispatcher::ProvingDispatcher;
 use crate::traits::proving_worker::ProvingWorkerListener;
 
 #[derive(Clone)]
-pub struct RedisDispatcher {
+pub struct RedisQueue {
     // we use queue here because pubsub is mpmc
     queue: PooledRsmq,
 }
@@ -25,12 +25,6 @@ pub struct RedisDispatcher {
 pub const Q_HIDDEN: Option<Duration> = Some(Duration::from_secs(600));
 pub const Q_DELAY: Option<Duration> = None;
 pub const Q_CAP: Option<i32> = Some(-1);
-
-pub const Q_TX: &'static str = "TX";
-pub const Q_TOKEN_TRANSFER: &'static str = "TOKEN_TRANSFER";
-pub const Q_CLAIM_DEPOSIT: &'static str = "CLAIM_DEPOSIT";
-pub const Q_ADD_WITHDRAWAL: &'static str = "ADD_WITHDRAWAL";
-pub const Q_REGISTER_USER: &'static str = "REGISTER_USER";
 
 pub const Q_RPC_TOKEN_TRANSFER: &'static str = "RPC_TOKEN_TRANSFER";
 pub const Q_RPC_CLAIM_DEPOSIT: &'static str = "RPC_CLAIM_DEPOSIT";
@@ -53,7 +47,7 @@ pub enum QueueNotification {
     CoreJobCompleted = 0,
 }
 
-impl RedisDispatcher {
+impl RedisQueue {
     pub fn new(uri: &str) -> Result<Self> {
         let client = redis::Client::open(uri)?;
         let manager = RedisConnectionManager::from_client(client)?;
@@ -61,11 +55,6 @@ impl RedisDispatcher {
             let pool = bb8::Pool::builder().build(manager).await?;
             let mut queue = PooledRsmq::new_with_pool(pool, false, None);
             for q in &[
-                Q_TX,
-                Q_TOKEN_TRANSFER,
-                Q_CLAIM_DEPOSIT,
-                Q_ADD_WITHDRAWAL,
-                Q_REGISTER_USER,
                 Q_RPC_TOKEN_TRANSFER,
                 Q_RPC_CLAIM_DEPOSIT,
                 Q_RPC_ADD_WITHDRAWAL,
@@ -92,7 +81,7 @@ impl RedisDispatcher {
     }
 }
 
-impl ProvingDispatcher for RedisDispatcher {
+impl ProvingDispatcher for RedisQueue {
     fn dispatch(
         self: &mut Self,
         topic: &str,
@@ -108,7 +97,7 @@ impl ProvingDispatcher for RedisDispatcher {
     }
 }
 
-impl ProvingWorkerListener for RedisDispatcher {
+impl ProvingWorkerListener for RedisQueue {
     fn subscribe(&mut self, _topic: &str) -> anyhow::Result<()> {
         Ok(())
     }
