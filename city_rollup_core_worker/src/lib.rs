@@ -20,8 +20,8 @@ pub mod event_processor;
 
 pub const PROVING_INTERVAL: u64 = 30000;
 
-pub async fn run(args: L2WorkerArgs) -> anyhow::Result<()> {
-    let redis_dispatcher = RedisDispatcher::new(&args.redis_uri).await?;
+pub fn run(args: L2WorkerArgs) -> anyhow::Result<()> {
+    let redis_dispatcher = RedisDispatcher::new(&args.redis_uri)?;
     let proof_store = RedisStore::new(&args.redis_uri)?;
     let network_magic = get_network_magic_for_str(args.network.to_string())?;
 

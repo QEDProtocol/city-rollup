@@ -47,10 +47,12 @@ pub enum QueueNotification {
 }
 
 impl RedisDispatcher {
-    pub async fn new(uri: &str) -> Result<Self> {
+    pub fn new(uri: &str) -> Result<Self> {
         let client = redis::Client::open(uri)?;
         let manager = RedisConnectionManager::from_client(client)?;
-        let pool = bb8::Pool::builder().build(manager).await?;
+        let pool = block_on(capture!(manager, async move {
+            Ok::<_, anyhow::Error>(bb8::Pool::builder().build(manager).await?)
+        }))?;
         let queue = PooledRsmq::new_with_pool(pool, false, None);
         Ok(Self { queue })
     }

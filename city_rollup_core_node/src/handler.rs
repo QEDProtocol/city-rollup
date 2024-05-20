@@ -55,7 +55,7 @@ pub struct CityRollupRPCServerHandler<F: RichField> {
 impl<F: RichField> CityRollupRPCServerHandler<F> {
     pub async fn new(args: RPCServerArgs, store: RedisStore) -> anyhow::Result<Self> {
         Ok(Self {
-            dispatcher: RedisDispatcher::new(&args.redis_uri).await?,
+            dispatcher: RedisDispatcher::new(&args.redis_uri)?,
             args,
             store,
             _marker: PhantomData,

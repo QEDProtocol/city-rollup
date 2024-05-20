@@ -83,9 +83,9 @@ pub struct Orchestrator {
 }
 
 impl Orchestrator {
-    pub async fn new(args: OrchestratorArgs) -> anyhow::Result<Self> {
+    pub fn new(args: OrchestratorArgs) -> anyhow::Result<Self> {
         let redis_store = RedisStore::new(&args.redis_uri)?;
-        let dispatcher = RedisDispatcher::new(&args.redis_uri).await?;
+        let dispatcher = RedisDispatcher::new(&args.redis_uri)?;
         let db = Arc::new(Database::create(args.db_path)?);
         let link_api = BTCLinkAPI::new(args.bitcoin_rpc, args.electrs_api);
         let network = Network::from_core_arg(&args.network.to_string())?;
@@ -105,11 +105,11 @@ impl Orchestrator {
         Ok(orchestrator)
     }
 
-    pub async fn run(&mut self) -> anyhow::Result<()> {
-        self.build_block().await
+    pub fn run(&mut self) -> anyhow::Result<()> {
+        self.build_block()
     }
 
-    pub async fn build_block(&mut self) -> anyhow::Result<()> {
+    pub fn build_block(&mut self) -> anyhow::Result<()> {
         let db = self.db.clone();
         let wxn = db.begin_write()?;
 
@@ -121,7 +121,7 @@ impl Orchestrator {
         let (agg_job_ids, block_end_job_ids, sighash_job_ids) = {
             let mut store = KVQReDBStore::new(wxn.open_table(KV)?);
 
-            let txs = self.get_txs(block_id, &mut redis_store).await?;
+            let txs = self.get_txs(block_id, &mut redis_store)?;
             let prev_block_state = L2BlockStateModel::get_block_state_by_id(&store, block_id)?;
 
             let current_block_redeem_script = self.redis_store.get_current_block_redeem_script()?;
@@ -278,7 +278,7 @@ impl Orchestrator {
         Ok(())
     }
 
-    async fn get_txs(
+    fn get_txs(
         &mut self,
         checkpoint_id: u64,
         proof_store: &mut RedisStore,
@@ -286,8 +286,7 @@ impl Orchestrator {
         let rpc_processor = QRPCProcessor::<F>::new(checkpoint_id);
         for (id, message) in self
             .dispatcher
-            .receive_all(Q_TX, Some(Duration::from_secs(2)))
-            ?
+            .receive_all(Q_TX, Some(Duration::from_secs(2)))?
         {
             match serde_json::from_slice::<CityRPCRequest<F>>(&message)? {
                 CityRPCRequest::CityTokenTransferRPCRequest((rpc_node_id, req)) => {
