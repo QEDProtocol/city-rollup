@@ -12,8 +12,10 @@ use crate::{
     qworker::{job_id::QProvingJobDataID, proof_store::QProofStore},
 };
 
-use plonky2::{field::extension::Extendable, hash::hash_types::RichField};
+use plonky2::hash::hash_types::RichField;
 use serde::{Deserialize, Serialize};
+
+use super::traits::{OrchestratorEventReceiverSync, OrchestratorEventSenderSync};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(bound = "")]
@@ -33,13 +35,67 @@ impl<F: RichField> CityScenarioRequestedActionsFromRPC<F> {
         }
     }
 }
+impl<F: RichField> OrchestratorEventReceiverSync<F> for CityScenarioRequestedActionsFromRPC<F> {
+    fn flush_claim_deposits(&mut self) -> anyhow::Result<Vec<CityClaimDepositRequest>> {
+        let mut result = vec![];
+        result.append(&mut self.claim_l1_deposits);
+        Ok(result)
+    }
 
-pub struct QRPCProcessor<F: RichField + Extendable<D>, const D: usize> {
+    fn flush_register_users(&mut self) -> anyhow::Result<Vec<CityRegisterUserRequest<F>>> {
+        let mut result = vec![];
+        result.append(&mut self.register_users);
+        Ok(result)
+    }
+
+    fn flush_add_withdrawals(&mut self) -> anyhow::Result<Vec<CityAddWithdrawalRequest>> {
+        let mut result = vec![];
+        result.append(&mut self.add_withdrawals);
+        Ok(result)
+    }
+
+    fn flush_token_transfers(&mut self) -> anyhow::Result<Vec<CityTokenTransferRequest>> {
+        let mut result = vec![];
+        result.append(&mut self.token_transfers);
+        Ok(result)
+    }
+
+    fn wait_for_produce_block(&mut self) -> anyhow::Result<bool> {
+        Ok(false)
+    }
+}
+impl<F: RichField> OrchestratorEventSenderSync<F> for CityScenarioRequestedActionsFromRPC<F> {
+    fn notify_claim_deposit(&mut self, event: &CityClaimDepositRequest) -> anyhow::Result<()> {
+        self.claim_l1_deposits.push(event.clone());
+        Ok(())
+    }
+
+    fn notify_register_user(&mut self, event: &CityRegisterUserRequest<F>) -> anyhow::Result<()> {
+        self.register_users.push(event.clone());
+        Ok(())
+    }
+
+    fn notify_add_withdrawal(&mut self, event: &CityAddWithdrawalRequest) -> anyhow::Result<()> {
+        self.add_withdrawals.push(event.clone());
+        Ok(())
+    }
+
+    fn notify_token_transfer(&mut self, event: &CityTokenTransferRequest) -> anyhow::Result<()> {
+        self.token_transfers.push(event.clone());
+        Ok(())
+    }
+
+    fn notify_produce_block(&mut self) -> anyhow::Result<()> {
+        Ok(())
+    }
+}
+
+pub struct QRPCProcessor<F: RichField> {
     pub checkpoint_id: u64,
     pub output: CityScenarioRequestedActionsFromRPC<F>,
 }
 
-impl<F: RichField + Extendable<D>, const D: usize> QRPCProcessor<F, D> {
+impl<F: RichField> QRPCProcessor<F> {
     pub fn new(checkpoint_id: u64) -> Self {
         Self {
             checkpoint_id: checkpoint_id,

@@ -1,4 +1,3 @@
-use city_crypto::hash::base_types::{hash160::Hash160, hash256::Hash256};
 use plonky2::hash::hash_types::RichField;
 
 use crate::{
@@ -15,7 +14,6 @@ use crate::{
         },
         store::{CityL1Deposit, CityL1Withdrawal, CityL2BlockState, CityUserState},
     },
-    introspection::transaction::BTCTransaction,
     qworker::job_id::QProvingJobDataID,
 };
 
@@ -111,7 +109,8 @@ pub trait WorkerEventReceiverSync {
 }
 
 pub trait WorkerEventTransmitterSync {
-    fn notify_jobs(&mut self, jobs: &[QProvingJobDataID]) -> anyhow::Result<QProvingJobDataID>;
+    fn enqueue_jobs(&mut self, jobs: &[QProvingJobDataID]) -> anyhow::Result<()>;
+    fn wait_for_block_proving_jobs(&mut self, checkpoint_id: u64) -> anyhow::Result<bool>;
 }
 
 pub trait LastBlockNodeStateQueryAPISync {
@@ -155,9 +154,4 @@ pub trait CurrentBlockNodeStateQueryAPIWriterSync {
     fn dec_user_balance(&self, user_id: u64, amount: u64) -> anyhow::Result<u64>;
     fn inc_withdrawal_count(&self, checkpoint_id: u64) -> anyhow::Result<u64>;
     fn inc_user_count(&self, checkpoint_id: u64) -> anyhow::Result<u64>;
-}
-
-pub trait QBitcoinAPISync {
-    fn get_utxos(&mut self, address: Hash160) -> anyhow::Result<Vec<BTCTransaction>>;
-    fn send_transaction(&mut self, tx: &BTCTransaction) -> anyhow::Result<Hash256>;
 }

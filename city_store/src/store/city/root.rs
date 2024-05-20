@@ -36,12 +36,16 @@ impl<S: KVQBinaryStoreReader> CityStore<S> {
                 checkpoint_id - 1
             },
         )?;
+        println!(
+            "start_root_state_hash[{}]: {:?}",
+            checkpoint_id, start_root_state_hash.0
+        );
         let root_state_hash_bytes =
             felt252_hashout_to_hash256_le(hashout_to_felt252_hashout(start_root_state_hash.0)).0;
 
         Ok(get_block_script_bytes(
             root_state_hash_bytes,
-            checkpoint_id == 0,
+            checkpoint_id < 2,
         ))
     }
     pub fn get_city_block_deposit_address(
@@ -61,7 +65,7 @@ impl<S: KVQBinaryStoreReader> CityStore<S> {
 
         Ok(get_block_script_hash(
             root_state_hash_bytes,
-            checkpoint_id == 0,
+            checkpoint_id < 2,
         ))
     }
     pub fn get_city_block_deposit_address_string(

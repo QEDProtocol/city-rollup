@@ -142,7 +142,7 @@ impl Orchestrator {
                 prev_block_state,
             );
 
-            let (next_block_state, agg_job_ids, _, block_end_job_ids, withdrawals) =
+            let (next_block_state, agg_job_ids, _, block_end_job_ids, _withdrawals) =
                 block_planner.process_requests(&mut store, &mut redis_store, &requested_actions)?;
 
             // cache accessed users
@@ -159,7 +159,7 @@ impl Orchestrator {
             let inputs = funding_utxos
                 .iter()
                 .map(|utxo| BTCTransactionInput {
-                    hash: utxo.txid,
+                    hash: utxo.txid.reversed(),
                     index: utxo.vout,
                     script: current_block_redeem_script.clone(),
                     sequence: 4294967295,
@@ -281,7 +281,7 @@ impl Orchestrator {
         checkpoint_id: u64,
         proof_store: &mut RedisStore,
     ) -> Result<CityScenarioRequestedActionsFromRPC<F>, anyhow::Error> {
-        let rpc_processor = QRPCProcessor::<F, D>::new(checkpoint_id);
+        let rpc_processor = QRPCProcessor::<F>::new(checkpoint_id);
         for (id, message) in self
             .dispatcher
             .receive_all(Q_TX, Some(Duration::from_secs(2)))

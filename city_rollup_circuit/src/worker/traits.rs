@@ -2,9 +2,12 @@ use city_common_circuit::{
     circuits::traits::qstandard::QStandardCircuitProvableWithProofStoreSync,
     treeprover::traits::TreeProverAggCircuit,
 };
-use city_rollup_common::qworker::{
-    job_id::QProvingJobDataID, job_witnesses::op::CircuitInputWithDependencies,
-    proof_store::QProofStoreReaderSync, verifier::QWorkerVerifyHelper,
+use city_rollup_common::{
+    block_template::data::CityGroth16ProofData,
+    qworker::{
+        job_id::QProvingJobDataID, job_witnesses::op::CircuitInputWithDependencies,
+        proof_store::QProofStoreReaderSync, verifier::QWorkerVerifyHelper,
+    },
 };
 use plonky2::plonk::{config::GenericConfig, proof::ProofWithPublicInputs};
 use serde::{de::DeserializeOwned, Serialize};
@@ -22,7 +25,11 @@ pub trait QWorkerGenericProver<S: QProofStoreReaderSync, C: GenericConfig<D>, co
 pub trait QWorkerGenericProverGroth16<S: QProofStoreReaderSync, C: GenericConfig<D>, const D: usize>:
     QWorkerVerifyHelper<C, D>
 {
-    fn worker_prove_groth16(&self, store: &S, job_id: QProvingJobDataID) -> anyhow::Result<String>;
+    fn worker_prove_groth16(
+        &self,
+        store: &S,
+        job_id: QProvingJobDataID,
+    ) -> anyhow::Result<CityGroth16ProofData>;
 }
 pub trait QWorkerGenericProverMut<S: QProofStoreReaderSync, C: GenericConfig<D>, const D: usize>:
     QWorkerVerifyHelper<C, D>

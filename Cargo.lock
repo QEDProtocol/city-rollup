@@ -657,6 +657,7 @@ dependencies = [
  "city_rollup_common",
  "city_rollup_core_node",
  "city_rollup_core_orchestrator",
+ "city_rollup_core_worker",
  "city_store",
  "clap",
  "dotenv",
@@ -839,6 +840,7 @@ dependencies = [
  "async-trait",
  "bincode",
  "bitcoin",
+ "bs58",
  "city_common",
  "city_crypto",
  "city_macros",
@@ -932,6 +934,7 @@ name = "city_rollup_core_worker"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "bincode",
  "bitcoin",
  "city_common",
  "city_common_circuit",

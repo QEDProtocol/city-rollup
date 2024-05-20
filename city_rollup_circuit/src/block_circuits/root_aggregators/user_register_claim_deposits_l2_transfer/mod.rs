@@ -160,38 +160,29 @@ where
         op_l2_transfer_verifier_data: &VerifierOnlyCircuitData<C, D>,
     ) -> anyhow::Result<ProofWithPublicInputs<C::F, C, D>> {
         let mut pw = PartialWitness::new();
-        println!("setting proof for op_register_user_proof");
 
         pw.set_proof_with_pis_target::<C, D>(&self.op_register_user_proof, op_register_user_proof);
-        println!("setting verifier data for op_register_user_proof");
         pw.set_verifier_data_target::<C, D>(
             &self.op_register_user_verifier_data,
             op_register_user_verifier_data,
         );
 
-        println!("setting proof for op_claim_l1_deposit_proof");
-
         pw.set_proof_with_pis_target::<C, D>(
             &self.op_claim_l1_deposit_proof,
             op_claim_l1_deposit_proof,
         );
-        println!("setting verifier data for op_claim_l1_deposit_verifier_data");
 
         pw.set_verifier_data_target::<C, D>(
             &self.op_claim_l1_deposit_verifier_data,
             op_claim_l1_deposit_verifier_data,
         );
 
-        println!("setting proof for op_l2_transfer_proof");
-
         pw.set_proof_with_pis_target::<C, D>(&self.op_l2_transfer_proof, op_l2_transfer_proof);
 
-        println!("setting verifier data for op_l2_transfer_verifier_data");
         pw.set_verifier_data_target::<C, D>(
             &self.op_l2_transfer_verifier_data,
             op_l2_transfer_verifier_data,
         );
-        println!("proofs finished!");
 
         self.transition_gadget.set_witness(&mut pw, input);
 

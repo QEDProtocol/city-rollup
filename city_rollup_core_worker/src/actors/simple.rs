@@ -11,7 +11,41 @@ use plonky2::plonk::config::{GenericConfig, PoseidonGoldilocksConfig};
 
 pub struct SimpleActorWorker {}
 impl SimpleActorWorker {
-    pub fn process_job<
+    pub fn run_worker<
+        PS: QProofStore,
+        ER: WorkerEventReceiverSync,
+        G: QWorkerGenericProver<PS, C, D>
+            + QWorkerGenericProverGroth16<PS, PoseidonGoldilocksConfig, 2>,
+        C: GenericConfig<D>,
+        const D: usize,
+    >(
+        store: &mut PS,
+        event_receiver: &mut ER,
+        prover: &G,
+    ) -> anyhow::Result<()> {
+        loop {
+            Self::process_next_job(store, event_receiver, prover)?;
+        }
+    }
+    pub fn process_next_job<
+        PS: QProofStore,
+        ER: WorkerEventReceiverSync,
+        G: QWorkerGenericProver<PS, C, D>
+            + QWorkerGenericProverGroth16<PS, PoseidonGoldilocksConfig, 2>,
+        C: GenericConfig<D>,
+        const D: usize,
+    >(
+        store: &mut PS,
+        event_receiver: &mut ER,
+        prover: &G,
+    ) -> anyhow::Result<()> {
+        //let mut timer = TraceTimer::new("process_next_job");
+        let job = event_receiver.wait_for_next_job()?;
+        Self::process_job(store, event_receiver, prover, job)?;
+        //timer.lap("processed next job");
+        Ok(())
+    }
+    fn process_job<
         PS: QProofStore,
         ER: WorkerEventReceiverSync,
         G: QWorkerGenericProver<PS, C, D>
@@ -28,9 +62,11 @@ impl SimpleActorWorker {
         if job_id.topic == QJobTopic::GenerateStandardProof {
             let _ = match job_id.circuit_type {
                 ProvingJobCircuitType::WrapFinalSigHashProofBLS12381 => {
+                    // TODO: implement conversion from proof to bytes
                     let proof = G::worker_prove_groth16(prover, store, job_id)?;
                     let output_id = job_id.get_output_id();
-                    store.set_bytes_by_id(output_id, proof.as_bytes())?;
+                    store.set_bytes_by_id(output_id, &bincode::serialize(&proof)?)?;
+
                     output_id
                 }
                 _ => {
@@ -48,15 +84,17 @@ impl SimpleActorWorker {
 
         let goal_counter = store.get_goal_by_job_id(job_id)?;
         if goal_counter != 0 {
-            let result = store.inc_counter_by_id(job_id)?;
+            let result = store.inc_counter_by_id(job_id.get_sub_group_counter_id())?;
             if result == goal_counter {
                 let jobs = store.get_next_jobs_by_job_id(job_id)?;
+                println!("[{:?}] enqueuing_jobs: {:?}", job_id, jobs);
                 event_receiver.enqueue_jobs(&jobs)?;
             }
         }
         timer.event(format!(
-            "processed job {}",
-            hex::encode(job_id.to_fixed_bytes())
+            "processed job {} ({:?})",
+            hex::encode(job_id.to_fixed_bytes()),
+            job_id
         ));
 
         Ok(())

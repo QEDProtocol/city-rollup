@@ -1,11 +1,13 @@
 use bitcoin::consensus::{deserialize_partial, serialize};
 use bitcoin::VarInt;
+use city_common::data::varuint::varuint_size;
 use city_crypto::hash::base_types::hash160::Hash160;
 use city_crypto::hash::base_types::hash256::Hash256;
 use city_crypto::hash::core::btc::{btc_hash160, btc_hash256};
 use serde::{Deserialize, Serialize};
 
 use crate::block_template::BLOCK_SCRIPT_LENGTH;
+use crate::link::data::{AddressToBTCScript, BTCAddress160};
 
 use super::rollup::introspection::BlockSpendCoreConfig;
 use super::sighash::SigHashPreimage;
@@ -18,19 +20,7 @@ pub struct BTCTransaction {
     pub outputs: Vec<BTCTransactionOutput>,
     pub locktime: u32,
 }
-impl BTCTransaction {
-    pub fn dummy() -> Self {
-        Self {
-            version: 2,
-            inputs: vec![],
-            outputs: vec![],
-            locktime: 0,
-        }
-    }
-    pub fn is_dummy(&self) -> bool {
-        self.inputs.len() == 0 && self.outputs.len() == 0
-    }
-}
+impl BTCTransaction {}
 #[derive(Serialize, Deserialize, PartialEq, Clone, Debug, Hash, Eq, PartialOrd, Ord)]
 pub struct BTCTransactionConfig {
     pub layout: BTCTransactionLayout,
@@ -110,6 +100,28 @@ pub struct BTCTransactionOutput {
     pub script: Vec<u8>,
 }
 
+#[derive(Serialize, Deserialize, PartialEq, Clone, Debug)]
+pub struct BTCTransactionInputWithoutScript {
+    pub hash: Hash256,
+    pub index: u32,
+    pub sequence: u32,
+}
+impl BTCTransactionInputWithoutScript {
+    pub fn new(hash: Hash256, index: u32, sequence: u32) -> Self {
+        Self {
+            hash,
+            index,
+            sequence,
+        }
+    }
+    pub fn new_simple(hash: Hash256, index: u32) -> Self {
+        Self {
+            hash,
+            index,
+            sequence: 0xffffffff,
+        }
+    }
+}
 #[serde_as]
 #[derive(Serialize, Deserialize, PartialEq, Clone, Debug)]
 pub struct BTCTransactionInput {
@@ -122,6 +134,118 @@ pub struct BTCTransactionInput {
     // pub witness: Vec<u8>,
 }
 impl BTCTransaction {
+    pub fn dummy() -> Self {
+        Self {
+            version: 2,
+            inputs: vec![],
+            outputs: vec![],
+            locktime: 0,
+        }
+    }
+    pub fn from_partial(
+        inputs: &[BTCTransactionInputWithoutScript],
+        outputs: Vec<BTCTransactionOutput>,
+    ) -> Self {
+        Self {
+            version: 2,
+            inputs: inputs
+                .into_iter()
+                .map(|x| BTCTransactionInput {
+                    hash: x.hash,
+                    index: x.index,
+                    script: vec![],
+                    sequence: x.sequence,
+                })
+                .collect(),
+            outputs: outputs,
+            locktime: 0,
+        }
+    }
+    pub fn from_io(inputs: Vec<BTCTransactionInput>, outputs: Vec<BTCTransactionOutput>) -> Self {
+        Self {
+            version: 2,
+            inputs: inputs,
+            outputs: outputs,
+            locktime: 0,
+        }
+    }
+    pub fn is_dummy(&self) -> bool {
+        self.inputs.len() == 0 && self.outputs.len() == 0
+    }
+    pub fn get_vouts_for_address(&self, address: &BTCAddress160) -> Vec<u32> {
+        let address_script = address.to_btc_script();
+        self.outputs
+            .iter()
+            .enumerate()
+            .filter_map(|(i, output)| {
+                if output.script.eq(&address_script) {
+                    Some(i as u32)
+                } else {
+                    None
+                }
+            })
+            .collect()
+    }
+    pub fn get_sighash_preimages(&self, script: &[u8], sighash_type: u32) -> Vec<SigHashPreimage> {
+        (0..self.inputs.len())
+            .map(|i| SigHashPreimage::for_transaction_pre_segwit(&self, i, script, sighash_type))
+            .collect()
+    }
+    pub fn get_sighashes(&self, script: &[u8], sighash_type: u32) -> Vec<Hash256> {
+        (0..self.inputs.len())
+            .map(|i| {
+                btc_hash256(
+                    &SigHashPreimage::for_transaction_pre_segwit(&self, i, script, sighash_type)
+                        .to_bytes(),
+                )
+            })
+            .collect()
+    }
+    pub fn has_witnesses(&self) -> bool {
+        // for doge coin we do not have witness for input, so we removed this from the BTC gadget
+
+        /*
+        for input in &self.inputs {
+            if input.witness.len() > 0 {
+                return true;
+            }
+        }
+        */
+
+        false
+    }
+    pub fn byte_length(&self, allow_witness: bool) -> usize {
+        let has_witnesses = allow_witness && self.has_witnesses();
+        let base: usize = if has_witnesses { 10 } else { 8 };
+
+        // for doge coin, we do not have witness for input, so we removed this from the BTC gadget
+        let witnesses_size = 0usize;
+
+        base + varuint_size(self.inputs.len() as u64)
+            + varuint_size(self.outputs.len() as u64)
+            + self
+                .inputs
+                .iter()
+                .map(|x| 40 + x.script.len())
+                .sum::<usize>()
+            + self
+                .outputs
+                .iter()
+                .map(|x| 8 + x.script.len())
+                .sum::<usize>()
+            + witnesses_size
+    }
+    pub fn weight(&self) -> u64 {
+        let base = self.byte_length(false) as u64;
+        let total = self.byte_length(true) as u64;
+        base * 3 + total
+    }
+    pub fn virtual_size(&self) -> u64 {
+        let weight = self.weight();
+        let extra = if (weight & 0b11) != 0 { 1u64 } else { 0u64 };
+        (weight >> 2u64) + extra
+    }
+
     pub fn get_layout(&self) -> BTCTransactionLayout {
         BTCTransactionLayout {
             input_script_sizes: self.inputs.iter().map(|inp| inp.script.len()).collect(),

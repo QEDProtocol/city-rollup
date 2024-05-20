@@ -109,25 +109,20 @@ where
         agg_add_process_withdrawals_add_l1_deposit_proof: &ProofWithPublicInputs<C::F, C, D>,
     ) -> anyhow::Result<ProofWithPublicInputs<C::F, C, D>> {
         let mut pw = PartialWitness::new();
-        println!("setting proof for op_add_l1_withdrawal_proof");
 
         pw.set_proof_with_pis_target::<C, D>(
             &self.agg_user_register_claim_deposits_l2_transfer_proof,
             agg_user_register_claim_deposits_l2_transfer_proof,
         );
-        println!("setting verifier data for agg_add_process_withdrawals_add_l1_deposit_proof");
 
         pw.set_proof_with_pis_target::<C, D>(
             &self.agg_add_process_withdrawals_add_l1_deposit_proof,
             agg_add_process_withdrawals_add_l1_deposit_proof,
         );
 
-        println!("proofs finished!");
-
         self.transition_gadget.set_witness(&mut pw, input);
 
         let inner_proof = self.circuit_data.prove(pw)?;
-        println!("proved_inner");
         self.minifier_chain.prove(&inner_proof)
     }
 }

@@ -13,6 +13,11 @@ use plonky2::{
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_with::serde_as;
 
+use super::base_types::{
+    felt252::{felt252_hashout_to_hash256_le, hashout_to_felt252_hashout},
+    hash256::Hash256,
+};
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct QHashOut<F: Field>(pub HashOut<F>);
 pub type GoldilocksHashOut = QHashOut<GoldilocksField>;
@@ -161,6 +166,9 @@ impl<F: RichField> QHashOut<F> {
         result[16..24].copy_from_slice(&self.0.elements[2].to_canonical_u64().to_le_bytes());
         result[24..32].copy_from_slice(&self.0.elements[3].to_canonical_u64().to_le_bytes());
         result
+    }
+    pub fn to_felt252_hash256(&self) -> Hash256 {
+        felt252_hashout_to_hash256_le(hashout_to_felt252_hashout(self.0))
     }
     pub fn to_string_le(&self) -> String {
         hex::encode(self.to_le_bytes())

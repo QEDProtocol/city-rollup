@@ -499,6 +499,7 @@ impl QProvingJobDataID {
     pub fn get_sub_group_counter_id(&self) -> Self {
         Self {
             data_type: ProvingJobDataType::Counter,
+            task_index: 0,
             data_index: 0,
             ..*self
         }
@@ -506,6 +507,7 @@ impl QProvingJobDataID {
     pub fn get_sub_group_counter_goal_id(&self) -> Self {
         Self {
             data_type: ProvingJobDataType::Counter,
+            task_index: 0,
             data_index: 1,
             ..*self
         }
@@ -513,6 +515,7 @@ impl QProvingJobDataID {
     pub fn get_sub_group_counter_goal_next_jobs_id(&self) -> Self {
         Self {
             data_type: ProvingJobDataType::Counter,
+            task_index: 0,
             data_index: 2,
             ..*self
         }

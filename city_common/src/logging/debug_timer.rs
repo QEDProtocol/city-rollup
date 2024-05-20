@@ -36,4 +36,17 @@ impl DebugTimer {
         self.start_time = Instant::now();
         elapsed_ms
     }
+    pub fn event(&mut self, event_name: String) -> u64 {
+        let elapsed = self.start_time.elapsed();
+        let elapsed_ms = elapsed.as_millis() as u64;
+        println!(
+            "\x1b[96m{}\x1b[0m - \x1b[94m{}\x1b[0m: {} {}ms \x1b[0m",
+            self.name,
+            event_name,
+            get_time_color(elapsed_ms),
+            elapsed_ms
+        );
+        self.start_time = Instant::now();
+        elapsed_ms
+    }
 }

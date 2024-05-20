@@ -7,17 +7,20 @@ use city_common_circuit::{
     field::cubic::CubicExtendable,
 };
 use city_crypto::{
-    field::qfield::QRichField,
+    field::{qfield::QRichField, serialized_2d_felt_bls12381::Serialized2DFeltBLS12381},
     hash::{
         merkle::treeprover::TPCircuitFingerprintConfig, qhashout::QHashOut,
         traits::hasher::MerkleZeroHasher,
     },
 };
-use city_rollup_common::qworker::{
-    fingerprints::CRWorkerToolboxRootCircuitFingerprints,
-    job_id::{ProvingJobCircuitType, QProvingJobDataID},
-    proof_store::QProofStoreReaderSync,
-    verifier::QWorkerVerifyHelper,
+use city_rollup_common::{
+    block_template::data::CityGroth16ProofData,
+    qworker::{
+        fingerprints::CRWorkerToolboxRootCircuitFingerprints,
+        job_id::{ProvingJobCircuitType, QProvingJobDataID},
+        proof_store::QProofStoreReaderSync,
+        verifier::QWorkerVerifyHelper,
+    },
 };
 use plonky2::{
     hash::hash_types::HashOut,
@@ -195,7 +198,6 @@ where
         store: &S,
         job_id: QProvingJobDataID,
     ) -> anyhow::Result<ProofWithPublicInputs<C::F, C, D>> {
-        println!("proving_job: {:?}", job_id);
         let circuit_type = job_id.circuit_type;
         match circuit_type {
             ProvingJobCircuitType::AggUserRegisterClaimDepositL2Transfer => self
@@ -254,7 +256,11 @@ where
 impl<S: QProofStoreReaderSync> QWorkerGenericProverGroth16<S, PoseidonGoldilocksConfig, 2>
     for CRWorkerToolboxRootCircuits<PoseidonGoldilocksConfig, 2>
 {
-    fn worker_prove_groth16(&self, store: &S, job_id: QProvingJobDataID) -> anyhow::Result<String> {
+    fn worker_prove_groth16(
+        &self,
+        store: &S,
+        job_id: QProvingJobDataID,
+    ) -> anyhow::Result<CityGroth16ProofData> {
         let input_data = store.get_bytes_by_id(job_id)?;
         let input_proof_id = bincode::deserialize::<QProvingJobDataID>(&input_data)?;
         let (common_data, verifier_data, fingerprint) =
@@ -270,7 +276,16 @@ impl<S: QProofStoreReaderSync> QWorkerGenericProverGroth16<S, PoseidonGoldilocks
             fingerprint,
             verifier_data.constants_sigmas_cap.height(),
         );
-        let wrapper_proof = wrapper.prove_base(&inner_proof, &verifier_data)?;
-        gnark_plonky2_wrapper::wrap_plonky2_proof(wrapper.circuit_data, &wrapper_proof)
+        let _wrapper_proof = wrapper.prove_base(&inner_proof, &verifier_data)?;
+        // todo, implement prover for g16
+        // let proof_string =  gnark_plonky2_wrapper::wrap_plonky2_proof(wrapper.circuit_data, &wrapper_proof)?;
+        // let proof_data = serde_json::from_str::<CityGroth16ProofData>(&proof_string)?;
+        let proof_data = CityGroth16ProofData {
+            pi_a: Serialized2DFeltBLS12381([0; 48]),
+            pi_b_a0: Serialized2DFeltBLS12381([0; 48]),
+            pi_b_a1: Serialized2DFeltBLS12381([0; 48]),
+            pi_c: Serialized2DFeltBLS12381([0; 48]),
+        };
+        Ok(proof_data)
     }
 }
