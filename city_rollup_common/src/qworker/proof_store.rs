@@ -38,7 +38,6 @@ pub trait QProofStoreWriterSync {
         jobs_levels: &[Vec<QProvingJobDataID>],
         next_jobs: &[QProvingJobDataID],
     ) -> anyhow::Result<()> {
-        println!("jobs_levels: {:?}", jobs_levels);
         let job_levels_count = jobs_levels.len();
         for i in 0..job_levels_count {
             let counter_id = jobs_levels[i][0].get_sub_group_counter_id();
