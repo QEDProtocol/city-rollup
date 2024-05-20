@@ -1,3 +1,4 @@
+use std::marker::PhantomData;
 use std::net::SocketAddr;
 
 use bytes::Buf;
@@ -5,13 +6,18 @@ use bytes::Bytes;
 use city_common::cli::args::RPCServerArgs;
 use city_common_circuit::circuits::zk_signature::verify_standard_wrapped_zk_signature_proof;
 use city_redis_store::RedisStore;
-use city_rollup_common::api::data::block::rpc_request::CityRPCRequest;
+use city_rollup_common::actors::traits::OrchestratorRPCEventSenderSync;
+use city_rollup_worker_dispatch::implementations::redis::QueueCmd;
 use city_rollup_worker_dispatch::implementations::redis::RedisDispatcher;
-use city_rollup_worker_dispatch::implementations::redis::Q_TX;
+use city_rollup_worker_dispatch::implementations::redis::Q_RPC_ADD_WITHDRAWAL;
+use city_rollup_worker_dispatch::implementations::redis::Q_RPC_CLAIM_DEPOSIT;
+use city_rollup_worker_dispatch::implementations::redis::Q_RPC_REGISTER_USER;
+use city_rollup_worker_dispatch::implementations::redis::Q_RPC_TOKEN_TRANSFER;
+use city_rollup_worker_dispatch::implementations::redis::Q_CMD;
+use city_rollup_common::api::data::block::rpc_request::*;
 use city_rollup_worker_dispatch::traits::proving_dispatcher::ProvingDispatcher;
 use city_store::config::C;
 use city_store::config::D;
-use city_store::config::F;
 use http_body_util::BodyExt;
 use http_body_util::Full;
 use hyper::body::Incoming;
@@ -23,6 +29,7 @@ use hyper::Request;
 use hyper::Response;
 use hyper::StatusCode;
 use hyper_util::rt::TokioIo;
+use plonky2::hash::hash_types::RichField;
 use tokio::net::TcpListener;
 use tokio::task::spawn_blocking;
 
@@ -38,18 +45,20 @@ static NOTFOUND: &[u8] = b"Not Found";
 static INDEX_HTML: &str = include_str!("../public/index.html");
 
 #[derive(Clone)]
-pub struct CityRollupRPCServerHandler {
+pub struct CityRollupRPCServerHandler<F: RichField> {
     pub args: RPCServerArgs,
     pub store: RedisStore,
     pub dispatcher: RedisDispatcher,
+    _marker: PhantomData<F>,
 }
 
-impl CityRollupRPCServerHandler {
+impl<F: RichField> CityRollupRPCServerHandler<F> {
     pub async fn new(args: RPCServerArgs, store: RedisStore) -> anyhow::Result<Self> {
         Ok(Self {
-            dispatcher: RedisDispatcher::new(&args.redis_uri).await?,
+            dispatcher: RedisDispatcher::new(&args.redis_uri)?,
             args,
             store,
+            _marker: PhantomData,
         })
     }
 
@@ -87,59 +96,30 @@ impl CityRollupRPCServerHandler {
         // Aggregate the body...
         let whole_body = req.collect().await?.aggregate();
         // Decode as JSON...
-        let data = serde_json::from_reader::<_, RpcRequest>(whole_body.reader())?;
+        let data = serde_json::from_reader::<_, RpcRequest<F>>(whole_body.reader())?;
         let res = match data.request {
-            // User
             RequestParams::TokenTransfer(req) => {
                 self.verify_signature_proof(req.user_id, req.signature_proof.clone())
                     .await?;
 
-                self.dispatcher
-                    .dispatch(
-                        Q_TX,
-                        CityRPCRequest::<F>::CityTokenTransferRPCRequest((
-                            self.args.rpc_node_id,
-                            req,
-                        )),
-                    )
-                    .await?;
+                self.notify_rpc_token_transfer(&req)?;
             }
             RequestParams::ClaimDeposit(req) => {
                 self.verify_signature_proof(req.user_id, req.signature_proof.clone())
                     .await?;
 
-                self.dispatcher
-                    .dispatch(
-                        Q_TX,
-                        CityRPCRequest::<F>::CityClaimDepositRPCRequest((
-                            self.args.rpc_node_id,
-                            req,
-                        )),
-                    )
-                    .await?;
+                self.notify_rpc_claim_deposit(&req)?;
             }
             RequestParams::AddWithdrawal(req) => {
                 self.verify_signature_proof(req.user_id, req.signature_proof.clone())
                     .await?;
 
-                self.dispatcher
-                    .dispatch(
-                        Q_TX,
-                        CityRPCRequest::<F>::CityAddWithdrawalRPCRequest((
-                            self.args.rpc_node_id,
-                            req,
-                        )),
-                    )
-                    .await?;
+                self.notify_rpc_add_withdrawal(&req)?;
             }
             RequestParams::RegisterUser(req) => {
-                self.dispatcher
-                    .dispatch(
-                        Q_TX,
-                        CityRPCRequest::CityRegisterUserRPCRequest((self.args.rpc_node_id, req)),
-                    )
-                    .await?;
+                self.notify_rpc_register_user(&req)?;
             }
+            RequestParams::ProduceBlock => self.notify_rpc_produce_block()?,
         };
 
         let response = RpcResponse {
@@ -156,13 +136,52 @@ impl CityRollupRPCServerHandler {
     }
 }
 
-pub async fn run(args: RPCServerArgs) -> anyhow::Result<()> {
+impl<F: RichField> OrchestratorRPCEventSenderSync<F> for CityRollupRPCServerHandler<F> {
+    fn notify_rpc_claim_deposit(
+        &mut self,
+        event: &CityClaimDepositRPCRequest,
+    ) -> anyhow::Result<()> {
+        self.dispatcher.dispatch(Q_RPC_CLAIM_DEPOSIT, event.clone())?;
+        Ok(())
+    }
+
+    fn notify_rpc_register_user(
+        &mut self,
+        event: &CityRegisterUserRPCRequest<F>,
+    ) -> anyhow::Result<()> {
+        self.dispatcher.dispatch(Q_RPC_REGISTER_USER, event.clone())?;
+        Ok(())
+    }
+
+    fn notify_rpc_add_withdrawal(
+        &mut self,
+        event: &CityAddWithdrawalRPCRequest,
+    ) -> anyhow::Result<()> {
+        self.dispatcher.dispatch(Q_RPC_ADD_WITHDRAWAL, event.clone())?;
+        Ok(())
+    }
+
+    fn notify_rpc_token_transfer(
+        &mut self,
+        event: &CityTokenTransferRPCRequest,
+    ) -> anyhow::Result<()> {
+        self.dispatcher.dispatch(Q_RPC_TOKEN_TRANSFER, event.clone())?;
+        Ok(())
+    }
+
+    fn notify_rpc_produce_block(&mut self) -> anyhow::Result<()> {
+        self.dispatcher.dispatch(Q_CMD, QueueCmd::ProduceBlock)?;
+        Ok(())
+    }
+}
+
+pub async fn run<F: RichField>(args: RPCServerArgs) -> anyhow::Result<()> {
     let addr: SocketAddr = args.rollup_rpc_address.parse()?;
 
     let listener = TcpListener::bind(addr).await?;
     println!("Listening on http://{}", addr);
     let store = RedisStore::new(&args.redis_uri)?;
-    let handler = CityRollupRPCServerHandler::new(args, store).await?;
+    let handler = CityRollupRPCServerHandler::<F>::new(args, store).await?;
 
     loop {
         let (stream, _) = listener.accept().await?;

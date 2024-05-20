@@ -42,3 +42,4 @@ logs/
 chaindata/
 ordhook-data/
 db
+redis-data/
