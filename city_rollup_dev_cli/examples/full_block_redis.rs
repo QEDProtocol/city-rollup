@@ -34,7 +34,6 @@ fn run_full_block() -> anyhow::Result<()> {
     type C = PoseidonGoldilocksConfig;
     type F = GoldilocksField;
     type S = KVQSimpleMemoryBackingStore;
-    type PS = RedisStore;
     type CityWorker = SimpleActorWorker;
     type CityOrchestrator = SimpleActorOrchestrator;
 
