@@ -7,7 +7,7 @@ use city_common_circuit::{
     field::cubic::CubicExtendable,
 };
 use city_crypto::{
-    field::{qfield::QRichField, serialized_2d_felt_bls12381::Serialized2DFeltBLS12381},
+    field::{qfield::QRichField},
     hash::{
         merkle::treeprover::TPCircuitFingerprintConfig, qhashout::QHashOut,
         traits::hasher::MerkleZeroHasher,
@@ -276,16 +276,9 @@ impl<S: QProofStoreReaderSync> QWorkerGenericProverGroth16<S, PoseidonGoldilocks
             fingerprint,
             verifier_data.constants_sigmas_cap.height(),
         );
-        let _wrapper_proof = wrapper.prove_base(&inner_proof, &verifier_data)?;
-        // todo, implement prover for g16
-        // let proof_string =  gnark_plonky2_wrapper::wrap_plonky2_proof(wrapper.circuit_data, &wrapper_proof)?;
-        // let proof_data = serde_json::from_str::<CityGroth16ProofData>(&proof_string)?;
-        let proof_data = CityGroth16ProofData {
-            pi_a: Serialized2DFeltBLS12381([0; 48]),
-            pi_b_a0: Serialized2DFeltBLS12381([0; 48]),
-            pi_b_a1: Serialized2DFeltBLS12381([0; 48]),
-            pi_c: Serialized2DFeltBLS12381([0; 48]),
-        };
+        let wrapper_proof = wrapper.prove_base(&inner_proof, &verifier_data)?;
+        let (proof_string, _) =  gnark_plonky2_wrapper::wrap_plonky2_proof(wrapper.circuit_data, &wrapper_proof)?;
+        let proof_data = serde_json::from_str::<CityGroth16ProofData>(&proof_string)?;
         Ok(proof_data)
     }
 }

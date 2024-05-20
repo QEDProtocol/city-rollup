@@ -62,3 +62,13 @@ impl CityGroth16ProofData {
         encode_binary_witness_script_for_p2sh(base_script, inputs.into_iter())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_serde() {
+        serde_json::from_str::<CityGroth16ProofData>(r#"{"pi_a":"43776e03166caf84da077f7122bb0c92c27523130cdfb6f6dbde349778ce2c674a512cbfb0d350091d56c3dc4c2dd60f","pi_b_a0":"9cc3c5106b500a2ec272b098808568128c52199932d332849efe076da5f5107503c561314e7de04a5589fa299a9b9818","pi_b_a1":"951e39df42c826fd543238566bcbc9a41580514c337b0911aeac91d49c43aaf7b847c8539c4c57599a5b78611fdf5c96","pi_c":"c12b47a78500e2fb508153b28278067b9471f97457f02c8d3ca376e276479a24ae87bf7a6068f6a584b794ddff04f305"}"#).unwrap();
+    }
+}
