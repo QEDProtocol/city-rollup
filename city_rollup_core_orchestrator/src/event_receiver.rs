@@ -14,15 +14,13 @@ use city_rollup_common::api::data::block::rpc_request::{
 };
 use city_rollup_common::qworker::proof_store::QProofStore;
 use city_rollup_worker_dispatch::implementations::redis::{
-    QueueCmd, RedisDispatcher, Q_ADD_WITHDRAWAL, Q_CLAIM_DEPOSIT, Q_CMD, Q_REGISTER_USER,
+    QueueCmd, RedisDispatcher, Q_CMD,
     Q_RPC_ADD_WITHDRAWAL, Q_RPC_CLAIM_DEPOSIT, Q_RPC_REGISTER_USER, Q_RPC_TOKEN_TRANSFER,
-    Q_TOKEN_TRANSFER,
 };
 use city_rollup_worker_dispatch::traits::proving_dispatcher::ProvingDispatcher;
 use city_rollup_worker_dispatch::traits::proving_worker::ProvingWorkerListener;
 use plonky2::hash::hash_types::RichField;
 use serde::de::DeserializeOwned;
-use serde::Deserialize;
 
 pub struct CityEventReceiver<F: RichField> {
     dispatcher: RedisDispatcher,

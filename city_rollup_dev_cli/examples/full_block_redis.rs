@@ -14,10 +14,8 @@ use city_rollup_common::{
         data::BTCAddress160, link_api::BTCLinkAPI, traits::QBitcoinAPIFunderSync,
         tx::setup_genesis_block,
     },
-    qworker::memory_proof_store::SimpleProofStoreMemory,
 };
 use city_rollup_core_orchestrator::{debug::{
-    coordinator::core::DevMemoryCoordinatatorRPCQueue,
     scenario::{actors::simple::SimpleActorOrchestrator, wallet::DebugScenarioWallet},
 }, event_receiver::CityEventReceiver};
 use city_rollup_core_worker::actors::simple::SimpleActorWorker;
@@ -45,7 +43,7 @@ fn run_full_block() -> anyhow::Result<()> {
     let sighash_whitelist_tree = SigHashMerkleTree::new();
 
     let mut proof_store = RedisStore::new("redis://localhost:6379/0")?;
-    let mut dispatcher = RedisDispatcher::new("redis://localhost:6379/0")?;
+    let dispatcher = RedisDispatcher::new("redis://localhost:6379/0")?;
     let mut store = S::new();
     let mut timer = DebugTimer::new("prove_block_demo");
     let mut worker_event_processor = CityEventProcessorMemory::new();
