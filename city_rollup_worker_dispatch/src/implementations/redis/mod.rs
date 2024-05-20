@@ -32,11 +32,18 @@ pub const Q_ADD_WITHDRAWAL: &'static str = "ADD_WITHDRAWAL";
 pub const Q_REGISTER_USER: &'static str = "REGISTER_USER";
 pub const Q_CMD: &'static str = "CMD";
 pub const Q_JOB: &'static str = "JOB";
+pub const Q_NOTIFICATIONS: &'static str = "NOTIFICATIONS";
 
 #[derive(Clone, Copy, PartialEq, Debug, Serialize_repr, Deserialize_repr)]
 #[repr(u8)]
 pub enum QueueCmd {
     ProduceBlock = 0,
+}
+
+#[derive(Clone, Copy, PartialEq, Debug, Serialize_repr, Deserialize_repr)]
+#[repr(u8)]
+pub enum QueueNotification {
+    CoreJobCompleted = 0,
 }
 
 impl RedisDispatcher {
@@ -55,7 +62,11 @@ impl RedisDispatcher {
 }
 
 impl ProvingDispatcher for RedisDispatcher {
-    fn dispatch(self: &mut Self, topic: &str, value: impl Serialize + Send + 'static) -> Result<()> {
+    fn dispatch(
+        self: &mut Self,
+        topic: &str,
+        value: impl Serialize + Send + 'static,
+    ) -> Result<()> {
         block_on(capture!(self => this, async move {
             if matches!(
                 this.queue.get_queue_attributes(topic).await,
@@ -134,6 +145,12 @@ impl ProvingWorkerListener for RedisDispatcher {
     fn delete_message(&mut self, topic: &str, id: String) -> anyhow::Result<bool> {
         block_on(capture!(self => this, async move {
             Ok(this.queue.delete_message(topic, &id).await?)
+        }))
+    }
+
+    fn is_empty(&mut self, topic: &str) -> anyhow::Result<bool> {
+        block_on(capture!(self => this, async move {
+            Ok(this.queue.get_queue_attributes(topic).await?.msgs == 0)
         }))
     }
 }

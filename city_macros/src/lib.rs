@@ -166,6 +166,23 @@ macro_rules! async_infinite_loop {
 }
 
 #[macro_export]
+macro_rules! sync_infinite_loop {
+    ($interval:expr, $($body:tt)*) => {
+        loop {
+            if let Err(err) = (|| {
+                $($body)*
+
+                Ok::<_, anyhow::Error>(())
+            })() {
+                println!("Error: {:?}", err);
+            }
+
+            std::thread::sleep(Duration::from_millis($interval));
+        }
+    };
+}
+
+#[macro_export]
 macro_rules! spawn_async_infinite_loop {
     ($interval:expr, $($body:tt)*) => {
         std::thread::spawn(move || {
@@ -186,6 +203,24 @@ macro_rules! spawn_async_infinite_loop {
                     tokio::time::sleep(Duration::from_millis($interval)).await;
                 }
             });
+        })
+    };
+}
+
+#[macro_export]
+macro_rules! spawn_sync_infinite_loop {
+    ($interval:expr, $($body:tt)*) => {
+        std::thread::spawn(move || {
+            loop {
+                if let Err(err) = (|| {
+                    $($body)*
+
+                    Ok::<_, anyhow::Error>(())
+                })() {
+                    println!("Error: {:?}", err);
+                }
+                std::thread::sleep(Duration::from_millis($interval));
+            }
         })
     };
 }
