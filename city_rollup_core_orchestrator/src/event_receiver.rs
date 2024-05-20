@@ -113,10 +113,10 @@ impl<F: RichField> OrchestratorEventReceiverSync<F> for CityEventReceiver<F> {
             match self
                 .dispatcher
                 .pop_one(Q_CMD)?
-                .map(|v| serde_json::from_slice::<QueueCmd>(&v).unwrap())
+                .map(|v| serde_json::from_slice::<QueueCmd>(&v))
             {
-                Some(QueueCmd::ProduceBlock) => return Ok::<_, anyhow::Error>(true),
-                None => {
+                Some(Ok(QueueCmd::ProduceBlock)) => return Ok::<_, anyhow::Error>(true),
+                Some(Err(_)) | None => {
                     std::thread::sleep(Duration::from_millis(500));
                     continue;
                 }
