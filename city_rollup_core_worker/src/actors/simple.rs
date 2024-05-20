@@ -83,6 +83,7 @@ impl SimpleActorWorker {
         }
 
         let goal_counter = store.get_goal_by_job_id(job_id)?;
+        println!("goal_counter: {}", goal_counter);
         if goal_counter != 0 {
             let result = store.inc_counter_by_id(job_id.get_sub_group_counter_id())?;
             if result == goal_counter {

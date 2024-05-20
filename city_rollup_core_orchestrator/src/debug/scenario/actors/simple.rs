@@ -53,11 +53,11 @@ pub fn create_hints_for_block(
     let total_withdrawals = withdrawals.iter().map(|x| x.value).sum::<u64>();
     let total_fees =
         WITHDRAWAL_FEE_AMOUNT * (withdrawals.len() as u64) + BLOCK_SCRIPT_SPEND_BASE_FEE_AMOUNT;
-    if total_fees > total_balance {
-        anyhow::bail!("total fees exceed total balance");
+    if (total_fees + total_withdrawals) > total_balance {
+        anyhow::bail!("total fees + total withdrawals exceed total balance");
     }
 
-    let next_block_balance = total_balance - total_withdrawals;
+    let next_block_balance = total_balance - total_withdrawals - total_fees;
 
     let outputs = [
         vec![BTCTransactionOutput {
@@ -219,11 +219,16 @@ impl SimpleActorOrchestrator {
         fingerprints: &CRWorkerToolboxCoreCircuitFingerprints<F>,
         sighash_whitelist_tree: &SigHashMerkleTree,
     ) -> anyhow::Result<(Vec<QProvingJobDataID>, u64, usize, BTCTransaction)> {
+        println!("a");
+
         let last_block = CityStore::get_latest_block_state(store)?;
+        println!("b");
         let last_block_address =
             CityStore::get_city_block_deposit_address(store, last_block.checkpoint_id - 1)?;
+        println!("c");
         let current_block_address =
             CityStore::get_city_block_deposit_address(store, last_block.checkpoint_id + 1)?;
+        println!("d");
         let current_block_script =
             CityStore::get_city_block_script(store, last_block.checkpoint_id + 1)?;
 
@@ -242,22 +247,31 @@ impl SimpleActorOrchestrator {
             "current_block_address: {}",
             BTCAddress160::new_p2sh(current_block_address,).to_address_string()
         );*/
+
+        println!(
+            "current_block_address: {}",
+            BTCAddress160::new_p2sh(current_block_address,).to_address_string()
+        );
         let utxos = btc_api
             .get_confirmed_funding_transactions_with_vout(BTCAddress160::new_p2sh(
                 current_block_address,
             ))?
             .into_iter()
-            .filter(|x| x.vout == 0)
+            //.filter(|x| x.vout == 0)
             .map(|x| x.transaction)
             .collect::<Vec<BTCTransaction>>();
+
         let mut deposit_utxos = vec![];
         let mut last_block_utxo = BTCTransaction::dummy();
         for utxo in utxos.into_iter() {
-            //println!("utxo: {}", hex::encode(&utxo.to_bytes()));
-            if utxo.is_p2pkh() {
-                deposit_utxos.push(utxo);
-            } else if utxo.is_block_spend_for_state(last_block_address) {
+            println!("utxos: {}", hex::encode(&utxo.to_bytes()));
+
+            if utxo.is_block_spend_for_state(last_block_address) {
                 last_block_utxo = utxo;
+            } else if utxo.is_p2pkh() {
+                deposit_utxos.push(utxo);
+            } else {
+                println!("weird utxo: {}", hex::encode(&utxo.to_bytes()));
             }
         }
         if last_block_utxo.is_dummy() {
@@ -286,9 +300,12 @@ impl SimpleActorOrchestrator {
             "start process requests block {} RPC",
             checkpoint_id
         ));
+        println!("d");
 
         let (block_state, block_op_job_ids, _block_state_transition, _block_end_jobs, withdrawals) =
             block_planner.process_requests(store, proof_store, &block_requested)?;
+        println!("e");
+
         let next_address = CityStore::get_city_block_deposit_address(store, checkpoint_id + 1)?;
         let next_script = CityStore::get_city_block_script(store, checkpoint_id + 1)?;
         /*println!(

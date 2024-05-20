@@ -71,6 +71,7 @@ impl QProofStoreWriterSync for SimpleProofStoreMemory {
             println!("ctr is none, {:?}", id);
         }
         let new_value = 1 + *(self.counters.get(&id).unwrap_or(&zero));
+        println!("new_counter: {}", new_value);
         self.counters.insert(id, new_value);
         Ok(new_value)
     }

@@ -12,6 +12,7 @@ pub trait L2BlockStatesModelReaderCore<
 >
 {
     fn get_block_state_by_id(store: &S, checkpoint_id: u64) -> anyhow::Result<CityL2BlockState> {
+        println!("get block state: {}", checkpoint_id);
         KVA::get_exact(store, &L2BlockStateKeyCore(checkpoint_id))
     }
     fn get_latest_block_state(store: &S) -> anyhow::Result<CityL2BlockState> {
