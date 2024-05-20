@@ -36,11 +36,11 @@ pub async fn run(args: L2WorkerArgs) -> anyhow::Result<()> {
         let mut qworker = qworker.clone();
         if let Some((id, message)) = redis_dispatcher
             .receive_one(Q_JOB, Some(Duration::from_millis(PROVING_INTERVAL)))
-            .await?
+            ?
         {
             let job_id: QProvingJobDataID = serde_json::from_slice(&message)?;
             qworker.prove(&mut proof_store, &*toolbox, job_id)?;
-            redis_dispatcher.delete_message(Q_JOB, id).await?;
+            redis_dispatcher.delete_message(Q_JOB, id)?;
         }
     });
 }

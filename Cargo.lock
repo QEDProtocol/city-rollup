@@ -629,6 +629,7 @@ dependencies = [
  "city_rollup_core_node",
  "city_rollup_core_orchestrator",
  "city_rollup_core_worker",
+ "city_store",
  "clap",
  "dotenv",
  "hex",
@@ -712,10 +713,12 @@ dependencies = [
  "anyhow",
  "clap",
  "hex",
+ "lazy_static",
  "rand",
  "serde",
  "serde_json",
  "serde_with 3.8.1",
+ "tokio",
 ]
 
 [[package]]
@@ -866,11 +869,13 @@ name = "city_rollup_core_node"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "async-trait",
  "bitcoin",
  "bytes",
  "city_common",
  "city_common_circuit",
  "city_crypto",
+ "city_macros",
  "city_redis_store",
  "city_rollup_common",
  "city_rollup_worker_dispatch",
@@ -969,6 +974,8 @@ dependencies = [
  "bb8-redis",
  "city_common",
  "city_crypto",
+ "city_macros",
+ "city_rollup_common",
  "criterion",
  "hex",
  "hex-literal",

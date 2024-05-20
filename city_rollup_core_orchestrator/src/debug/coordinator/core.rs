@@ -72,4 +72,8 @@ impl<F: RichField> OrchestratorRPCEventSenderSync<F> for DevMemoryCoordinatatorR
         self.token_transfers.push(event.clone());
         Ok(())
     }
+
+    fn notify_rpc_produce_block(&mut self) -> anyhow::Result<()> {
+        Ok(())
+    }
 }

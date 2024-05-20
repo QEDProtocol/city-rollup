@@ -34,6 +34,7 @@ pub trait OrchestratorRPCEventSenderSync<F: RichField> {
         &mut self,
         event: &CityTokenTransferRPCRequest,
     ) -> anyhow::Result<()>;
+    fn notify_rpc_produce_block(&mut self) -> anyhow::Result<()>;
 }
 
 #[async_trait::async_trait]
@@ -68,29 +69,29 @@ pub trait OrchestratorEventSenderSync<F: RichField> {
     fn notify_produce_block(&mut self) -> anyhow::Result<()>;
 }
 
-#[async_trait::async_trait]
-pub trait OrchestratorEventSenderAsync<F: RichField> {
-    async fn notify_claim_deposit_async(
-        &mut self,
-        event: &CityClaimDepositRequest,
-    ) -> anyhow::Result<()>;
-
-    async fn notify_register_user_async(
-        &mut self,
-        event: &CityRegisterUserRequest<F>,
-    ) -> anyhow::Result<()>;
-
-    async fn notify_add_withdrawal_async(
-        &mut self,
-        event: &CityAddWithdrawalRequest,
-    ) -> anyhow::Result<()>;
-
-    async fn notify_token_transfer_async(
-        &mut self,
-        event: &CityTokenTransferRequest,
-    ) -> anyhow::Result<()>;
-    async fn notify_produce_block_async(&mut self) -> anyhow::Result<()>;
-}
+// #[async_trait::async_trait]
+// pub trait OrchestratorEventSenderAsync<F: RichField> {
+//     async fn notify_claim_deposit_async(
+//         &mut self,
+//         event: &CityClaimDepositRequest,
+//     ) -> anyhow::Result<()>;
+//
+//     async fn notify_register_user_async(
+//         &mut self,
+//         event: &CityRegisterUserRequest<F>,
+//     ) -> anyhow::Result<()>;
+//
+//     async fn notify_add_withdrawal_async(
+//         &mut self,
+//         event: &CityAddWithdrawalRequest,
+//     ) -> anyhow::Result<()>;
+//
+//     async fn notify_token_transfer_async(
+//         &mut self,
+//         event: &CityTokenTransferRequest,
+//     ) -> anyhow::Result<()>;
+//     async fn notify_produce_block_async(&mut self) -> anyhow::Result<()>;
+// }
 
 pub trait OrchestratorEventReceiverSync<F: RichField> {
     fn flush_claim_deposits(&mut self) -> anyhow::Result<Vec<CityClaimDepositRequest>>;
@@ -100,6 +101,7 @@ pub trait OrchestratorEventReceiverSync<F: RichField> {
     fn flush_add_withdrawals(&mut self) -> anyhow::Result<Vec<CityAddWithdrawalRequest>>;
 
     fn flush_token_transfers(&mut self) -> anyhow::Result<Vec<CityTokenTransferRequest>>;
+
     fn wait_for_produce_block(&mut self) -> anyhow::Result<bool>;
 }
 pub trait WorkerEventReceiverSync {

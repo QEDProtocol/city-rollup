@@ -53,6 +53,8 @@ use redb::Database;
 use redb::Table;
 use redb::TableDefinition;
 
+pub mod event_receiver;
+
 use crate::debug::scenario::block_planner::planner::CityOrchestratorBlockPlanner;
 use crate::debug::scenario::sighash::finalizer::SigHashFinalizer;
 
@@ -242,19 +244,19 @@ impl Orchestrator {
         };
 
         for job in agg_job_ids.plan_jobs() {
-            self.dispatcher.dispatch(Q_JOB, job).await?;
+            self.dispatcher.dispatch(Q_JOB, job)?;
         }
 
         for job in block_end_job_ids {
-            self.dispatcher.dispatch(Q_JOB, job).await?;
+            self.dispatcher.dispatch(Q_JOB, job)?;
         }
 
         for job in sighash_job_ids.sighash_final_gl_job_ids {
-            self.dispatcher.dispatch(Q_JOB, job).await?;
+            self.dispatcher.dispatch(Q_JOB, job)?;
         }
 
         for job in sighash_job_ids.wrap_sighash_final_bls12381_job_ids {
-            self.dispatcher.dispatch(Q_JOB, job).await?;
+            self.dispatcher.dispatch(Q_JOB, job)?;
         }
 
         redis_store.sequence_block()?;
@@ -285,26 +287,26 @@ impl Orchestrator {
         for (id, message) in self
             .dispatcher
             .receive_all(Q_TX, Some(Duration::from_secs(2)))
-            .await?
+            ?
         {
             match serde_json::from_slice::<CityRPCRequest<F>>(&message)? {
                 CityRPCRequest::CityTokenTransferRPCRequest((rpc_node_id, req)) => {
                     rpc_processor.injest_rpc_token_transfer(proof_store, rpc_node_id, &req)?;
-                    self.dispatcher.delete_message(Q_TX, id).await?;
+                    self.dispatcher.delete_message(Q_TX, id)?;
                 }
                 CityRPCRequest::CityRegisterUserRPCRequest((rpc_node_id, req)) => {
                     rpc_processor.injest_rpc_register_user(rpc_node_id, &req)?;
-                    self.dispatcher.delete_message(Q_TX, id).await?;
+                    self.dispatcher.delete_message(Q_TX, id)?;
                 }
                 CityRPCRequest::CityClaimDepositRPCRequest((rpc_node_id, req)) => {
                     rpc_processor.injest_rpc_claim_deposit(proof_store, rpc_node_id, &req)?;
-                    self.dispatcher.delete_message(Q_TX, id).await?;
+                    self.dispatcher.delete_message(Q_TX, id)?;
                 }
                 CityRPCRequest::CityAddWithdrawalRPCRequest((rpc_node_id, req)) => {
                     if rpc_processor.output.add_withdrawals.len() < SIGHASH_CIRCUIT_MAX_WITHDRAWALS
                     {
                         rpc_processor.injest_rpc_add_withdrawal(proof_store, rpc_node_id, &req)?;
-                        self.dispatcher.delete_message(Q_TX, id).await?;
+                        self.dispatcher.delete_message(Q_TX, id)?;
                     }
                 }
             }

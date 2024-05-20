@@ -251,3 +251,26 @@ macro_rules! const_concat_arrays {
         core::mem::ManuallyDrop::into_inner(unsafe { composed.full })
     });
 }
+
+
+#[macro_export]
+macro_rules! capture {
+    ($x:ident, $($body:tt)*) => {
+        {
+            let mut $x = $x.clone();
+            $($body)*
+        }
+    };
+    ($x:ident => $y:ident, $($body:tt)*) => {
+        {
+            let mut $y = $x.clone();
+            $($body)*
+        }
+    };
+    ($x:ident . $field_x:ident, $($body:tt)*) => {
+        {
+            let mut $field_x = $x.$field_x.clone();
+            $($body)*
+        }
+    };
+}

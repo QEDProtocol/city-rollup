@@ -4,7 +4,7 @@ use city_rollup_common::api::data::block::rpc_request::CityAddWithdrawalRPCReque
 use city_rollup_common::api::data::block::rpc_request::CityClaimDepositRPCRequest;
 use city_rollup_common::api::data::block::rpc_request::CityRegisterUserRPCRequest;
 use city_rollup_common::api::data::block::rpc_request::CityTokenTransferRPCRequest;
-use city_store::config::F;
+use plonky2::hash::hash_types::RichField;
 use serde::Deserialize;
 use serde::Deserializer;
 use serde::Serialize;
@@ -28,8 +28,9 @@ pub enum Id {
 
 #[serde_as]
 #[derive(Debug, Clone, Deserialize, Serialize)]
+#[serde(bound = "")]
 #[serde(tag = "method", content = "params")]
-pub enum RequestParams {
+pub enum RequestParams<F: RichField> {
     // User
     #[serde(rename = "cr_token_transfer")]
     TokenTransfer(CityTokenTransferRPCRequest),
@@ -39,15 +40,18 @@ pub enum RequestParams {
     AddWithdrawal(CityAddWithdrawalRPCRequest),
     #[serde(rename = "cr_register_user")]
     RegisterUser(CityRegisterUserRPCRequest<F>),
+    #[serde(rename = "cr_produce_block")]
+    ProduceBlock
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
+#[serde(bound = "")]
 #[serde(deny_unknown_fields)]
-pub struct RpcRequest {
+pub struct RpcRequest<F: RichField> {
     /// The version of the protocol
     pub jsonrpc: Version,
     #[serde(flatten)]
-    pub request: RequestParams,
+    pub request: RequestParams<F>,
     /// The name of the method to execute
     /// The identifier for this request issued by the client,
     /// An [Id] must be a String, null or a number.

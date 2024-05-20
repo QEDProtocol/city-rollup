@@ -20,6 +20,8 @@ k256 = { workspace = true }
 async-trait = { workspace = true }
 city_crypto           = { path = "../city_crypto" }
 city_common           = { path = "../city_common" }
+city_macros = { path = "../city_macros" }
+city_rollup_common    = { path = "../city_rollup_common" }
 tokio                 = { workspace = true }
 redis = { workspace = true }
 bb8-redis = {workspace = true}

@@ -12,3 +12,5 @@ serde_with        = { workspace = true }
 clap              = { workspace = true }
 hex               = { workspace = true }
 rand              = { workspace = true }
+lazy_static       = { workspace = true }
+tokio             = { workspace = true }
