@@ -9,11 +9,11 @@ use city_redis_store::RedisStore;
 use city_rollup_common::actors::traits::OrchestratorRPCEventSenderSync;
 use city_rollup_worker_dispatch::implementations::redis::QueueCmd;
 use city_rollup_worker_dispatch::implementations::redis::RedisDispatcher;
-use city_rollup_worker_dispatch::implementations::redis::Q_ADD_WITHDRAWAL;
-use city_rollup_worker_dispatch::implementations::redis::Q_CLAIM_DEPOSIT;
+use city_rollup_worker_dispatch::implementations::redis::Q_RPC_ADD_WITHDRAWAL;
+use city_rollup_worker_dispatch::implementations::redis::Q_RPC_CLAIM_DEPOSIT;
+use city_rollup_worker_dispatch::implementations::redis::Q_RPC_REGISTER_USER;
+use city_rollup_worker_dispatch::implementations::redis::Q_RPC_TOKEN_TRANSFER;
 use city_rollup_worker_dispatch::implementations::redis::Q_CMD;
-use city_rollup_worker_dispatch::implementations::redis::Q_REGISTER_USER;
-use city_rollup_worker_dispatch::implementations::redis::Q_TOKEN_TRANSFER;
 use city_rollup_common::api::data::block::rpc_request::*;
 use city_rollup_worker_dispatch::traits::proving_dispatcher::ProvingDispatcher;
 use city_store::config::C;
@@ -141,7 +141,7 @@ impl<F: RichField> OrchestratorRPCEventSenderSync<F> for CityRollupRPCServerHand
         &mut self,
         event: &CityClaimDepositRPCRequest,
     ) -> anyhow::Result<()> {
-        self.dispatcher.dispatch(Q_CLAIM_DEPOSIT, event.clone())?;
+        self.dispatcher.dispatch(Q_RPC_CLAIM_DEPOSIT, event.clone())?;
         Ok(())
     }
 
@@ -149,7 +149,7 @@ impl<F: RichField> OrchestratorRPCEventSenderSync<F> for CityRollupRPCServerHand
         &mut self,
         event: &CityRegisterUserRPCRequest<F>,
     ) -> anyhow::Result<()> {
-        self.dispatcher.dispatch(Q_REGISTER_USER, event.clone())?;
+        self.dispatcher.dispatch(Q_RPC_REGISTER_USER, event.clone())?;
         Ok(())
     }
 
@@ -157,7 +157,7 @@ impl<F: RichField> OrchestratorRPCEventSenderSync<F> for CityRollupRPCServerHand
         &mut self,
         event: &CityAddWithdrawalRPCRequest,
     ) -> anyhow::Result<()> {
-        self.dispatcher.dispatch(Q_ADD_WITHDRAWAL, event.clone())?;
+        self.dispatcher.dispatch(Q_RPC_ADD_WITHDRAWAL, event.clone())?;
         Ok(())
     }
 
@@ -165,7 +165,7 @@ impl<F: RichField> OrchestratorRPCEventSenderSync<F> for CityRollupRPCServerHand
         &mut self,
         event: &CityTokenTransferRPCRequest,
     ) -> anyhow::Result<()> {
-        self.dispatcher.dispatch(Q_TOKEN_TRANSFER, event.clone())?;
+        self.dispatcher.dispatch(Q_RPC_TOKEN_TRANSFER, event.clone())?;
         Ok(())
     }
 

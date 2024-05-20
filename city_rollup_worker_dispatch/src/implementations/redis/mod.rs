@@ -30,6 +30,12 @@ pub const Q_TOKEN_TRANSFER: &'static str = "TOKEN_TRANSFER";
 pub const Q_CLAIM_DEPOSIT: &'static str = "CLAIM_DEPOSIT";
 pub const Q_ADD_WITHDRAWAL: &'static str = "ADD_WITHDRAWAL";
 pub const Q_REGISTER_USER: &'static str = "REGISTER_USER";
+
+pub const Q_RPC_TOKEN_TRANSFER: &'static str = "RPC_TOKEN_TRANSFER";
+pub const Q_RPC_CLAIM_DEPOSIT: &'static str = "RPC_CLAIM_DEPOSIT";
+pub const Q_RPC_ADD_WITHDRAWAL: &'static str = "RPC_ADD_WITHDRAWAL";
+pub const Q_RPC_REGISTER_USER: &'static str = "RPC_REGISTER_USER";
+
 pub const Q_CMD: &'static str = "CMD";
 pub const Q_JOB: &'static str = "JOB";
 pub const Q_NOTIFICATIONS: &'static str = "NOTIFICATIONS";
