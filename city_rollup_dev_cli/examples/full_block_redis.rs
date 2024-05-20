@@ -15,11 +15,16 @@ use city_rollup_common::{
         tx::setup_genesis_block,
     },
 };
-use city_rollup_core_orchestrator::{debug::{
-    scenario::{actors::simple::SimpleActorOrchestrator, wallet::DebugScenarioWallet},
-}, event_receiver::CityEventReceiver};
-use city_rollup_core_worker::{actors::simple::SimpleActorWorker, event_processor::CityEventProcessor};
-use city_rollup_worker_dispatch::{implementations::redis::RedisQueue, traits::proving_worker::ProvingWorkerListener};
+use city_rollup_core_orchestrator::{
+    debug::scenario::{actors::simple::SimpleActorOrchestrator, wallet::DebugScenarioWallet},
+    event_receiver::CityEventReceiver,
+};
+use city_rollup_core_worker::{
+    actors::simple::SimpleActorWorker, event_processor::CityEventProcessor,
+};
+use city_rollup_worker_dispatch::{
+    implementations::redis::RedisQueue, traits::proving_worker::ProvingWorkerListener,
+};
 use city_store::store::{city::base::CityStore, sighash::SigHashMerkleTree};
 use kvq::memory::simple::KVQSimpleMemoryBackingStore;
 use plonky2::{field::goldilocks_field::GoldilocksField, plonk::config::PoseidonGoldilocksConfig};
@@ -46,7 +51,8 @@ fn run_full_block() -> anyhow::Result<()> {
     let mut store = S::new();
     let mut timer = DebugTimer::new("prove_block_demo");
     let mut worker_event_processor = CityEventProcessor::new(redis_queue.clone());
-    let mut rpc_queue = CityEventReceiver::<F>::new(redis_queue, QRPCProcessor::new(0), proof_store.clone());
+    let mut rpc_queue =
+        CityEventReceiver::<F>::new(redis_queue, QRPCProcessor::new(0), proof_store.clone());
 
     /*
     let start_state_root = CityStore::get_city_root(&store, 1)?;

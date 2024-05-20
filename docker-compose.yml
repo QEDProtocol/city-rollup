@@ -4,9 +4,6 @@ services:
     image: qedprotocol/bitide-doge:latest
     ports:
       - 1337:1337
-    volumes:
-      - "./chaindata/dogecoin:/app/.dogecoin"
-      - "./chaindata/electrs:/app/db"
     networks:
       testing_net:
         ipv4_address: 172.16.238.11

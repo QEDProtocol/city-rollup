@@ -74,6 +74,10 @@ full_block:
 full_block2:
 	@RUST_BACKTRACE=${TRACE_ENABLED} cargo run --package city-rollup-dev-cli --example full_block_v2
 
+.PHONY: full_block_redis
+full_block_redis:
+	@RUST_BACKTRACE=${TRACE_ENABLED} cargo run --package city-rollup-dev-cli --example full_block_redis
+
 .PHONY: hashes
 hashes:
 	@RUST_BACKTRACE=${TRACE_ENABLED} cargo run --package city-rollup-dev-cli --example hashes
@@ -101,7 +105,6 @@ shutdown:
 		-f docker-compose.yml \
 		down \
 		--remove-orphans > /dev/null 2>&1 || true
-	@sudo rm -fr chaindata || true
 	@sudo rm -fr redis-data || true
 	@sudo rm -fr db || true
 
