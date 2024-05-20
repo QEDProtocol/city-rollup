@@ -87,7 +87,7 @@ tracing = "0.1.40"
 tracing-log = "0.2.0"
 tracing-subscriber = { version = "0.3.17", features = ["std", "env-filter"] }
 shadow-rs = "0.27.1"
-
+num_cpus = "1.16.0"
 
 
 plonky2 = { git = "https://github.com/QEDProtocol/plonky2-hwa", rev = "6a8ca008da97890b67a84f64784cfbc488b5238d" }

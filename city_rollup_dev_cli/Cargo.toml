@@ -29,6 +29,7 @@ city_rollup_core_node    = { path = "../city_rollup_core_node" }
 city_rollup_core_worker    = { path = "../city_rollup_core_worker" }
 city_rollup_worker_dispatch    = { path = "../city_rollup_worker_dispatch" }
 city_rollup_core_orchestrator    = { path = "../city_rollup_core_orchestrator" }
+kvq_store_redb = { path = "../kvq_store_redb" }
 bitcoincore-rpc       = { workspace = true }
 clap                  = { workspace = true }
 dotenv                = { workspace = true }
@@ -39,6 +40,7 @@ thiserror             = { workspace = true }
 tokio                 = { workspace = true }
 tracing               = { workspace = true }
 redb = { workspace = true }
+num_cpus = { workspace = true }
 
 [build-dependencies]
 shadow-rs = { workspace = true }

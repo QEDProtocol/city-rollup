@@ -669,6 +669,8 @@ dependencies = [
  "hex-literal",
  "k256",
  "kvq",
+ "kvq_store_redb",
+ "num_cpus",
  "plonky2",
  "rand",
  "redb",

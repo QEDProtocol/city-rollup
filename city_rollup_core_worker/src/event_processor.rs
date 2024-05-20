@@ -9,6 +9,7 @@ use city_rollup_worker_dispatch::{
     traits::{proving_dispatcher::ProvingDispatcher, proving_worker::ProvingWorkerListener},
 };
 
+#[derive(Clone)]
 pub struct CityEventProcessor {
     pub job_queue: RedisQueue,
 }

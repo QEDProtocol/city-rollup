@@ -1,4 +1,4 @@
-use std::{thread::sleep, time::Duration};
+use std::{sync::Arc, thread::sleep, time::Duration};
 
 use city_common::{
     cli::message::CITY_ROLLUP_BANNER, logging::debug_timer::DebugTimer, units::UNIT_BTC,
@@ -7,7 +7,7 @@ use city_crypto::hash::{base_types::hash256::Hash256, qhashout::QHashOut};
 use city_redis_store::RedisStore;
 use city_rollup_circuit::worker::toolbox::root::CRWorkerToolboxRootCircuits;
 use city_rollup_common::{
-    actors::{rpc_processor::QRPCProcessor, traits::OrchestratorRPCEventSenderSync},
+    actors::{rpc_processor::QRPCProcessor, traits::{OrchestratorRPCEventSenderSync, WorkerEventTransmitterSync}},
     api::data::{block::rpc_request::CityRegisterUserRPCRequest, store::CityL2BlockState},
     introspection::rollup::constants::NETWORK_MAGIC_DOGE_REGTEST,
     link::{
@@ -17,7 +17,7 @@ use city_rollup_common::{
 };
 use city_rollup_core_orchestrator::{
     debug::scenario::{actors::simple::SimpleActorOrchestrator, wallet::DebugScenarioWallet},
-    event_receiver::CityEventReceiver,
+    event_receiver::CityEventReceiver, KV,
 };
 use city_rollup_core_worker::{
     actors::simple::SimpleActorWorker, event_processor::CityEventProcessor,
@@ -26,9 +26,11 @@ use city_rollup_worker_dispatch::{
     implementations::redis::RedisQueue, traits::proving_worker::ProvingWorkerListener,
 };
 use city_store::store::{city::base::CityStore, sighash::SigHashMerkleTree};
-use kvq::memory::simple::KVQSimpleMemoryBackingStore;
+use kvq_store_redb::KVQReDBStore;
 use plonky2::{field::goldilocks_field::GoldilocksField, plonk::config::PoseidonGoldilocksConfig};
-fn run_full_block() -> anyhow::Result<()> {
+use redb::{Database, Table};
+
+fn run_full_block<'db, 'txn>(mut store: KVQReDBStore<Table<'db, 'txn, &'static [u8], &'static [u8]>>) -> anyhow::Result<()> {
     println!("{}", CITY_ROLLUP_BANNER);
     let mut api = BTCLinkAPI::new_str(
         "http://devnet:devnet@localhost:1337/bitcoin-rpc/?network=dogeRegtest",
@@ -38,7 +40,6 @@ fn run_full_block() -> anyhow::Result<()> {
     const D: usize = 2;
     type C = PoseidonGoldilocksConfig;
     type F = GoldilocksField;
-    type S = KVQSimpleMemoryBackingStore;
     type CityWorker = SimpleActorWorker;
     type CityOrchestrator = SimpleActorOrchestrator;
 
@@ -48,11 +49,10 @@ fn run_full_block() -> anyhow::Result<()> {
 
     let mut proof_store = RedisStore::new("redis://localhost:6379/0")?;
     let redis_queue = RedisQueue::new("redis://localhost:6379/0")?;
-    let mut store = S::new();
     let mut timer = DebugTimer::new("prove_block_demo");
     let mut worker_event_processor = CityEventProcessor::new(redis_queue.clone());
     let mut rpc_queue =
-        CityEventReceiver::<F>::new(redis_queue, QRPCProcessor::new(0), proof_store.clone());
+        CityEventReceiver::<F>::new(redis_queue.clone(), QRPCProcessor::new(0), proof_store.clone());
 
     /*
     let start_state_root = CityStore::get_city_root(&store, 1)?;
@@ -140,8 +140,10 @@ fn run_full_block() -> anyhow::Result<()> {
     timer.lap("end creating wallets");
 
     timer.lap("start creating worker");
-    let root_toolbox =
-        CRWorkerToolboxRootCircuits::<C, D>::new(network_magic, sighash_whitelist_tree.root);
+    let root_toolbox = Arc::new(CRWorkerToolboxRootCircuits::<C, D>::new(
+        network_magic,
+        sighash_whitelist_tree.root,
+    ));
     let fingerprints = root_toolbox.core.fingerprints.clone();
     timer.lap("end creating worker");
 
@@ -190,12 +192,28 @@ fn run_full_block() -> anyhow::Result<()> {
         end_state_root.to_string(),
         end_state_root.0
     );
-    loop {
-        if worker_event_processor.job_queue.is_empty() {
-            break;
-        }
-        CityWorker::process_next_job(&mut proof_store, &mut worker_event_processor, &root_toolbox)?;
+
+    let mut handles = vec![];
+    for _ in 0..num_cpus::get() {
+        let redis_queue = redis_queue.clone();
+        let mut proof_store = proof_store.clone();
+        let mut worker_event_processor = CityEventProcessor::new(redis_queue.clone());
+        let root_toolbox = root_toolbox.clone();
+        handles.push(std::thread::spawn(move || {
+            loop {
+                if worker_event_processor.job_queue.is_empty() {
+                    break;
+                }
+                CityWorker::process_next_job(
+                    &mut proof_store,
+                    &mut worker_event_processor,
+                    &*root_toolbox,
+                )?;
+            }
+            Ok::<_, anyhow::Error>(())
+        }));
     }
+
     api.mine_blocks(1)?;
     let orchestrator_result_step_2 = CityOrchestrator::step_2_produce_block_finalize_and_transact(
         &mut proof_store,
@@ -220,12 +238,12 @@ fn run_full_block() -> anyhow::Result<()> {
     rpc_queue.notify_rpc_claim_deposit(&wallet.sign_claim_deposit(
         network_magic,
         0,
-        &CityStore::<S>::get_deposit_by_id(&store, checkpoint_id, 0)?,
+        &CityStore::get_deposit_by_id(&store, checkpoint_id, 0)?,
     )?)?;
     rpc_queue.notify_rpc_claim_deposit(&wallet.sign_claim_deposit(
         network_magic,
         1,
-        &CityStore::<S>::get_deposit_by_id(&store, checkpoint_id, 1)?,
+        &CityStore::get_deposit_by_id(&store, checkpoint_id, 1)?,
     )?)?;
 
     rpc_queue.notify_rpc_token_transfer(&wallet.sign_l2_transfer(
@@ -265,12 +283,7 @@ fn run_full_block() -> anyhow::Result<()> {
         end_state_root.to_string(),
         end_state_root.0
     );*/
-    loop {
-        if worker_event_processor.job_queue.is_empty() {
-            break;
-        }
-        CityWorker::process_next_job(&mut proof_store, &mut worker_event_processor, &root_toolbox)?;
-    }
+    worker_event_processor.wait_for_block_proving_jobs(orchestrator_result_step_1.checkpoint_id)?;
     api.mine_blocks(1)?;
     let orchestrator_result_step_2 = CityOrchestrator::step_2_produce_block_finalize_and_transact(
         &mut proof_store,
@@ -287,6 +300,13 @@ fn run_full_block() -> anyhow::Result<()> {
     Ok(())
 }
 
-fn main() {
-    run_full_block().unwrap();
+fn main() -> anyhow::Result<()>{
+    let database = Database::create("db")?;
+    let wxn = database.begin_write()?;
+
+    run_full_block(KVQReDBStore::new(wxn.open_table(KV)?))?;
+
+    wxn.commit()?;
+
+    Ok(())
 }
