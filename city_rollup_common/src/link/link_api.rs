@@ -344,7 +344,7 @@ impl QBitcoinAPISync for BTCLinkAPI {
 
     fn send_transaction(&self, tx: &BTCTransaction) -> anyhow::Result<Hash256> {
         let bytes = tx.to_bytes();
-        println!("send_transaction: {}", hex::encode(&bytes));
+        //println!("send_transaction: {}", hex::encode(&bytes));
         let txid = self.btc_send_raw_transaction(&bytes)?;
         Ok(txid)
     }

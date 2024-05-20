@@ -36,10 +36,11 @@ impl<S: KVQBinaryStoreReader> CityStore<S> {
                 checkpoint_id - 1
             },
         )?;
+        /*
         println!(
             "start_root_state_hash[{}]: {:?}",
             checkpoint_id, start_root_state_hash.0
-        );
+        );*/
         let root_state_hash_bytes =
             felt252_hashout_to_hash256_le(hashout_to_felt252_hashout(start_root_state_hash.0)).0;
 

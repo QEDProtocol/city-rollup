@@ -264,19 +264,24 @@ impl SimpleActorOrchestrator {
         let mut deposit_utxos = vec![];
         let mut last_block_utxo = BTCTransaction::dummy();
         for utxo in utxos.into_iter() {
-            println!("utxos: {}", hex::encode(&utxo.to_bytes()));
+            //println!("utxos: {}", hex::encode(&utxo.to_bytes()));
 
             if utxo.is_block_spend_for_state(last_block_address) {
                 last_block_utxo = utxo;
             } else if utxo.is_p2pkh() {
                 deposit_utxos.push(utxo);
             } else {
-                println!("weird utxo: {}", hex::encode(&utxo.to_bytes()));
+                println!("abnormal utxo, ignoring: {}", hex::encode(&utxo.to_bytes()));
             }
         }
         if last_block_utxo.is_dummy() {
             anyhow::bail!("utxo not funded by last block");
         }
+        println!(
+            "found {} deposits for block {}",
+            deposit_utxos.len(),
+            checkpoint_id
+        );
 
         let mut all_inputs = vec![last_block_utxo];
         all_inputs.append(&mut deposit_utxos);

@@ -253,12 +253,12 @@ fn run_full_block() -> anyhow::Result<()> {
         &fingerprints,
         &sighash_whitelist_tree,
     )?;
-    let end_state_root = CityStore::get_city_root(&store, 2)?;
+    /*let end_state_root = CityStore::get_city_root(&store, 2)?;
     println!(
         "end_state_root: {} ({:?})",
         end_state_root.to_string(),
         end_state_root.0
-    );
+    );*/
     loop {
         if worker_event_processor.job_queue.is_empty() {
             break;
