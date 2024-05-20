@@ -91,7 +91,7 @@ impl AggStateTrackableCircuitHeaderGadget {
         agg_fingerprint: QHashOut<F>,
         leaf_fingerprint: QHashOut<F>,
     ) {
-        println!("set_witness: {}", serde_json::to_string(input).unwrap());
+        //println!("set_witness: {}", serde_json::to_string(input).unwrap());
         witness.set_hash_target(self.agg_fingerprint, agg_fingerprint.0);
         witness.set_hash_target(self.leaf_fingerprint, leaf_fingerprint.0);
 

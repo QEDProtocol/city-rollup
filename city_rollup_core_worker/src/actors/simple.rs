@@ -83,11 +83,12 @@ impl SimpleActorWorker {
         }
 
         let goal_counter = store.get_goal_by_job_id(job_id)?;
+        //println!("goal_counter: {}", goal_counter);
         if goal_counter != 0 {
             let result = store.inc_counter_by_id(job_id.get_sub_group_counter_id())?;
             if result == goal_counter {
                 let jobs = store.get_next_jobs_by_job_id(job_id)?;
-                println!("[{:?}] enqueuing_jobs: {:?}", job_id, jobs);
+                //println!("[{:?}] enqueuing_jobs: {:?}", job_id, jobs);
                 event_receiver.enqueue_jobs(&jobs)?;
             }
         }

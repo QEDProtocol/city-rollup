@@ -21,7 +21,7 @@ impl KVQBinaryStoreReader for KVQSimpleMemoryBackingStore {
     fn get_exact(&self, key: &Vec<u8>) -> anyhow::Result<Vec<u8>> {
         match self.map.get(key) {
             Some(v) => Ok(v.to_owned()),
-            None => anyhow::bail!("Key not found"),
+            None => anyhow::bail!("Key {} not found", hex::encode(&key)),
         }
     }
 

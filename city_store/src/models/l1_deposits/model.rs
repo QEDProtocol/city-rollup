@@ -27,10 +27,12 @@ pub trait L1DepositsModelReaderCore<
         checkpoint_id: u64,
         deposit_id: u64,
     ) -> anyhow::Result<CityL1Deposit> {
-        IDKVA::get_exact(
+        IDKVA::get_leq(
             store,
             &L1DepositKeyByDepositIdCore::new(checkpoint_id, deposit_id),
-        )
+            CHECKPOINT_ID_FUZZY_SIZE,
+        )?
+        .ok_or_else(|| anyhow::anyhow!("Deposit not found"))
     }
     fn get_deposits_by_id(
         store: &S,

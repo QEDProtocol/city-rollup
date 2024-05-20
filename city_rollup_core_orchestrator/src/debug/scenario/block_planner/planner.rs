@@ -315,10 +315,6 @@ impl<S: KVQBinaryStore, PS: QProofStore> CityOrchestratorBlockPlanner<S, PS> {
             block_state_part_2_id.get_output_id(),
             &block_state_witness_part_2,
         );
-        println!(
-            "state_transition_input: {}",
-            serde_json::to_string(&block_state_transition_input).unwrap()
-        );
         let block_state_transition_id =
             QProvingJobDataID::block_state_transition_input_witness(self.processor.checkpoint_id);
 

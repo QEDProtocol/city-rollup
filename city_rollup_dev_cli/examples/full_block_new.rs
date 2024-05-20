@@ -1,3 +1,5 @@
+use std::{thread::sleep, time::Duration};
+
 use city_common::{
     cli::message::CITY_ROLLUP_BANNER, logging::debug_timer::DebugTimer, units::UNIT_BTC,
 };
@@ -151,15 +153,14 @@ fn run_full_block() -> anyhow::Result<()> {
         block_2_address,
         15 * UNIT_BTC,
     )?;
-    api.mine_blocks(1)?;
+    api.mine_blocks(10)?;
+    timer.lap("waiting for deposits for 10 seconds...");
+    sleep(Duration::from_millis(1000 * 10));
     timer.lap("end fund block 2");
 
     timer.lap("start prepare block 2 events");
-    let register_user_rpc_events = CityRegisterUserRPCRequest::new_batch(&[
-        user_0_public_key,
-        user_1_public_key,
-        user_2_public_key,
-    ]);
+    let register_user_rpc_events =
+        CityRegisterUserRPCRequest::new_batch(&[user_0_public_key, user_1_public_key]);
     let _ = register_user_rpc_events
         .into_iter()
         .map(|x| rpc_queue.notify_rpc_register_user(&x))
@@ -203,6 +204,80 @@ fn run_full_block() -> anyhow::Result<()> {
     checkpoint_id = 3;
     println!("starting block {}", checkpoint_id);
 
+    timer.lap("start prepare block 3 events");
+    let register_user_rpc_events = CityRegisterUserRPCRequest::new_batch(&[user_2_public_key]);
+    let _ = register_user_rpc_events
+        .into_iter()
+        .map(|x| rpc_queue.notify_rpc_register_user(&x))
+        .collect::<anyhow::Result<Vec<()>>>()?;
+
+    rpc_queue.notify_rpc_claim_deposit(&wallet.sign_claim_deposit(
+        network_magic,
+        0,
+        &CityStore::<S>::get_deposit_by_id(&store, checkpoint_id, 0)?,
+    )?)?;
+    rpc_queue.notify_rpc_claim_deposit(&wallet.sign_claim_deposit(
+        network_magic,
+        1,
+        &CityStore::<S>::get_deposit_by_id(&store, checkpoint_id, 1)?,
+    )?)?;
+
+    rpc_queue.notify_rpc_token_transfer(&wallet.sign_l2_transfer(
+        user_0_public_key,
+        network_magic,
+        0,
+        1,
+        2 * UNIT_BTC,
+        1,
+    )?)?;
+    rpc_queue.notify_rpc_token_transfer(&wallet.sign_l2_transfer(
+        user_1_public_key,
+        network_magic,
+        1,
+        2,
+        5 * UNIT_BTC,
+        1,
+    )?)?;
+
+    timer.lap("end prepare block 3 events");
+
+    let mut requested_actions =
+        rpc_queue.get_requested_actions_from_rpc(&mut proof_store, checkpoint_id)?;
+
+    let orchestrator_result_step_1 = CityOrchestrator::step_1_produce_block_enqueue_jobs(
+        &mut proof_store,
+        &mut store,
+        &mut requested_actions,
+        &mut worker_event_processor,
+        &mut api,
+        &fingerprints,
+        &sighash_whitelist_tree,
+    )?;
+    /*let end_state_root = CityStore::get_city_root(&store, 2)?;
+    println!(
+        "end_state_root: {} ({:?})",
+        end_state_root.to_string(),
+        end_state_root.0
+    );*/
+    loop {
+        if worker_event_processor.job_queue.is_empty() {
+            break;
+        }
+        CityWorker::process_next_job(&mut proof_store, &mut worker_event_processor, &root_toolbox)?;
+    }
+    api.mine_blocks(1)?;
+    let orchestrator_result_step_2 = CityOrchestrator::step_2_produce_block_finalize_and_transact(
+        &mut proof_store,
+        &mut api,
+        &orchestrator_result_step_1,
+    )?;
+    println!(
+        "produced block, sent to : {}",
+        orchestrator_result_step_2.to_hex_string()
+    );
+    api.mine_blocks(1)?;
+    checkpoint_id = 4;
+    println!("starting block {}", checkpoint_id);
     Ok(())
 }
 

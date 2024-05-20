@@ -372,6 +372,7 @@ impl QBitcoinAPISync for BTCLinkAPI {
         address: BTCAddress160,
     ) -> anyhow::Result<Vec<BTCTransactionWithVout>> {
         let utxos = self.btc_get_utxos(address.to_string())?;
+        println!("utxos len: {}", utxos.len());
         let transactions = utxos
             .into_iter()
             .filter(|x| x.status.confirmed)

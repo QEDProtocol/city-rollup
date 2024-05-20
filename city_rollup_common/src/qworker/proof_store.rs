@@ -38,7 +38,6 @@ pub trait QProofStoreWriterSync {
         jobs_levels: &[Vec<QProvingJobDataID>],
         next_jobs: &[QProvingJobDataID],
     ) -> anyhow::Result<()> {
-        println!("jobs_levels: {:?}", jobs_levels);
         let job_levels_count = jobs_levels.len();
         for i in 0..job_levels_count {
             let counter_id = jobs_levels[i][0].get_sub_group_counter_id();
@@ -63,7 +62,7 @@ pub trait QProofStore: QProofStoreReaderSync + QProofStoreWriterSync {
     fn get_goal_by_job_id(&self, id: QProvingJobDataID) -> anyhow::Result<u32> {
         let counter_id = id.get_sub_group_counter_id();
         let goal_id = counter_id.get_sub_group_counter_goal_id();
-        println!("goal_id: {:?}", goal_id);
+        //println!("goal_id: {:?}", goal_id);
         let goal = self.get_bytes_by_id(goal_id)?;
         Ok(u32::from_le_bytes(goal.try_into().unwrap()))
     }
