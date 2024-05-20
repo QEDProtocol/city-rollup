@@ -7,6 +7,7 @@ use city_macros::capture;
 use rsmq_async::PooledRsmq;
 use rsmq_async::RedisConnectionManager;
 use rsmq_async::RsmqConnection;
+use rsmq_async::RsmqError;
 use rsmq_async::RsmqMessage;
 use serde::Serialize;
 use serde_repr::Deserialize_repr;
@@ -56,10 +57,32 @@ impl RedisDispatcher {
     pub fn new(uri: &str) -> Result<Self> {
         let client = redis::Client::open(uri)?;
         let manager = RedisConnectionManager::from_client(client)?;
-        let pool = block_on(capture!(manager, async move {
-            Ok::<_, anyhow::Error>(bb8::Pool::builder().build(manager).await?)
+        let queue = block_on(capture!(manager, async move {
+            let pool = bb8::Pool::builder().build(manager).await?;
+            let mut queue = PooledRsmq::new_with_pool(pool, false, None);
+            for q in &[
+                Q_TX,
+                Q_TOKEN_TRANSFER,
+                Q_CLAIM_DEPOSIT,
+                Q_ADD_WITHDRAWAL,
+                Q_REGISTER_USER,
+                Q_RPC_TOKEN_TRANSFER,
+                Q_RPC_CLAIM_DEPOSIT,
+                Q_RPC_ADD_WITHDRAWAL,
+                Q_RPC_REGISTER_USER,
+                Q_CMD,
+                Q_JOB,
+                Q_NOTIFICATIONS,
+            ] {
+                if matches!(
+                    queue.get_queue_attributes(*q).await,
+                    Err(RsmqError::QueueNotFound)
+                ) {
+                    queue.create_queue(*q, Q_HIDDEN, Q_DELAY, Q_CAP).await?;
+                }
+            }
+            Ok::<_, anyhow::Error>(queue)
         }))?;
-        let queue = PooledRsmq::new_with_pool(pool, false, None);
         Ok(Self { queue })
     }
 
@@ -76,16 +99,6 @@ impl ProvingDispatcher for RedisDispatcher {
         value: impl Serialize + Send + 'static,
     ) -> Result<()> {
         block_on(capture!(self => this, async move {
-            if matches!(
-                this.queue.get_queue_attributes(topic).await,
-                Err(rsmq_async::RsmqError::QueueNotFound)
-            ) {
-                // worker should be able to finish in 10 minutes, otherwise
-                // other worker will pick up the task
-                this.queue
-                    .create_queue(topic, Q_HIDDEN, Q_DELAY, Q_CAP)
-                    .await?;
-            }
             println!("dispatching message to queue: {}", topic);
             this.queue
                 .send_message(topic, serde_json::to_vec(&value)?, None)
