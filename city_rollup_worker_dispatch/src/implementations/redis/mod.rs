@@ -169,9 +169,12 @@ impl ProvingWorkerListener for RedisDispatcher {
         }))
     }
 
-    fn is_empty(&mut self, topic: &str) -> anyhow::Result<bool> {
-        block_on(capture!(self => this, async move {
-            Ok(this.queue.get_queue_attributes(topic).await?.msgs == 0)
-        }))
+    fn is_empty(&mut self) -> bool {
+        matches!(
+            block_on(capture!(self => this, async move {
+                Ok::<_, anyhow::Error>(this.queue.get_queue_attributes(Q_JOB).await?.msgs == 0)
+            })),
+            Ok(true)
+        )
     }
 }

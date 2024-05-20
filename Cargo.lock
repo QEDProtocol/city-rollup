@@ -915,6 +915,7 @@ dependencies = [
  "city_redis_store",
  "city_rollup_circuit",
  "city_rollup_common",
+ "city_rollup_core_worker",
  "city_rollup_worker_dispatch",
  "city_store",
  "criterion",

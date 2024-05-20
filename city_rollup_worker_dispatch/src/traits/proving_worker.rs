@@ -9,5 +9,5 @@ pub trait ProvingWorkerListener: ProvingDispatcher {
     fn receive_all(&mut self, topic: &str, hidden: Option<Duration>) -> anyhow::Result<Vec<(String, Vec<u8>)>>;
     fn pop_all(&mut self, topic: &str) -> anyhow::Result<Vec<Vec<u8>>>;
     fn delete_message(&mut self, topic: &str, id: String) -> anyhow::Result<bool>;
-    fn is_empty(&mut self, topic: &str) -> anyhow::Result<bool>;
+    fn is_empty(&mut self) -> bool;
 }

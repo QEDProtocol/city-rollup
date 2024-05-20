@@ -7,7 +7,7 @@ use city_crypto::hash::{base_types::hash256::Hash256, qhashout::QHashOut};
 use city_redis_store::RedisStore;
 use city_rollup_circuit::worker::toolbox::root::CRWorkerToolboxRootCircuits;
 use city_rollup_common::{
-    actors::{rpc_processor::QRPCProcessor, simple::events::CityEventProcessorMemory, traits::OrchestratorRPCEventSenderSync},
+    actors::{rpc_processor::QRPCProcessor, traits::OrchestratorRPCEventSenderSync},
     api::data::{block::rpc_request::CityRegisterUserRPCRequest, store::CityL2BlockState},
     introspection::rollup::constants::NETWORK_MAGIC_DOGE_REGTEST,
     link::{
@@ -18,8 +18,8 @@ use city_rollup_common::{
 use city_rollup_core_orchestrator::{debug::{
     scenario::{actors::simple::SimpleActorOrchestrator, wallet::DebugScenarioWallet},
 }, event_receiver::CityEventReceiver};
-use city_rollup_core_worker::actors::simple::SimpleActorWorker;
-use city_rollup_worker_dispatch::implementations::redis::RedisDispatcher;
+use city_rollup_core_worker::{actors::simple::SimpleActorWorker, event_processor::CityEventProcessor};
+use city_rollup_worker_dispatch::{implementations::redis::RedisDispatcher, traits::proving_worker::ProvingWorkerListener};
 use city_store::store::{city::base::CityStore, sighash::SigHashMerkleTree};
 use kvq::memory::simple::KVQSimpleMemoryBackingStore;
 use plonky2::{field::goldilocks_field::GoldilocksField, plonk::config::PoseidonGoldilocksConfig};
@@ -46,7 +46,7 @@ fn run_full_block() -> anyhow::Result<()> {
     let dispatcher = RedisDispatcher::new("redis://localhost:6379/0")?;
     let mut store = S::new();
     let mut timer = DebugTimer::new("prove_block_demo");
-    let mut worker_event_processor = CityEventProcessorMemory::new();
+    let mut worker_event_processor = CityEventProcessor::new(dispatcher.clone());
     let mut rpc_queue = CityEventReceiver::<F>::new(dispatcher, QRPCProcessor::new(0), proof_store.clone());
 
     /*

@@ -176,35 +176,33 @@ impl SimpleActorOrchestrator {
         btc_api: &mut BTC,
         fingerprints: &CRWorkerToolboxCoreCircuitFingerprints<F>,
         sighash_whitelist_tree: &SigHashMerkleTree,
+        timer: &mut DebugTimer
     ) -> anyhow::Result<()> {
-        let mut timer = DebugTimer::new("run_orchestrator");
-        loop {
-            timer.lap("start wait for next block");
-            event_receiver.wait_for_produce_block()?;
-            timer.lap("end wait for next block");
-            let step_1_result = Self::step_1_produce_block_enqueue_jobs(
-                proof_store,
-                store,
-                event_receiver,
-                worker_queue,
-                btc_api,
-                fingerprints,
-                sighash_whitelist_tree,
-            )?;
-            worker_queue.wait_for_block_proving_jobs(step_1_result.checkpoint_id)?;
-            let txid = Self::step_2_produce_block_finalize_and_transact(
-                proof_store,
-                btc_api,
-                &step_1_result,
-            )?;
-            println!(
-                "produce_block_l1_txid {}: {}",
-                step_1_result.checkpoint_id,
-                txid.to_hex_string()
-            );
-            timer.lap("end produce block");
-        }
-        //Ok(())
+        timer.lap("start wait for next block");
+        event_receiver.wait_for_produce_block()?;
+        timer.lap("end wait for next block");
+        let step_1_result = Self::step_1_produce_block_enqueue_jobs(
+            proof_store,
+            store,
+            event_receiver,
+            worker_queue,
+            btc_api,
+            fingerprints,
+            sighash_whitelist_tree,
+        )?;
+        worker_queue.wait_for_block_proving_jobs(step_1_result.checkpoint_id)?;
+        let txid = Self::step_2_produce_block_finalize_and_transact(
+            proof_store,
+            btc_api,
+            &step_1_result,
+        )?;
+        println!(
+            "produce_block_l1_txid {}: {}",
+            step_1_result.checkpoint_id,
+            txid.to_hex_string()
+        );
+        timer.lap("end produce block");
+        Ok(())
     }
     fn step_1_produce_block_enqueue_jobs_internal<
         PS: QProofStore,
