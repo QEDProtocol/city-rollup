@@ -7,7 +7,11 @@ use city_crypto::hash::{base_types::hash256::Hash256, qhashout::QHashOut};
 use city_redis_store::RedisStore;
 use city_rollup_circuit::worker::toolbox::root::CRWorkerToolboxRootCircuits;
 use city_rollup_common::{
-    actors::{rpc_processor::QRPCProcessor, simple::events::CityEventProcessorMemory, traits::OrchestratorRPCEventSenderSync},
+    actors::{
+        rpc_processor::QRPCProcessor,
+        simple::events::CityEventProcessorMemory,
+        traits::{OrchestratorRPCEventSenderSync, WorkerEventTransmitterSync},
+    },
     api::data::{block::rpc_request::CityRegisterUserRPCRequest, store::CityL2BlockState},
     introspection::rollup::constants::NETWORK_MAGIC_DOGE_REGTEST,
     link::{
@@ -16,12 +20,19 @@ use city_rollup_common::{
     },
     qworker::memory_proof_store::SimpleProofStoreMemory,
 };
-use city_rollup_core_orchestrator::{debug::{
-    coordinator::core::DevMemoryCoordinatatorRPCQueue,
-    scenario::{actors::simple::SimpleActorOrchestrator, wallet::DebugScenarioWallet},
-}, event_receiver::CityEventReceiver};
-use city_rollup_core_worker::{actors::simple::SimpleActorWorker, event_processor::CityEventProcessor};
-use city_rollup_worker_dispatch::{implementations::redis::RedisQueue, traits::proving_worker::ProvingWorkerListener};
+use city_rollup_core_orchestrator::{
+    debug::{
+        coordinator::core::DevMemoryCoordinatatorRPCQueue,
+        scenario::{actors::simple::SimpleActorOrchestrator, wallet::DebugScenarioWallet},
+    },
+    event_receiver::CityEventReceiver,
+};
+use city_rollup_core_worker::{
+    actors::simple::SimpleActorWorker, event_processor::CityEventProcessor,
+};
+use city_rollup_worker_dispatch::{
+    implementations::redis::RedisQueue, traits::proving_worker::ProvingWorkerListener,
+};
 use city_store::store::{city::base::CityStore, sighash::SigHashMerkleTree};
 use kvq::memory::simple::KVQSimpleMemoryBackingStore;
 use plonky2::{field::goldilocks_field::GoldilocksField, plonk::config::PoseidonGoldilocksConfig};
@@ -140,6 +151,10 @@ fn run_full_block() -> anyhow::Result<()> {
     let root_toolbox =
         CRWorkerToolboxRootCircuits::<C, D>::new(network_magic, sighash_whitelist_tree.root);
     let fingerprints = root_toolbox.core.fingerprints.clone();
+    println!(
+        "fingerprints: {}",
+        serde_json::to_string(&fingerprints).unwrap()
+    );
     timer.lap("end creating worker");
 
     let mut checkpoint_id = 2;
@@ -187,12 +202,7 @@ fn run_full_block() -> anyhow::Result<()> {
         end_state_root.to_string(),
         end_state_root.0
     );
-    loop {
-        if worker_event_processor.job_queue.is_empty() {
-            break;
-        }
-        CityWorker::process_next_job(&mut proof_store, &mut worker_event_processor, &root_toolbox)?;
-    }
+    worker_event_processor.wait_for_block_proving_jobs(checkpoint_id)?;
     api.mine_blocks(1)?;
     let orchestrator_result_step_2 = CityOrchestrator::step_2_produce_block_finalize_and_transact(
         &mut proof_store,
@@ -262,12 +272,7 @@ fn run_full_block() -> anyhow::Result<()> {
         end_state_root.to_string(),
         end_state_root.0
     );*/
-    loop {
-        if worker_event_processor.job_queue.is_empty() {
-            break;
-        }
-        CityWorker::process_next_job(&mut proof_store, &mut worker_event_processor, &root_toolbox)?;
-    }
+    worker_event_processor.wait_for_block_proving_jobs(checkpoint_id)?;
     api.mine_blocks(1)?;
     let orchestrator_result_step_2 = CityOrchestrator::step_2_produce_block_finalize_and_transact(
         &mut proof_store,

@@ -7,7 +7,10 @@ use city_crypto::hash::{base_types::hash256::Hash256, qhashout::QHashOut};
 use city_redis_store::RedisStore;
 use city_rollup_circuit::worker::toolbox::root::CRWorkerToolboxRootCircuits;
 use city_rollup_common::{
-    actors::{rpc_processor::QRPCProcessor, traits::OrchestratorRPCEventSenderSync},
+    actors::{
+        rpc_processor::QRPCProcessor,
+        traits::{OrchestratorRPCEventSenderSync, WorkerEventTransmitterSync},
+    },
     api::data::{block::rpc_request::CityRegisterUserRPCRequest, store::CityL2BlockState},
     introspection::rollup::constants::NETWORK_MAGIC_DOGE_REGTEST,
     link::{
@@ -190,12 +193,7 @@ fn run_full_block() -> anyhow::Result<()> {
         end_state_root.to_string(),
         end_state_root.0
     );
-    loop {
-        if worker_event_processor.job_queue.is_empty() {
-            break;
-        }
-        CityWorker::process_next_job(&mut proof_store, &mut worker_event_processor, &root_toolbox)?;
-    }
+    worker_event_processor.wait_for_block_proving_jobs(checkpoint_id)?;
     api.mine_blocks(1)?;
     let orchestrator_result_step_2 = CityOrchestrator::step_2_produce_block_finalize_and_transact(
         &mut proof_store,
@@ -265,12 +263,7 @@ fn run_full_block() -> anyhow::Result<()> {
         end_state_root.to_string(),
         end_state_root.0
     );*/
-    loop {
-        if worker_event_processor.job_queue.is_empty() {
-            break;
-        }
-        CityWorker::process_next_job(&mut proof_store, &mut worker_event_processor, &root_toolbox)?;
-    }
+    worker_event_processor.wait_for_block_proving_jobs(checkpoint_id)?;
     api.mine_blocks(1)?;
     let orchestrator_result_step_2 = CityOrchestrator::step_2_produce_block_finalize_and_transact(
         &mut proof_store,
