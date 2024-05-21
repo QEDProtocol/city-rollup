@@ -127,6 +127,7 @@ pub fn run(args: OrchestratorArgs) -> anyhow::Result<()> {
         {
             let mut store = KVQReDBStore::new(wxn.open_table(KV)?);
             let block_state = CityStore::get_latest_block_state(&store)?;
+            println!("block_state.checkpoint_id: {}", block_state.checkpoint_id);
             let mut event_receiver = CityEventReceiver::<F>::new(
                 queue.clone(),
                 QRPCProcessor::new(block_state.checkpoint_id + 1),
