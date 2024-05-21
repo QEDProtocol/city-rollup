@@ -74,9 +74,9 @@ full_block:
 full_block2:
 	@RUST_BACKTRACE=${TRACE_ENABLED} cargo run --package city-rollup-dev-cli --example full_block_v2
 
-.PHONY: full_block_redis
-full_block_redis:
-	@RUST_BACKTRACE=${TRACE_ENABLED} cargo run --package city-rollup-dev-cli --example full_block_redis
+.PHONY: fblockredis
+fblockredis:
+	@RUST_BACKTRACE=${TRACE_ENABLED} cargo run --package city-rollup-dev-cli --example fblockredis
 
 .PHONY: hashes
 hashes:
@@ -117,6 +117,16 @@ cr_register_user:
 		-X POST \
 		-H "Content-Type: application/json" \
 		--data '{"method":"cr_register_user","params":"754b90a6bc1ff9f726ea83ebc652d48747520192712f97f7adc9387ec1b7d761","id":1,"jsonrpc":"2.0"}'
+	sleep 1
+	curl http://localhost:3000 \
+		-X POST \
+		-H "Content-Type: application/json" \
+		--data '{"method":"cr_register_user","params":"98d582128608b29c76f26372ccc20f4f23b3d5628cc1391251a15306e017343d","id":1,"jsonrpc":"2.0"}'
+	sleep 1
+	curl http://localhost:3000 \
+		-X POST \
+		-H "Content-Type: application/json" \
+		--data '{"method":"cr_register_user","params":"6c4b61af0b650c1beb103e702474223531e83f75f56ea730ddb4fd2109909f37","id":1,"jsonrpc":"2.0"}'
 
 .PHONY: cr_token_transfer
 cr_token_transfer:

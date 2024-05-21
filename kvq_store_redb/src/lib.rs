@@ -53,7 +53,7 @@ where
 
         let rq = self
             .kv
-            .range(base_key.as_slice()..key_end.as_slice())?
+            .range(base_key.as_slice()..=key_end.as_slice())?
             .next_back();
 
         match rq {
@@ -82,7 +82,7 @@ where
 
         let rq = self
             .kv
-            .range(base_key.as_slice()..key_end.as_slice())?
+            .range(base_key.as_slice()..=key_end.as_slice())?
             .next_back();
 
         match rq {
