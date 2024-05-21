@@ -1,17 +1,15 @@
 use std::time::Duration;
 
-use city_common::{cli::args::OrchestratorArgs, logging::debug_timer::DebugTimer, units::UNIT_BTC};
+use city_common::{cli::args::OrchestratorArgs, units::UNIT_BTC};
 use city_crypto::hash::{base_types::hash256::Hash256, qhashout::QHashOut};
-use city_macros::define_table;
+use city_macros::{define_table, sync_infinite_loop};
 use city_redis_store::RedisStore;
-use city_rollup_circuit::worker::toolbox::circuits::CRWorkerToolboxCoreCircuits;
 use city_rollup_common::{
     actors::{
         rpc_processor::QRPCProcessor,
         traits::{OrchestratorRPCEventSenderSync, WorkerEventTransmitterSync},
     },
     api::data::{block::rpc_request::CityRegisterUserRPCRequest, store::CityL2BlockState},
-    introspection::rollup::constants::get_network_magic_for_str,
     link::{
         data::BTCAddress160, link_api::BTCLinkAPI, traits::QBitcoinAPIFunderSync,
         tx::setup_genesis_block,
@@ -21,7 +19,6 @@ use city_rollup_common::{
 use city_rollup_core_worker::event_processor::CityEventProcessor;
 use city_rollup_worker_dispatch::implementations::redis::RedisQueue;
 use city_store::store::{city::base::CityStore, sighash::SigHashMerkleTree};
-use kvq::memory::simple::KVQSimpleMemoryBackingStore;
 use kvq_store_redb::KVQReDBStore;
 use plonky2::{field::goldilocks_field::GoldilocksField, plonk::config::PoseidonGoldilocksConfig};
 use redb::{Database, TableDefinition};
@@ -123,9 +120,9 @@ pub fn run(args: OrchestratorArgs) -> anyhow::Result<()> {
             wallet.add_zk_private_key(QHashOut::from_values(100, 100, 100, 100));
         let user_1_public_key =
             wallet.add_zk_private_key(QHashOut::from_values(101, 101, 101, 101));
-        let user_2_public_key =
+        let _ =
             wallet.add_zk_private_key(QHashOut::from_values(102, 102, 102, 102));
-        let user_3_public_key =
+        let _ =
             wallet.add_zk_private_key(QHashOut::from_values(103, 103, 103, 103));
         wallet.setup_circuits();
         println!("block_2_address: {}", block_2_address.to_string());
@@ -153,33 +150,32 @@ pub fn run(args: OrchestratorArgs) -> anyhow::Result<()> {
     }
     wxn.commit()?;
 
-    let wxn = database.begin_write()?;
-    {
-        let mut store = KVQReDBStore::new(wxn.open_table(KV)?);
-        let block_state = CityStore::get_latest_block_state(&store)?;
-        println!("block_state.checkpoint_id: {}", block_state.checkpoint_id);
-        let mut requested_actions = rpc_queue
-            .get_requested_actions_from_rpc(&mut proof_store, block_state.checkpoint_id + 1)?;
-        std::fs::write("x.json", serde_json::to_string(&requested_actions).unwrap()).unwrap();
-        let orchestrator_result_step_1 =
-            SimpleActorOrchestrator::step_1_produce_block_enqueue_jobs(
+    sync_infinite_loop!(1000, {
+        let wxn = database.begin_write()?;
+        {
+            let mut store = KVQReDBStore::new(wxn.open_table(KV)?);
+            let block_state = CityStore::get_latest_block_state(&store)?;
+            println!("block_state.checkpoint_id: {}", block_state.checkpoint_id);
+            let mut requested_actions = rpc_queue
+                .get_requested_actions_from_rpc(&mut proof_store, block_state.checkpoint_id + 1)?;
+            let orchestrator_result_step_1 =
+                SimpleActorOrchestrator::step_1_produce_block_enqueue_jobs(
+                    &mut proof_store,
+                    &mut store,
+                    &mut requested_actions,
+                    &mut event_processor,
+                    &mut api,
+                    &fingerprints,
+                    &sighash_whitelist_tree,
+                )?;
+            event_processor.wait_for_block_proving_jobs(block_state.checkpoint_id + 1)?;
+            api.mine_blocks(1)?;
+            SimpleActorOrchestrator::step_2_produce_block_finalize_and_transact(
                 &mut proof_store,
-                &mut store,
-                &mut requested_actions,
-                &mut event_processor,
                 &mut api,
-                &fingerprints,
-                &sighash_whitelist_tree,
+                &orchestrator_result_step_1,
             )?;
-        event_processor.wait_for_block_proving_jobs(block_state.checkpoint_id + 1)?;
-        api.mine_blocks(1)?;
-        SimpleActorOrchestrator::step_2_produce_block_finalize_and_transact(
-            &mut proof_store,
-            &mut api,
-            &orchestrator_result_step_1,
-        )?;
-    }
-    wxn.commit()?;
-
-    Ok(())
+        }
+        wxn.commit()?;
+    });
 }

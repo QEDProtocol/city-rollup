@@ -202,7 +202,6 @@ fn run_full_block() -> anyhow::Result<()> {
     timer.lap("end prepare block 2 events");
     let mut requested_actions =
         rpc_queue.get_requested_actions_from_rpc(&mut proof_store, checkpoint_id)?;
-    std::fs::write("y.json",serde_json::to_string(&requested_actions).unwrap()).unwrap();
 
     let orchestrator_result_step_1 = SimpleActorOrchestrator::step_1_produce_block_enqueue_jobs(
         &mut proof_store,
