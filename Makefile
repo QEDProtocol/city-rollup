@@ -29,19 +29,19 @@ run: run-orchestrator run-rpc-server run-l2-worker
 
 .PHONY: run-rpc-server
 run-rpc-server:
-	@RUST_BACKTRACE=${TRACE_ENABLED} cargo run --package city-rollup-cli rpc-server
+	@RUST_BACKTRACE=${TRACE_ENABLED} cargo run --release --package city-rollup-cli rpc-server
 
 .PHONY: run-orchestrator
 run-orchestrator:
-	@RUST_BACKTRACE=${TRACE_ENABLED} cargo run --package city-rollup-cli orchestrator
+	@RUST_BACKTRACE=${TRACE_ENABLED} cargo run --release --package city-rollup-cli orchestrator
 
 .PHONY: run-l2-worker
 run-l2-worker:
-	@RUST_BACKTRACE=${TRACE_ENABLED} cargo run --package city-rollup-cli l2-worker
+	@RUST_BACKTRACE=${TRACE_ENABLED} cargo run --release --package city-rollup-cli l2-worker
 
 .PHONY: run-l2-transfer
 run-l2-transfer:
-	@RUST_BACKTRACE=${TRACE_ENABLED} cargo run --package city-rollup-cli l2-transfer
+	@RUST_BACKTRACE=${TRACE_ENABLED} cargo run --release --package city-rollup-cli l2-transfer
 
 .PHONY: print-circuit-info
 print-circuit-info:

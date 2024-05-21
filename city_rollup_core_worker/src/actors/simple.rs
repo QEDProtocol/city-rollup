@@ -41,6 +41,7 @@ impl SimpleActorWorker {
     ) -> anyhow::Result<()> {
         //let mut timer = TraceTimer::new("process_next_job");
         let job = event_receiver.wait_for_next_job()?;
+        println!("job: {:?}",job);
         Self::process_job(store, event_receiver, prover, job)?;
         //timer.lap("processed next job");
         Ok(())
