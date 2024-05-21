@@ -1,9 +1,8 @@
 use city_common::cli::args::L2WorkerArgs;
 
 use crate::build;
-use crate::error::Result;
 
-pub async fn run(args: L2WorkerArgs) -> Result<()> {
+pub fn run(args: L2WorkerArgs) -> anyhow::Result<()> {
     println!(
         "
 ----------------------------------------

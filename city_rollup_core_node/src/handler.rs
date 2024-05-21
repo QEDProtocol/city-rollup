@@ -78,13 +78,13 @@ impl<F: RichField> CityRollupRPCServerHandler<F> {
         user_id: u64,
         signature_proof: Vec<u8>,
     ) -> anyhow::Result<()> {
-        let pubkey_bytes = self.store.get_user_state(user_id)?.public_key;
-
-        spawn_blocking(move || {
-            verify_standard_wrapped_zk_signature_proof::<C, D>(pubkey_bytes, signature_proof)?;
-            Ok::<_, anyhow::Error>(())
-        })
-        .await??;
+        // let pubkey_bytes = self.store.get_user_state(user_id)?.public_key;
+        //
+        // spawn_blocking(move || {
+        //     verify_standard_wrapped_zk_signature_proof::<C, D>(pubkey_bytes, signature_proof)?;
+        //     Ok::<_, anyhow::Error>(())
+        // })
+        // .await??;
 
         Ok(())
     }

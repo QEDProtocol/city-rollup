@@ -1,9 +1,8 @@
 use city_common::cli::args::OrchestratorArgs;
 
 use crate::build;
-use crate::error::Result;
 
-pub async fn run(args: OrchestratorArgs) -> Result<()> {
+pub fn run(args: OrchestratorArgs) -> anyhow::Result<()> {
     println!(
         "
 ----------------------------------------

@@ -2,9 +2,8 @@ use city_common::cli::args::RPCServerArgs;
 use city_store::config::F;
 
 use crate::build;
-use crate::error::Result;
 
-pub async fn run(args: RPCServerArgs) -> Result<()> {
+pub async fn run(args: RPCServerArgs) -> anyhow::Result<()> {
     println!(
         "
 ----------------------------------------
