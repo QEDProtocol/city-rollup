@@ -50,6 +50,7 @@ pub struct CityAddWithdrawalRPCRequest {
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 #[serde(bound = "")]
+#[serde(transparent)]
 pub struct CityRegisterUserRPCRequest<F: RichField> {
     pub public_key: QHashOut<F>,
 }
