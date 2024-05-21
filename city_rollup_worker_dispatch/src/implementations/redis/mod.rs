@@ -64,7 +64,7 @@ impl RedisQueue {
                     queue.get_queue_attributes(*q),
                     Err(RsmqError::QueueNotFound)
                 ) {
-                    queue.create_queue(*q, Q_HIDDEN, Q_DELAY, Q_CAP)?;
+                    let _ = queue.create_queue(*q, Q_HIDDEN, Q_DELAY, Q_CAP);
                 }
             }
             Ok::<_, anyhow::Error>(queue)
