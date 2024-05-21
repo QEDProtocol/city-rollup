@@ -116,7 +116,7 @@ cr_register_user:
 	curl http://localhost:3000 \
 		-X POST \
 		-H "Content-Type: application/json" \
-		--data @static/register_user.json
+		--data '{"method":"cr_register_user","params":"754b90a6bc1ff9f726ea83ebc652d48747520192712f97f7adc9387ec1b7d761","id":1,"jsonrpc":"2.0"}'
 
 .PHONY: cr_token_transfer
 cr_token_transfer:
