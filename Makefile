@@ -124,3 +124,10 @@ cr_token_transfer:
 		-X POST \
 		-H "Content-Type: application/json" \
 		--data @static/token_transfer.json | jq
+
+.PHONY: cr_produce_block
+cr_produce_block:
+	curl http://localhost:3000 \
+		-X POST \
+		-H "Content-Type: application/json" \
+		--data '{"method":"cr_produce_block","params":null,"id":1,"jsonrpc":"2.0"}'  | jq

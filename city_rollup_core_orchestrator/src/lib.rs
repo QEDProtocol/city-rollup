@@ -3,7 +3,7 @@ use city_macros::define_table;
 use city_redis_store::RedisStore;
 use city_rollup_circuit::worker::toolbox::circuits::CRWorkerToolboxCoreCircuits;
 use city_rollup_common::{
-    actors::rpc_processor::QRPCProcessor,
+    actors::rpc_processor::QRPCProcessor, api::data::store::CityL2BlockState,
     introspection::rollup::constants::get_network_magic_for_str, link::link_api::BTCLinkAPI,
 };
 use city_rollup_core_worker::event_processor::CityEventProcessor;
@@ -36,8 +36,23 @@ pub fn run(args: OrchestratorArgs) -> anyhow::Result<()> {
     )?);
     let mut btc_api = BTCLinkAPI::new_str(&args.bitcoin_rpc, &args.electrs_api);
 
-    let mut timer = DebugTimer::new("run_orchestrator");
     let sighash_whitelist_tree = SigHashMerkleTree::new();
+    let mut timer = DebugTimer::new("run_orchestrator");
+    let genesis = CityL2BlockState {
+        checkpoint_id: 0,
+        next_add_withdrawal_id: 0,
+        next_process_withdrawal_id: 0,
+        next_deposit_id: 0,
+        total_deposits_claimed_epoch: 0,
+        next_user_id: 0,
+        end_balance: 0,
+    };
+    let wxn = database.begin_write()?;
+    {
+        let mut store = KVQReDBStore::new(wxn.open_table(KV)?);
+        CityStore::set_block_state(&mut store, &genesis)?;
+    }
+    wxn.commit()?;
 
     loop {
         let wxn = database.begin_write()?;
