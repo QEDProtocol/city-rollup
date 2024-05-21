@@ -228,6 +228,8 @@ where
         let input = bincode::deserialize::<
             CRAggUserRegisterClaimDepositL2TransferCircuitInput<C::F>,
         >(&input_data)?;
+        println!("input: {:?}", input);
+        println!("input_json: {}", serde_json::to_string(&input).unwrap());
 
         let (_, op_register_user_verifier_data, _) = verify_helper
             .get_verifier_triplet_for_circuit_type(

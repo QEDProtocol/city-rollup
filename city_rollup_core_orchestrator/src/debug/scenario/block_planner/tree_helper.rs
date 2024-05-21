@@ -45,6 +45,11 @@ pub fn plan_tree_prover_from_leaves<
         let dummy = IO::get_dummy_value(dummy_state_root);
 
         return Ok((vec![vec![dummy_id]], dummy.get_state_transition()));
+    } else if leaves.len() == 1 {
+        return Ok((
+            vec![vec![leaves[0].job_id]],
+            leaves[0].get_state_transition(),
+        ));
     }
 
     let levels = generate_tree_inputs_with_position::<LA, CircuitInputWithJobId<IL>, IO>(leaves);
@@ -98,6 +103,7 @@ pub fn plan_tree_prover_from_leaves_with_events<
     dummy_state_root: QHashOut<F>,
     allowed_circuit_hashes_root: QHashOut<F>,
 ) -> anyhow::Result<(Vec<Vec<QProvingJobDataID>>, AggStateTransitionWithEvents<F>)> {
+    println!("leaves: {:?}", leaves);
     if leaves.len() == 0 {
         let dummy = DummyAggStateTransitionWithEvents {
             state_transition_hash: dummy_state_root,
@@ -110,6 +116,11 @@ pub fn plan_tree_prover_from_leaves_with_events<
         return Ok((
             vec![vec![dummy_id]],
             dummy.get_state_transition_with_events(),
+        ));
+    } else if leaves.len() == 1 {
+        return Ok((
+            vec![vec![leaves[0].job_id]],
+            leaves[0].get_state_transition_with_events(),
         ));
     }
 

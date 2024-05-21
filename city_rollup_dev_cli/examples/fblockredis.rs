@@ -150,6 +150,7 @@ fn run_full_block() -> anyhow::Result<()> {
     let user_0_public_key = wallet.add_zk_private_key(QHashOut::from_values(100, 100, 100, 100));
     let user_1_public_key = wallet.add_zk_private_key(QHashOut::from_values(101, 101, 101, 101));
     let user_2_public_key = wallet.add_zk_private_key(QHashOut::from_values(102, 102, 102, 102));
+    let user_3_public_key = wallet.add_zk_private_key(QHashOut::from_values(103, 103, 103, 103));
     wallet.setup_circuits();
     timer.lap("end creating wallets");
 

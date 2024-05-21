@@ -174,6 +174,7 @@ impl<F: RichField> OrchestratorRPCEventSenderSync<F> for CityEventReceiver<F> {
         &mut self,
         event: &CityRegisterUserRPCRequest<F>,
     ) -> anyhow::Result<()> {
+        println!("got rpc_register_user: {:?}", event);
         self.tx_queue.dispatch(Q_RPC_REGISTER_USER, event.clone())?;
         Ok(())
     }

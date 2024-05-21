@@ -28,7 +28,7 @@ impl<F: RichField> DevMemoryCoordinatatorRPCQueue<F> {
         }
     }
     pub fn get_requested_actions_from_rpc<PS: QProofStore>(
-        &self,
+        &mut self,
         proof_store: &mut PS,
         checkpoint_id: u64,
     ) -> anyhow::Result<CityScenarioRequestedActionsFromRPC<F>> {
@@ -41,7 +41,14 @@ impl<F: RichField> DevMemoryCoordinatatorRPCQueue<F> {
             "rpc requests: {}",
             serde_json::to_string(&rpc_processor.output).unwrap()
         );
+        self.clear();
         Ok(rpc_processor.output)
+    }
+    pub fn clear(&mut self) {
+        self.claim_l1_deposits.clear();
+        self.register_users.clear();
+        self.add_withdrawals.clear();
+        self.token_transfers.clear();
     }
 }
 impl<F: RichField> OrchestratorRPCEventSenderSync<F> for DevMemoryCoordinatatorRPCQueue<F> {
