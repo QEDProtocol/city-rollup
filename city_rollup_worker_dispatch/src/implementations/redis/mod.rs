@@ -144,7 +144,7 @@ impl ProvingWorkerListener for RedisQueue {
 
     fn is_empty(&mut self) -> bool {
         matches!(
-            self.queue.get_queue_attributes(Q_JOB).map(|x|x.msgs == 0),
+            self.queue.get_queue_attributes(Q_JOB).map(|x| x.msgs == 0),
             Ok(true)
         )
     }

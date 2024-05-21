@@ -59,10 +59,9 @@ impl<F: RichField> CityEventReceiver<F> {
         checkpoint_id: u64,
     ) -> anyhow::Result<CityScenarioRequestedActionsFromRPC<F>> {
         let mut rpc_processor = QRPCProcessor::new(checkpoint_id);
-        rpc_processor.process_register_users(
-            0,
-            &self.flush_rpc_requests::<CityRegisterUserRPCRequest<F>>(Q_RPC_REGISTER_USER)?,
-        )?;
+        let flushed_users =
+            self.flush_rpc_requests::<CityRegisterUserRPCRequest<F>>(Q_RPC_REGISTER_USER)?;
+        rpc_processor.process_register_users(0, &flushed_users)?;
         rpc_processor.process_deposits(
             proof_store,
             0,

@@ -64,9 +64,9 @@ fn run_full_block() -> anyhow::Result<()> {
     let mut store = S::new();
     let mut worker_event_processor = CityEventProcessor::new(redis_queue.clone());
 
-    //let mut rpc_queue =
-    //    CityEventReceiver::<F>::new(redis_queue, QRPCProcessor::new(0), proof_store.clone());
-    let mut rpc_queue = DevMemoryCoordinatatorRPCQueue::<F>::new();
+    let mut rpc_queue =
+        CityEventReceiver::<F>::new(redis_queue, QRPCProcessor::new(0), proof_store.clone());
+    //let mut rpc_queue = DevMemoryCoordinatatorRPCQueue::<F>::new();
 
     /*
     let start_state_root = CityStore::get_city_root(&store, 1)?;
