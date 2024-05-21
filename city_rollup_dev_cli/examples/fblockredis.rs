@@ -62,7 +62,10 @@ fn run_full_block() -> anyhow::Result<()> {
     let mut proof_store = RedisStore::new("redis://localhost:6379/0")?;
     let redis_queue = RedisQueue::new("redis://localhost:6379/0")?;
     let mut store = S::new();
-    let mut worker_event_processor = CityEventProcessor::new(redis_queue);
+    let mut worker_event_processor = CityEventProcessor::new(redis_queue.clone());
+
+    //let mut rpc_queue =
+    //    CityEventReceiver::<F>::new(redis_queue, QRPCProcessor::new(0), proof_store.clone());
     let mut rpc_queue = DevMemoryCoordinatatorRPCQueue::<F>::new();
 
     /*

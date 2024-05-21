@@ -14,8 +14,8 @@ use city_rollup_common::api::data::block::rpc_request::{
 };
 use city_rollup_common::qworker::proof_store::QProofStore;
 use city_rollup_worker_dispatch::implementations::redis::{
-    QueueCmd, RedisQueue, Q_CMD,
-    Q_RPC_ADD_WITHDRAWAL, Q_RPC_CLAIM_DEPOSIT, Q_RPC_REGISTER_USER, Q_RPC_TOKEN_TRANSFER,
+    QueueCmd, RedisQueue, Q_CMD, Q_RPC_ADD_WITHDRAWAL, Q_RPC_CLAIM_DEPOSIT, Q_RPC_REGISTER_USER,
+    Q_RPC_TOKEN_TRANSFER,
 };
 use city_rollup_worker_dispatch::traits::proving_dispatcher::ProvingDispatcher;
 use city_rollup_worker_dispatch::traits::proving_worker::ProvingWorkerListener;
@@ -78,6 +78,10 @@ impl<F: RichField> CityEventReceiver<F> {
             0,
             &self.flush_rpc_requests::<CityAddWithdrawalRPCRequest>(Q_RPC_ADD_WITHDRAWAL)?,
         )?;
+        println!(
+            "rpc requests: {}",
+            serde_json::to_string(&rpc_processor.output).unwrap()
+        );
         Ok(rpc_processor.output)
     }
 }
@@ -162,8 +166,7 @@ impl<F: RichField> OrchestratorRPCEventSenderSync<F> for CityEventReceiver<F> {
         &mut self,
         event: &CityClaimDepositRPCRequest,
     ) -> anyhow::Result<()> {
-        self.tx_queue
-            .dispatch(Q_RPC_CLAIM_DEPOSIT, event.clone())?;
+        self.tx_queue.dispatch(Q_RPC_CLAIM_DEPOSIT, event.clone())?;
         Ok(())
     }
 
@@ -171,8 +174,7 @@ impl<F: RichField> OrchestratorRPCEventSenderSync<F> for CityEventReceiver<F> {
         &mut self,
         event: &CityRegisterUserRPCRequest<F>,
     ) -> anyhow::Result<()> {
-        self.tx_queue
-            .dispatch(Q_RPC_REGISTER_USER, event.clone())?;
+        self.tx_queue.dispatch(Q_RPC_REGISTER_USER, event.clone())?;
         Ok(())
     }
 
