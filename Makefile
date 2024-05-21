@@ -74,9 +74,9 @@ full_block:
 full_block2:
 	@RUST_BACKTRACE=${TRACE_ENABLED} cargo run --package city-rollup-dev-cli --example full_block_v2
 
-.PHONY: full_block_redis
-full_block_redis:
-	@RUST_BACKTRACE=${TRACE_ENABLED} cargo run --package city-rollup-dev-cli --example full_block_redis
+.PHONY: fblockredis
+fblockredis:
+	@RUST_BACKTRACE=${TRACE_ENABLED} cargo run --package city-rollup-dev-cli --example fblockredis
 
 .PHONY: hashes
 hashes:
