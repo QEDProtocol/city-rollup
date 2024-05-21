@@ -24,8 +24,9 @@ city_macros = { path = "../city_macros" }
 city_rollup_common    = { path = "../city_rollup_common" }
 tokio                 = { workspace = true }
 redis = { workspace = true }
-bb8-redis = {workspace = true}
-rsmq_async            = { workspace = true }
+r2d2_redis = {workspace = true}
+r2d2 = {workspace = true}
+rsmq            = { workspace = true }
 
 
 [dev-dependencies]

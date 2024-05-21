@@ -43,7 +43,7 @@ impl<F: RichField> CityEventReceiver<F> {
 
     pub fn flush_rpc_requests<T: DeserializeOwned>(
         &mut self,
-        topic: &str,
+        topic: &'static str,
     ) -> anyhow::Result<Vec<T>> {
         Ok(self
             .tx_queue

@@ -6,4 +6,3 @@ pub mod logging;
 pub mod math;
 pub mod tree_planner;
 pub mod units;
-pub mod futures;

@@ -270,30 +270,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8c3c1a368f70d6cf7302d78f8f7093da241fb8e8807c05cc9e51a125895a6d5b"
 
 [[package]]
-name = "bb8"
-version = "0.8.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "df7c2093d15d6a1d33b1f972e1c5ea3177748742b97a5f392aa83a65262c6780"
-dependencies = [
- "async-trait",
- "futures-channel",
- "futures-util",
- "parking_lot",
- "tokio",
-]
-
-[[package]]
-name = "bb8-redis"
-version = "0.15.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7eb4f141b33a750b5f667c445bd8588de10b8f2b045cd2aabc040ca746fb53ae"
-dependencies = [
- "async-trait",
- "bb8",
- "redis",
-]
-
-[[package]]
 name = "bech32"
 version = "0.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -796,7 +772,6 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "async-trait",
- "bb8-redis",
  "bincode",
  "bitcoin",
  "city_rollup_common",
@@ -809,7 +784,7 @@ dependencies = [
  "r2d2_redis",
  "rand_chacha",
  "redis",
- "rsmq_async",
+ "rsmq",
  "serde",
  "serde_json",
  "serde_repr",
@@ -975,7 +950,6 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "async-trait",
- "bb8-redis",
  "city_common",
  "city_crypto",
  "city_macros",
@@ -986,11 +960,13 @@ dependencies = [
  "k256",
  "plonky2",
  "postcard",
+ "r2d2",
+ "r2d2_redis",
  "rand",
  "rand_chacha",
  "redis",
  "reqwest",
- "rsmq_async",
+ "rsmq",
  "serde",
  "serde_json",
  "serde_repr",
@@ -1152,11 +1128,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ba5a308b75df32fe02788e748662718f03fde005016435c444eea572398219fd"
 dependencies = [
  "bytes",
- "futures-core",
  "memchr",
- "pin-project-lite",
- "tokio",
- "tokio-util",
 ]
 
 [[package]]
@@ -3894,8 +3866,7 @@ dependencies = [
 [[package]]
 name = "r2d2"
 version = "0.8.10"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "51de85fb3fb6524929c8a2eb85e6b6d363de4e8c48f9e2c2eac4944abc181c93"
+source = "git+https://github.com/GopherJ/r2d2?rev=976ca74a74871d78764da2a040edcadad1af9be9#976ca74a74871d78764da2a040edcadad1af9be9"
 dependencies = [
  "log",
  "parking_lot",
@@ -3905,7 +3876,7 @@ dependencies = [
 [[package]]
 name = "r2d2_redis"
 version = "0.15.0"
-source = "git+https://github.com/GopherJ/r2d2-redis?rev=759effbce90d2edd7cbd6f94071b383140a8f622#759effbce90d2edd7cbd6f94071b383140a8f622"
+source = "git+https://github.com/GopherJ/r2d2-redis?rev=63be37454cf441b832251aa915b1a9cb8bc27bff#63be37454cf441b832251aa915b1a9cb8bc27bff"
 dependencies = [
  "r2d2",
  "redis",
@@ -3997,18 +3968,12 @@ version = "0.25.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6472825949c09872e8f2c50bde59fcefc17748b6be5c90fd67cd8b4daca73bfd"
 dependencies = [
- "async-trait",
- "bytes",
  "combine",
- "futures-util",
  "itoa",
  "percent-encoding",
- "pin-project-lite",
  "ryu",
  "sha1_smol",
  "socket2",
- "tokio",
- "tokio-util",
  "url",
 ]
 
@@ -4192,13 +4157,12 @@ dependencies = [
 ]
 
 [[package]]
-name = "rsmq_async"
+name = "rsmq"
 version = "9.0.0"
-source = "git+https://github.com/QEDProtocol/rsmq-async-rs?rev=1d61a9e665ce69f9c37752575c5b7b3566504a32#1d61a9e665ce69f9c37752575c5b7b3566504a32"
+source = "git+https://github.com/GopherJ/rsmq-async-rs?rev=72358a7c4b946ff01515e111ccbe8b0f8a04ede2#72358a7c4b946ff01515e111ccbe8b0f8a04ede2"
 dependencies = [
- "async-trait",
- "bb8",
  "lazy_static",
+ "r2d2",
  "radix_fmt",
  "rand",
  "redis",

@@ -1,14 +1,11 @@
 use std::time::Duration;
 
 use anyhow::Result;
-use bb8_redis::bb8::{self};
-use city_common::futures::block_on;
-use city_macros::capture;
-use rsmq_async::PooledRsmq;
-use rsmq_async::RedisConnectionManager;
-use rsmq_async::RsmqConnection;
-use rsmq_async::RsmqError;
-use rsmq_async::RsmqMessage;
+use rsmq::PooledRsmq;
+use rsmq::RedisConnectionManager;
+use rsmq::RsmqConnection;
+use rsmq::RsmqError;
+use rsmq::RsmqMessage;
 use serde::Serialize;
 use serde_repr::Deserialize_repr;
 use serde_repr::Serialize_repr;
@@ -51,8 +48,8 @@ impl RedisQueue {
     pub fn new(uri: &str) -> Result<Self> {
         let client = redis::Client::open(uri)?;
         let manager = RedisConnectionManager::from_client(client)?;
-        let queue = block_on(capture!(manager, async move {
-            let pool = bb8::Pool::builder().build(manager).await?;
+        let queue = {
+            let pool = r2d2::Pool::builder().build(manager)?;
             let mut queue = PooledRsmq::new_with_pool(pool, false, None);
             for q in &[
                 Q_RPC_TOKEN_TRANSFER,
@@ -64,18 +61,18 @@ impl RedisQueue {
                 Q_NOTIFICATIONS,
             ] {
                 if matches!(
-                    queue.get_queue_attributes(*q).await,
+                    queue.get_queue_attributes(*q),
                     Err(RsmqError::QueueNotFound)
                 ) {
-                    queue.create_queue(*q, Q_HIDDEN, Q_DELAY, Q_CAP).await?;
+                    queue.create_queue(*q, Q_HIDDEN, Q_DELAY, Q_CAP)?;
                 }
             }
             Ok::<_, anyhow::Error>(queue)
-        }))?;
+        }?;
         Ok(Self { queue })
     }
 
-    pub fn new_with_pool(pool: bb8::Pool<RedisConnectionManager>) -> Result<Self> {
+    pub fn new_with_pool(pool: r2d2::Pool<RedisConnectionManager>) -> Result<Self> {
         let queue = PooledRsmq::new_with_pool(pool, false, None);
         Ok(Self { queue })
     }
@@ -84,16 +81,13 @@ impl RedisQueue {
 impl ProvingDispatcher for RedisQueue {
     fn dispatch(
         self: &mut Self,
-        topic: &str,
+        topic: &'static str,
         value: impl Serialize + Send + 'static,
     ) -> Result<()> {
-        block_on(capture!(self => this, async move {
-            println!("dispatching message to queue: {}", topic);
-            this.queue
-                .send_message(topic, serde_json::to_vec(&value)?, None)
-                .await?;
-            Ok(())
-        }))
+        println!("dispatching message to queue: {}", topic);
+        self.queue
+            .send_message(topic, serde_json::to_vec(&value)?, None)?;
+        Ok(())
     }
 }
 
@@ -104,65 +98,53 @@ impl ProvingWorkerListener for RedisQueue {
 
     fn receive_one(
         &mut self,
-        topic: &str,
+        topic: &'static str,
         hidden: Option<Duration>,
     ) -> anyhow::Result<Option<(String, Vec<u8>)>> {
-        block_on(capture!(self => this, async move {
-            match this.queue.receive_message(topic, hidden).await? {
-                Some(RsmqMessage { id, message, .. }) => Ok(Some((id, message))),
-                None => Ok(None),
-            }
-        }))
+        match self.queue.receive_message(topic, hidden)? {
+            Some(RsmqMessage { id, message, .. }) => Ok(Some((id, message))),
+            None => Ok(None),
+        }
     }
 
-    fn pop_one(&mut self, topic: &str) -> anyhow::Result<Option<Vec<u8>>> {
-        block_on(capture!(self => this, async move {
-            match this.queue.pop_message(topic).await? {
-                Some(RsmqMessage { message, .. }) => Ok(Some(message)),
-                None => Ok(None),
-            }
-        }))
+    fn pop_one(&mut self, topic: &'static str) -> anyhow::Result<Option<Vec<u8>>> {
+        match self.queue.pop_message(topic)? {
+            Some(RsmqMessage { message, .. }) => Ok(Some(message)),
+            None => Ok(None),
+        }
     }
 
     fn receive_all(
         &mut self,
-        topic: &str,
+        topic: &'static str,
         hidden: Option<Duration>,
     ) -> anyhow::Result<Vec<(String, Vec<u8>)>> {
-        block_on(capture!(self => this, async move {
-            let mut result = Vec::new();
-            while let Some(RsmqMessage { id, message, .. }) =
-                this.queue.receive_message(topic, hidden).await?
-            {
-                result.push((id, message));
-            }
+        let mut result = Vec::new();
+        while let Some(RsmqMessage { id, message, .. }) =
+            self.queue.receive_message(topic, hidden)?
+        {
+            result.push((id, message));
+        }
 
-            Ok(result)
-        }))
+        Ok(result)
     }
 
-    fn pop_all(&mut self, topic: &str) -> anyhow::Result<Vec<Vec<u8>>> {
-        block_on(capture!(self => this, async move {
-            let mut result = Vec::new();
-            while let Some(RsmqMessage { message, .. }) = this.queue.pop_message(topic).await? {
-                result.push(message);
-            }
+    fn pop_all(&mut self, topic: &'static str) -> anyhow::Result<Vec<Vec<u8>>> {
+        let mut result = Vec::new();
+        while let Some(RsmqMessage { message, .. }) = self.queue.pop_message(topic)? {
+            result.push(message);
+        }
 
-            Ok(result)
-        }))
+        Ok(result)
     }
 
-    fn delete_message(&mut self, topic: &str, id: String) -> anyhow::Result<bool> {
-        block_on(capture!(self => this, async move {
-            Ok(this.queue.delete_message(topic, &id).await?)
-        }))
+    fn delete_message(&mut self, topic: &'static str, id: String) -> anyhow::Result<bool> {
+        Ok(self.queue.delete_message(topic, &id)?)
     }
 
     fn is_empty(&mut self) -> bool {
         matches!(
-            block_on(capture!(self => this, async move {
-                Ok::<_, anyhow::Error>(this.queue.get_queue_attributes(Q_JOB).await?.msgs == 0)
-            })),
+            self.queue.get_queue_attributes(Q_JOB).map(|x|x.msgs == 0),
             Ok(true)
         )
     }
