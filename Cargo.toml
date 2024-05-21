@@ -37,6 +37,7 @@ derive_more = { version = "0.99.17" }
 dotenv = "0.15.0"
 futures = "0.3.28"
 hex = "0.4.3"
+hex-literal = "0.4.1"
 http = "0.2.6"
 http-body-util = "0.1"
 hyper = { version = "1", features = ["full"] }

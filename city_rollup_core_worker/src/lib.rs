@@ -1,5 +1,7 @@
 pub mod actors;
 
+use std::time::Duration;
+
 use city_common::cli::args::L2WorkerArgs;
 use city_redis_store::RedisStore;
 use city_rollup_circuit::worker::toolbox::root::CRWorkerToolboxRootCircuits;
@@ -29,11 +31,13 @@ pub fn run(args: L2WorkerArgs) -> anyhow::Result<()> {
         CRWorkerToolboxRootCircuits::<C, D>::new(network_magic, SIGHASH_WHITELIST_TREE_ROOT);
 
     loop {
-        if event_processor.job_queue.is_empty() {
-            break;
+        'inner: loop {
+            if event_processor.job_queue.is_empty() {
+                break 'inner;
+            }
+            SimpleActorWorker::process_next_job(&mut proof_store, &mut event_processor, &toolbox)?;
         }
-        SimpleActorWorker::process_next_job(&mut proof_store, &mut event_processor, &toolbox)?;
-    }
 
-    Ok::<_, anyhow::Error>(())
+        std::thread::sleep(Duration::from_secs(1))
+    }
 }

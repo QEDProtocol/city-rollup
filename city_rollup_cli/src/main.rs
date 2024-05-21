@@ -13,15 +13,14 @@ use crate::subcommand::rpcserver;
 use crate::subcommand::Cli;
 use crate::subcommand::Commands;
 
-#[tokio::main]
-async fn main() -> anyhow::Result<()> {
+fn main() -> anyhow::Result<()> {
     dotenv::dotenv().ok();
     //city_common::setup_logger();
 
     let cli = Cli::parse();
     match cli.command {
         Commands::RPCServer(args) => {
-            rpcserver::run(args).await?;
+            rpcserver::run(args)?;
         },
         Commands::L2Transfer(args) => {
             l2transfer::run(args)?;

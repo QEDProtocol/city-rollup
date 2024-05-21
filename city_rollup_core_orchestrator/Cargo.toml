@@ -32,6 +32,7 @@ city_redis_store = { path = "../city_redis_store" }
 city_rollup_circuit = { path = "../city_rollup_circuit" }
 kvq_store_redb = { path = "../kvq_store_redb" }
 redb = { workspace = true }
+hex-literal = { workspace = true }
 
 [dev-dependencies]
 criterion = "0.5.1"

@@ -3,6 +3,7 @@ use city_store::config::F;
 
 use crate::build;
 
+#[tokio::main]
 pub async fn run(args: RPCServerArgs) -> anyhow::Result<()> {
     println!(
         "
