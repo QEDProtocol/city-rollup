@@ -7,7 +7,7 @@ use city_redis_store::RedisStore;
 use city_rollup_common::{
     actors::{
         rpc_processor::QRPCProcessor,
-        traits::{OrchestratorRPCEventSenderSync, WorkerEventTransmitterSync},
+        traits::{OrchestratorEventReceiverSync, OrchestratorRPCEventSenderSync, WorkerEventTransmitterSync},
     },
     api::data::{block::rpc_request::CityRegisterUserRPCRequest, store::CityL2BlockState},
     link::{
@@ -40,7 +40,6 @@ type F = GoldilocksField;
 pub fn run(args: OrchestratorArgs) -> anyhow::Result<()> {
     let mut proof_store = RedisStore::new(&args.redis_uri)?;
     let database = Database::create(&args.db_path)?;
-    // let mut store = KVQSimpleMemoryBackingStore::new();
     let queue = RedisQueue::new(&args.redis_uri)?;
     let mut event_processor = CityEventProcessor::new(queue.clone());
     let fingerprints: CRWorkerToolboxCoreCircuitFingerprints<F> = serde_json::from_str(
@@ -120,10 +119,8 @@ pub fn run(args: OrchestratorArgs) -> anyhow::Result<()> {
             wallet.add_zk_private_key(QHashOut::from_values(100, 100, 100, 100));
         let user_1_public_key =
             wallet.add_zk_private_key(QHashOut::from_values(101, 101, 101, 101));
-        let _ =
-            wallet.add_zk_private_key(QHashOut::from_values(102, 102, 102, 102));
-        let _ =
-            wallet.add_zk_private_key(QHashOut::from_values(103, 103, 103, 103));
+        let _ = wallet.add_zk_private_key(QHashOut::from_values(102, 102, 102, 102));
+        let _ = wallet.add_zk_private_key(QHashOut::from_values(103, 103, 103, 103));
         wallet.setup_circuits();
         println!("block_2_address: {}", block_2_address.to_string());
         api.fund_address_from_known_p2pkh_address(
@@ -156,13 +153,17 @@ pub fn run(args: OrchestratorArgs) -> anyhow::Result<()> {
             let mut store = KVQReDBStore::new(wxn.open_table(KV)?);
             let block_state = CityStore::get_latest_block_state(&store)?;
             println!("block_state.checkpoint_id: {}", block_state.checkpoint_id);
-            let mut requested_actions = rpc_queue
-                .get_requested_actions_from_rpc(&mut proof_store, block_state.checkpoint_id + 1)?;
+            let mut event_receiver = CityEventReceiver::<F>::new(
+                queue.clone(),
+                QRPCProcessor::new(block_state.checkpoint_id + 1),
+                proof_store.clone(),
+            );
+            event_receiver.wait_for_produce_block()?;
             let orchestrator_result_step_1 =
                 SimpleActorOrchestrator::step_1_produce_block_enqueue_jobs(
                     &mut proof_store,
                     &mut store,
-                    &mut requested_actions,
+                    &mut event_receiver,
                     &mut event_processor,
                     &mut api,
                     &fingerprints,
@@ -175,6 +176,7 @@ pub fn run(args: OrchestratorArgs) -> anyhow::Result<()> {
                 &mut api,
                 &orchestrator_result_step_1,
             )?;
+            api.mine_blocks(1)?;
         }
         wxn.commit()?;
     });
