@@ -6,14 +6,14 @@ use bytes::Bytes;
 use city_common::cli::args::RPCServerArgs;
 use city_redis_store::RedisStore;
 use city_rollup_common::actors::traits::OrchestratorRPCEventSenderSync;
+use city_rollup_common::api::data::block::rpc_request::*;
 use city_rollup_worker_dispatch::implementations::redis::QueueCmd;
 use city_rollup_worker_dispatch::implementations::redis::RedisQueue;
+use city_rollup_worker_dispatch::implementations::redis::Q_CMD;
 use city_rollup_worker_dispatch::implementations::redis::Q_RPC_ADD_WITHDRAWAL;
 use city_rollup_worker_dispatch::implementations::redis::Q_RPC_CLAIM_DEPOSIT;
 use city_rollup_worker_dispatch::implementations::redis::Q_RPC_REGISTER_USER;
 use city_rollup_worker_dispatch::implementations::redis::Q_RPC_TOKEN_TRANSFER;
-use city_rollup_worker_dispatch::implementations::redis::Q_CMD;
-use city_rollup_common::api::data::block::rpc_request::*;
 use city_rollup_worker_dispatch::traits::proving_dispatcher::ProvingDispatcher;
 use http_body_util::BodyExt;
 use http_body_util::Full;
@@ -153,7 +153,8 @@ impl<F: RichField> OrchestratorRPCEventSenderSync<F> for CityRollupRPCServerHand
         &mut self,
         event: &CityAddWithdrawalRPCRequest,
     ) -> anyhow::Result<()> {
-        self.tx_queue.dispatch(Q_RPC_ADD_WITHDRAWAL, event.clone())?;
+        self.tx_queue
+            .dispatch(Q_RPC_ADD_WITHDRAWAL, event.clone())?;
         Ok(())
     }
 
@@ -161,11 +162,13 @@ impl<F: RichField> OrchestratorRPCEventSenderSync<F> for CityRollupRPCServerHand
         &mut self,
         event: &CityTokenTransferRPCRequest,
     ) -> anyhow::Result<()> {
-        self.tx_queue.dispatch(Q_RPC_TOKEN_TRANSFER, event.clone())?;
+        self.tx_queue
+            .dispatch(Q_RPC_TOKEN_TRANSFER, event.clone())?;
         Ok(())
     }
 
     fn notify_rpc_produce_block(&mut self) -> anyhow::Result<()> {
+        println!("produce block");
         self.tx_queue.dispatch(Q_CMD, QueueCmd::ProduceBlock)?;
         Ok(())
     }
