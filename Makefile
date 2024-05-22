@@ -147,4 +147,4 @@ cr_get_city_root:
 	curl http://localhost:3000 \
 		-X POST \
 		-H "Content-Type: application/json" \
-		--data '{"method":"cr_getCityRoot","params":0,"id":1,"jsonrpc":"2.0"}'  | jq
+		--data '{"method":"cr_getCityRoot","params":[0],"id":1,"jsonrpc":"2.0"}'  | jq
