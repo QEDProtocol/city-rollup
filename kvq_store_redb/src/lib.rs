@@ -1,4 +1,3 @@
-use kvq::traits::KVQBinaryStore;
 use kvq::traits::KVQBinaryStoreReader;
 use kvq::traits::KVQBinaryStoreWriter;
 use kvq::traits::KVQPair;

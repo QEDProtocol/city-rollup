@@ -28,7 +28,6 @@ use hyper::Response;
 use hyper::StatusCode;
 use hyper_util::rt::TokioIo;
 use jsonrpsee::core::client::ClientT;
-use jsonrpsee::core::traits::ToRpcParams;
 use jsonrpsee::http_client::HttpClient;
 use jsonrpsee::http_client::HttpClientBuilder;
 use plonky2::hash::hash_types::RichField;

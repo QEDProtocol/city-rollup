@@ -1,7 +1,6 @@
 use std::collections::BTreeMap;
 use std::ops::Bound::Included;
 
-use crate::traits::KVQBinaryStore;
 use crate::traits::KVQBinaryStoreReader;
 use crate::traits::KVQBinaryStoreWriter;
 use crate::traits::KVQPair;
