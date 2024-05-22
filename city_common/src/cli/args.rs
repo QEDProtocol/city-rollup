@@ -4,6 +4,8 @@ use clap::Args;
 pub struct RPCServerArgs {
     #[clap(long, default_value = "0.0.0.0:3000", env)]
     pub rollup_rpc_address: String,
+    #[clap(long, default_value = "http://127.0.0.1:7777", env)]
+    pub api_server_address: String,
     #[clap(
         env,
         long,
@@ -123,3 +125,12 @@ pub struct L2TransferArgs {
     pub nonce: u64,
 }
 */
+
+
+#[derive(Clone, Args)]
+pub struct APIServerArgs {
+    #[clap(long, default_value = "0.0.0.0:7777", env)]
+    pub server_addr: String,
+    #[clap(short, env, long, default_value = "db", env)]
+    pub db_path: String,
+}

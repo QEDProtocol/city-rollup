@@ -1,7 +1,7 @@
 use std::marker::PhantomData;
 use std::net::SocketAddr;
+use std::sync::Arc;
 
-use bytes::Buf;
 use bytes::Bytes;
 use city_common::cli::args::RPCServerArgs;
 use city_redis_store::RedisStore;
@@ -26,11 +26,19 @@ use hyper::Request;
 use hyper::Response;
 use hyper::StatusCode;
 use hyper_util::rt::TokioIo;
+use jsonrpsee::core::client::ClientT;
+use jsonrpsee::http_client::HttpClient;
+use jsonrpsee::http_client::HttpClientBuilder;
 use plonky2::hash::hash_types::RichField;
+use serde_json::json;
+use serde_json::Value;
 use tokio::net::TcpListener;
 
+use crate::rpc::ErrorCode;
+use crate::rpc::ExternalRequestParams;
 use crate::rpc::RequestParams;
 use crate::rpc::ResponseResult;
+use crate::rpc::RpcError;
 use crate::rpc::RpcRequest;
 use crate::rpc::RpcResponse;
 use crate::rpc::Version;
@@ -45,6 +53,7 @@ pub struct CityRollupRPCServerHandler<F: RichField> {
     pub args: RPCServerArgs,
     pub store: RedisStore,
     pub tx_queue: RedisQueue,
+    pub api: Arc<HttpClient>,
     _marker: PhantomData<F>,
 }
 
@@ -52,6 +61,7 @@ impl<F: RichField> CityRollupRPCServerHandler<F> {
     pub async fn new(args: RPCServerArgs, store: RedisStore) -> anyhow::Result<Self> {
         Ok(Self {
             tx_queue: RedisQueue::new(&args.redis_uri)?,
+            api: Arc::new(HttpClientBuilder::default().build(&args.api_server_address)?),
             args,
             store,
             _marker: PhantomData,
@@ -63,10 +73,107 @@ impl<F: RichField> CityRollupRPCServerHandler<F> {
         req: Request<hyper::body::Incoming>,
     ) -> anyhow::Result<Response<BoxBody>> {
         match (req.method(), req.uri().path()) {
-            (&Method::GET, "/editor") => Ok(serve_editor()),
-            (&Method::POST, "/") => self.serve_rpc_requests(req).await,
+            (&Method::GET, "/editor") => Ok(editor()),
+            (&Method::POST, "/") => self.rpc(req).await,
             _ => Ok(not_found()),
         }
+    }
+
+    pub async fn rpc(&mut self, req: Request<Incoming>) -> anyhow::Result<Response<BoxBody>> {
+        let whole_body = req.collect().await?.to_bytes();
+        let data = serde_json::from_slice::<RpcRequest<RequestParams<F>>>(&whole_body);
+        use RequestParams::*;
+        let res = match data {
+            Ok(RpcRequest {
+                request: TokenTransfer(req),
+                ..
+            }) => self.token_transfer(req).await.map(|r| json!(r)),
+            Ok(RpcRequest {
+                request: ClaimDeposit(req),
+                ..
+            }) => self.claim_deposit(req).await.map(|r| json!(r)),
+            Ok(RpcRequest {
+                request: AddWithdrawal(req),
+                ..
+            }) => self.add_withdrawal(req).await.map(|r| json!(r)),
+            Ok(RpcRequest {
+                request: RegisterUser(req),
+                ..
+            }) => self.register_user(req).map(|r| json!(r)),
+            Ok(RpcRequest {
+                request: ProduceBlock,
+                ..
+            }) => self.produce_block().map(|r| json!(r)),
+            Err(_) => {
+                let request =
+                    serde_json::from_slice::<RpcRequest<ExternalRequestParams>>(&whole_body)?
+                        .request;
+                self.api
+                    .request(&request.method, request.params)
+                    .await
+                    .map_err(anyhow::Error::from)
+                    .map(|r: serde_json::Value| json!(r))
+            }
+        }
+        .map_or_else(
+            |e| ResponseResult::<Value>::Error(RpcError::from(ErrorCode::InternalError)),
+            |r| ResponseResult::<Value>::Success(r),
+        );
+
+        let response = RpcResponse {
+            jsonrpc: Version::V2,
+            id: None,
+            result: res,
+        };
+
+        let code = match response.result {
+            ResponseResult::Success(_) => StatusCode::OK,
+            ResponseResult::Error(_) => StatusCode::INTERNAL_SERVER_ERROR,
+        };
+
+        Ok(Response::builder()
+            .status(code)
+            .header(header::CONTENT_TYPE, "application/json")
+            .body(full(serde_json::to_vec(&response)?))?)
+    }
+
+    fn register_user(&mut self, req: CityRegisterUserRPCRequest<F>) -> Result<(), anyhow::Error> {
+        self.notify_rpc_register_user(&req)?;
+        Ok(())
+    }
+
+    fn produce_block(&mut self) -> Result<(), anyhow::Error> {
+        Ok(self.notify_rpc_produce_block()?)
+    }
+
+    async fn add_withdrawal(
+        &mut self,
+        req: CityAddWithdrawalRPCRequest,
+    ) -> Result<(), anyhow::Error> {
+        self.verify_signature_proof(req.user_id, req.signature_proof.clone())
+            .await?;
+        self.notify_rpc_add_withdrawal(&req)?;
+        Ok(())
+    }
+
+    async fn claim_deposit(
+        &mut self,
+        req: CityClaimDepositRPCRequest,
+    ) -> Result<(), anyhow::Error> {
+        self.verify_signature_proof(req.user_id, req.signature_proof.clone())
+            .await?;
+        self.notify_rpc_claim_deposit(&req)?;
+        Ok(())
+    }
+
+    async fn token_transfer(
+        &mut self,
+        req: CityTokenTransferRPCRequest,
+    ) -> Result<(), anyhow::Error> {
+        self.verify_signature_proof(req.user_id, req.signature_proof.clone())
+            .await?;
+        self.notify_rpc_token_transfer(&req)?;
+        Ok(())
     }
 
     async fn verify_signature_proof(
@@ -83,52 +190,6 @@ impl<F: RichField> CityRollupRPCServerHandler<F> {
         // .await??;
 
         Ok(())
-    }
-
-    pub async fn serve_rpc_requests(
-        &mut self,
-        req: Request<Incoming>,
-    ) -> anyhow::Result<Response<BoxBody>> {
-        // Aggregate the body...
-        let whole_body = req.collect().await?.aggregate();
-        // Decode as JSON...
-        let data = serde_json::from_reader::<_, RpcRequest<F>>(whole_body.reader())?;
-        let res = match data.request {
-            RequestParams::TokenTransfer(req) => {
-                self.verify_signature_proof(req.user_id, req.signature_proof.clone())
-                    .await?;
-
-                self.notify_rpc_token_transfer(&req)?;
-            }
-            RequestParams::ClaimDeposit(req) => {
-                self.verify_signature_proof(req.user_id, req.signature_proof.clone())
-                    .await?;
-
-                self.notify_rpc_claim_deposit(&req)?;
-            }
-            RequestParams::AddWithdrawal(req) => {
-                self.verify_signature_proof(req.user_id, req.signature_proof.clone())
-                    .await?;
-
-                self.notify_rpc_add_withdrawal(&req)?;
-            }
-            RequestParams::RegisterUser(req) => {
-                self.notify_rpc_register_user(&req)?;
-            }
-            RequestParams::ProduceBlock => self.notify_rpc_produce_block()?,
-        };
-
-        let response = RpcResponse {
-            jsonrpc: Version::V2,
-            id: Some(data.id.clone()),
-            result: ResponseResult::Success(res),
-        };
-
-        // TODO: handle rpc error
-        Ok(Response::builder()
-            .status(StatusCode::OK)
-            .header(header::CONTENT_TYPE, "application/json")
-            .body(full(serde_json::to_vec(&response)?))?)
     }
 }
 
@@ -205,7 +266,7 @@ fn not_found() -> Response<BoxBody> {
         .unwrap()
 }
 
-fn serve_editor() -> Response<BoxBody> {
+fn editor() -> Response<BoxBody> {
     Response::builder()
         .status(StatusCode::OK)
         .header("Content-Type", "text/html")

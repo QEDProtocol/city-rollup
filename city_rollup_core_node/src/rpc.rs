@@ -4,11 +4,13 @@ use city_rollup_common::api::data::block::rpc_request::CityAddWithdrawalRPCReque
 use city_rollup_common::api::data::block::rpc_request::CityClaimDepositRPCRequest;
 use city_rollup_common::api::data::block::rpc_request::CityRegisterUserRPCRequest;
 use city_rollup_common::api::data::block::rpc_request::CityTokenTransferRPCRequest;
+use jsonrpsee::core::traits::ToRpcParams;
 use plonky2::hash::hash_types::RichField;
 use serde::Deserialize;
 use serde::Deserializer;
 use serde::Serialize;
 use serde::Serializer;
+use serde_json::value::RawValue;
 use serde_with::serde_as;
 
 /// Represents the version of the RPC protocol
@@ -31,7 +33,6 @@ pub enum Id {
 #[serde(bound = "")]
 #[serde(tag = "method", content = "params")]
 pub enum RequestParams<F: RichField> {
-    // User
     #[serde(rename = "cr_token_transfer")]
     TokenTransfer(CityTokenTransferRPCRequest),
     #[serde(rename = "cr_claim_deposit")]
@@ -41,17 +42,35 @@ pub enum RequestParams<F: RichField> {
     #[serde(rename = "cr_register_user")]
     RegisterUser(CityRegisterUserRPCRequest<F>),
     #[serde(rename = "cr_produce_block")]
-    ProduceBlock
+    ProduceBlock,
 }
+
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(bound = "")]
+pub struct ExternalRequestParams {
+    pub method: String,
+    pub params: RpcParams
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct RpcParams(serde_json::Value);
+
+impl ToRpcParams for RpcParams {
+    fn to_rpc_params(self) -> Result<Option<Box<RawValue>>, serde_json::Error> {
+        let json = serde_json::to_string(&self)?;
+        RawValue::from_string(json).map(Some)
+    }
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+#[serde(bound = "T: Serialize, for<'de2> T: Deserialize<'de2>")]
 #[serde(deny_unknown_fields)]
-pub struct RpcRequest<F: RichField> {
+pub struct RpcRequest<T> {
     /// The version of the protocol
     pub jsonrpc: Version,
     #[serde(flatten)]
-    pub request: RequestParams<F>,
+    pub request: T,
     /// The name of the method to execute
     /// The identifier for this request issued by the client,
     /// An [Id] must be a String, null or a number.
@@ -163,6 +182,16 @@ impl From<i64> for ErrorCode {
             -32602 => ErrorCode::InvalidParams,
             -32603 => ErrorCode::InternalError,
             _ => ErrorCode::ServerError(code),
+        }
+    }
+}
+
+impl From<ErrorCode> for RpcError {
+    fn from(value: ErrorCode) -> Self {
+        Self {
+            code: value,
+            message: Cow::Borrowed(value.message()),
+            data: None,
         }
     }
 }

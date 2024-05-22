@@ -26,7 +26,7 @@ use city_rollup_core_worker::{
     actors::simple::SimpleActorWorker, event_processor::CityEventProcessor,
 };
 use city_rollup_worker_dispatch::{
-    implementations::redis::RedisQueue, traits::proving_worker::ProvingWorkerListener,
+    implementations::redis::RedisQueue,
 };
 use city_store::store::{city::base::CityStore, sighash::SigHashMerkleTree};
 use kvq::memory::simple::KVQSimpleMemoryBackingStore;

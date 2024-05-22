@@ -1,8 +1,9 @@
-use city_common::cli::args::L2WorkerArgs;
+use city_common::cli::args::APIServerArgs;
 
 use crate::build;
 
-pub fn run(args: L2WorkerArgs) -> anyhow::Result<()> {
+#[tokio::main]
+pub async fn run(args: APIServerArgs) -> anyhow::Result<()> {
     println!(
         "
 ----------------------------------------
@@ -11,6 +12,6 @@ pub fn run(args: L2WorkerArgs) -> anyhow::Result<()> {
 ",
         build::PKG_VERSION
     );
-    city_rollup_core_worker::run(args)?;
+    city_rollup_core_api::run_server(args).await?;
     Ok(())
 }

@@ -1,30 +1,35 @@
+use std::path::Path;
+
 use kvq::traits::KVQBinaryStoreReader;
 use kvq::traits::KVQBinaryStoreWriter;
 use kvq::traits::KVQPair;
-use redb::ReadableTable;
-use redb::Table;
+use rocksdb::ErrorKind;
+use rocksdb::Options;
+use rocksdb::DB;
 
-pub struct KVQReDBStore<T> {
-    kv: T,
+pub struct KVQRocksDBStore {
+    db: DB,
 }
-impl<T> KVQReDBStore<T> {
-    pub fn new(kv: T) -> Self {
-        Self { kv }
+impl KVQRocksDBStore {
+    pub fn open_default<P: AsRef<Path>>(path: P) -> anyhow::Result<Self> {
+        Ok(Self {
+            db: DB::open_default(path)?,
+        })
+    }
+
+    pub fn open_for_read_only<P: AsRef<Path>>(path: P) -> anyhow::Result<Self> {
+        Ok(Self {
+            db: DB::open_for_read_only(&Options::default(), path, false)?,
+        })
     }
 }
 
-impl<T> KVQBinaryStoreReader for KVQReDBStore<T>
-where
-    T: ReadableTable<&'static [u8], &'static [u8]>,
-{
+impl KVQBinaryStoreReader for KVQRocksDBStore {
     fn get_exact(&self, key: &Vec<u8>) -> anyhow::Result<Vec<u8>> {
-        let res = self
-            .kv
-            .get(key.as_slice())?
-            .ok_or(anyhow::anyhow!("Key not found"))?
-            .value()
-            .to_vec();
-        Ok(res)
+        match self.db.get(key)? {
+            Some(v) => Ok(v),
+            None => anyhow::bail!("Key not found"),
+        }
     }
 
     fn get_many_exact(&self, keys: &[Vec<u8>]) -> anyhow::Result<Vec<Vec<u8>>> {
@@ -51,12 +56,16 @@ where
         }
 
         let rq = self
-            .kv
-            .range(base_key.as_slice()..=key_end.as_slice())?
-            .next_back();
+            .db
+            .prefix_iterator(base_key)
+            .take_while(|v| match v {
+                Ok((k, _)) if k.as_ref() <= &key_end => true,
+                _ => false,
+            })
+            .last();
 
         match rq {
-            Some(Ok((_, v))) => Ok(Some(v.value().to_vec())),
+            Some(Ok((_, v))) => Ok(Some(v.to_vec())),
             _ => Ok(None),
         }
     }
@@ -80,14 +89,18 @@ where
         }
 
         let rq = self
-            .kv
-            .range(base_key.as_slice()..=key_end.as_slice())?
-            .next_back();
+            .db
+            .prefix_iterator(base_key)
+            .take_while(|v| match v {
+                Ok((k, _)) if k.as_ref() <= &key_end => true,
+                _ => false,
+            })
+            .last();
 
         match rq {
             Some(Ok((k, v))) => Ok(Some(KVQPair {
-                key: k.value().to_vec(),
-                value: v.value().to_vec(),
+                key: k.to_vec(),
+                value: v.to_vec(),
             })),
             _ => Ok(None),
         }
@@ -120,56 +133,56 @@ where
     }
 
     fn get_exact_if_exists(&self, key: &Vec<u8>) -> anyhow::Result<Option<Vec<u8>>> {
-        let res = self.kv.get(key.as_slice())?;
+        let res = self.db.get(key.as_slice())?;
         if res.is_some() {
-            Ok(Some(res.unwrap().value().to_vec()))
+            Ok(Some(res.unwrap().to_vec()))
         } else {
             Ok(None)
         }
     }
 }
 
-impl<'db, 'txn> KVQBinaryStoreWriter
-    for KVQReDBStore<Table<'db, 'txn, &'static [u8], &'static [u8]>>
-{
+impl KVQBinaryStoreWriter for KVQRocksDBStore {
     fn set(&mut self, key: Vec<u8>, value: Vec<u8>) -> anyhow::Result<()> {
-        self.set_ref(&key, &value)
-    }
-
-    fn set_ref(&mut self, key: &Vec<u8>, value: &Vec<u8>) -> anyhow::Result<()> {
-        self.kv.insert(key.as_slice(), value.as_slice())?;
+        self.db.put(key, value)?;
         Ok(())
     }
 
-    fn set_many_ref(&mut self, items: &[KVQPair<&'_ Vec<u8>, &'_ Vec<u8>>]) -> anyhow::Result<()> {
+    fn set_ref(&mut self, key: &Vec<u8>, value: &Vec<u8>) -> anyhow::Result<()> {
+        self.db.put(key.clone(), value.clone())?;
+        Ok(())
+    }
+
+    fn set_many_ref<'a>(
+        &mut self,
+        items: &[KVQPair<&'a Vec<u8>, &'a Vec<u8>>],
+    ) -> anyhow::Result<()> {
         for item in items {
-            self.kv.insert(item.key.as_slice(), item.value.as_slice())?;
+            self.db.put(item.key.clone(), item.value.clone())?;
         }
         Ok(())
     }
 
     fn set_many_vec(&mut self, items: Vec<KVQPair<Vec<u8>, Vec<u8>>>) -> anyhow::Result<()> {
-        self.set_many_ref(
-            items
-                .iter()
-                .map(|x| KVQPair {
-                    key: &x.key,
-                    value: &x.value,
-                })
-                .collect::<Vec<_>>()
-                .as_slice(),
-        )
+        for item in items {
+            self.db.put(item.key, item.value)?;
+        }
+        Ok(())
     }
 
     fn delete(&mut self, key: &Vec<u8>) -> anyhow::Result<bool> {
-        Ok(self.kv.remove(key.as_slice())?.is_some())
+        match self.db.delete(key) {
+            Ok(_) => Ok(true),
+            Err(e) if e.kind() == ErrorKind::NotFound => Ok(true),
+            Err(e) => anyhow::bail!(e),
+        }
     }
 
     fn delete_many(&mut self, keys: &[Vec<u8>]) -> anyhow::Result<Vec<bool>> {
         let mut result = Vec::with_capacity(keys.len());
         for key in keys {
-            let r = self.kv.remove(key.as_slice())?;
-            result.push(r.is_some());
+            let r = self.delete(key)?;
+            result.push(r);
         }
         Ok(result)
     }
@@ -181,7 +194,7 @@ impl<'db, 'txn> KVQBinaryStoreWriter
             ));
         }
         for (k, v) in keys.iter().zip(values) {
-            self.kv.insert(k.as_slice(), v.as_slice())?;
+            self.db.put(k.as_slice(), v.as_slice())?;
         }
         Ok(())
     }
