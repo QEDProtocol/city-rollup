@@ -43,10 +43,6 @@ run-orchestrator:
 run-l2-worker:
 	@RUST_BACKTRACE=${TRACE_ENABLED} cargo run --release --package city-rollup-cli l2-worker
 
-.PHONY: run-l2-transfer
-run-l2-transfer:
-	@RUST_BACKTRACE=${TRACE_ENABLED} cargo run --release --package city-rollup-cli l2-transfer
-
 .PHONY: print-circuit-info
 print-circuit-info:
 	@RUST_BACKTRACE=${TRACE_ENABLED} cargo run --package city-rollup-dev-cli print-circuit-info
