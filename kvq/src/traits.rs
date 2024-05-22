@@ -195,3 +195,5 @@ pub trait KVQBinaryStoreWriter {
 }
 
 pub trait KVQBinaryStore: KVQBinaryStoreReader + KVQBinaryStoreWriter {}
+
+impl<T: KVQBinaryStoreReader + KVQBinaryStoreWriter> KVQBinaryStore for T {}

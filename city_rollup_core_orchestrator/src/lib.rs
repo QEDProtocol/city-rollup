@@ -19,7 +19,7 @@ use city_rollup_common::{
 use city_rollup_core_worker::event_processor::CityEventProcessor;
 use city_rollup_worker_dispatch::implementations::redis::RedisQueue;
 use city_store::store::{city::base::CityStore, sighash::SigHashMerkleTree};
-use kvq_store_redb::KVQReDBStore;
+use kvq_store_rocksdb::KVQRocksDBStore;
 use plonky2::{field::goldilocks_field::GoldilocksField, plonk::config::PoseidonGoldilocksConfig};
 use redb::{Database, TableDefinition};
 
@@ -85,9 +85,7 @@ pub fn run(args: OrchestratorArgs) -> anyhow::Result<()> {
         next_user_id: 0,
         end_balance: 0,
     };
-    let wxn = database.begin_write()?;
-    {
-        let mut store = KVQReDBStore::new(wxn.open_table(KV)?);
+        let mut store = KVQRocksDBStore::new(args.db_path)?;
         CityStore::set_block_state(&mut store, &block0)?;
         CityStore::set_block_state(&mut store, &block1)?;
 
@@ -144,13 +142,8 @@ pub fn run(args: OrchestratorArgs) -> anyhow::Result<()> {
             .into_iter()
             .map(|x| rpc_queue.notify_rpc_register_user(&x))
             .collect::<anyhow::Result<Vec<()>>>()?;
-    }
-    wxn.commit()?;
 
     sync_infinite_loop!(1000, {
-        let wxn = database.begin_write()?;
-        {
-            let mut store = KVQReDBStore::new(wxn.open_table(KV)?);
             let block_state = CityStore::get_latest_block_state(&store)?;
             println!("block_state.checkpoint_id: {}", block_state.checkpoint_id);
             let mut event_receiver = CityEventReceiver::<F>::new(
@@ -177,7 +170,5 @@ pub fn run(args: OrchestratorArgs) -> anyhow::Result<()> {
                 &orchestrator_result_step_1,
             )?;
             api.mine_blocks(1)?;
-        }
-        wxn.commit()?;
     });
 }

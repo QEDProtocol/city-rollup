@@ -9,6 +9,7 @@ members = [
   "city_macros",
   "kvq",
   "kvq_store_redb",
+  "kvq_store_rocksdb",
   "city_rollup_cli",
   "city_rollup_user_cli",
   "city_rollup_dev_cli",
@@ -17,7 +18,7 @@ members = [
   "city_rollup_core_worker",
   "city_rollup_worker_dispatch",
   "city_rollup_core_orchestrator"
-]
+, "city_rollup_core_api"]
 resolver = "2"
 
 [workspace.dependencies]
@@ -114,6 +115,8 @@ r2d2_redis = { git = "https://github.com/GopherJ/r2d2-redis", rev = "63be37454cf
 
 gnark-plonky2-wrapper = { git = "https://github.com/cf/gnark-plonky2-verifier", rev = "ba0420dcf740d98a61b5f2e0a0880856facd74ea" }
 bs58 = { version = "0.5.1", features = ["std", "check"] }
+jsonrpsee = { version = "0.22.5", features = ["full"] }
+rocksdb = { version = "0.21.0", features = ["serde", "multi-threaded-cf"] }
 
 [patch.'https://github.com/0xPolygonZero/plonky2.git']
 plonky2 = { git = "https://github.com/QEDProtocol/plonky2-hwa", rev = "6a8ca008da97890b67a84f64784cfbc488b5238d" }

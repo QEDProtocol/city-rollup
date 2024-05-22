@@ -31,6 +31,10 @@ run: run-orchestrator run-rpc-server run-l2-worker
 run-rpc-server:
 	@RUST_BACKTRACE=${TRACE_ENABLED} cargo run --release --package city-rollup-cli rpc-server
 
+.PHONY: run-api-server
+run-api-server:
+	@RUST_BACKTRACE=${TRACE_ENABLED} cargo run --release --package city-rollup-cli api-server
+
 .PHONY: run-orchestrator
 run-orchestrator:
 	@RUST_BACKTRACE=${TRACE_ENABLED} cargo run --release --package city-rollup-cli orchestrator
@@ -141,3 +145,10 @@ cr_produce_block:
 		-X POST \
 		-H "Content-Type: application/json" \
 		--data '{"method":"cr_produce_block","params":null,"id":1,"jsonrpc":"2.0"}'  | jq
+
+.PHONY: cr_get_city_root
+cr_city_root:
+	curl http://localhost:3000 \
+		-X POST \
+		-H "Content-Type: application/json" \
+		--data '{"method":"cr_getCityRoot","params":0,"id":1,"jsonrpc":"2.0"}'  | jq

@@ -5,11 +5,9 @@ use city_common::{
 };
 use city_crypto::hash::{base_types::hash256::Hash256, qhashout::QHashOut};
 use city_redis_store::RedisStore;
-use city_rollup_circuit::worker::toolbox::root::CRWorkerToolboxRootCircuits;
 use city_rollup_common::{
     actors::{
         rpc_processor::QRPCProcessor,
-        simple::events::CityEventProcessorMemory,
         traits::{OrchestratorRPCEventSenderSync, WorkerEventTransmitterSync},
     },
     api::data::{block::rpc_request::CityRegisterUserRPCRequest, store::CityL2BlockState},
@@ -25,7 +23,6 @@ use city_rollup_common::{
 };
 use city_rollup_core_orchestrator::{
     debug::{
-        coordinator::core::DevMemoryCoordinatatorRPCQueue,
         scenario::{actors::simple::SimpleActorOrchestrator, wallet::DebugScenarioWallet},
     },
     event_receiver::CityEventReceiver,
@@ -34,7 +31,7 @@ use city_rollup_core_worker::{
     actors::simple::SimpleActorWorker, event_processor::CityEventProcessor,
 };
 use city_rollup_worker_dispatch::{
-    implementations::redis::RedisQueue, traits::proving_worker::ProvingWorkerListener,
+    implementations::redis::RedisQueue,
 };
 use city_store::store::{city::base::CityStore, sighash::SigHashMerkleTree};
 use kvq::memory::simple::KVQSimpleMemoryBackingStore;

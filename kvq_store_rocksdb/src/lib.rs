@@ -1,27 +1,27 @@
-use std::collections::BTreeMap;
-use std::ops::Bound::Included;
+use std::path::Path;
 
-use crate::traits::KVQBinaryStore;
-use crate::traits::KVQBinaryStoreReader;
-use crate::traits::KVQBinaryStoreWriter;
-use crate::traits::KVQPair;
+use kvq::traits::KVQBinaryStoreReader;
+use kvq::traits::KVQBinaryStoreWriter;
+use kvq::traits::KVQPair;
+use rocksdb::ErrorKind;
+use rocksdb::TransactionDB;
 
-pub struct KVQSimpleMemoryBackingStore {
-    map: BTreeMap<Vec<u8>, Vec<u8>>,
+pub struct KVQRocksDBStore {
+    db: TransactionDB,
 }
-impl KVQSimpleMemoryBackingStore {
-    pub fn new() -> Self {
-        Self {
-            map: BTreeMap::new(),
-        }
+impl KVQRocksDBStore {
+    pub fn new<P: AsRef<Path>>(path: P) -> anyhow::Result<Self> {
+        Ok(Self {
+            db: TransactionDB::open_default(path)?,
+        })
     }
 }
 
-impl KVQBinaryStoreReader for KVQSimpleMemoryBackingStore {
+impl KVQBinaryStoreReader for KVQRocksDBStore {
     fn get_exact(&self, key: &Vec<u8>) -> anyhow::Result<Vec<u8>> {
-        match self.map.get(key) {
-            Some(v) => Ok(v.to_owned()),
-            None => anyhow::bail!("Key {} not found", hex::encode(&key)),
+        match self.db.get(key)? {
+            Some(v) => Ok(v),
+            None => anyhow::bail!("Key not found"),
         }
     }
 
@@ -44,30 +44,22 @@ impl KVQBinaryStoreReader for KVQSimpleMemoryBackingStore {
             ));
         }
 
-        let mut sum_end = 0u32;
         for i in 0..fuzzy_bytes {
-            sum_end += key_end[key_len - i - 1] as u32;
             base_key[key_len - i - 1] = 0;
         }
 
-        if sum_end == 0 {
-            let res = self.map.get(key);
-            if res.is_none() {
-                Ok(None)
-            } else {
-                Ok(Some(res.unwrap().to_owned()))
-            }
-        } else {
-            let rq = self
-                .map
-                .range((Included(base_key), Included(key_end)))
-                .next_back();
+        let rq = self
+            .db
+            .prefix_iterator(base_key)
+            .take_while(|v| match v {
+                Ok((k, _)) if k.as_ref() <= &key_end => true,
+                _ => false,
+            })
+            .last();
 
-            if let Some((_, p)) = rq {
-                Ok(Some(p.to_owned()))
-            } else {
-                Ok(None)
-            }
+        match rq {
+            Some(Ok((_, v))) => Ok(Some(v.to_vec())),
+            _ => Ok(None),
         }
     }
 
@@ -88,18 +80,22 @@ impl KVQBinaryStoreReader for KVQSimpleMemoryBackingStore {
         for i in 0..fuzzy_bytes {
             base_key[key_len - i - 1] = 0;
         }
-        let rq = self
-            .map
-            .range((Included(base_key), Included(key_end)))
-            .next_back();
 
-        if let Some((k, v)) = rq {
-            Ok(Some(KVQPair {
-                key: k.to_owned(),
-                value: v.to_owned(),
-            }))
-        } else {
-            Ok(None)
+        let rq = self
+            .db
+            .prefix_iterator(base_key)
+            .take_while(|v| match v {
+                Ok((k, _)) if k.as_ref() <= &key_end => true,
+                _ => false,
+            })
+            .last();
+
+        match rq {
+            Some(Ok((k, v))) => Ok(Some(KVQPair {
+                key: k.to_vec(),
+                value: v.to_vec(),
+            })),
+            _ => Ok(None),
         }
     }
 
@@ -111,7 +107,7 @@ impl KVQBinaryStoreReader for KVQSimpleMemoryBackingStore {
         let mut results: Vec<Option<Vec<u8>>> = Vec::with_capacity(keys.len());
         for k in keys {
             let r = self.get_leq(k, fuzzy_bytes)?;
-            results.push(r.to_owned());
+            results.push(r);
         }
         Ok(results)
     }
@@ -130,23 +126,24 @@ impl KVQBinaryStoreReader for KVQSimpleMemoryBackingStore {
     }
 
     fn get_exact_if_exists(&self, key: &Vec<u8>) -> anyhow::Result<Option<Vec<u8>>> {
-        let result = self.map.get(key);
-        if result.is_some() {
-            Ok(Some(result.unwrap().to_owned()))
+        let res = self.db.get(key.as_slice())?;
+        if res.is_some() {
+            Ok(Some(res.unwrap().to_vec()))
         } else {
             Ok(None)
         }
     }
+
 }
 
-impl KVQBinaryStoreWriter for KVQSimpleMemoryBackingStore {
+impl KVQBinaryStoreWriter for KVQRocksDBStore {
     fn set(&mut self, key: Vec<u8>, value: Vec<u8>) -> anyhow::Result<()> {
-        self.map.insert(key, value);
+        self.db.put(key, value)?;
         Ok(())
     }
 
     fn set_ref(&mut self, key: &Vec<u8>, value: &Vec<u8>) -> anyhow::Result<()> {
-        self.map.insert(key.clone(), value.clone());
+        self.db.put(key.clone(), value.clone())?;
         Ok(())
     }
 
@@ -154,23 +151,26 @@ impl KVQBinaryStoreWriter for KVQSimpleMemoryBackingStore {
         &mut self,
         items: &[KVQPair<&'a Vec<u8>, &'a Vec<u8>>],
     ) -> anyhow::Result<()> {
+        let txn = self.db.transaction();
         for item in items {
-            self.map.insert(item.key.clone(), item.value.clone());
+            txn.put(item.key.clone(), item.value.clone())?;
         }
-        Ok(())
+        Ok(txn.commit()?)
     }
 
     fn set_many_vec(&mut self, items: Vec<KVQPair<Vec<u8>, Vec<u8>>>) -> anyhow::Result<()> {
+        let txn = self.db.transaction();
         for item in items {
-            self.map.insert(item.key, item.value);
+            txn.put(item.key, item.value)?;
         }
-        Ok(())
+        Ok(txn.commit()?)
     }
 
     fn delete(&mut self, key: &Vec<u8>) -> anyhow::Result<bool> {
-        match self.map.remove(key) {
-            Some(_) => Ok(true),
-            None => Ok(false),
+        match self.db.delete(key) {
+            Ok(_) => Ok(true),
+            Err(e) if e.kind() == ErrorKind::NotFound => Ok(true),
+            Err(e) => anyhow::bail!(e),
         }
     }
 
@@ -185,12 +185,14 @@ impl KVQBinaryStoreWriter for KVQSimpleMemoryBackingStore {
 
     fn set_many_split_ref(&mut self, keys: &[Vec<u8>], values: &[Vec<u8>]) -> anyhow::Result<()> {
         if keys.len() != values.len() {
-            anyhow::bail!("Keys and values must have the same length");
-        } else {
-            for i in 0..keys.len() {
-                self.map.insert(keys[i].clone(), values[i].clone());
-            }
-            Ok(())
+            return Err(anyhow::anyhow!(
+                "Keys and values must be of the same length"
+            ));
         }
+        for (k, v) in keys.iter().zip(values) {
+            self.db.put(k.as_slice(), v.as_slice())?;
+        }
+        Ok(())
     }
+
 }

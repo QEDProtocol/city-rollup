@@ -187,5 +187,3 @@ impl<'db, 'txn> KVQBinaryStoreWriter
         Ok(())
     }
 }
-
-impl<'db, 'txn> KVQBinaryStore for KVQReDBStore<Table<'db, 'txn, &'static [u8], &'static [u8]>> {}

@@ -6,6 +6,7 @@ shadow!(build);
 
 use clap::Parser;
 
+use crate::subcommand::apiserver;
 use crate::subcommand::l2transfer;
 use crate::subcommand::l2worker;
 use crate::subcommand::orchestrator;
@@ -30,6 +31,9 @@ fn main() -> anyhow::Result<()> {
         }
         Commands::Orchestrator(args) => {
             orchestrator::run(args)?;
+        }
+        Commands::APIServer(args) => {
+            apiserver::run(args)?;
         }
     };
     Ok::<_, anyhow::Error>(())

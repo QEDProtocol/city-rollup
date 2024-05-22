@@ -1,0 +1,18 @@
+[package]
+name = "city_rollup_core_api"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+jsonrpsee = { workspace = true }
+tracing-subscriber = { workspace = true }
+tokio = { workspace = true }
+anyhow = { workspace = true }
+redb = { workspace = true }
+kvq_store_rocksdb = { path = "../kvq_store_rocksdb" }
+city_store = { path = "../city_store" }
+city_common = { path = "../city_common" }
+city_rollup_common = { path = "../city_rollup_common" }
+city_crypto = { path = "../city_crypto" }
+city_rollup_core_orchestrator = { path = "../city_rollup_core_orchestrator" }
+hex = { workspace = true }

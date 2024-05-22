@@ -6,6 +6,7 @@ pub mod l2transfer;
 pub mod l2worker;
 pub mod orchestrator;
 pub mod rpcserver;
+pub mod apiserver;
 
 #[derive(Parser)]
 pub struct Cli {
@@ -19,4 +20,5 @@ pub enum Commands {
     L2Transfer(city_common::cli::args::L2TransferArgs),
     L2Worker(city_common::cli::args::L2WorkerArgs),
     Orchestrator(city_common::cli::args::OrchestratorArgs),
+    APIServer(city_common::cli::args::APIServerArgs),
 }
