@@ -382,10 +382,9 @@ pub async fn run_server(args: APIServerArgs) -> anyhow::Result<()> {
         .expect("setting default subscriber failed");
 
     let server = Server::builder().build(args.server_addr).await?;
-    let db = Arc::new(KVQRocksDBStore::new(&args.db_path)?);
+    let db = Arc::new(KVQRocksDBStore::open_for_read_only(&args.db_path)?);
     let rpc_server_impl = RpcServerImpl { db };
     let handle = server.start(rpc_server_impl.into_rpc());
     tokio::spawn(handle.stopped());
-
-    Ok(())
+    Ok(futures::future::pending::<()>().await)
 }

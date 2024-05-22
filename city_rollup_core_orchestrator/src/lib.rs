@@ -2,12 +2,15 @@ use std::time::Duration;
 
 use city_common::{cli::args::OrchestratorArgs, units::UNIT_BTC};
 use city_crypto::hash::{base_types::hash256::Hash256, qhashout::QHashOut};
-use city_macros::{define_table, sync_infinite_loop};
+use city_macros::sync_infinite_loop;
 use city_redis_store::RedisStore;
 use city_rollup_common::{
     actors::{
         rpc_processor::QRPCProcessor,
-        traits::{OrchestratorEventReceiverSync, OrchestratorRPCEventSenderSync, WorkerEventTransmitterSync},
+        traits::{
+            OrchestratorEventReceiverSync, OrchestratorRPCEventSenderSync,
+            WorkerEventTransmitterSync,
+        },
     },
     api::data::{block::rpc_request::CityRegisterUserRPCRequest, store::CityL2BlockState},
     link::{
@@ -21,7 +24,6 @@ use city_rollup_worker_dispatch::implementations::redis::RedisQueue;
 use city_store::store::{city::base::CityStore, sighash::SigHashMerkleTree};
 use kvq_store_rocksdb::KVQRocksDBStore;
 use plonky2::{field::goldilocks_field::GoldilocksField, plonk::config::PoseidonGoldilocksConfig};
-use redb::{Database, TableDefinition};
 
 use crate::{
     debug::scenario::{actors::simple::SimpleActorOrchestrator, wallet::DebugScenarioWallet},
@@ -31,15 +33,12 @@ use crate::{
 pub mod debug;
 pub mod event_receiver;
 
-define_table! { KV, &[u8], &[u8] }
-
 const D: usize = 2;
 type C = PoseidonGoldilocksConfig;
 type F = GoldilocksField;
 
 pub fn run(args: OrchestratorArgs) -> anyhow::Result<()> {
     let mut proof_store = RedisStore::new(&args.redis_uri)?;
-    let database = Database::create(&args.db_path)?;
     let queue = RedisQueue::new(&args.redis_uri)?;
     let mut event_processor = CityEventProcessor::new(queue.clone());
     let fingerprints: CRWorkerToolboxCoreCircuitFingerprints<F> = serde_json::from_str(
@@ -85,90 +84,88 @@ pub fn run(args: OrchestratorArgs) -> anyhow::Result<()> {
         next_user_id: 0,
         end_balance: 0,
     };
-        let mut store = KVQRocksDBStore::new(args.db_path)?;
-        CityStore::set_block_state(&mut store, &block0)?;
-        CityStore::set_block_state(&mut store, &block1)?;
+    let mut store = KVQRocksDBStore::open_default(args.db_path)?;
+    CityStore::set_block_state(&mut store, &block0)?;
+    CityStore::set_block_state(&mut store, &block1)?;
 
-        let genesis_state_hash = CityStore::get_city_root(&store, 0)?;
-        let setup_fee = 100000 * 500;
-        let fund_genesis_txid = api.fund_address_from_random_p2pkh_address(
-            genesis_funder_address,
-            101 * UNIT_BTC + setup_fee * 4,
-        )?;
+    let genesis_state_hash = CityStore::get_city_root(&store, 0)?;
+    let setup_fee = 100000 * 500;
+    let fund_genesis_txid = api.fund_address_from_random_p2pkh_address(
+        genesis_funder_address,
+        101 * UNIT_BTC + setup_fee * 4,
+    )?;
 
-        api.mine_blocks(1)?;
-        let txid_fund_genesis = setup_genesis_block(
-            &api,
-            &wallet.secp256k1_wallet,
-            genesis_funder_address.address,
-            fund_genesis_txid,
-            setup_fee,
-            genesis_state_hash.to_felt252_hash256(),
-        )?;
-        println!(
-            "funded genesis block with txid: {}",
-            txid_fund_genesis.to_hex_string()
-        );
-        let block_2_address =
-            BTCAddress160::new_p2sh(CityStore::get_city_block_deposit_address(&store, 2)?);
-        api.mine_blocks(1)?;
+    api.mine_blocks(1)?;
+    let txid_fund_genesis = setup_genesis_block(
+        &api,
+        &wallet.secp256k1_wallet,
+        genesis_funder_address.address,
+        fund_genesis_txid,
+        setup_fee,
+        genesis_state_hash.to_felt252_hash256(),
+    )?;
+    println!(
+        "funded genesis block with txid: {}",
+        txid_fund_genesis.to_hex_string()
+    );
+    let block_2_address =
+        BTCAddress160::new_p2sh(CityStore::get_city_block_deposit_address(&store, 2)?);
+    api.mine_blocks(1)?;
 
-        let user_0_public_key =
-            wallet.add_zk_private_key(QHashOut::from_values(100, 100, 100, 100));
-        let user_1_public_key =
-            wallet.add_zk_private_key(QHashOut::from_values(101, 101, 101, 101));
-        let _ = wallet.add_zk_private_key(QHashOut::from_values(102, 102, 102, 102));
-        let _ = wallet.add_zk_private_key(QHashOut::from_values(103, 103, 103, 103));
-        wallet.setup_circuits();
-        println!("block_2_address: {}", block_2_address.to_string());
-        api.fund_address_from_known_p2pkh_address(
-            &wallet.secp256k1_wallet,
-            deposit_0_address,
-            block_2_address,
-            10 * UNIT_BTC,
-        )?;
-        api.fund_address_from_known_p2pkh_address(
-            &wallet.secp256k1_wallet,
-            deposit_1_address,
-            block_2_address,
-            15 * UNIT_BTC,
-        )?;
-        api.mine_blocks(10)?;
-        std::thread::sleep(Duration::from_millis(1000 * 10));
+    let user_0_public_key = wallet.add_zk_private_key(QHashOut::from_values(100, 100, 100, 100));
+    let user_1_public_key = wallet.add_zk_private_key(QHashOut::from_values(101, 101, 101, 101));
+    let _ = wallet.add_zk_private_key(QHashOut::from_values(102, 102, 102, 102));
+    let _ = wallet.add_zk_private_key(QHashOut::from_values(103, 103, 103, 103));
+    wallet.setup_circuits();
+    println!("block_2_address: {}", block_2_address.to_string());
+    api.fund_address_from_known_p2pkh_address(
+        &wallet.secp256k1_wallet,
+        deposit_0_address,
+        block_2_address,
+        10 * UNIT_BTC,
+    )?;
+    api.fund_address_from_known_p2pkh_address(
+        &wallet.secp256k1_wallet,
+        deposit_1_address,
+        block_2_address,
+        15 * UNIT_BTC,
+    )?;
+    api.mine_blocks(10)?;
+    std::thread::sleep(Duration::from_millis(1000 * 10));
 
-        let register_user_rpc_events =
-            CityRegisterUserRPCRequest::new_batch(&[user_0_public_key, user_1_public_key]);
-        let _ = register_user_rpc_events
-            .into_iter()
-            .map(|x| rpc_queue.notify_rpc_register_user(&x))
-            .collect::<anyhow::Result<Vec<()>>>()?;
+    let register_user_rpc_events =
+        CityRegisterUserRPCRequest::new_batch(&[user_0_public_key, user_1_public_key]);
+    let _ = register_user_rpc_events
+        .into_iter()
+        .map(|x| rpc_queue.notify_rpc_register_user(&x))
+        .collect::<anyhow::Result<Vec<()>>>()?;
 
     sync_infinite_loop!(1000, {
-            let block_state = CityStore::get_latest_block_state(&store)?;
-            println!("block_state.checkpoint_id: {}", block_state.checkpoint_id);
-            let mut event_receiver = CityEventReceiver::<F>::new(
-                queue.clone(),
-                QRPCProcessor::new(block_state.checkpoint_id + 1),
-                proof_store.clone(),
-            );
-            event_receiver.wait_for_produce_block()?;
-            let orchestrator_result_step_1 =
-                SimpleActorOrchestrator::step_1_produce_block_enqueue_jobs(
-                    &mut proof_store,
-                    &mut store,
-                    &mut event_receiver,
-                    &mut event_processor,
-                    &mut api,
-                    &fingerprints,
-                    &sighash_whitelist_tree,
-                )?;
-            event_processor.wait_for_block_proving_jobs(block_state.checkpoint_id + 1)?;
-            api.mine_blocks(1)?;
-            SimpleActorOrchestrator::step_2_produce_block_finalize_and_transact(
+        let block_state = CityStore::get_latest_block_state(&store)?;
+        println!("block_state.checkpoint_id: {}", block_state.checkpoint_id);
+        let mut event_receiver = CityEventReceiver::<F>::new(
+            queue.clone(),
+            QRPCProcessor::new(block_state.checkpoint_id + 1),
+            proof_store.clone(),
+        );
+        event_receiver.wait_for_produce_block()?;
+        let orchestrator_result_step_1 =
+            SimpleActorOrchestrator::step_1_produce_block_enqueue_jobs(
                 &mut proof_store,
+                &mut store,
+                &mut event_receiver,
+                &mut event_processor,
                 &mut api,
-                &orchestrator_result_step_1,
+                &fingerprints,
+                &sighash_whitelist_tree,
             )?;
-            api.mine_blocks(1)?;
+        event_processor.wait_for_block_proving_jobs(block_state.checkpoint_id + 1)?;
+        api.mine_blocks(1)?;
+        SimpleActorOrchestrator::step_2_produce_block_finalize_and_transact(
+            &mut proof_store,
+            &mut api,
+            &orchestrator_result_step_1,
+        )?;
+        api.mine_blocks(1)?;
     });
 }

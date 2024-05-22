@@ -31,7 +31,6 @@ city_macros = { path = "../city_macros" }
 city_redis_store = { path = "../city_redis_store" }
 city_rollup_circuit = { path = "../city_rollup_circuit" }
 kvq_store_rocksdb = { path = "../kvq_store_rocksdb" }
-redb = { workspace = true }
 hex-literal = { workspace = true }
 
 [dev-dependencies]

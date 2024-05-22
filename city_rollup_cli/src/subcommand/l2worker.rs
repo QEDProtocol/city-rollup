@@ -6,7 +6,7 @@ pub fn run(args: L2WorkerArgs) -> anyhow::Result<()> {
     println!(
         "
 ----------------------------------------
-|           CityRollup v{}             |
+|           CityRollup v{}          |
 ----------------------------------------
 ",
         build::PKG_VERSION

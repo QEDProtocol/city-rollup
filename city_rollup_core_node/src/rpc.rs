@@ -45,12 +45,12 @@ pub enum RequestParams<F: RichField> {
     ProduceBlock,
 }
 
+
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(bound = "")]
-#[serde(untagged)]
-pub enum RequestParamsWithProxy<F: RichField> {
-    RequestParams(RequestParams<F>),
-    Proxied { method: String, params: RpcParams },
+pub struct ExternalRequestParams {
+    pub method: String,
+    pub params: RpcParams
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -64,13 +64,13 @@ impl ToRpcParams for RpcParams {
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
-#[serde(bound = "")]
+#[serde(bound = "T: Serialize, for<'de2> T: Deserialize<'de2>")]
 #[serde(deny_unknown_fields)]
-pub struct RpcRequest<F: RichField> {
+pub struct RpcRequest<T> {
     /// The version of the protocol
     pub jsonrpc: Version,
     #[serde(flatten)]
-    pub request: RequestParamsWithProxy<F>,
+    pub request: T,
     /// The name of the method to execute
     /// The identifier for this request issued by the client,
     /// An [Id] must be a String, null or a number.

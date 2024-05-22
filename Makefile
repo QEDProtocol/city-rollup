@@ -147,7 +147,7 @@ cr_produce_block:
 		--data '{"method":"cr_produce_block","params":null,"id":1,"jsonrpc":"2.0"}'  | jq
 
 .PHONY: cr_get_city_root
-cr_city_root:
+cr_get_city_root:
 	curl http://localhost:3000 \
 		-X POST \
 		-H "Content-Type: application/json" \

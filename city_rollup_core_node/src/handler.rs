@@ -36,8 +36,8 @@ use serde_json::Value;
 use tokio::net::TcpListener;
 
 use crate::rpc::ErrorCode;
+use crate::rpc::ExternalRequestParams;
 use crate::rpc::RequestParams;
-use crate::rpc::RequestParamsWithProxy;
 use crate::rpc::ResponseResult;
 use crate::rpc::RpcError;
 use crate::rpc::RpcRequest;
@@ -81,16 +81,19 @@ impl<F: RichField> CityRollupRPCServerHandler<F> {
     }
 
     pub async fn rpc(&mut self, req: Request<Incoming>) -> anyhow::Result<Response<BoxBody>> {
-        let whole_body = req.collect().await?.aggregate();
-        let data = serde_json::from_reader::<_, RpcRequest<F>>(whole_body.reader())?;
+        let whole_body = req.collect().await?.to_bytes();
+        let data = serde_json::from_slice::<RpcRequest<RequestParams<F>>>(&whole_body);
         use RequestParams::*;
-        let res = match data.request {
-            RequestParamsWithProxy::RequestParams(TokenTransfer(req)) => self.token_transfer(req).await.map(|r| json!(r)),
-            RequestParamsWithProxy::RequestParams(ClaimDeposit(req)) => self.claim_deposit(req).await.map(|r| json!(r)),
-            RequestParamsWithProxy::RequestParams(AddWithdrawal(req)) => self.add_withdrawal(req).await.map(|r| json!(r)),
-            RequestParamsWithProxy::RequestParams(RegisterUser(req)) => self.register_user(req).map(|r| json!(r)),
-            RequestParamsWithProxy::RequestParams(ProduceBlock) => self.produce_block().map(|r| json!(r)),
-            RequestParamsWithProxy::Proxied{method, params} => self.api.request(&method, params).await.map_err(anyhow::Error::from).map(|r: serde_json::Value|json!(r))
+        let res = match data {
+            Ok(RpcRequest { request: TokenTransfer(req), ..}) => self.token_transfer(req).await.map(|r| json!(r)),
+            Ok(RpcRequest { request: ClaimDeposit(req), ..}) => self.claim_deposit(req).await.map(|r| json!(r)),
+            Ok(RpcRequest { request: AddWithdrawal(req), ..}) => self.add_withdrawal(req).await.map(|r| json!(r)),
+            Ok(RpcRequest { request: RegisterUser(req), ..}) => self.register_user(req).map(|r| json!(r)),
+            Ok(RpcRequest { request: ProduceBlock, ..}) => self.produce_block().map(|r| json!(r)),
+            Err(_) => {
+                let request = serde_json::from_slice::<RpcRequest<ExternalRequestParams>>(&whole_body)?.request;
+                self.api.request(&request.method, request.params).await.map_err(anyhow::Error::from).map(|r: serde_json::Value|json!(r))
+            }
         }
         .map_or_else(
             |_| ResponseResult::<Value>::Error(RpcError::from(ErrorCode::InternalError)),
@@ -99,7 +102,7 @@ impl<F: RichField> CityRollupRPCServerHandler<F> {
 
         let response = RpcResponse {
             jsonrpc: Version::V2,
-            id: Some(data.id.clone()),
+            id: None,
             result: res,
         };
 

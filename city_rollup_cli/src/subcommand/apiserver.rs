@@ -7,7 +7,7 @@ pub async fn run(args: APIServerArgs) -> anyhow::Result<()> {
     println!(
         "
 ----------------------------------------
-|           CityRollup v{}             |
+|           CityRollup v{}          |
 ----------------------------------------
 ",
         build::PKG_VERSION

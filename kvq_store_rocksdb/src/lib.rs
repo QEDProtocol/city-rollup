@@ -4,15 +4,22 @@ use kvq::traits::KVQBinaryStoreReader;
 use kvq::traits::KVQBinaryStoreWriter;
 use kvq::traits::KVQPair;
 use rocksdb::ErrorKind;
-use rocksdb::TransactionDB;
+use rocksdb::Options;
+use rocksdb::DB;
 
 pub struct KVQRocksDBStore {
-    db: TransactionDB,
+    db: DB,
 }
 impl KVQRocksDBStore {
-    pub fn new<P: AsRef<Path>>(path: P) -> anyhow::Result<Self> {
+    pub fn open_default<P: AsRef<Path>>(path: P) -> anyhow::Result<Self> {
         Ok(Self {
-            db: TransactionDB::open_default(path)?,
+            db: DB::open_default(path)?,
+        })
+    }
+
+    pub fn open_for_read_only<P: AsRef<Path>>(path: P) -> anyhow::Result<Self> {
+        Ok(Self {
+            db: DB::open_for_read_only(&Options::default(), path, false)?,
         })
     }
 }
@@ -133,7 +140,6 @@ impl KVQBinaryStoreReader for KVQRocksDBStore {
             Ok(None)
         }
     }
-
 }
 
 impl KVQBinaryStoreWriter for KVQRocksDBStore {
@@ -151,19 +157,17 @@ impl KVQBinaryStoreWriter for KVQRocksDBStore {
         &mut self,
         items: &[KVQPair<&'a Vec<u8>, &'a Vec<u8>>],
     ) -> anyhow::Result<()> {
-        let txn = self.db.transaction();
         for item in items {
-            txn.put(item.key.clone(), item.value.clone())?;
+            self.db.put(item.key.clone(), item.value.clone())?;
         }
-        Ok(txn.commit()?)
+        Ok(())
     }
 
     fn set_many_vec(&mut self, items: Vec<KVQPair<Vec<u8>, Vec<u8>>>) -> anyhow::Result<()> {
-        let txn = self.db.transaction();
         for item in items {
-            txn.put(item.key, item.value)?;
+            self.db.put(item.key, item.value)?;
         }
-        Ok(txn.commit()?)
+        Ok(())
     }
 
     fn delete(&mut self, key: &Vec<u8>) -> anyhow::Result<bool> {
@@ -194,5 +198,4 @@ impl KVQBinaryStoreWriter for KVQRocksDBStore {
         }
         Ok(())
     }
-
 }
