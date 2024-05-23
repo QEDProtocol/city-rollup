@@ -125,15 +125,18 @@ cr_l1_deposit:
 .PHONY: cr_claim_deposit
 cr_claim_deposit:
 	@RUST_BACKTRACE=${TRACE_ENABLED} cargo run --release --package city-rollup-user-cli claim-deposit \
+		--txid=${TXID} \
 		--private-key=2c6a1188f8739daaeff79c40f3690c573381c91a2359a0df2b45e4310b59f30b \
-		--amount=1
+		--user-id=2
 
 .PHONY: cr_token_transfer
 cr_token_transfer:
-	curl http://localhost:3000 \
-		-X POST \
-		-H "Content-Type: application/json" \
-		--data @static/token_transfer.json | jq
+	@RUST_BACKTRACE=${TRACE_ENABLED} cargo run --release --package city-rollup-user-cli token-transfer \
+		--private-key=2c6a1188f8739daaeff79c40f3690c573381c91a2359a0df2b45e4310b59f30b \
+		--from=2 \
+		--to=0 \
+		--value=0.5 \
+		--nonce=1 \
 
 .PHONY: cr_produce_block
 cr_produce_block:
@@ -154,4 +157,4 @@ cr_get_latest_block_state:
 	curl http://localhost:3000 \
 		-X POST \
 		-H "Content-Type: application/json" \
-		--data '{"method":"cr_getLatestBlockState","params":[0],"id":1,"jsonrpc":"2.0"}'  | jq
+		--data '{"method":"cr_getLatestBlockState","params":[],"id":1,"jsonrpc":"2.0"}'  | jq

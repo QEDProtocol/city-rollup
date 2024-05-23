@@ -20,7 +20,7 @@ pub async fn run(args: L1DepositArgs) -> Result<()> {
     let block_state = provider.get_latest_block_state().await?;
 
     let deposit_address = provider
-        .get_city_block_deposit_address(block_state.checkpoint_id)
+        .get_city_block_deposit_address(block_state.checkpoint_id + 1)
         .await?;
 
     let txid = api.fund_address_from_known_p2pkh_address(
