@@ -8,6 +8,12 @@ shadow!(build);
 use clap::Parser;
 use error::Result;
 
+use crate::subcommand::add_withdrawal;
+use crate::subcommand::claim_deposit;
+use crate::subcommand::register_user;
+use crate::subcommand::token_transfer;
+use crate::subcommand::l1_deposit;
+
 use crate::subcommand::get_public_key;
 use crate::subcommand::random_wallet;
 use crate::subcommand::sign_hash;
@@ -21,9 +27,15 @@ async fn main() -> Result<()> {
 
     let cli = Cli::parse();
     match cli.command {
+        Commands::AddWithdrawal(args) => add_withdrawal::run(args).await?,
+        Commands::ClaimDeposit(args) => claim_deposit::run(args).await?,
+        Commands::RegisterUser(args) => register_user::run(args).await?,
+        Commands::TokenTransfer(args) => token_transfer::run(args).await?,
+        Commands::L1Deposit(args) => l1_deposit::run(args).await?,
+
+        Commands::SignHash(args) => sign_hash::run(args).await?,
         Commands::GetPublicKey(args) => get_public_key::run(args).await?,
         Commands::RandomWallet(args) => random_wallet::run(args).await?,
-        Commands::SignHash(args) => sign_hash::run(args).await?,
     }
 
     Ok(())

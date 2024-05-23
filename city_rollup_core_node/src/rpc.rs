@@ -54,7 +54,7 @@ pub struct ExternalRequestParams {
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
-pub struct RpcParams(serde_json::Value);
+pub struct RpcParams(pub serde_json::Value);
 
 impl ToRpcParams for RpcParams {
     fn to_rpc_params(self) -> Result<Option<Box<RawValue>>, serde_json::Error> {

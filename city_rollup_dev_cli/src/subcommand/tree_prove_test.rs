@@ -13,10 +13,5 @@ pub async fn run(args: TreeProveTestArgs) -> Result<()> {
         build::PKG_VERSION,
         args.network
     );
-    //let indexer = city_indexer::Indexer::new(args).await?;
-    //indexer.listen().await?;
-
-    //test_basic(&args)?;
-
     Ok(())
 }

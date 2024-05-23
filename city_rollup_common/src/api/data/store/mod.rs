@@ -150,7 +150,7 @@ impl KVQSerializable for CityL1Deposit {
         // 8 + 8 + 8 + 32 + 33 = 89 bytes
         if bytes.len() != 89 {
             anyhow::bail!(
-                "expected 49 bytes for deserializing L1Deposit, got {} bytes",
+                "expected 89 bytes for deserializing L1Deposit, got {} bytes",
                 bytes.len()
             );
         }

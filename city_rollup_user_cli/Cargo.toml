@@ -20,6 +20,7 @@ city_rollup_circuit   = { path = "../city_rollup_circuit" }
 city_common           = { path = "../city_common" }
 city_rollup_common    = { path = "../city_rollup_common" }
 city_rollup_core_node    = { path = "../city_rollup_core_node" }
+city_rollup_core_orchestrator = { path = "../city_rollup_core_orchestrator" }
 bitcoincore-rpc       = { workspace = true }
 clap                  = { workspace = true }
 dotenv                = { workspace = true }
@@ -29,6 +30,10 @@ shadow-rs             = { workspace = true }
 thiserror             = { workspace = true }
 tokio                 = { workspace = true }
 tracing               = { workspace = true }
+reqwest = { workspace = true }
+kvq           = { path = "../kvq" }
+city_store           = { path = "../city_store" }
+city_rollup_rpc_provider = { path = "../city_rollup_rpc_provider" }
 
 [build-dependencies]
 shadow-rs = { workspace = true }

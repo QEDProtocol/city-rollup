@@ -2,9 +2,7 @@ use crate::build;
 use crate::error::Result;
 use city_common::cli::dev_args::PrintCircuitInfoArgs;
 use city_rollup_circuit::worker::toolbox::circuits::CRWorkerToolboxCoreCircuits;
-use city_rollup_common::introspection::rollup::constants::{
-    get_network_magic_for_str
-};
+use city_rollup_common::introspection::rollup::constants::get_network_magic_for_str;
 use plonky2::plonk::config::PoseidonGoldilocksConfig;
 
 pub async fn run(args: PrintCircuitInfoArgs) -> Result<()> {
