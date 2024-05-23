@@ -116,7 +116,7 @@ impl<F: RichField> CityRollupRPCServerHandler<F> {
             }
         }
         .map_or_else(
-            |e| ResponseResult::<Value>::Error(RpcError::from(ErrorCode::InternalError)),
+            |_| ResponseResult::<Value>::Error(RpcError::from(ErrorCode::InternalError)),
             |r| ResponseResult::<Value>::Success(r),
         );
 

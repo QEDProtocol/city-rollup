@@ -1,4 +1,3 @@
-use std::net::SocketAddr;
 use std::str::FromStr;
 
 use anyhow::Result;
@@ -22,7 +21,6 @@ type C = PoseidonGoldilocksConfig;
 type F = GoldilocksField;
 
 pub async fn run(args: TokenTransferArgs) -> Result<()> {
-    let addr: SocketAddr = args.rpc_address.parse()?;
     let client = reqwest::Client::new();
 
     let public_key = QHashOut::<GoldilocksField>::from_str(&args.public_key)
@@ -42,7 +40,7 @@ pub async fn run(args: TokenTransferArgs) -> Result<()> {
     )?;
 
     let response = client
-        .post(format!("http://{}", addr))
+        .post(&args.rpc_address)
         .json(&RpcRequest {
             jsonrpc: Version::V2,
             request: RequestParams::<F>::TokenTransfer(city_token_transfer_rpcrequest),

@@ -1,5 +1,4 @@
 use anyhow::Result;
-use std::net::SocketAddr;
 use std::str::FromStr;
 
 use city_common::cli::user_args::AddWithdrawalArgs;
@@ -9,17 +8,13 @@ use city_rollup_core_node::rpc::{
     Id, RequestParams, ResponseResult, RpcRequest, RpcResponse, Version,
 };
 use city_rollup_core_orchestrator::debug::scenario::wallet::DebugScenarioWallet;
-use plonky2::{
-    field::goldilocks_field::GoldilocksField,
-    plonk::config::PoseidonGoldilocksConfig,
-};
+use plonky2::{field::goldilocks_field::GoldilocksField, plonk::config::PoseidonGoldilocksConfig};
 
 const D: usize = 2;
 type C = PoseidonGoldilocksConfig;
 type F = GoldilocksField;
 
 pub async fn run(args: AddWithdrawalArgs) -> Result<()> {
-    let addr: SocketAddr = args.rpc_address.parse()?;
     let client = reqwest::Client::new();
 
     let network_magic = get_network_magic_for_str(args.network)?;
@@ -41,7 +36,7 @@ pub async fn run(args: AddWithdrawalArgs) -> Result<()> {
     )?;
 
     let response = client
-        .post(format!("http://{}", addr))
+        .post(&args.rpc_address)
         .json(&RpcRequest {
             jsonrpc: Version::V2,
             request: RequestParams::<F>::AddWithdrawal(city_add_withdrawal_rpcrequest),

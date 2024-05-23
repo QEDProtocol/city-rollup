@@ -26,8 +26,30 @@ pub struct SignHashArgs {
 }
 
 #[derive(Clone, Args)]
+pub struct L1DepositArgs {
+    #[clap(long, short, default_value = "http://127.0.0.1:3000", env)]
+    pub rpc_address: String,
+
+    #[clap(long, short)]
+    pub private_key: String,
+
+    #[clap(long, short)]
+    pub amount: u64,
+
+    #[clap(
+        env,
+        long,
+        default_value = "http://devnet:devnet@localhost:1337/bitcoin-rpc/?network=dogeRegtest",
+        env
+    )]
+    pub bitcoin_rpc: String,
+    #[clap(env, long, default_value = "http://localhost:1337/api", env)]
+    pub electrs_api: String,
+}
+
+#[derive(Clone, Args)]
 pub struct AddWithdrawalArgs {
-    #[clap(long, short, default_value = "0.0.0.0:3000", env)]
+    #[clap(long, short, default_value = "http://127.0.0.1:3000", env)]
     pub rpc_address: String,
 
     #[clap(long, default_value = "dogeregtest", env)]
@@ -54,7 +76,7 @@ pub struct AddWithdrawalArgs {
 
 #[derive(Clone, Args)]
 pub struct ClaimDepositArgs {
-    #[clap(long, short, default_value = "0.0.0.0:3000", env)]
+    #[clap(long, short, default_value = "http://127.0.0.1:3000", env)]
     pub rpc_address: String,
 
     #[clap(long, short)]
@@ -73,7 +95,7 @@ pub struct ClaimDepositArgs {
 
 #[derive(Clone, Args)]
 pub struct RegisterUserArgs {
-    #[clap(long, short, default_value = "0.0.0.0:3000", env)]
+    #[clap(long, short, default_value = "http://127.0.0.1:3000", env)]
     pub rpc_address: String,
     /// user private key
     #[clap(long, short)]
@@ -82,7 +104,7 @@ pub struct RegisterUserArgs {
 
 #[derive(Clone, Args)]
 pub struct TokenTransferArgs {
-    #[clap(long, short, default_value = "0.0.0.0:3000", env)]
+    #[clap(long, short, default_value = "http://127.0.0.1:3000", env)]
     pub rpc_address: String,
 
     #[clap(long, default_value = "dogeregtest", env)]

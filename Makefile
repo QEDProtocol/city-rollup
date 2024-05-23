@@ -113,20 +113,20 @@ relaunch: shutdown launch
 
 .PHONY: cr_register_user
 cr_register_user:
-	curl http://localhost:3000 \
-		-X POST \
-		-H "Content-Type: application/json" \
-		--data '{"method":"cr_register_user","params":"754b90a6bc1ff9f726ea83ebc652d48747520192712f97f7adc9387ec1b7d761","id":1,"jsonrpc":"2.0"}'
-	sleep 1
-	curl http://localhost:3000 \
-		-X POST \
-		-H "Content-Type: application/json" \
-		--data '{"method":"cr_register_user","params":"98d582128608b29c76f26372ccc20f4f23b3d5628cc1391251a15306e017343d","id":1,"jsonrpc":"2.0"}'
-	sleep 1
-	curl http://localhost:3000 \
-		-X POST \
-		-H "Content-Type: application/json" \
-		--data '{"method":"cr_register_user","params":"6c4b61af0b650c1beb103e702474223531e83f75f56ea730ddb4fd2109909f37","id":1,"jsonrpc":"2.0"}'
+	@RUST_BACKTRACE=${TRACE_ENABLED} cargo run --release --package city-rollup-user-cli register-user --private-key=2c6a1188f8739daaeff79c40f3690c573381c91a2359a0df2b45e4310b59f30b
+	@RUST_BACKTRACE=${TRACE_ENABLED} cargo run --release --package city-rollup-user-cli register-user --private-key=f6648784d8373da16c3e97a860191757c4a88db8d161ede135b22ff879d6cd6d
+
+.PHONY: cr_l1_deposit
+cr_l1_deposit:
+	@RUST_BACKTRACE=${TRACE_ENABLED} cargo run --release --package city-rollup-user-cli l1-deposit \
+		--private-key=2c6a1188f8739daaeff79c40f3690c573381c91a2359a0df2b45e4310b59f30b \
+		--amount=1
+
+.PHONY: cr_claim_deposit
+cr_claim_deposit:
+	@RUST_BACKTRACE=${TRACE_ENABLED} cargo run --release --package city-rollup-user-cli claim-deposit \
+		--private-key=2c6a1188f8739daaeff79c40f3690c573381c91a2359a0df2b45e4310b59f30b \
+		--amount=1
 
 .PHONY: cr_token_transfer
 cr_token_transfer:
@@ -148,3 +148,10 @@ cr_get_city_root:
 		-X POST \
 		-H "Content-Type: application/json" \
 		--data '{"method":"cr_getCityRoot","params":[0],"id":1,"jsonrpc":"2.0"}'  | jq
+
+.PHONY: cr_get_latest_block_state
+cr_get_latest_block_state:
+	curl http://localhost:3000 \
+		-X POST \
+		-H "Content-Type: application/json" \
+		--data '{"method":"cr_getLatestBlockState","params":[0],"id":1,"jsonrpc":"2.0"}'  | jq
