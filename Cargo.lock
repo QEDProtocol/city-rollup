@@ -710,6 +710,7 @@ dependencies = [
  "city_rollup_common",
  "city_rollup_core_node",
  "city_rollup_core_orchestrator",
+ "city_rollup_rpc_provider",
  "city_store",
  "clap",
  "dotenv",
@@ -1005,6 +1006,23 @@ dependencies = [
  "serde_with 3.8.1",
  "tokio",
  "url",
+]
+
+[[package]]
+name = "city_rollup_rpc_provider"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "city_crypto",
+ "city_macros",
+ "city_rollup_common",
+ "city_rollup_core_api",
+ "city_rollup_core_node",
+ "city_store",
+ "plonky2",
+ "reqwest",
+ "serde_json",
 ]
 
 [[package]]

@@ -17,8 +17,9 @@ members = [
   "city_redis_store",
   "city_rollup_core_worker",
   "city_rollup_worker_dispatch",
-  "city_rollup_core_orchestrator"
-, "city_rollup_core_api"]
+  "city_rollup_core_orchestrator",
+  "city_rollup_core_api",
+  "city_rollup_rpc_provider" ]
 resolver = "2"
 
 [workspace.dependencies]

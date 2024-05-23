@@ -1,12 +1,9 @@
 use city_common::cli::user_args::RegisterUserArgs;
 use city_crypto::hash::qhashout::QHashOut;
 use city_rollup_common::api::data::block::rpc_request::CityRegisterUserRPCRequest;
-use city_rollup_core_node::rpc::{
-    Id, RequestParams, ResponseResult, RpcRequest, RpcResponse, Version,
-};
 use city_rollup_core_orchestrator::debug::scenario::wallet::DebugScenarioWallet;
+use city_rollup_rpc_provider::{CityRpcProvider, RpcProvider};
 use plonky2::{field::goldilocks_field::GoldilocksField, plonk::config::PoseidonGoldilocksConfig};
-use reqwest;
 use std::str::FromStr;
 
 use anyhow::Result;
@@ -15,7 +12,7 @@ const D: usize = 2;
 type C = PoseidonGoldilocksConfig;
 
 pub async fn run(args: RegisterUserArgs) -> Result<()> {
-    let client = reqwest::Client::new();
+    let provider = RpcProvider::new(&args.rpc_address);
 
     let private_key = QHashOut::<GoldilocksField>::from_str(&args.private_key)
         .map_err(|e| anyhow::format_err!("{}", e.to_string()))?;
@@ -28,22 +25,9 @@ pub async fn run(args: RegisterUserArgs) -> Result<()> {
 
     let city_register_user_rpcrequest = CityRegisterUserRPCRequest { public_key };
 
-    let response = client
-        .post(&args.rpc_address)
-        .json(&RpcRequest {
-            jsonrpc: Version::V2,
-            request: RequestParams::RegisterUser(city_register_user_rpcrequest),
-            id: Id::Number(1),
-        })
-        .send()
-        .await?
-        .json::<RpcResponse<serde_json::Value>>()
+    provider
+        .register_user(city_register_user_rpcrequest)
         .await?;
-
-    match response.result {
-        ResponseResult::Success(s) => println!("register user success {:?}", s),
-        ResponseResult::Error(e) => println!("register user failed {:?}", e.message),
-    }
 
     Ok(())
 }

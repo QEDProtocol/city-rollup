@@ -308,3 +308,54 @@ macro_rules! capture {
         }
     };
 }
+
+#[macro_export]
+macro_rules! city_external_rpc_call {
+    ($instance:ident, $method:expr, $params:expr, $rtype:ty) => {{
+        let response = $instance
+            .client
+            .post($instance.url)
+            .json(&RpcRequest {
+                jsonrpc: Version::V2,
+                request: ExternalRequestParams {
+                    method: $method.to_string(),
+                    params: RpcParams($params),
+                },
+                id: Id::Number(1),
+            })
+            .send()
+            .await?
+            .json::<RpcResponse<$rtype>>()
+            .await?;
+
+        if let ResponseResult::Success(s) = response.result {
+            Ok(s)
+        } else {
+            Err(anyhow::format_err!("rpc call failed"))
+        }
+    }};
+}
+
+#[macro_export]
+macro_rules! city_rpc_call {
+    ($instance:ident, $params:expr) => {{
+        let response = $instance
+            .client
+            .post($instance.url)
+            .json(&RpcRequest {
+                jsonrpc: Version::V2,
+                request: $params,
+                id: Id::Number(1),
+            })
+            .send()
+            .await?
+            .json::<RpcResponse<()>>()
+            .await?;
+
+        if let ResponseResult::Success(s) = response.result {
+            Ok(s)
+        } else {
+            Err(anyhow::format_err!("rpc call failed"))
+        }
+    }};
+}

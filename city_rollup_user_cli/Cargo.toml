@@ -33,6 +33,7 @@ tracing               = { workspace = true }
 reqwest = { workspace = true }
 kvq           = { path = "../kvq" }
 city_store           = { path = "../city_store" }
+city_rollup_rpc_provider = { path = "../city_rollup_rpc_provider" }
 
 [build-dependencies]
 shadow-rs = { workspace = true }
