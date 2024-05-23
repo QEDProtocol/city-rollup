@@ -11,10 +11,7 @@ use city_rollup_core_node::rpc::{
 };
 use city_rollup_core_orchestrator::debug::scenario::wallet::DebugScenarioWallet;
 
-use plonky2::{
-    field::goldilocks_field::GoldilocksField,
-    plonk::config::PoseidonGoldilocksConfig,
-};
+use plonky2::{field::goldilocks_field::GoldilocksField, plonk::config::PoseidonGoldilocksConfig};
 
 const D: usize = 2;
 type C = PoseidonGoldilocksConfig;
@@ -23,12 +20,14 @@ type F = GoldilocksField;
 pub async fn run(args: TokenTransferArgs) -> Result<()> {
     let client = reqwest::Client::new();
 
-    let public_key = QHashOut::<GoldilocksField>::from_str(&args.public_key)
-        .map_err(|e| anyhow::format_err!("{}", e.to_string()))?;
-
     let network_magic = get_network_magic_for_str(args.network)?;
 
-    let wallet = DebugScenarioWallet::<C, D>::new();
+    let private_key = QHashOut::<GoldilocksField>::from_str(&args.private_key)
+        .map_err(|e| anyhow::format_err!("{}", e.to_string()))?;
+
+    let mut wallet = DebugScenarioWallet::<C, D>::new();
+
+    let public_key = wallet.add_zk_private_key(private_key);
 
     let city_token_transfer_rpcrequest = wallet.sign_l2_transfer(
         public_key,

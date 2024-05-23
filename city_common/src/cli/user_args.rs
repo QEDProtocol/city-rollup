@@ -56,7 +56,7 @@ pub struct AddWithdrawalArgs {
     pub network: String,
 
     #[clap(long, short)]
-    pub public_key: String,
+    pub private_key: String,
 
     #[clap(long, short)]
     pub user_id: u64,
@@ -111,7 +111,7 @@ pub struct TokenTransferArgs {
     pub network: String,
 
     #[clap(long, short)]
-    pub public_key: String,
+    pub private_key: String,
 
     #[clap(long, short)]
     pub value: u64,

@@ -19,10 +19,12 @@ pub async fn run(args: AddWithdrawalArgs) -> Result<()> {
 
     let network_magic = get_network_magic_for_str(args.network)?;
 
-    let public_key = QHashOut::<GoldilocksField>::from_str(&args.public_key)
+    let private_key = QHashOut::<GoldilocksField>::from_str(&args.private_key)
         .map_err(|e| anyhow::format_err!("{}", e.to_string()))?;
 
-    let wallet = DebugScenarioWallet::<C, D>::new();
+    let mut wallet = DebugScenarioWallet::<C, D>::new();
+
+    let public_key = wallet.add_zk_private_key(private_key);
 
     let destination = Hash160::from_hex_string(&args.destination)?;
 
