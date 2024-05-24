@@ -2408,7 +2408,7 @@ dependencies = [
 [[package]]
 name = "gnark-plonky2-verifier-ffi"
 version = "0.1.0"
-source = "git+https://github.com/cf/gnark-plonky2-verifier?rev=ba0420dcf740d98a61b5f2e0a0880856facd74ea#ba0420dcf740d98a61b5f2e0a0880856facd74ea"
+source = "git+https://github.com/cf/gnark-plonky2-verifier?rev=5b5b950b621e6a8b2b9e0ed1945de5535b677d78#5b5b950b621e6a8b2b9e0ed1945de5535b677d78"
 dependencies = [
  "anyhow",
  "bindgen 0.69.4",
@@ -2419,7 +2419,7 @@ dependencies = [
 [[package]]
 name = "gnark-plonky2-wrapper"
 version = "0.1.0"
-source = "git+https://github.com/cf/gnark-plonky2-verifier?rev=ba0420dcf740d98a61b5f2e0a0880856facd74ea#ba0420dcf740d98a61b5f2e0a0880856facd74ea"
+source = "git+https://github.com/cf/gnark-plonky2-verifier?rev=5b5b950b621e6a8b2b9e0ed1945de5535b677d78#5b5b950b621e6a8b2b9e0ed1945de5535b677d78"
 dependencies = [
  "anyhow",
  "ff",
@@ -4015,7 +4015,7 @@ source = "git+https://github.com/QEDProtocol/plonky2-hwa?rev=6a8ca008da97890b67a
 [[package]]
 name = "plonky2x"
 version = "0.1.0"
-source = "git+https://github.com/GopherJ/succinctx.git?rev=a7fa3f5d42f933c398587f4aea33cb7846b94797#a7fa3f5d42f933c398587f4aea33cb7846b94797"
+source = "git+https://github.com/GopherJ/succinctx?rev=502ae514676347c6ae7757dc23866558cb25dbf1#502ae514676347c6ae7757dc23866558cb25dbf1"
 dependencies = [
  "anyhow",
  "array-macro",
@@ -4057,7 +4057,7 @@ dependencies = [
 [[package]]
 name = "plonky2x-derive"
 version = "0.1.0"
-source = "git+https://github.com/GopherJ/succinctx.git?rev=a7fa3f5d42f933c398587f4aea33cb7846b94797#a7fa3f5d42f933c398587f4aea33cb7846b94797"
+source = "git+https://github.com/GopherJ/succinctx?rev=502ae514676347c6ae7757dc23866558cb25dbf1#502ae514676347c6ae7757dc23866558cb25dbf1"
 dependencies = [
  "proc-macro2",
  "quote",
