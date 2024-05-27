@@ -24,24 +24,34 @@ test:
 dedup:
 	@cargo machete --fix
 
+.PHONY: build
+build:
+	cargo build --release
+
+.PHONY: build-release-if-not-exists
+build-release-if-not-exists:
+	if [ ! -f ./target/release/city-rollup-cli ]; then \
+		cargo build --release; \
+	fi
+
 .PHONY: run
-run: run-orchestrator run-rpc-server run-l2-worker
+run: run-orchestrator run-rpc-server run-api-server run-l2-worker
 
 .PHONY: run-rpc-server
-run-rpc-server:
-	@RUST_BACKTRACE=${TRACE_ENABLED} cargo run --release --package city-rollup-cli rpc-server
+run-rpc-server: build-release-if-not-exists
+	@RUST_BACKTRACE=${TRACE_ENABLED} ./target/release/city-rollup-cli rpc-server
 
 .PHONY: run-api-server
-run-api-server:
-	@RUST_BACKTRACE=${TRACE_ENABLED} cargo run --release --package city-rollup-cli api-server
+run-api-server: build-release-if-not-exists
+	@RUST_BACKTRACE=${TRACE_ENABLED} ./target/release/city-rollup-cli api-server
 
 .PHONY: run-orchestrator
-run-orchestrator:
-	@RUST_BACKTRACE=${TRACE_ENABLED} cargo run --release --package city-rollup-cli orchestrator
+run-orchestrator: build-release-if-not-exists
+	@RUST_BACKTRACE=${TRACE_ENABLED} ./target/release/city-rollup-cli orchestrator
 
 .PHONY: run-l2-worker
-run-l2-worker:
-	@RUST_BACKTRACE=${TRACE_ENABLED} cargo run --release --package city-rollup-cli l2-worker
+run-l2-worker: build-release-if-not-exists
+	@RUST_BACKTRACE=${TRACE_ENABLED} ./target/release/city-rollup-cli l2-worker
 
 .PHONY: print-circuit-info
 print-circuit-info:
@@ -107,6 +117,8 @@ shutdown:
 		--remove-orphans > /dev/null 2>&1 || true
 	@sudo rm -fr redis-data || true
 	@sudo rm -fr db || true
+	@sudo rm -fr /tmp/plonky2_proof || true
+	# @sudo rm -frr /tmp/groth16-keystore || true
 
 .PHONY: relaunch
 relaunch: shutdown launch
