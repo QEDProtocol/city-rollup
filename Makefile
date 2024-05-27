@@ -117,8 +117,8 @@ shutdown:
 		--remove-orphans > /dev/null 2>&1 || true
 	@sudo rm -fr redis-data || true
 	@sudo rm -fr db || true
-	@sudo rm -fr /tmp/plonky2_proof
-	# @sudo rm -frr /tmp/groth16-keystore
+	@sudo rm -fr /tmp/plonky2_proof || true
+	# @sudo rm -frr /tmp/groth16-keystore || true
 
 .PHONY: relaunch
 relaunch: shutdown launch
