@@ -280,7 +280,7 @@ impl<S: QProofStoreReaderSync> QWorkerGenericProverGroth16<S, PoseidonGoldilocks
         let (proof_string, _) = gnark_plonky2_wrapper::wrap_plonky2_proof(
             wrapper.circuit_data,
             &wrapper_proof,
-            Some(&format!("/tmp/plonky2_proof/{}/", job_id.task_index)),
+            None,
             "/tmp/groth16-keystore/0/",
         )?;
         // let proof_string = serde_json::to_string(&CityGroth16ProofData {

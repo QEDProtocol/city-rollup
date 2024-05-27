@@ -118,7 +118,7 @@ shutdown:
 	@sudo rm -fr redis-data || true
 	@sudo rm -fr db || true
 	@sudo rm -fr /tmp/plonky2_proof
-	@sudo rm -frr /tmp/groth16-keystore
+	# @sudo rm -frr /tmp/groth16-keystore
 
 .PHONY: relaunch
 relaunch: shutdown launch
