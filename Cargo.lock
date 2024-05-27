@@ -2408,7 +2408,6 @@ dependencies = [
 [[package]]
 name = "gnark-plonky2-verifier-ffi"
 version = "0.1.0"
-source = "git+https://github.com/cf/gnark-plonky2-verifier?rev=5b5b950b621e6a8b2b9e0ed1945de5535b677d78#5b5b950b621e6a8b2b9e0ed1945de5535b677d78"
 dependencies = [
  "anyhow",
  "bindgen 0.69.4",
@@ -2419,7 +2418,6 @@ dependencies = [
 [[package]]
 name = "gnark-plonky2-wrapper"
 version = "0.1.0"
-source = "git+https://github.com/cf/gnark-plonky2-verifier?rev=5b5b950b621e6a8b2b9e0ed1945de5535b677d78#5b5b950b621e6a8b2b9e0ed1945de5535b677d78"
 dependencies = [
  "anyhow",
  "ff",

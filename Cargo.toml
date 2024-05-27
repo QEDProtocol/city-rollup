@@ -114,7 +114,7 @@ rsmq = { git = "https://github.com/GopherJ/rsmq-async-rs", rev = "72358a7c4b946f
 r2d2 = { git = "https://github.com/GopherJ/r2d2", rev = "976ca74a74871d78764da2a040edcadad1af9be9" }
 r2d2_redis = { git = "https://github.com/GopherJ/r2d2-redis", rev = "63be37454cf441b832251aa915b1a9cb8bc27bff" }
 
-gnark-plonky2-wrapper = { git = "https://github.com/cf/gnark-plonky2-verifier", rev = "5b5b950b621e6a8b2b9e0ed1945de5535b677d78" }
+gnark-plonky2-wrapper = { path = "../gnark-plonky2-verifier/prover" }
 bs58 = { version = "0.5.1", features = ["std", "check"] }
 jsonrpsee = { version = "0.22.5", features = ["full"] }
 rocksdb = { version = "0.21.0", features = ["serde", "multi-threaded-cf"] }
