@@ -1,6 +1,6 @@
 use city_common::logging::trace_timer::TraceTimer;
-use city_common_circuit::{builder::{connect::CircuitBuilderConnectHelpers, core::{CircuitBuilderHelpersCore, WitnessHelpersCore}, signature::CircuitBuilderSignatureHelpers}, hash::{accelerator::sha256::planner::{Sha256AcceleratorDomain, Sha256AcceleratorDomainID, Sha256AcceleratorDomainPlanner, Sha256AcceleratorDomainResolver}, base_types::{felthash252::CircuitBuilderFelt252Hash, hash160bytes::Hash160BytesTarget, hash256bytes::{CircuitBuilderHash256Bytes, Hash256BytesTarget}}}};
-use city_rollup_common::introspection::rollup::introspection::{BlockSpendIntrospectionGadgetConfig, BlockSpendIntrospectionHint};
+use city_common_circuit::{builder::{connect::CircuitBuilderConnectHelpers, core::{CircuitBuilderHelpersCore, WitnessHelpersCore}, select::CircuitBuilderSelectHelpers, signature::CircuitBuilderSignatureHelpers}, hash::{accelerator::sha256::planner::{Sha256AcceleratorDomain, Sha256AcceleratorDomainID, Sha256AcceleratorDomainPlanner, Sha256AcceleratorDomainResolver}, base_types::{felthash252::CircuitBuilderFelt252Hash, hash160bytes::Hash160BytesTarget, hash256bytes::{CircuitBuilderHash256Bytes, Hash256BytesTarget}}}};
+use city_rollup_common::{block_template::config::{GENESIS_STATE_HASH, OP_CHECKGROTH16VERIFY, OP_CHECKGROTH16VERIFY_NOP}, introspection::rollup::introspection::{BlockSpendIntrospectionGadgetConfig, BlockSpendIntrospectionHint}};
 use plonky2::{
     field::extension::Extendable,
     hash::hash_types::{HashOutTarget, RichField},
@@ -150,12 +150,85 @@ impl BTCRollupIntrospectionGadget {
         offset: usize,
     ) {
         assert_eq!(script.len(), self.current_script.len() + offset);
+/*
+
+        
+        OP_CHECKGROTH16VERIFY, // len-8
+        OP_2DROP, // len-7
+        OP_2DROP, // len-6
+        OP_2DROP, // len-5
+        OP_2DROP, // len-4
+        OP_2DROP, // len-3
+        OP_2DROP, // len-2
+        OP_1 // len-1
+        
+*/
 
         // ensure the first byte is push 32 followed by state
         builder.connect_constant(script[offset], 32);
 
-        // ensure the body of the current script is the same as the target script
+
+        // ensure the body of the current script is the same as the target script except for the groth16 verify
         builder.connect_vec(&self.current_script[33..], &script[(offset + 33)..]);
+    }
+    pub fn ensure_script_is_funding_block_script<F: RichField + Extendable<D>, const D: usize>(
+        &self,
+        builder: &mut CircuitBuilder<F, D>,
+        script: &[Target],
+        offset: usize,
+    ) {
+
+        if self.funding_transactions.len() == 1 { 
+            assert_eq!(script.len(), self.current_script.len() + offset);
+    /*
+
+            
+            OP_CHECKGROTH16VERIFY, // len-8
+            OP_2DROP, // len-7
+            OP_2DROP, // len-6
+            OP_2DROP, // len-5
+            OP_2DROP, // len-4
+            OP_2DROP, // len-3
+            OP_2DROP, // len-2
+            OP_1 // len-1
+            
+    */
+            let current_script_check_proof_op_code_index = self.current_script.len()-8;
+            let script_check_proof_op_code_index = script.len()-8;
+            // const_concat_arrays!([OP_PUSHBYTES_32], <STATE_HASH>, STANDARD_BLOCK_SCRIPT_BODY);
+
+            // ensure the first byte is push 32 followed by state
+            builder.connect_constant(script[offset], 32);
+            let current_script_state_hash_index = 1;
+            let script_state_hash_index = offset + 1;
+
+
+            // ensure the body of the current script is the same as the target script except for the groth16 verify
+            builder.connect_vec(&self.current_script[33..current_script_check_proof_op_code_index], &script[(offset + 33)..script_check_proof_op_code_index]);
+            builder.connect_vec(&self.current_script[(current_script_check_proof_op_code_index+1)..], &script[(script_check_proof_op_code_index+1)..]);
+
+            // if the prev tx input is a single genesis spend, then allow for a NOP proof verify for the previous proof
+            let genesis_state_hash_256: Hash256BytesTarget = builder.constant_hash256_bytes(&GENESIS_STATE_HASH);
+            let current_script_state_hash : Hash256BytesTarget = core::array::from_fn(|i| self.current_script[i + current_script_state_hash_index]);
+            let script_state_hash : Hash256BytesTarget = core::array::from_fn(|i| script[i + script_state_hash_index]);
+            let is_prev_script_genesis = builder.is_equal_hash_256_bytes(script_state_hash, genesis_state_hash_256);
+            let op_check_groth16_verify_op = builder.constant_u8(OP_CHECKGROTH16VERIFY);
+            let op_check_groth16_verify_nop_op = builder.constant_u8(OP_CHECKGROTH16VERIFY_NOP);
+            
+            let is_prev_script_op_groth16_verify = builder.is_equal(script[script_check_proof_op_code_index], op_check_groth16_verify_op);
+            let is_prev_script_op_groth16_verify_nop = builder.is_equal(script[script_check_proof_op_code_index], op_check_groth16_verify_nop_op);
+            let is_prev_script_op_groth16_verify_or_nop = builder.or(is_prev_script_op_groth16_verify, is_prev_script_op_groth16_verify_nop);
+            let is_prev_script_genesis_and_op_groth16_verify_or_nop = builder.and(is_prev_script_genesis, is_prev_script_op_groth16_verify_or_nop);
+            // (is_prev_script_op_groth16_verify || (is_prev_script_genesis && op_groth16_verify_or_nop))
+            let is_prev_script_valid_op = builder.or(is_prev_script_op_groth16_verify, is_prev_script_genesis_and_op_groth16_verify_or_nop);
+            let one = builder.one();
+            builder.connect(is_prev_script_valid_op.target, one);
+
+
+            builder.connect(self.current_script[current_script_check_proof_op_code_index], op_check_groth16_verify_op);
+        }else{
+            self.ensure_script_is_block_script(builder, script, offset)
+        }
     }
     pub fn ensure_block_script_transition<F: RichField + Extendable<D>, const D: usize>(
         &mut self,
@@ -166,7 +239,7 @@ impl BTCRollupIntrospectionGadget {
         self.ensure_script_is_block_script(builder, &self.next_block_redeem_script, 0);
 
         if self.last_block_spend_index != -1 {
-            self.ensure_script_is_block_script(
+            self.ensure_script_is_funding_block_script(
                 builder,
                 &self.funding_transactions[self.last_block_spend_index as usize].inputs[0].script,
                 281,

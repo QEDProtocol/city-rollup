@@ -18,9 +18,11 @@ const OP_2DROP: u8 = 0x6d;
 
 // Action Instructions
 const OP_0NOTEQUAL: u8 = 0x92;
-
+pub const OP_CHECKGROTH16VERIFY_NOP: u8 = OP_0NOTEQUAL;
 // note: OP_CHECKGROTH16VERIFY is 0xb3, but 0x61 is OP_NOP and can be used for testing without verifying proofs
-const OP_CHECKGROTH16VERIFY: u8 = 0x92; //0x61;
+pub const OP_CHECKGROTH16VERIFY: u8 = 0x61;//0x92; //0x61;
+
+pub const GENESIS_STATE_HASH: [u8; 32] = hex_literal::hex!("0000000000000000000000000000000000000000000000000000000000000000"); 
 
 //  size = 3 + 1 + 32 + 1 + 5*(2+80) + 9 = 456
 const STANDARD_BLOCK_SCRIPT_BODY: [u8; 456] = city_macros::const_concat_arrays!(
@@ -69,7 +71,7 @@ const GENESIS_BLOCK_SCRIPT_BODY: [u8; 456] = city_macros::const_concat_arrays!(
     BLOCK_GROTH16_ENCODED_VERIFIER_DATA[5],
     [
         OP_1,
-        OP_0NOTEQUAL, // OP_ACTION
+        OP_CHECKGROTH16VERIFY_NOP, // OP_ACTION
         OP_2DROP,
         OP_2DROP,
         OP_2DROP,

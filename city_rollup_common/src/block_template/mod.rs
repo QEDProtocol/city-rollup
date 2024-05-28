@@ -1,4 +1,4 @@
-mod config;
+pub mod config;
 pub mod template;
 pub use template::*;
 pub mod verifier_data;

@@ -5,6 +5,8 @@ use plonky2::{
     plonk::circuit_builder::CircuitBuilder,
 };
 
+use crate::hash::base_types::hash256bytes::Hash256BytesTarget;
+
 pub trait CircuitBuilderSelectHelpers<F: RichField + Extendable<D>, const D: usize> {
     fn select_or_zero(
         &mut self,
@@ -36,6 +38,11 @@ pub trait CircuitBuilderSelectHelpers<F: RichField + Extendable<D>, const D: usi
         &mut self,
         true_value: HashOutTarget,
         false_value: HashOutTarget,
+    ) -> BoolTarget;
+    fn is_equal_hash_256_bytes(
+        &mut self,
+        x: Hash256BytesTarget,
+        y: Hash256BytesTarget,
     ) -> BoolTarget;
 }
 
@@ -104,5 +111,19 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilderSelectHelpers<F
             last_allowed = self.select_hash(equal, value, last_allowed);
         }
         last_allowed
+    }
+    
+    fn is_equal_hash_256_bytes(
+        &mut self,
+        x: Hash256BytesTarget,
+        y: Hash256BytesTarget,
+    ) -> BoolTarget {
+        let mut result = self.constant_bool(true);
+        for i in 0..x.len() {
+            let equal = self.is_equal(x[i], y[i]);
+            result = self.and(equal, result);
+        }
+        result
+
     }
 }

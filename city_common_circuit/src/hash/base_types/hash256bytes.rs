@@ -59,6 +59,7 @@ pub trait CircuitBuilderHash256Bytes<F: RichField + Extendable<D>, const D: usiz
     fn hash256_bytes_to_hashout224(&mut self, x: Hash256BytesTarget) -> HashOutTarget;
     fn hash256_bytes_to_hashout(&mut self, x: Hash256BytesTarget) -> HashOutTarget;
     fn hash256_bytes_to_u32_bits(&mut self, x: Hash256BytesTarget) -> [[BoolTarget; 32]; 8];
+    fn constant_hash256_bytes(&mut self, value: &[u8]) -> Hash256BytesTarget;
 }
 
 impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilderHash256Bytes<F, D>
@@ -189,6 +190,11 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilderHash256Bytes<F,
         HashOutTarget {
             elements: [result[0], result[1], result[2], result[3]],
         }
+    }
+    
+    fn constant_hash256_bytes(&mut self, value: &[u8]) -> Hash256BytesTarget {
+        assert_eq!(value.len(), 32);
+        core::array::from_fn(|i| self.constant(F::from_canonical_u8(value[i])))
     }
 }
 
