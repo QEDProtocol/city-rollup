@@ -111,6 +111,17 @@ pub fn run(args: OrchestratorArgs) -> anyhow::Result<()> {
     let block_2_address =
         BTCAddress160::new_p2sh(CityStore::get_city_block_deposit_address(&store, 2)?);
     api.mine_blocks(1)?;
+    let user_0_public_key = wallet.add_zk_private_key(QHashOut::from_values(100, 100, 100, 100));
+    let user_1_public_key = wallet.add_zk_private_key(QHashOut::from_values(101, 101, 101, 101));
+    let _ = wallet.add_zk_private_key(QHashOut::from_values(102, 102, 102, 102));
+    let _ = wallet.add_zk_private_key(QHashOut::from_values(103, 103, 103, 103));
+    let register_user_rpc_events =
+        CityRegisterUserRPCRequest::new_batch(&[user_0_public_key, user_1_public_key]);
+    let _ = register_user_rpc_events
+        .into_iter()
+        .map(|x| rpc_queue.notify_rpc_register_user(&x))
+        .collect::<anyhow::Result<Vec<()>>>()?;
+    /* 
 
     let user_0_public_key = wallet.add_zk_private_key(QHashOut::from_values(100, 100, 100, 100));
     let user_1_public_key = wallet.add_zk_private_key(QHashOut::from_values(101, 101, 101, 101));
@@ -139,6 +150,7 @@ pub fn run(args: OrchestratorArgs) -> anyhow::Result<()> {
         .into_iter()
         .map(|x| rpc_queue.notify_rpc_register_user(&x))
         .collect::<anyhow::Result<Vec<()>>>()?;
+    */
 
     sync_infinite_loop!(1000, {
         let block_state = CityStore::get_latest_block_state(&store)?;
