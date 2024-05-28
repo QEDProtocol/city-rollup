@@ -3,14 +3,14 @@ use plonky2::{field::goldilocks_field::GoldilocksField, hash::hash_types::HashOu
 
 type F = GoldilocksField;
 pub const SIGHASH_CIRCUIT_WHITELIST_TREE_HEIGHT: u8 = 16;
-pub const SIGHASH_CIRCUIT_MAX_WITHDRAWALS: usize = 4;
-pub const SIGHASH_CIRCUIT_MAX_DEPOSITS: usize = 4;
+pub const SIGHASH_CIRCUIT_MAX_WITHDRAWALS: usize = 2;
+pub const SIGHASH_CIRCUIT_MAX_DEPOSITS: usize = 2;
 pub const SIGHASH_WHITELIST_TREE_ROOT: QHashOut<F> = QHashOut(HashOut {
     elements: [
-        GoldilocksField(12940816122468106251),
-        GoldilocksField(13981198610266814245),
-        GoldilocksField(15532353775053087975),
-        GoldilocksField(13082917549369438806),
+        GoldilocksField(3955197275384853261),
+        GoldilocksField(4233408120910680438),
+        GoldilocksField(9482222823114134518),
+        GoldilocksField(2988611172217115292),
     ],
 });
 
