@@ -155,7 +155,10 @@ impl BTCRollupIntrospectionGadget {
         builder.connect_constant(script[offset], 32);
 
         // ensure the body of the current script is the same as the target script
-        builder.connect_vec(&self.current_script[33..], &script[(offset + 33)..]);
+        builder.connect_vec(&self.current_script[33..481], &script[(offset + 33)..(offset + 481)]);
+        // TODO: constrain OP_CHECKGROTH16VERIFY | OP_0NOTEQUAL
+        // block 0,1 should use OP_0NOTEQUAL
+        builder.connect_vec(&self.current_script[482..], &script[(offset + 482)..]);
     }
     pub fn ensure_block_script_transition<F: RichField + Extendable<D>, const D: usize>(
         &mut self,
@@ -207,7 +210,7 @@ impl BTCRollupIntrospectionGadget {
                     // deposit, use der pad
                     funding_tx.connect_to_hash_deposit(builder, &mut self.hash_domain, spend_tx.hash, true)
                 }else{
-            
+
                     let funding_tx_bytes = funding_tx.to_byte_targets(builder);
                     let funding_tx_hash = self.hash_domain.btc_hash256(builder, &funding_tx_bytes);
                     // ensure the funding transaction provided is actually the transaction that funded this utxo
@@ -237,8 +240,8 @@ impl BTCRollupIntrospectionGadget {
 
                     // todo: support length 107 signatures
                     assert_eq!(
-                        funding_tx.inputs[0].script.len(), 
-                        106, 
+                        funding_tx.inputs[0].script.len(),
+                        106,
                         "the input script for a deposit should be a p2pkh signature + public key reveal"
                     );
                     let public_key = if funding_tx.inputs[0].script.len() == 106 {

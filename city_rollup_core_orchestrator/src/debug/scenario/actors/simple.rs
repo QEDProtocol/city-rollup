@@ -217,15 +217,20 @@ impl SimpleActorOrchestrator {
         println!("a");
 
         let last_block = CityStore::get_latest_block_state(store)?;
+        println!("last_block: {}", last_block.checkpoint_id);
+        println!("current_building_block: {}", last_block.checkpoint_id + 1);
         println!("b");
         let last_block_address =
             CityStore::get_city_block_deposit_address(store, last_block.checkpoint_id - 1)?;
+        println!("last_block address: {}", last_block_address.to_p2sh_address());
         println!("c");
         let current_block_address =
             CityStore::get_city_block_deposit_address(store, last_block.checkpoint_id + 1)?;
+        println!("current block address: {}", current_block_address.to_p2sh_address());
         println!("d");
         let current_block_script =
             CityStore::get_city_block_script(store, last_block.checkpoint_id + 1)?;
+        println!("current block script: {}", hex::encode(&current_block_script));
 
         let checkpoint_id = last_block.checkpoint_id + 1;
         let mut timer = DebugTimer::new(&format!("produce_block [{}]", checkpoint_id));
@@ -307,7 +312,9 @@ impl SimpleActorOrchestrator {
         println!("e");
 
         let next_address = CityStore::get_city_block_deposit_address(store, checkpoint_id + 1)?;
+        println!("block {} address: {}", checkpoint_id + 1, next_address.to_p2sh_address());
         let next_script = CityStore::get_city_block_script(store, checkpoint_id + 1)?;
+        println!("block {} script: {}", checkpoint_id + 1, hex::encode(&next_script));
         /*println!(
             "next_address: {}",
             BTCAddress160::new_p2sh(next_address).to_address_string()

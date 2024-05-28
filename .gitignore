@@ -43,3 +43,4 @@ chaindata/
 ordhook-data/
 db
 redis-data/
+blocks/

@@ -31,6 +31,9 @@ impl Hash160 {
         array.copy_from_slice(&bytes);
         Ok(Self(array))
     }
+    pub fn to_hex_string(&self) -> String {
+        hex::encode(&self.0)
+    }
     pub fn to_check_base58(&self, version: u8) -> String {
         bs58::encode(&self.0)
             .with_check_version(version)

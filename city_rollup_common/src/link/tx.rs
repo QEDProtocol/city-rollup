@@ -147,8 +147,11 @@ pub fn setup_genesis_block<W: Secp256K1WalletProvider, A: QBitcoinAPISync>(
     assert!(funding_tx.outputs.len() == 1);
     let base_value = funding_tx.outputs[0].value;
 
+    println!("block 0 state hash {}", genesis_hash.to_hex_string());
     let genesis_block_script = get_genesis_block_script_bytes(genesis_hash.0).to_vec();
+    println!("block 0 script {}", hex::encode(&genesis_block_script));
     let script_address = BTCAddress160::new_p2sh(btc_hash160(&genesis_block_script));
+    println!("block 0 address {}", script_address.to_address_string());
     let tx_0 = create_p2pkh_tx(
         wallet,
         funder,
@@ -196,7 +199,9 @@ pub fn setup_genesis_block<W: Secp256K1WalletProvider, A: QBitcoinAPISync>(
     tx_1.inputs[0].index = 0;
     tx_1.outputs[0].value -= fee;
     let txid_2 = api.send_transaction(&tx_1)?;
+    println!("block 1 state hash {}", genesis_hash.to_hex_string());
     let block_1_address = BTCAddress160::new_p2sh(get_block_script_hash(genesis_hash.0, false));
+    println!("block 1 address {}", block_1_address.to_address_string());
     tx_1.inputs[0].hash = txid_2.reversed();
     tx_1.inputs[0].index = 0;
     tx_1.outputs = vec![BTCTransactionOutput {
