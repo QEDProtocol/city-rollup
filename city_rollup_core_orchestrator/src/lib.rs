@@ -66,23 +66,10 @@ pub fn run(args: OrchestratorArgs) -> anyhow::Result<()> {
     let deposit_1_address = BTCAddress160::from_p2pkh_key(deposit_1_public_key);
 
     let sighash_whitelist_tree = SigHashMerkleTree::new();
-    let block0 = CityL2BlockState {
-        checkpoint_id: 0,
-        next_add_withdrawal_id: 0,
-        next_process_withdrawal_id: 0,
-        next_deposit_id: 0,
-        total_deposits_claimed_epoch: 0,
-        next_user_id: 0,
-        end_balance: 0,
-    };
+    let block0 = CityL2BlockState::default();
     let block1 = CityL2BlockState {
         checkpoint_id: 1,
-        next_add_withdrawal_id: 0,
-        next_process_withdrawal_id: 0,
-        next_deposit_id: 0,
-        total_deposits_claimed_epoch: 0,
-        next_user_id: 0,
-        end_balance: 0,
+        ..Default::default()
     };
     let mut store = KVQRocksDBStore::open_default(args.db_path)?;
     CityStore::set_block_state(&mut store, &block0)?;

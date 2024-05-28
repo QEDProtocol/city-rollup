@@ -277,12 +277,14 @@ impl<S: QProofStoreReaderSync> QWorkerGenericProverGroth16<S, PoseidonGoldilocks
             verifier_data.constants_sigmas_cap.height(),
         );
         let wrapper_proof = wrapper.prove_base(&inner_proof, &verifier_data)?;
-        let (proof_string, _) = gnark_plonky2_wrapper::wrap_plonky2_proof(
+        let (proof_string, vk_string) = gnark_plonky2_wrapper::wrap_plonky2_proof(
             wrapper.circuit_data,
             &wrapper_proof,
-            None,
+            Some(&format!("/tmp/plonky2_proof/{}/", job_id.task_index)),
             "/tmp/groth16-keystore/0/",
         )?;
+        println!("proof city {}", proof_string);
+        println!("vk city {}", vk_string);
         // let proof_string = serde_json::to_string(&CityGroth16ProofData {
         //     pi_a: Serialized2DFeltBLS12381([0u8; 48]),
         //     pi_b_a0: Serialized2DFeltBLS12381([0u8; 48]),

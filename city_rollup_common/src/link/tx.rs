@@ -164,10 +164,10 @@ pub fn setup_genesis_block<W: Secp256K1WalletProvider, A: QBitcoinAPISync>(
     )?;
     let txid_0 = api.send_transaction(&tx_0)?;
 
-    let pi_a = &hex_literal::hex!("a0e77690fd601f556d295b3c6ede845fe2bcad660ebc15a2739502aa9e4a6ca497bad5b54b4cbfd37e72931eee7eba12").to_vec();
-    let pi_a_a0 = &hex_literal::hex!("1539fd0dc27931a996e47b36e444092d8fd1adf6f6f837af609486977008fc06235e9c18e1bdd3d911de8095f96d9900").to_vec();
-    let pi_b_a1 = &hex_literal::hex!("f3c752a8e22f85a03a2695bbbd062b9e11c903095ed802c8bdbdab25acd58926e8cb48f9294ef9a707b067242accf517").to_vec();
-    let pi_c = &hex_literal::hex!("eb5b88d8e1878edc6bf8dbce6cbccbb83394689fe959d525e2a7a175062010f18a1a700be662c2f0efee7255e6b56209").to_vec();
+    let pi_a = &hex_literal::hex!("db3c671223df72f77af3fee68586aa5d0074ce2b22e57118cc06ada3f6d987cb981f3ac16991b9c79d1a98bac19c350c").to_vec();
+    let pi_a_a0 = &hex_literal::hex!("928f9b11850c10b60fa5efcc997ca39169c422ab171094af427ba9a9f0cc24e0ba1f8d4e9b6fcc03bcd152609733c804").to_vec();
+    let pi_b_a1 = &hex_literal::hex!("8a5b69172388e5d134b88313ae2769ed7e7e926c271a9322fe85fa4ce5a7fc1d2fffb724c95cab09fb3f9a2383daf594").to_vec();
+    let pi_c = &hex_literal::hex!("cab6e20197f0fbe088c091c6b85035fa7ddad99dcd8ada5c21cd190728dbe605fc8f1a2bc5935b87b07cf628cb638584").to_vec();
     let witness: [&[u8]; 5] = [
         &pi_a,
         &pi_a_a0,
