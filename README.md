@@ -43,7 +43,7 @@ Send command to produce the next block and dispatch proving works to workers
 make cr_produce_block
 ```
 
-Register user on L2
+Register two users on L2
 ```bash
 make cr_register_user
 ```

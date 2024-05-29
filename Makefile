@@ -30,7 +30,7 @@ build:
 
 .PHONY: build-release-if-not-exists
 build-release-if-not-exists:
-	if [ ! -f ./target/release/city-rollup-cli ]; then \
+	if [ ! -f ./target/release/city-rollup-cli ] || [ ! -f ./target/release/city-rollup-user-cli ] || [ ! -f ./target/release/city-rollup-dev-cli ]; then \
 		cargo build --release; \
 	fi
 
@@ -54,51 +54,51 @@ run-l2-worker: build-release-if-not-exists
 	@RUST_BACKTRACE=${TRACE_ENABLED} ./target/release/city-rollup-cli l2-worker
 
 .PHONY: print-circuit-info
-print-circuit-info:
-	@RUST_BACKTRACE=${TRACE_ENABLED} cargo run --package city-rollup-dev-cli print-circuit-info
+print-circuit-info: build-release-if-not-exists
+	@RUST_BACKTRACE=${TRACE_ENABLED} ./target/release/city-rollup-dev-cli print-circuit-info
 
 .PHONY: tree-prove-test
-tree-prove-test:
-	@RUST_BACKTRACE=${TRACE_ENABLED} cargo run --package city-rollup-dev-cli tree-prove-test
+tree-prove-test: build-release-if-not-exists
+	@RUST_BACKTRACE=${TRACE_ENABLED} ./target/release/city-rollup-dev-cli tree-prove-test
 
 .PHONY: get-public-key
-get-public-key:
-	@RUST_BACKTRACE=${TRACE_ENABLED} cargo run --package city-rollup-user-cli get-public-key --private-key=2c6a1188f8739daaeff79c40f3690c573381c91a2359a0df2b45e4310b59f30b
+get-public-key: build-release-if-not-exists
+	@RUST_BACKTRACE=${TRACE_ENABLED} ./target/release/city-rollup-user-cli get-public-key --private-key=2c6a1188f8739daaeff79c40f3690c573381c91a2359a0df2b45e4310b59f30b
 
 .PHONY: random-wallet
-random-wallet:
-	@RUST_BACKTRACE=${TRACE_ENABLED} cargo run --package city-rollup-user-cli random-wallet
+random-wallet: build-release-if-not-exists
+	@RUST_BACKTRACE=${TRACE_ENABLED} ./target/release/city-rollup-user-cli random-wallet
 
 .PHONY: sign-hash
-sign-hash:
-	@RUST_BACKTRACE=${TRACE_ENABLED} cargo run --package city-rollup-user-cli sign-hash \
+sign-hash: build-release-if-not-exists
+	@RUST_BACKTRACE=${TRACE_ENABLED} ./target/release/city-rollup-user-cli sign-hash \
 		--private-key=2c6a1188f8739daaeff79c40f3690c573381c91a2359a0df2b45e4310b59f30b \
 		--action-hash=010d831efabf0bd45a992f203683c1e38a5492054099b29596237efd5e5cdca8 \
 		--output=proof.txt
 
 .PHONY: full_block
-full_block:
-	@RUST_BACKTRACE=${TRACE_ENABLED} cargo run --package city-rollup-dev-cli --example full_block
+full_block: build-release-if-not-exists
+	@RUST_BACKTRACE=${TRACE_ENABLED} ./target/release/city-rollup-dev-cli --example full_block
 
 .PHONY: full_block2
-full_block2:
-	@RUST_BACKTRACE=${TRACE_ENABLED} cargo run --package city-rollup-dev-cli --example full_block_v2
+full_block2: build-release-if-not-exists
+	@RUST_BACKTRACE=${TRACE_ENABLED} ./target/release/city-rollup-dev-cli --example full_block_v2
 
 .PHONY: fblockredis
-fblockredis:
-	@RUST_BACKTRACE=${TRACE_ENABLED} cargo run --package city-rollup-dev-cli --example fblockredis
+fblockredis: build-release-if-not-exists
+	@RUST_BACKTRACE=${TRACE_ENABLED} ./target/release/city-rollup-dev-cli --example fblockredis
 
 .PHONY: hashes
-hashes:
-	@RUST_BACKTRACE=${TRACE_ENABLED} cargo run --package city-rollup-dev-cli --example hashes
+hashes: build-release-if-not-exists
+	@RUST_BACKTRACE=${TRACE_ENABLED} ./target/release/city-rollup-dev-cli --example hashes
 
 .PHONY: print_hints
-print_hints:
-	@RUST_BACKTRACE=${TRACE_ENABLED} cargo run --package city-rollup-dev-cli --example print_hints
+print_hints: build-release-if-not-exists
+	@RUST_BACKTRACE=${TRACE_ENABLED} ./target/release/city-rollup-dev-cli --example print_hints
 
 .PHONY: prove_sighash_0_hints
-prove_sighash_0_hints:
-	@RUST_BACKTRACE=${TRACE_ENABLED} cargo run --package city-rollup-dev-cli --example prove_sighash_0_hints
+prove_sighash_0_hints: build-release-if-not-exists
+	@RUST_BACKTRACE=${TRACE_ENABLED} ./target/release/city-rollup-dev-cli --example prove_sighash_0_hints
 
 .PHONY: launch
 launch:
@@ -124,26 +124,26 @@ shutdown:
 relaunch: shutdown launch
 
 .PHONY: cr_register_user
-cr_register_user:
-	@RUST_BACKTRACE=${TRACE_ENABLED} cargo run --release --package city-rollup-user-cli register-user --private-key=2c6a1188f8739daaeff79c40f3690c573381c91a2359a0df2b45e4310b59f30b
-	@RUST_BACKTRACE=${TRACE_ENABLED} cargo run --release --package city-rollup-user-cli register-user --private-key=f6648784d8373da16c3e97a860191757c4a88db8d161ede135b22ff879d6cd6d
+cr_register_user: build-release-if-not-exists
+	@RUST_BACKTRACE=${TRACE_ENABLED} ./target/release/city-rollup-user-cli register-user --private-key=2c6a1188f8739daaeff79c40f3690c573381c91a2359a0df2b45e4310b59f30b
+	@RUST_BACKTRACE=${TRACE_ENABLED} ./target/release/city-rollup-user-cli register-user --private-key=f6648784d8373da16c3e97a860191757c4a88db8d161ede135b22ff879d6cd6d
 
 .PHONY: cr_l1_deposit
-cr_l1_deposit:
-	@RUST_BACKTRACE=${TRACE_ENABLED} cargo run --release --package city-rollup-user-cli l1-deposit \
+cr_l1_deposit: build-release-if-not-exists
+	@RUST_BACKTRACE=${TRACE_ENABLED} ./target/release/city-rollup-user-cli l1-deposit \
 		--private-key=2c6a1188f8739daaeff79c40f3690c573381c91a2359a0df2b45e4310b59f30b \
 		--amount=100000000
 
 .PHONY: cr_claim_deposit
-cr_claim_deposit:
-	@RUST_BACKTRACE=${TRACE_ENABLED} cargo run --release --package city-rollup-user-cli claim-deposit \
+cr_claim_deposit: build-release-if-not-exists
+	@RUST_BACKTRACE=${TRACE_ENABLED} ./target/release/city-rollup-user-cli claim-deposit \
 		--txid=${TXID} \
 		--private-key=2c6a1188f8739daaeff79c40f3690c573381c91a2359a0df2b45e4310b59f30b \
-		--user-id=3
+		--user-id=2
 
 .PHONY: cr_token_transfer
-cr_token_transfer:
-	@RUST_BACKTRACE=${TRACE_ENABLED} cargo run --release --package city-rollup-user-cli token-transfer \
+cr_token_transfer: build-release-if-not-exists
+	@RUST_BACKTRACE=${TRACE_ENABLED} ./target/release/city-rollup-user-cli token-transfer \
 		--private-key=2c6a1188f8739daaeff79c40f3690c573381c91a2359a0df2b45e4310b59f30b \
 		--from=2 \
 		--to=0 \
@@ -170,3 +170,17 @@ cr_get_latest_block_state:
 		-X POST \
 		-H "Content-Type: application/json" \
 		--data '{"method":"cr_getLatestBlockState","params":[],"id":1,"jsonrpc":"2.0"}'  | jq
+
+.PHONY: cr_get_deposit_by_txid
+cr_get_deposit_by_txid:
+	curl http://localhost:3000 \
+		-X POST \
+		-H "Content-Type: application/json" \
+		--data '{"method":"cr_getDepositByTxid","params":["a4740418b4c2119468ba1a561561ff4163b14476ec2171c92f987c32922c85ff"],"id":1,"jsonrpc":"2.0"}'  | jq
+
+.PHONY: cr_get_deposit_by_id
+cr_get_deposit_by_id:
+	curl http://localhost:3000 \
+		-X POST \
+		-H "Content-Type: application/json" \
+		--data '{"method":"cr_getDepositById","params":[3,0],"id":1,"jsonrpc":"2.0"}'  | jq

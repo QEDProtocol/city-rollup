@@ -17,8 +17,6 @@ pub async fn run(args: L1DepositArgs) -> Result<()> {
         wallet.add_private_key(Hash256::from_hex_string(&args.private_key)?)?,
     );
 
-
-
     let deposit_address = if args.deposit_address.is_empty() {
         let block_state = provider.get_latest_block_state().await?;
         provider
@@ -35,6 +33,6 @@ pub async fn run(args: L1DepositArgs) -> Result<()> {
     )?;
     api.mine_blocks(10)?;
 
-    println!("txid: {}", txid.to_string());
+    println!("txid: {}", txid.reversed().to_string());
     Ok(())
 }
