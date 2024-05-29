@@ -25,6 +25,7 @@ city_common           = { path = "../city_common" }
 city_rollup_common    = { path = "../city_rollup_common" }
 city_rollup_worker_dispatch    = { path = "../city_rollup_worker_dispatch" }
 city_rollup_core_worker    = { path = "../city_rollup_core_worker" }
+city_rollup_core_api = { path = "../city_rollup_core_api" }
 tokio                 = { workspace = true }
 redis = { workspace = true }
 city_macros = { path = "../city_macros" }

@@ -30,6 +30,8 @@ pub struct RPCServerArgs {
 
 #[derive(Clone, Args)]
 pub struct OrchestratorArgs {
+    #[clap(long, default_value = "0.0.0.0:7777", env)]
+    pub server_addr: String,
     #[clap(long, default_value = "https://localhost:3000", env)]
     pub rollup_rpc_url: String,
     #[clap(

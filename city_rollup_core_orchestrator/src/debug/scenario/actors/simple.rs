@@ -219,7 +219,7 @@ impl SimpleActorOrchestrator {
         let last_block = CityStore::get_latest_block_state(store)?;
         println!("b");
         let last_block_address =
-            CityStore::get_city_block_deposit_address(store, last_block.checkpoint_id - 1)?;
+            CityStore::get_city_block_deposit_address(store, last_block.checkpoint_id)?;
         println!("c");
         let current_block_address =
             CityStore::get_city_block_deposit_address(store, last_block.checkpoint_id + 1)?;
@@ -489,8 +489,6 @@ impl SimpleActorOrchestrator {
             block_op_job_ids.add_deposit_job_ids[0].to_vec(),
         ]
         .concat();
-
-        CityStore::set_block_state(store, &block_state)?;
 
         Ok((
             leaf_jobs,

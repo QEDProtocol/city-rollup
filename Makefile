@@ -132,14 +132,14 @@ cr_register_user:
 cr_l1_deposit:
 	@RUST_BACKTRACE=${TRACE_ENABLED} cargo run --release --package city-rollup-user-cli l1-deposit \
 		--private-key=2c6a1188f8739daaeff79c40f3690c573381c91a2359a0df2b45e4310b59f30b \
-		--amount=1
+		--amount=100000000
 
 .PHONY: cr_claim_deposit
 cr_claim_deposit:
 	@RUST_BACKTRACE=${TRACE_ENABLED} cargo run --release --package city-rollup-user-cli claim-deposit \
 		--txid=${TXID} \
 		--private-key=2c6a1188f8739daaeff79c40f3690c573381c91a2359a0df2b45e4310b59f30b \
-		--user-id=2
+		--user-id=3
 
 .PHONY: cr_token_transfer
 cr_token_transfer:

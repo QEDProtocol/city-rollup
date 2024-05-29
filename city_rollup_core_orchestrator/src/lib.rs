@@ -59,32 +59,32 @@ pub fn run(args: OrchestratorArgs) -> anyhow::Result<()> {
     let deposit_0_public_key = wallet.add_secp256k1_private_key(Hash256(hex_literal::hex!(
         "e6baf19a8b0b9b8537b9354e178a0a42d0887371341d4b2303537c5d18d7bb87"
     )))?;
-    let deposit_0_address = BTCAddress160::from_p2pkh_key(deposit_0_public_key);
+    let _deposit_0_address = BTCAddress160::from_p2pkh_key(deposit_0_public_key);
     let deposit_1_public_key = wallet.add_secp256k1_private_key(Hash256(hex_literal::hex!(
         "51dfec6b389f5f033bbe815d5df995a20851227fd845a3be389ca9ad2b6924f0"
     )))?;
-    let deposit_1_address = BTCAddress160::from_p2pkh_key(deposit_1_public_key);
+    let _deposit_1_address = BTCAddress160::from_p2pkh_key(deposit_1_public_key);
 
     let sighash_whitelist_tree = SigHashMerkleTree::new();
-    let block0 = CityL2BlockState {
-        checkpoint_id: 0,
-        next_add_withdrawal_id: 0,
-        next_process_withdrawal_id: 0,
-        next_deposit_id: 0,
-        total_deposits_claimed_epoch: 0,
-        next_user_id: 0,
-        end_balance: 0,
-    };
+    let block0 = CityL2BlockState::default();
     let block1 = CityL2BlockState {
         checkpoint_id: 1,
-        next_add_withdrawal_id: 0,
-        next_process_withdrawal_id: 0,
-        next_deposit_id: 0,
-        total_deposits_claimed_epoch: 0,
-        next_user_id: 0,
-        end_balance: 0,
+        ..Default::default()
     };
-    let mut store = KVQRocksDBStore::open_default(args.db_path)?;
+    let mut store = KVQRocksDBStore::open_default(&args.db_path)?;
+    let storec = store.clone();
+    std::thread::spawn(move || {
+        let rt = tokio::runtime::Builder::new_multi_thread()
+            .enable_all()
+            .build()
+            .unwrap();
+
+       let _ = rt.block_on(async move {
+            println!("api server listening on http://{}", args.server_addr);
+            city_rollup_core_api::run_server(args.server_addr, storec).await?;
+            Ok::<_, anyhow::Error>(())
+        });
+    });
     CityStore::set_block_state(&mut store, &block0)?;
     CityStore::set_block_state(&mut store, &block1)?;
 
@@ -108,7 +108,7 @@ pub fn run(args: OrchestratorArgs) -> anyhow::Result<()> {
         "funded genesis block with txid: {}",
         txid_fund_genesis.to_hex_string()
     );
-    let block_2_address =
+    let _block_2_address =
         BTCAddress160::new_p2sh(CityStore::get_city_block_deposit_address(&store, 2)?);
     api.mine_blocks(1)?;
     let user_0_public_key = wallet.add_zk_private_key(QHashOut::from_values(100, 100, 100, 100));
@@ -121,8 +121,9 @@ pub fn run(args: OrchestratorArgs) -> anyhow::Result<()> {
         .into_iter()
         .map(|x| rpc_queue.notify_rpc_register_user(&x))
         .collect::<anyhow::Result<Vec<()>>>()?;
-    /* 
 
+
+    /*
     let user_0_public_key = wallet.add_zk_private_key(QHashOut::from_values(100, 100, 100, 100));
     let user_1_public_key = wallet.add_zk_private_key(QHashOut::from_values(101, 101, 101, 101));
     let _ = wallet.add_zk_private_key(QHashOut::from_values(102, 102, 102, 102));
@@ -154,7 +155,10 @@ pub fn run(args: OrchestratorArgs) -> anyhow::Result<()> {
 
     sync_infinite_loop!(1000, {
         let block_state = CityStore::get_latest_block_state(&store)?;
-        println!("block_state.checkpoint_id: {}", block_state.checkpoint_id);
+        println!(
+            "last_block_state.checkpoint_id: {}",
+            block_state.checkpoint_id
+        );
         let mut event_receiver = CityEventReceiver::<F>::new(
             queue.clone(),
             QRPCProcessor::new(block_state.checkpoint_id + 1),
