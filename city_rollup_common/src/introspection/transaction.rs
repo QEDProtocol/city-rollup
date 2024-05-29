@@ -260,6 +260,7 @@ impl BTCTransaction {
         //let address = Hash160::from_bytes(&self.outputs[0].script[3..23]).unwrap();
         /*address == next_address
         && */
+        
         self.outputs[0].script.len() == 23
             && self.inputs[0].script.len() > BLOCK_SCRIPT_LENGTH
             && btc_hash160(

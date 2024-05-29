@@ -17,16 +17,20 @@ pub async fn run(args: L1DepositArgs) -> Result<()> {
         wallet.add_private_key(Hash256::from_hex_string(&args.private_key)?)?,
     );
 
-    let block_state = provider.get_latest_block_state().await?;
 
-    let deposit_address = provider
+
+    let deposit_address = if args.deposit_address.is_empty() {
+        let block_state = provider.get_latest_block_state().await?;
+        provider
         .get_city_block_deposit_address(block_state.checkpoint_id + 1)
-        .await?;
-
+        .await?
+    }else{
+        BTCAddress160::try_from_string(&args.deposit_address)?.address
+    };
     let txid = api.fund_address_from_known_p2pkh_address(
         &wallet,
         from,
-        BTCAddress160::new_p2pkh(deposit_address),
+        BTCAddress160::new_p2sh(deposit_address),
         args.amount,
     )?;
     api.mine_blocks(10)?;

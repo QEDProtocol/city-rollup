@@ -214,16 +214,12 @@ impl SimpleActorOrchestrator {
         fingerprints: &CRWorkerToolboxCoreCircuitFingerprints<F>,
         sighash_whitelist_tree: &SigHashMerkleTree,
     ) -> anyhow::Result<(Vec<QProvingJobDataID>, u64, usize, BTCTransaction)> {
-        println!("a");
 
         let last_block = CityStore::get_latest_block_state(store)?;
-        println!("b");
-        let last_block_address =
-            CityStore::get_city_block_deposit_address(store, last_block.checkpoint_id - 1)?;
-        println!("c");
+        let last_block_address: Hash160 =
+            CityStore::get_city_block_deposit_address(store, last_block.checkpoint_id)?;
         let current_block_address =
             CityStore::get_city_block_deposit_address(store, last_block.checkpoint_id + 1)?;
-        println!("d");
         let current_block_script =
             CityStore::get_city_block_script(store, last_block.checkpoint_id + 1)?;
 
@@ -234,14 +230,14 @@ impl SimpleActorOrchestrator {
         let claim_l1_deposits = event_receiver.flush_claim_deposits()?;
         let add_withdrawals = event_receiver.flush_add_withdrawals()?;
         let token_transfers = event_receiver.flush_token_transfers()?;
-        /*println!(
+        println!(
             "last_block_address: {}",
             BTCAddress160::new_p2sh(last_block_address,).to_address_string()
         );
         println!(
             "current_block_address: {}",
             BTCAddress160::new_p2sh(current_block_address,).to_address_string()
-        );*/
+        );
 
         println!(
             "current_block_address: {}",

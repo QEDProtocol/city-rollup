@@ -33,6 +33,9 @@ pub struct L1DepositArgs {
     #[clap(long, short)]
     pub private_key: String,
 
+    #[clap(long, short, default_value = "")]
+    pub deposit_address: String,
+
     #[clap(long, short)]
     pub amount: u64,
 

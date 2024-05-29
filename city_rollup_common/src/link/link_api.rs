@@ -391,7 +391,7 @@ impl QBitcoinAPISync for BTCLinkAPI {
 
 impl QBitcoinAPIFunderSync for BTCLinkAPI {
     fn fund_address(&self, address: BTCAddress160, amount: u64) -> anyhow::Result<Hash256> {
-        self.mine_blocks(((amount / (100_000u64 * 100_000_000u64)) + 1) as u32)?;
+        self.mine_blocks(((amount / (100u64 * 100_000_000u64)) + 1) as u32)?;
 
         let txid = self
             .btc_send_to_address_str(
