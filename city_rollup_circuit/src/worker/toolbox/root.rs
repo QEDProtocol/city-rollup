@@ -23,12 +23,11 @@ use city_rollup_common::{
     },
 };
 use plonky2::{
-    hash::hash_types::HashOut,
-    plonk::{
+    field::{goldilocks_field::GoldilocksField, types::PrimeField64}, hash::hash_types::HashOut, plonk::{
         circuit_data::{CommonCircuitData, VerifierOnlyCircuitData},
         config::{AlgebraicHasher, GenericConfig, PoseidonGoldilocksConfig},
         proof::ProofWithPublicInputs,
-    },
+    }
 };
 
 use crate::{
@@ -276,6 +275,10 @@ impl<S: QProofStoreReaderSync> QWorkerGenericProverGroth16<S, PoseidonGoldilocks
             fingerprint,
             verifier_data.constants_sigmas_cap.height(),
         );
+        let pub_bits = inner_proof.public_inputs.iter().map(|x: &GoldilocksField|(*x).to_canonical_u64()).collect::<Vec<_>>();
+
+        println!("innerproof_public_input_bits: {:?}",pub_bits);
+
         let wrapper_proof = wrapper.prove_base(&inner_proof, &verifier_data)?;
         
         let (proof_string, vk) = gnark_plonky2_wrapper::wrap_plonky2_proof(
