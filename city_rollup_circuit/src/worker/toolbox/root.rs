@@ -7,7 +7,7 @@ use city_common_circuit::{
     field::cubic::CubicExtendable,
 };
 use city_crypto::{
-    field::{qfield::QRichField, serialized_2d_felt_bls12381::Serialized2DFeltBLS12381},
+    field::{qfield::QRichField},
     hash::{
         merkle::treeprover::TPCircuitFingerprintConfig, qhashout::QHashOut,
         traits::hasher::MerkleZeroHasher,
