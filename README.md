@@ -12,6 +12,15 @@ a proof of concept zk rollup on dogecoin
 
 ## Getting Started
 
+Download the pre-generated `bls12_381` trust setup
+
+```bash
+wget https://city-rollup.s3.amazonaws.com/alpha/groth16-bls12_381-setup.tgz
+tar -zxvf groth16-bls12_381-setup.tgz
+mkdir -p /tmp/groth16-keystore/
+mv trust-setup /tmp/groth16-keystore/0
+```
+
 Build the rollup in release mode
 ```bash
 make build
