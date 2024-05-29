@@ -60,7 +60,7 @@ make cr_produce_block
 
 Claim deposited funds
 ```bash
-make TXID=0x... cr_claim_deposit
+make TXID=... cr_claim_deposit #no 0x prefix
 ```
 
 Transfer claimed funds from to another
