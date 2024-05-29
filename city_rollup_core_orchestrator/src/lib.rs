@@ -177,11 +177,12 @@ pub fn run(args: OrchestratorArgs) -> anyhow::Result<()> {
             )?;
         event_processor.wait_for_block_proving_jobs(block_state.checkpoint_id + 1)?;
         api.mine_blocks(1)?;
-        SimpleActorOrchestrator::step_2_produce_block_finalize_and_transact(
+        let txid = SimpleActorOrchestrator::step_2_produce_block_finalize_and_transact(
             &mut proof_store,
             &mut api,
             &orchestrator_result_step_1,
         )?;
+        println!("funded next block: {}",txid.to_hex_string());
         api.mine_blocks(1)?;
     });
 }
