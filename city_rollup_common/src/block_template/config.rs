@@ -20,7 +20,7 @@ const OP_2DROP: u8 = 0x6d;
 const OP_0NOTEQUAL: u8 = 0x92;
 pub const OP_CHECKGROTH16VERIFY_NOP: u8 = OP_0NOTEQUAL;
 // note: OP_CHECKGROTH16VERIFY is 0xb3, but 0x61 is OP_NOP and can be used for testing without verifying proofs
-pub const OP_CHECKGROTH16VERIFY: u8 = 0x61;//0x92; //0x61;
+pub const OP_CHECKGROTH16VERIFY: u8 = 0xb3; //0x61;
 
 pub const GENESIS_STATE_HASH: [u8; 32] = hex_literal::hex!("caec89bedcab3c6707981a6fa86d27387b2c0a732feee3717aaddd6728877c5b");
 
