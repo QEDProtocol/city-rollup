@@ -81,3 +81,36 @@ Produce another block
 ```bash
 make cr_produce_block
 ```
+
+## Docker(experimental)
+
+
+Download the pre-generated `bls12_381` trust setup
+
+```bash
+wget https://city-rollup.s3.amazonaws.com/alpha/groth16-bls12_381-setup.tgz
+tar -zxvf groth16-bls12_381-setup.tgz
+mkdir -p /tmp/groth16-keystore/
+mv trust-setup /tmp/groth16-keystore/0
+```
+
+Build the rollup in release mode
+```bash
+make build
+```
+
+Launch
+```bash
+make DOCKER_PROFILE=full relaunch
+```
+
+
+## Troubleshot
+
+If you encounter the `DER` error, it's normal, don't panic just relaunch until it works
+```bash
+Error: AnyhowError(error in BTCDataResolver: {"result":null,"error":{"code":-26,"message":"64: non-mandatory-script-verify-flag (Non-canonical DER signature)"},"id":1}
+```
+
+If you encounter the `Insufficient funds` error, it's not your lucky day, try to test on another day  
+or relaunch until it works. However, this is tiny error that we didn't fix yet
