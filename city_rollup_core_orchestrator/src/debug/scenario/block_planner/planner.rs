@@ -60,7 +60,7 @@ impl<S: KVQBinaryStore, PS: QProofStore> CityOrchestratorBlockPlanner<S, PS> {
 
         let dummy_state_root = QHashOut::ZERO;
 
-        let register_user_dummy_state_root = if requested_actions.register_users.len() > 1 {
+        let register_user_dummy_state_root = if requested_actions.register_users.len() == 0 {
             CityStore::<S>::get_user_tree_root(store, self.processor.checkpoint_id)?
         } else {
             dummy_state_root
