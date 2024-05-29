@@ -170,3 +170,10 @@ cr_get_latest_block_state:
 		-X POST \
 		-H "Content-Type: application/json" \
 		--data '{"method":"cr_getLatestBlockState","params":[],"id":1,"jsonrpc":"2.0"}'  | jq
+
+.PHONY: cr_get_user_by_id
+cr_get_user_by_id:
+	curl http://localhost:3000 \
+		-X POST \
+		-H "Content-Type: application/json" \
+		--data '{"method":"cr_getUserById","params":[3,2],"id":1,"jsonrpc":"2.0"}'  | jq
