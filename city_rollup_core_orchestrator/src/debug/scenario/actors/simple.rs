@@ -92,15 +92,15 @@ pub fn create_hints_for_block(
 
     let mut next_block_sighash_preimage_output = base_sighash_preimage.clone();
     next_block_sighash_preimage_output.transaction.inputs[0].script = current_script.to_vec();
-    let hint = BlockSpendIntrospectionHint {
+    /*let hint = BlockSpendIntrospectionHint {
         sighash_preimage: next_block_sighash_preimage_output,
         last_block_spend_index: 0,
         block_spend_index: 0,
         current_spend_index: 0,
         funding_transactions: all_inputs.to_vec(),
         next_block_redeem_script: next_script.to_vec(),
-    };
-    let mut spend_hints: Vec<BlockSpendIntrospectionHint> = vec![hint];
+    };*/
+    let mut spend_hints: Vec<BlockSpendIntrospectionHint> = vec![];
     let inputs_len = all_inputs.len();
     for i in 0..inputs_len {
         let mut next_block_sighash_preimage_output = base_sighash_preimage.clone();

@@ -34,6 +34,8 @@ impl SigHashFinalizer {
                 introspection_hint: hint.clone(),
                 whitelist_inclusion_proof,
             };
+            println!("input_hint[{}]: {:?}",i, input.introspection_hint);
+            println!("input sighash: {}",input.introspection_hint.sighash_preimage.get_hash());
             let input_bytes = bincode::serialize(&input)?;
             proof_store.set_bytes_by_id(job_id, &input_bytes)?;
             sighash_introspection_job_ids.push(job_id);
