@@ -12,7 +12,7 @@ use city_rollup_common::qworker::{
 };
 use plonky2::{
     hash::hash_types::HashOutTarget,
-    iop::witness::{PartialWitness, WitnessWrite},
+    iop::{target::Target, witness::{PartialWitness, WitnessWrite}},
     plonk::{
         circuit_builder::CircuitBuilder,
         circuit_data::{CircuitConfig, CircuitData, CommonCircuitData, VerifierOnlyCircuitData},
@@ -25,7 +25,16 @@ use crate::{
     introspection::gadgets::rollup::introspection_result::BTCRollupIntrospectionFinalizedResultGadget,
     worker::traits::QWorkerCircuitCustomWithDataSync,
 };
+fn reverse_endian_bits(bits: &[Target]) -> Vec<Target> {
+    let mut byte_groups = bits.to_vec().chunks_exact(8).map(|chunk| {
+        [
+            chunk[0], chunk[1], chunk[2], chunk[3], chunk[4], chunk[5], chunk[6], chunk[7],
+        ]
+    }).collect::<Vec<_>>();
+    byte_groups.reverse();
 
+    byte_groups.into_iter().flatten().collect::<Vec<_>>()
+}
 #[derive(Debug)]
 pub struct CRSigHashFinalGLCircuit<C: GenericConfig<D> + 'static, const D: usize>
 where
@@ -179,8 +188,10 @@ where
                     .collect::<Vec<_>>()
             })
             .flatten()
-            .collect::<Vec<_>>();
-        bits_sighash.append(&mut vec![zero, zero, zero, zero]);
+            .collect::<Vec<_>>()[0..248].to_vec();
+
+        bits_sighash.append(&mut vec![zero, zero, zero, zero, zero, zero, zero, zero]);
+
 
         builder.register_public_inputs(&bits_block_start_hash);
         builder.register_public_inputs(&bits_sighash);

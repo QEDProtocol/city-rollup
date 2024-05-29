@@ -2,7 +2,7 @@ use city_common::{
     config::rollup_constants::{BLOCK_SCRIPT_SPEND_BASE_FEE_AMOUNT, WITHDRAWAL_FEE_AMOUNT},
     logging::debug_timer::DebugTimer,
 };
-use city_crypto::hash::base_types::{hash160::Hash160, hash256::Hash256};
+use city_crypto::hash::base_types::{felt252::felt252_hashout_to_hash256_le, hash160::Hash160, hash256::Hash256};
 use city_rollup_common::{
     actors::{
         requested_actions::CityScenarioRequestedActions,
@@ -113,6 +113,11 @@ pub fn create_hints_for_block(
             funding_transactions: all_inputs.to_vec(),
             next_block_redeem_script: next_script.to_vec(),
         };
+        println!("hint[{}]: {}",i, serde_json::to_string(&hint).unwrap());
+        println!("sighash: {}", hint.sighash_preimage.get_hash().to_hex_string());
+        println!("sighash 252: {:?}", hint.sighash_preimage.get_hash_felt252::<F>());
+        println!("sighash 252 hex: {}", felt252_hashout_to_hash256_le(hint.sighash_preimage.get_hash_felt252::<F>()).to_hex_string());
+
         spend_hints.push(hint);
     }
 
