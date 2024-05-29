@@ -113,4 +113,4 @@ Error: AnyhowError(error in BTCDataResolver: {"result":null,"error":{"code":-26,
 ```
 
 If you encounter the `Insufficient funds` error, it's not your lucky day, try to test on another day  
-or relaunch until it works. However, this is tiny error that we didn't fix yet
+or relaunch until it works. However, this is a tiny error that we didn't fix yet
