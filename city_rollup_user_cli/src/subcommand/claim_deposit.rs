@@ -1,7 +1,5 @@
-use std::str::FromStr;
-
 use city_common::cli::user_args::ClaimDepositArgs;
-use city_crypto::hash::{base_types::hash256::Hash256, qhashout::QHashOut};
+use city_crypto::hash::base_types::hash256::Hash256;
 use city_rollup_common::introspection::rollup::constants::get_network_magic_for_str;
 use city_rollup_core_orchestrator::debug::scenario::wallet::DebugScenarioWallet;
 
@@ -19,12 +17,9 @@ pub async fn run(args: ClaimDepositArgs) -> Result<()> {
 
     let network_magic = get_network_magic_for_str(args.network)?;
 
-    let private_key = QHashOut::<GoldilocksField>::from_str(&args.private_key)
-        .map_err(|e| anyhow::format_err!("{}", e.to_string()))?;
-
     let mut wallet = DebugScenarioWallet::<C, D>::new();
 
-    wallet.add_zk_private_key(private_key);
+    wallet.add_secp256k1_private_key(Hash256::from_hex_string(&args.private_key)?)?;
 
     let txid = Hash256::from_hex_string(&args.txid)?;
 

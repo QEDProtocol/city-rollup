@@ -303,7 +303,7 @@ impl SimpleActorOrchestrator {
         ));
         println!("d");
 
-        let (block_state, block_op_job_ids, _block_state_transition, _block_end_jobs, withdrawals) =
+        let (_block_state, block_op_job_ids, _block_state_transition, _block_end_jobs, withdrawals) =
             block_planner.process_requests(store, proof_store, &block_requested)?;
         println!("e");
 

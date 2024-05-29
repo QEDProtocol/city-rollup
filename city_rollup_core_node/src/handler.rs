@@ -83,7 +83,6 @@ impl<F: RichField> CityRollupRPCServerHandler<F> {
         let whole_body = req.collect().await?.to_bytes();
         let data = serde_json::from_slice::<RpcRequest<RequestParams<F>>>(&whole_body);
         use RequestParams::*;
-        println!("data: {:?}",data);
         let res = match data {
             Ok(RpcRequest {
                 request: TokenTransfer(req),
