@@ -41,5 +41,5 @@ coverage.json
 logs/
 chaindata/
 ordhook-data/
-db
+db/
 redis-data/

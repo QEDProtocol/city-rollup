@@ -486,8 +486,6 @@ impl SimpleActorOrchestrator {
         ]
         .concat();
 
-        CityStore::set_block_state(store, &block_state)?;
-
         Ok((
             leaf_jobs,
             checkpoint_id,

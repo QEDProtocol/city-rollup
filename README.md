@@ -32,11 +32,6 @@ Run orchestrator to dispatch proving tasks
 make run-orchestrator
 ```
 
-Run internal rpc server to serve blockchain db `READ` requests
-```bash
-make run-api-server
-```
-
 Run the worker to handle proving tasks, you can run as many workers as you want
 ```bash
 make run-l2-worker

@@ -33,7 +33,7 @@ pub async fn run(args: ClaimDepositArgs) -> Result<()> {
     let city_claim_deposit_request =
         wallet.sign_claim_deposit(network_magic, args.user_id, &deposit)?;
 
-    provider /*  */
+    provider
         .claim_deposit::<F>(city_claim_deposit_request)
         .await?;
 

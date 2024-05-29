@@ -1,25 +1,20 @@
 use std::path::Path;
+use std::sync::Arc;
 
 use kvq::traits::KVQBinaryStoreReader;
 use kvq::traits::KVQBinaryStoreWriter;
 use kvq::traits::KVQPair;
 use rocksdb::ErrorKind;
-use rocksdb::Options;
-use rocksdb::DB;
+use rocksdb::TransactionDB;
 
+#[derive(Clone)]
 pub struct KVQRocksDBStore {
-    db: DB,
+    db: Arc<TransactionDB>,
 }
 impl KVQRocksDBStore {
     pub fn open_default<P: AsRef<Path>>(path: P) -> anyhow::Result<Self> {
         Ok(Self {
-            db: DB::open_default(path)?,
-        })
-    }
-
-    pub fn open_for_read_only<P: AsRef<Path>>(path: P) -> anyhow::Result<Self> {
-        Ok(Self {
-            db: DB::open_for_read_only(&Options::default(), path, false)?,
+            db: Arc::new(TransactionDB::open_default(path)?),
         })
     }
 }
@@ -157,17 +152,19 @@ impl KVQBinaryStoreWriter for KVQRocksDBStore {
         &mut self,
         items: &[KVQPair<&'a Vec<u8>, &'a Vec<u8>>],
     ) -> anyhow::Result<()> {
+        let txn = self.db.transaction();
         for item in items {
-            self.db.put(item.key.clone(), item.value.clone())?;
+            txn.put(item.key.clone(), item.value.clone())?;
         }
-        Ok(())
+        Ok(txn.commit()?)
     }
 
     fn set_many_vec(&mut self, items: Vec<KVQPair<Vec<u8>, Vec<u8>>>) -> anyhow::Result<()> {
+        let txn = self.db.transaction();
         for item in items {
-            self.db.put(item.key, item.value)?;
+            txn.put(item.key, item.value)?;
         }
-        Ok(())
+        Ok(txn.commit()?)
     }
 
     fn delete(&mut self, key: &Vec<u8>) -> anyhow::Result<bool> {
@@ -180,10 +177,16 @@ impl KVQBinaryStoreWriter for KVQRocksDBStore {
 
     fn delete_many(&mut self, keys: &[Vec<u8>]) -> anyhow::Result<Vec<bool>> {
         let mut result = Vec::with_capacity(keys.len());
+        let txn = self.db.transaction();
         for key in keys {
-            let r = self.delete(key)?;
+            let r = match txn.delete(key) {
+                Ok(_) => true,
+                Err(e) if e.kind() == ErrorKind::NotFound => true,
+                Err(e) => anyhow::bail!(e),
+            };
             result.push(r);
         }
+        txn.commit()?;
         Ok(result)
     }
 
@@ -193,9 +196,10 @@ impl KVQBinaryStoreWriter for KVQRocksDBStore {
                 "Keys and values must be of the same length"
             ));
         }
+        let txn = self.db.transaction();
         for (k, v) in keys.iter().zip(values) {
-            self.db.put(k.as_slice(), v.as_slice())?;
+            txn.put(k.as_slice(), v.as_slice())?;
         }
-        Ok(())
+        Ok(txn.commit()?)
     }
 }

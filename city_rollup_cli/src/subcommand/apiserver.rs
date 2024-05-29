@@ -3,7 +3,7 @@ use city_common::cli::args::APIServerArgs;
 use crate::build;
 
 #[tokio::main]
-pub async fn run(args: APIServerArgs) -> anyhow::Result<()> {
+pub async fn run(_args: APIServerArgs) -> anyhow::Result<()> {
     println!(
         "
 ----------------------------------------
@@ -12,6 +12,5 @@ pub async fn run(args: APIServerArgs) -> anyhow::Result<()> {
 ",
         build::PKG_VERSION
     );
-    city_rollup_core_api::run_server(args).await?;
     Ok(())
 }

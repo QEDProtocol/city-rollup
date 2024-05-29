@@ -14,6 +14,5 @@ city_store = { path = "../city_store" }
 city_common = { path = "../city_common" }
 city_rollup_common = { path = "../city_rollup_common" }
 city_crypto = { path = "../city_crypto" }
-city_rollup_core_orchestrator = { path = "../city_rollup_core_orchestrator" }
 hex = { workspace = true }
 futures = { workspace = true }
