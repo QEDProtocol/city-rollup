@@ -260,10 +260,13 @@ impl<S: QProofStoreReaderSync> QWorkerGenericProverGroth16<S, PoseidonGoldilocks
         store: &S,
         job_id: QProvingJobDataID,
     ) -> anyhow::Result<CityGroth16ProofData> {
+        println!("job_id: {:?}",job_id);
         let input_data = store.get_bytes_by_id(job_id)?;
         let input_proof_id = bincode::deserialize::<QProvingJobDataID>(&input_data)?;
         let (common_data, verifier_data, fingerprint) =
             self.get_verifier_triplet_for_circuit_type(input_proof_id.circuit_type);
+        
+        println!("input_proof_id: {:?}",input_proof_id);
         let inner_proof = store.get_proof_by_id(input_proof_id.get_output_id())?;
 
         /*

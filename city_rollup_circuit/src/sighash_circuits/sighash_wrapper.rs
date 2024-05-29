@@ -166,6 +166,7 @@ where
         &self,
         input: &CRSigHashWrapperCircuitInput<C::F>,
     ) -> anyhow::Result<ProofWithPublicInputs<C::F, C, D>> {
+        println!("proving sig hash introspection: {}",input.introspection_hint.sighash_preimage.get_hash().to_hex_string());
         let mut pw = PartialWitness::new();
         if self
             .inner_circuit_cache
