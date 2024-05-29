@@ -1,6 +1,4 @@
-use std::sync::Arc;
 
-use city_common::cli::args::APIServerArgs;
 use city_crypto::hash::base_types::hash160::Hash160;
 use city_crypto::hash::base_types::hash256::Hash256;
 use city_rollup_common::api::data::store::{
