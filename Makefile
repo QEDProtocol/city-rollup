@@ -119,7 +119,7 @@ shutdown:
 	@sudo rm -fr db || true
 	@sudo rm -fr /tmp/plonky2_proof || true
 	@sudo rm -fr ~/.dogecoin || true
-	# @sudo rm -frr /tmp/groth16-keystore || true
+	# @sudo rm -fr /tmp/groth16-keystore || true
 
 .PHONY: relaunch
 relaunch: shutdown launch
@@ -148,7 +148,7 @@ cr_token_transfer: build-if-not-exists
 		--private-key=2c6a1188f8739daaeff79c40f3690c573381c91a2359a0df2b45e4310b59f30b \
 		--from=2 \
 		--to=0 \
-		--value=0.5 \
+		--value=50000000 \
 		--nonce=1 \
 
 .PHONY: cr_produce_block
