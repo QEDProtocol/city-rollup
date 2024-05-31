@@ -994,6 +994,7 @@ dependencies = [
  "city_rollup_worker_dispatch",
  "city_store",
  "criterion",
+ "gnark-plonky2-wrapper",
  "hex",
  "hex-literal",
  "k256",
@@ -2408,7 +2409,7 @@ dependencies = [
 [[package]]
 name = "gnark-plonky2-verifier-ffi"
 version = "0.1.0"
-source = "git+https://github.com/cf/gnark-plonky2-verifier?rev=bb23599d69d2e8593a524b802449c82b937434ee#bb23599d69d2e8593a524b802449c82b937434ee"
+source = "git+https://github.com/cf/gnark-plonky2-verifier?rev=827af31853107f16de40932e964e44873f6b3164#827af31853107f16de40932e964e44873f6b3164"
 dependencies = [
  "anyhow",
  "bindgen 0.69.4",
@@ -2419,7 +2420,7 @@ dependencies = [
 [[package]]
 name = "gnark-plonky2-wrapper"
 version = "0.1.0"
-source = "git+https://github.com/cf/gnark-plonky2-verifier?rev=bb23599d69d2e8593a524b802449c82b937434ee#bb23599d69d2e8593a524b802449c82b937434ee"
+source = "git+https://github.com/cf/gnark-plonky2-verifier?rev=827af31853107f16de40932e964e44873f6b3164#827af31853107f16de40932e964e44873f6b3164"
 dependencies = [
  "anyhow",
  "ff",

@@ -114,10 +114,12 @@ shutdown:
 		-f docker-compose.yml \
 		down \
 		--remove-orphans > /dev/null 2>&1 || true
+	@sudo rm -fr chaindata || true
 	@sudo rm -fr redis-data || true
 	@sudo rm -fr db || true
 	@sudo rm -fr /tmp/plonky2_proof || true
-	# @sudo rm -frr /tmp/groth16-keystore || true
+	# @sudo rm -fr ~/.dogecoin || true
+	# @sudo rm -fr /tmp/groth16-keystore || true
 
 .PHONY: relaunch
 relaunch: shutdown launch
@@ -146,7 +148,7 @@ cr_token_transfer: build-if-not-exists
 		--private-key=2c6a1188f8739daaeff79c40f3690c573381c91a2359a0df2b45e4310b59f30b \
 		--from=2 \
 		--to=0 \
-		--value=0.5 \
+		--value=50000000 \
 		--nonce=1 \
 
 .PHONY: cr_produce_block
@@ -182,14 +184,14 @@ cr_get_deposit_by_id:
 	curl http://localhost:3000 \
 		-X POST \
 		-H "Content-Type: application/json" \
-		--data '{"method":"cr_getDepositById","params":[3,0],"id":1,"jsonrpc":"2.0"}'  | jq
+		--data '{"method":"cr_getDepositById","params":[2,0],"id":1,"jsonrpc":"2.0"}'  | jq
 
 .PHONY: cr_get_user_by_id
 cr_get_user_by_id:
 	curl http://localhost:3000 \
 		-X POST \
 		-H "Content-Type: application/json" \
-		--data '{"method":"cr_getUserById","params":[3,0],"id":1,"jsonrpc":"2.0"}'  | jq
+		--data '{"method":"cr_getUserById","params":[4,2],"id":1,"jsonrpc":"2.0"}'  | jq
 
 .PHONY: image
 image:
@@ -198,3 +200,12 @@ image:
 		-t qedprotocol/city-rollup:latest \
 		-f Dockerfile .
 
+.PHONY: init
+init:
+	@dogecoin-cli -regtest -rpcport=18443 -rpcuser=devnet -rpcpassword=devnet -rpcwallet=default settxfee 0.00001000
+	@dogecoin-cli -regtest -rpcport=18443 -rpcuser=devnet -rpcpassword=devnet -rpcwallet=default generatetoaddress 101 $(shell dogecoin-cli -regtest -rpcport=18443 -rpcuser=devnet -rpcpassword=devnet -rpcwallet=default getnewaddress)
+	@dogecoin-cli -regtest -rpcport=18443 -rpcwallet=default -rpcuser=devnet -rpcpassword=devnet generate 2
+
+.PHONY: advance-block
+advance-block:
+	@dogecoin-cli -regtest -rpcport=18443 -rpcwallet=default -rpcuser=devnet -rpcpassword=devnet generate 2

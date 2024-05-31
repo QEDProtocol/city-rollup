@@ -26,7 +26,7 @@ Build the rollup in release mode
 make build
 ```
 
-Launch bitide, redis and clean old data
+Launch dogecoin, electrs, redis and clean old data
 ```bash
 make relaunch
 ```
@@ -43,7 +43,7 @@ make run-orchestrator
 
 Run the worker to handle proving tasks, you can run as many workers as you want
 ```bash
-make run-l2-worker
+make run-l2-worker # wait until it successfully loaded the trust setup, often it'll take 3 minutes
 #make run-l2-worker
 ```
 
@@ -107,10 +107,19 @@ make DOCKER_PROFILE=full relaunch
 
 ## Troubleshot
 
-If you encounter the `DER` error, it's normal, don't panic just relaunch until it works
+If you encounter the `DER` error on cli tools, it's normal, don't panic just retry until it works
 ```bash
 Error: AnyhowError(error in BTCDataResolver: {"result":null,"error":{"code":-26,"message":"64: non-mandatory-script-verify-flag (Non-canonical DER signature)"},"id":1}
 ```
 
-If you encounter the `Insufficient funds` error, it's not your lucky day, try to test on another day  
-or relaunch until it works. However, this is a tiny error that we didn't fix yet
+If you encounter the `Insufficient funds` error on orchestrator, don't panic just retry until it works, it's something wierd with confirmations that we didn't fix yet
+```bash
+Error: Failed to fund address: {"result":null,"error":{"code":-6,"message":"Insufficient funds"},"id":1}
+```
+
+If you encounter constraint error while claiming deposit, don't panic just retry
+```bash
+assertion `left == right` failed: Partition containing Wire(Wire { row: 3087, column: 38 }) was set twice with different values: 11780246312495197923 != 4265533886750191950
+  left: 4265533886750191950
+ right: 11780246312495197923
+```
