@@ -26,7 +26,7 @@ Build the rollup in release mode
 make build
 ```
 
-Launch bitide, redis and clean old data
+Launch dogecoin, electrs, redis and clean old data
 ```bash
 make relaunch
 ```
@@ -43,7 +43,7 @@ make run-orchestrator
 
 Run the worker to handle proving tasks, you can run as many workers as you want
 ```bash
-make run-l2-worker
+make run-l2-worker # wait until it successfully loaded the trust setup, often it'll take 3 minutes
 #make run-l2-worker
 ```
 
