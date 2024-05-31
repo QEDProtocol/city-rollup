@@ -287,7 +287,7 @@ impl<S: QProofStoreReaderSync> QWorkerGenericProverGroth16<S, PoseidonGoldilocks
         let (proof_string, vk_string) = gnark_plonky2_wrapper::wrap_plonky2_proof(
             wrapper.circuit_data,
             &wrapper_proof,
-            Some(&format!("/tmp/plonky2-proofs/{}", job_id.data_index)),
+            Some(&format!("/tmp/plonky2_proof/{}", job_id.data_index)),
             "/tmp/groth16-keystore/0/",
         )?;
         println!("proof: {}",proof_string);
