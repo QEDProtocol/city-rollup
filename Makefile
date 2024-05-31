@@ -1,6 +1,6 @@
 TRACE_ENABLED           := 1
 PROFILE                 := release
-DOCKER_PROFILE    			:= lite
+DOCKER_PROFILE    			:= full
 
 .PHONY: check
 check:
@@ -114,9 +114,11 @@ shutdown:
 		-f docker-compose.yml \
 		down \
 		--remove-orphans > /dev/null 2>&1 || true
+	@sudo rm -fr chaindata || true
 	@sudo rm -fr redis-data || true
 	@sudo rm -fr db || true
 	@sudo rm -fr /tmp/plonky2_proof || true
+	@sudo rm -fr ~/.dogecoin || true
 	# @sudo rm -frr /tmp/groth16-keystore || true
 
 .PHONY: relaunch
@@ -198,3 +200,12 @@ image:
 		-t qedprotocol/city-rollup:latest \
 		-f Dockerfile .
 
+.PHONY: init
+init:
+	@dogecoin-cli -regtest -rpcport=18443 -rpcuser=devnet -rpcpassword=devnet -rpcwallet=default settxfee 0.00001000
+	@dogecoin-cli -regtest -rpcport=18443 -rpcuser=devnet -rpcpassword=devnet -rpcwallet=default generatetoaddress 101 $(shell dogecoin-cli -regtest -rpcport=18443 -rpcuser=devnet -rpcpassword=devnet -rpcwallet=default getnewaddress)
+	@dogecoin-cli -regtest -rpcport=18443 -rpcwallet=default -rpcuser=devnet -rpcpassword=devnet generate 2
+
+.PHONY: advance-block
+advance-block:
+	@dogecoin-cli -regtest -rpcport=18443 -rpcwallet=default -rpcuser=devnet -rpcpassword=devnet generate 2

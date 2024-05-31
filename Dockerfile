@@ -7,7 +7,6 @@ RUN apt update -y \
 
 WORKDIR /city-rollup
 
-COPY . /city-rollup
 COPY ./target/${PROFILE}/city-rollup-cli /city-rollup
 
 RUN echo '#!/bin/bash\n/city-rollup/city-rollup-cli $@' > /city-rollup/.entrypoint.sh
