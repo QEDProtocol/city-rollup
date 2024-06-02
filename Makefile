@@ -1,6 +1,6 @@
 TRACE_ENABLED           := 1
 PROFILE                 := release
-DOCKER_PROFILE    			:= lite
+DOCKER_PROFILE    			:= full
 
 .PHONY: check
 check:
@@ -198,13 +198,3 @@ image:
 		-c 512 \
 		-t qedprotocol/city-rollup:latest \
 		-f Dockerfile .
-
-.PHONY: init
-init:
-	@dogecoin-cli -regtest -rpcport=18443 -rpcuser=devnet -rpcpassword=devnet -rpcwallet=default settxfee 0.00001000
-	@dogecoin-cli -regtest -rpcport=18443 -rpcuser=devnet -rpcpassword=devnet -rpcwallet=default generatetoaddress 101 $(shell dogecoin-cli -regtest -rpcport=18443 -rpcuser=devnet -rpcpassword=devnet -rpcwallet=default getnewaddress)
-	@dogecoin-cli -regtest -rpcport=18443 -rpcwallet=default -rpcuser=devnet -rpcpassword=devnet generate 2
-
-.PHONY: advance-block
-advance-block:
-	@dogecoin-cli -regtest -rpcport=18443 -rpcwallet=default -rpcuser=devnet -rpcpassword=devnet generate 2

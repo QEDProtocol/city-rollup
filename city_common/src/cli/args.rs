@@ -24,11 +24,11 @@ pub struct OrchestratorArgs {
     #[clap(
         env,
         long,
-        default_value = "http://devnet:devnet@localhost:18443",
+        default_value = "http://devnet:devnet@localhost:1337/bitcoin-rpc/?network=dogeRegtest",
         env
     )]
     pub bitcoin_rpc: String,
-    #[clap(env, long, default_value = "http://localhost:50000", env)]
+    #[clap(env, long, default_value = "http://localhost:1337/api", env)]
     pub electrs_api: String,
     #[clap(
         env,
@@ -62,11 +62,11 @@ pub struct L2TransferArgs {
     #[clap(
         env,
         long,
-        default_value = "http://devnet:devnet@localhost:18443",
+        default_value = "http://devnet:devnet@localhost:1337/bitcoin-rpc/?network=dogeRegtest",
         env
     )]
     pub bitcoin_rpc: String,
-    #[clap(env, long, default_value = "http://localhost:50000", env)]
+    #[clap(env, long, default_value = "http://localhost:1337/api", env)]
     pub electrs_api: String,
     #[clap(env, long, default_value = "redis://localhost:6379", env)]
     pub redis_uri: String,
