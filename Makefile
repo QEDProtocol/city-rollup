@@ -1,6 +1,6 @@
 TRACE_ENABLED           := 1
 PROFILE                 := release
-DOCKER_PROFILE    			:= full
+DOCKER_PROFILE    			:= lite
 
 .PHONY: check
 check:
