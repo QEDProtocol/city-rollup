@@ -127,7 +127,6 @@ relaunch: shutdown launch
 .PHONY: cr_register_user
 cr_register_user: build-if-not-exists
 	@RUST_BACKTRACE=${TRACE_ENABLED} ./target/${PROFILE}/city-rollup-user-cli register-user --private-key=2c6a1188f8739daaeff79c40f3690c573381c91a2359a0df2b45e4310b59f30b
-	@RUST_BACKTRACE=${TRACE_ENABLED} ./target/${PROFILE}/city-rollup-user-cli register-user --private-key=f6648784d8373da16c3e97a860191757c4a88db8d161ede135b22ff879d6cd6d
 
 .PHONY: cr_l1_deposit
 cr_l1_deposit: build-if-not-exists
