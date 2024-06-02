@@ -288,7 +288,7 @@ impl<S: QProofStoreReaderSync> QWorkerGenericProverGroth16<S, PoseidonGoldilocks
             wrapper.circuit_data,
             &wrapper_proof,
             Some(&format!("/tmp/plonky2_proof/{}", job_id.data_index)),
-            "/tmp/groth16-keystore/0/",
+            &format!("{}/.city-rollup/keystore/", home::home_dir().unwrap().display())
         )?;
         println!("proof: {}",proof_string);
         println!("vk: {}",vk_string);
