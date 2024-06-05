@@ -391,7 +391,7 @@ impl QBitcoinAPISync for BTCLinkAPI {
 
 impl QBitcoinAPIFunderSync for BTCLinkAPI {
     fn fund_address(&self, address: BTCAddress160, amount: u64) -> anyhow::Result<Hash256> {
-        self.mine_blocks(60)?;
+        self.mine_blocks(100)?;
 
         let txid = self
             .btc_send_to_address_str(
@@ -401,7 +401,7 @@ impl QBitcoinAPIFunderSync for BTCLinkAPI {
             )
             .map_err(|err| anyhow::format_err!("Failed to fund address: {}", err.message))?;
 
-        self.mine_blocks(60)?;
+        self.mine_blocks(100)?;
         Ok(txid)
     }
 
