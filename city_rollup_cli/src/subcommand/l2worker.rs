@@ -1,15 +1,11 @@
-use city_common::cli::args::L2WorkerArgs;
+use city_common::cli::{message::CITY_ROLLUP_BANNER, args::L2WorkerArgs};
 
 use crate::build;
 
 pub fn run(args: L2WorkerArgs) -> anyhow::Result<()> {
     println!(
-        "
-----------------------------------------
-|           CityRollup v{}          |
-----------------------------------------
-",
-        build::PKG_VERSION
+        "{}",
+        CITY_ROLLUP_BANNER
     );
     city_rollup_core_worker::run(args)?;
     Ok(())
