@@ -33,6 +33,6 @@ pub async fn run(args: L1DepositArgs) -> Result<()> {
     )?;
     api.mine_blocks(100)?;
 
-    tracing::info!("txid: {}", txid.reversed().to_string());
+    println!("{{\"txid\": \"{}\"}}", txid.to_hex_string());
     Ok(())
 }

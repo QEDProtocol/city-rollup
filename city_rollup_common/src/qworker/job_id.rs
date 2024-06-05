@@ -1,3 +1,4 @@
+use city_common::cli::modes::QWorkerMode;
 use serde::{Deserialize, Serialize};
 use serde_repr::{Deserialize_repr, Serialize_repr};
 
@@ -524,6 +525,22 @@ impl QProvingJobDataID {
         self.into()
     }
 }
+
+
+
+pub trait QWorkerModeFilter {
+    fn can_process_job(&self, job_id: QProvingJobDataID) -> bool;
+}
+impl QWorkerModeFilter for QWorkerMode {
+    fn can_process_job(&self, job_id: QProvingJobDataID) -> bool {
+        match *self {
+            QWorkerMode::All => true,
+            QWorkerMode::NoGroth16 => job_id.circuit_type != ProvingJobCircuitType::WrapFinalSigHashProofBLS12381,
+            QWorkerMode::OnlyGroth16 => job_id.circuit_type == ProvingJobCircuitType::WrapFinalSigHashProofBLS12381,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::{ProvingJobCircuitType, QProvingJobDataID};

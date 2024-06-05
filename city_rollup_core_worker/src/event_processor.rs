@@ -21,10 +21,14 @@ impl CityEventProcessor {
 }
 impl WorkerEventReceiverSync for CityEventProcessor {
     fn wait_for_next_job(&mut self) -> anyhow::Result<QProvingJobDataID> {
-        if let Some(job) = self.job_queue.pop_one(Q_JOB)? {
-            Ok(serde_json::from_slice(&job)?)
-        } else {
-            Err(anyhow::format_err!("No jobs in queue, note that CityEventProcessor::wait_for_next_job does not block the thread like other implementations of WorkerEventReceiverSync do."))
+        loop {
+            let job = self.job_queue.pop_one(Q_JOB)?;
+            if job.is_some() {
+                return Ok(serde_json::from_slice(&job.unwrap())?)
+            }else{
+                std::thread::sleep(Duration::from_millis(250));
+                continue;
+            }
         }
     }
 

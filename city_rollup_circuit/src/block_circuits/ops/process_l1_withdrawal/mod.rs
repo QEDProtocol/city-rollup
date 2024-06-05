@@ -85,6 +85,8 @@ where
         allowed_circuit_hashes_root: QHashOut<C::F>,
     ) -> ProofWithPublicInputs<C::F, C, D> {
         let mut pw = PartialWitness::new();
+        println!("allowed_circuit_hashes_root.0: {:?}",allowed_circuit_hashes_root.0);
+        println!("delta merkle proof :{:?}",delta_merkle_proof);
         pw.set_hash_target(
             self.allowed_circuit_hashes_root_target,
             allowed_circuit_hashes_root.0,

@@ -64,13 +64,14 @@ where
             D,
         >(&mut builder, network_magic);
         let expected_signature_combined_hash = withdrawal_single_gadget.expected_signature_hash;
+        let expected_signature_public_key = withdrawal_single_gadget.expected_public_key;
 
         let signature_proof_target =
             builder.add_virtual_proof_with_pis(&signature_circuit_common_data);
         let signature_verifier_data_target =
             builder.add_virtual_verifier_data(signature_circuit_verifier_data_cap_height);
 
-        let signature_proof_combined_hash = HashOutTarget {
+        let signature_proof_public_key = HashOutTarget {
             elements: [
                 signature_proof_target.public_inputs[0],
                 signature_proof_target.public_inputs[1],
@@ -79,7 +80,20 @@ where
             ],
         };
 
+        let signature_proof_combined_hash = HashOutTarget {
+            elements: [
+                signature_proof_target.public_inputs[4],
+                signature_proof_target.public_inputs[5],
+                signature_proof_target.public_inputs[6],
+                signature_proof_target.public_inputs[7],
+            ],
+        };
+        
         // ensure the claim is signed with the correct public key for L1 deposit
+        builder.connect_hashes(
+            signature_proof_public_key,
+            expected_signature_public_key,
+        );
         builder.connect_hashes(
             signature_proof_combined_hash,
             expected_signature_combined_hash,
@@ -135,7 +149,8 @@ where
             &input.withdrawal_tree_delta_merkle_proof,
             &input.user_tree_delta_merkle_proof,
         );
-
+        println!("CRAddL1WithdrawalCircuitInput: {:?}",input);
+        println!("signature_proof.public_inputs: {:?}",signature_proof.public_inputs);
         pw.set_proof_with_pis_target(&self.signature_proof_target, signature_proof);
         pw.set_verifier_data_target(
             &self.signature_verifier_data_target,
@@ -146,6 +161,7 @@ where
             self.allowed_circuit_hashes_root_target,
             input.allowed_circuit_hashes_root.0,
         );
+
 
         self.circuit_data.prove(pw)
     }

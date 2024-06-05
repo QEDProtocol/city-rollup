@@ -1,7 +1,7 @@
 use std::{thread::sleep, time::Duration};
 
 use city_common::{
-    cli::message::CITY_ROLLUP_BANNER, logging::debug_timer::DebugTimer, units::UNIT_BTC,
+    cli::{message::CITY_ROLLUP_BANNER, modes::QWorkerMode}, logging::debug_timer::DebugTimer, units::UNIT_BTC,
 };
 use city_crypto::hash::{base_types::hash256::Hash256, qhashout::QHashOut};
 use city_rollup_circuit::worker::toolbox::root::CRWorkerToolboxRootCircuits;
@@ -188,7 +188,7 @@ fn run_full_block() -> anyhow::Result<()> {
         if worker_event_processor.job_queue.is_empty() {
             break;
         }
-        CityWorker::process_next_job(&mut proof_store, &mut worker_event_processor, &root_toolbox)?;
+        CityWorker::process_next_job(&mut proof_store, &mut worker_event_processor, &root_toolbox, QWorkerMode::All)?;
     }
     api.mine_blocks(1)?;
     let orchestrator_result_step_2 = CityOrchestrator::step_2_produce_block_finalize_and_transact(
@@ -263,7 +263,7 @@ fn run_full_block() -> anyhow::Result<()> {
         if worker_event_processor.job_queue.is_empty() {
             break;
         }
-        CityWorker::process_next_job(&mut proof_store, &mut worker_event_processor, &root_toolbox)?;
+        CityWorker::process_next_job(&mut proof_store, &mut worker_event_processor, &root_toolbox, QWorkerMode::All)?;
     }
     api.mine_blocks(1)?;
     let orchestrator_result_step_2 = CityOrchestrator::step_2_produce_block_finalize_and_transact(

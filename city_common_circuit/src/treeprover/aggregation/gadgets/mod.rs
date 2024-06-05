@@ -240,6 +240,7 @@ impl AggStateTransitionProofValidityGadget {
         builder.connect_hashes_enum(actual_fingerprint, &allowed_fingerprints);
         let allowed_circuit_hashes_root =
             builder.constant_whash(fingerprint.allowed_circuit_hashes_root);
+        println!("allowed_circuit_hashes_root: {:?}",fingerprint.allowed_circuit_hashes_root);
         let pub_gadget = AggStateTransitionProofPublicInputsGadget::from_public_inputs(
             &proof_target.public_inputs,
         );

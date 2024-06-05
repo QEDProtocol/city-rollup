@@ -290,8 +290,8 @@ impl<S: QProofStoreReaderSync> QWorkerGenericProverGroth16<S, PoseidonGoldilocks
             Some(&format!("/tmp/plonky2_proof/{}", job_id.data_index)),
             &format!("{}/.city-rollup/keystore/", home::home_dir().unwrap().display())
         )?;
-        tracing::info!("proof: {}",proof_string);
-        tracing::info!("vk: {}",vk_string);
+        println!("proof: {}",proof_string);
+        println!("vk: {}",vk_string);
         /*
          let proof_string = serde_json::to_string(&CityGroth16ProofData {
              pi_a: Serialized2DFeltBLS12381([0u8; 48]),

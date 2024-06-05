@@ -53,6 +53,14 @@ run-orchestrator: build-if-not-exists
 run-l2-worker: build-if-not-exists
 	@RUST_LOG=${LOG_LEVEL} RUST_BACKTRACE=${TRACE_ENABLED} ./target/${PROFILE}/city-rollup-cli l2-worker
 
+.PHONY: run-l2-worker-g16
+run-l2-worker-g16: build-if-not-exists
+	@RUST_LOG=${LOG_LEVEL} RUST_BACKTRACE=${TRACE_ENABLED} ./target/${PROFILE}/city-rollup-cli l2-worker --debug-mode 1 --worker-mode only-groth16
+
+.PHONY: run-l2-worker-no-g16
+run-l2-worker-no-g16: build-if-not-exists
+	@RUST_LOG=${LOG_LEVEL} RUST_BACKTRACE=${TRACE_ENABLED} ./target/${PROFILE}/city-rollup-cli l2-worker --worker-mode no-groth16
+
 .PHONY: print-circuit-info
 print-circuit-info: build-if-not-exists
 	@RUST_LOG=${LOG_LEVEL} RUST_BACKTRACE=${TRACE_ENABLED} ./target/${PROFILE}/city-rollup-dev-cli print-circuit-info

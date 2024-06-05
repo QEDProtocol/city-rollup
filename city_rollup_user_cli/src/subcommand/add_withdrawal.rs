@@ -4,7 +4,7 @@ use std::str::FromStr;
 
 use city_common::cli::user_args::AddWithdrawalArgs;
 use city_crypto::hash::{base_types::hash160::Hash160, qhashout::QHashOut};
-use city_rollup_common::introspection::rollup::constants::get_network_magic_for_str;
+use city_rollup_common::{introspection::rollup::constants::get_network_magic_for_str, link::data::BTCAddress160};
 use city_rollup_core_orchestrator::debug::scenario::wallet::DebugScenarioWallet;
 use plonky2::{field::goldilocks_field::GoldilocksField, plonk::config::PoseidonGoldilocksConfig};
 
@@ -13,6 +13,11 @@ type C = PoseidonGoldilocksConfig;
 type F = GoldilocksField;
 
 pub async fn run(args: AddWithdrawalArgs) -> Result<()> {
+    let destination = if args.destination.len() == 40 {
+        Hash160::from_hex_string(&args.destination)?
+    }else{
+        BTCAddress160::try_from_string(&args.destination)?.address
+    };
     let provider = RpcProvider::new(&args.rpc_address);
     let network_magic = get_network_magic_for_str(args.network)?;
 
@@ -22,8 +27,6 @@ pub async fn run(args: AddWithdrawalArgs) -> Result<()> {
     let mut wallet = DebugScenarioWallet::<C, D>::new();
 
     let public_key = wallet.add_zk_private_key(private_key);
-
-    let destination = Hash160::from_hex_string(&args.destination)?;
 
     let req = wallet.sign_withdrawal(
         public_key,
