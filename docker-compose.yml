@@ -1,61 +1,13 @@
 version: '3.7'
 services:
   dogecoin:
-    image: alexcj96/dogecoin:latest
+    image: alexcj96/bitide-doge:latest
     ports:
-      - 18443:18443
-      - 30001:30001
-    command:
-      - "-regtest"
-      - "-printtoconsole=1"
-      - "-datadir=/dogecoin/.dogecoin"
-      - "-rpcbind=0.0.0.0:18443"
-      - "-rpcuser=devnet"
-      - "-rpcpassword=devnet"
-      - "-rpcallowip=0.0.0.0/0"
-      - "-rpcport=18443"
-      - "-server=1"
-      - "-txindex=1"
-      - "-zmqpubhashtx=tcp://0.0.0.0:30001"
-      - "-zmqpubhashblock=tcp://0.0.0.0:30001"
-      - "-prune=0"
-    volumes:
-      - "./chaindata/dogecoin:/dogecoin/.dogecoin"
+      - 1337:1337
     networks:
       testing_net:
         ipv4_address: 172.16.238.11
     restart: always
-    profiles: [lite,full]
-
-  electrs:
-    image: blockstream/esplora:electrs-latest
-    ports:
-      - 50000:50000
-      - 50001:50001
-    user: root
-    command:
-      - "/app/electrs_bitcoin/bin/electrs"
-      - "-vvvv"
-      - "--timestamp"
-      - "--daemon-dir=/app/.dogecoin"
-      - "--db-dir=/app/db"
-      - "--network=regtest"
-      - "--http-addr=0.0.0.0:50000"
-      - "--electrum-rpc-addr=0.0.0.0:50001"
-      - "--daemon-rpc-addr=172.16.238.11:18443"
-      - "--cookie=devnet:devnet"
-      - "--electrum-txs-limit=1000000"
-      - "--cors=*"
-      - "--utxos-limit=1000000"
-    volumes:
-      - "./chaindata/explorer:/app/db"
-      - "./chaindata/dogecoin:/app/.dogecoin"
-    networks:
-      testing_net:
-        ipv4_address: 172.16.238.12
-    restart: always
-    depends_on:
-      - dogecoin
     profiles: [lite,full]
 
   redis:
@@ -94,8 +46,8 @@ services:
       dockerfile: Dockerfile
     command:
       - "orchestrator"
-      - "--bitcoin-rpc=http://devnet:devnet@172.16.238.11:18443"
-      - "--electrs-api=http://172.16.238.12:50000"
+      - "--bitcoin-rpc=http://devnet:devnet@172.16.238.11:1337/bitcoin-rpc/?network=dogeRegtest"
+      - "--electrs-api=http://172.16.238.11:1337/api"
       - "--redis-uri=redis://172.16.238.13:6379/0"
     volumes:
       - "./db:/city-rollup/db"
@@ -108,7 +60,6 @@ services:
     depends_on:
       - redis
       - dogecoin
-      - electrs
     profiles: [full]
 
   worker0:
@@ -119,7 +70,7 @@ services:
       - "l2-worker"
       - "--redis-uri=redis://172.16.238.13:6379/0"
     volumes:
-      - "/tmp:/tmp"
+      - "~/.city-rollup:/root/.city-rollup"
     networks:
       testing_net:
         ipv4_address: 172.16.238.16
@@ -136,7 +87,7 @@ services:
       - "l2-worker"
       - "--redis-uri=redis://172.16.238.13:6379/0"
     volumes:
-      - "/tmp:/tmp"
+      - "~/.city-rollup:/root/.city-rollup"
     networks:
       testing_net:
         ipv4_address: 172.16.238.17
@@ -153,7 +104,7 @@ services:
       - "l2-worker"
       - "--redis-uri=redis://172.16.238.13:6379/0"
     volumes:
-      - "/tmp:/tmp"
+      - "~/.city-rollup:/root/.city-rollup"
     networks:
       testing_net:
         ipv4_address: 172.16.238.18

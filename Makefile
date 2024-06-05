@@ -119,7 +119,7 @@ shutdown:
 	@sudo rm -fr db || true
 	@sudo rm -fr /tmp/plonky2_proof || true
 	# @sudo rm -fr ~/.dogecoin || true
-	# @sudo rm -fr /tmp/groth16-keystore || true
+	# @sudo rm -fr ~/.city-rollup/keystore || true
 
 .PHONY: relaunch
 relaunch: shutdown launch
@@ -198,13 +198,3 @@ image:
 		-c 512 \
 		-t qedprotocol/city-rollup:latest \
 		-f Dockerfile .
-
-.PHONY: init
-init:
-	@dogecoin-cli -regtest -rpcport=18443 -rpcuser=devnet -rpcpassword=devnet -rpcwallet=default settxfee 0.00001000
-	@dogecoin-cli -regtest -rpcport=18443 -rpcuser=devnet -rpcpassword=devnet -rpcwallet=default generatetoaddress 101 $(shell dogecoin-cli -regtest -rpcport=18443 -rpcuser=devnet -rpcpassword=devnet -rpcwallet=default getnewaddress)
-	@dogecoin-cli -regtest -rpcport=18443 -rpcwallet=default -rpcuser=devnet -rpcpassword=devnet generate 2
-
-.PHONY: advance-block
-advance-block:
-	@dogecoin-cli -regtest -rpcport=18443 -rpcwallet=default -rpcuser=devnet -rpcpassword=devnet generate 2

@@ -42,11 +42,11 @@ pub struct L1DepositArgs {
     #[clap(
         env,
         long,
-        default_value = "http://devnet:devnet@localhost:18443",
+        default_value = "http://devnet:devnet@localhost:1337/bitcoin-rpc/?network=dogeRegtest",
         env
     )]
     pub bitcoin_rpc: String,
-    #[clap(env, long, default_value = "http://localhost:50000", env)]
+    #[clap(env, long, default_value = "http://localhost:1337/api", env)]
     pub electrs_api: String,
 }
 

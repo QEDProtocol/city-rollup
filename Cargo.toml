@@ -118,6 +118,7 @@ gnark-plonky2-wrapper = { git = "https://github.com/cf/gnark-plonky2-verifier", 
 bs58 = { version = "0.5.1", features = ["std", "check"] }
 jsonrpsee = { version = "0.22.5", features = ["full"] }
 rocksdb = { version = "0.21.0", features = ["serde", "multi-threaded-cf"] }
+home = { version = "0.5.9" }
 
 [patch.'https://github.com/0xPolygonZero/plonky2.git']
 plonky2 = { git = "https://github.com/QEDProtocol/plonky2-hwa", rev = "6a8ca008da97890b67a84f64784cfbc488b5238d" }

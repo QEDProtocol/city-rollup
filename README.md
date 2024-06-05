@@ -17,8 +17,8 @@ Download the pre-generated `bls12_381` trust setup
 ```bash
 wget https://city-rollup.s3.amazonaws.com/alpha/groth16-bls12_381-setup.tgz
 tar -zxvf groth16-bls12_381-setup.tgz
-mkdir -p /tmp/groth16-keystore/
-mv trust-setup /tmp/groth16-keystore/0
+mkdir -p ~/.city-rollup
+mv trust-setup ~/.city-rollup/keystore
 ```
 
 Build the rollup in release mode
@@ -55,30 +55,24 @@ make cr_produce_block
 Register two users on L2
 ```bash
 make cr_register_user
+make cr_produce_block
 ```
 
 Deposit funds from Dogecoin to L2
 ```bash
 make cr_l1_deposit #please copy the txid
-```
-
-Produce another block to mark the deposits as claimable on L2
-```bash
-make cr_produce_block
+make cr_produce_block #Produce another block to mark the deposits as claimable on L2
 ```
 
 Claim deposited funds
 ```bash
 make TXID=... cr_claim_deposit #no 0x prefix
+make cr_produce_block
 ```
 
 Transfer claimed funds from to another
 ```bash
 make cr_token_transfer
-```
-
-Produce another block
-```bash
 make cr_produce_block
 ```
 
@@ -90,8 +84,8 @@ Download the pre-generated `bls12_381` trust setup
 ```bash
 wget https://city-rollup.s3.amazonaws.com/alpha/groth16-bls12_381-setup.tgz
 tar -zxvf groth16-bls12_381-setup.tgz
-mkdir -p /tmp/groth16-keystore/
-mv trust-setup /tmp/groth16-keystore/0
+mkdir -p ~/.city-rollup
+mv trust-setup ~/.city-rollup/keystore
 ```
 
 Build the rollup in release mode
