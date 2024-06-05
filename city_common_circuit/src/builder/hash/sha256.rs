@@ -267,9 +267,9 @@ fn sha256_digest_u32_array_with_byte_length<F: RichField + Extendable<D>, const 
     }
     let remaining = data.len() - standard_rounds * 16;
     let rem_bytes = length_bytes % 4;
-    println!("length_bytes: {}, rem_bytes: {}", length_bytes, rem_bytes);
+    tracing::info!("length_bytes: {}, rem_bytes: {}", length_bytes, rem_bytes);
     let zero = builder.zero_u32();
-    println!("remaining: {}", remaining);
+    tracing::info!("remaining: {}", remaining);
     if remaining <= 14 {
         let mut block_data = [zero; 16];
         for i in 0..remaining {
@@ -538,7 +538,7 @@ mod tests {
         // let copy_constraints = builder.copy_constraints.len();
         let copy_constraints = "<private>";
         let data = builder.build::<C>();
-        println!(
+        tracing::info!(
             "two_to_one_sha256 num_gates={}, copy_constraints={}, quotient_degree_factor={}",
             num_gates, copy_constraints, data.common.quotient_degree_factor
         );
@@ -557,7 +557,7 @@ mod tests {
             let start = Instant::now();
             let proof = data.prove(pw).unwrap();
             let end = start.elapsed();
-            println!("two_to_one_sha256 proved in {}ms", end.as_millis());
+            tracing::info!("two_to_one_sha256 proved in {}ms", end.as_millis());
             assert!(data.verify(proof).is_ok());
         }
     }
@@ -577,10 +577,10 @@ mod tests {
         let output = hex::decode(tests[0][1]).unwrap();
         let config = CircuitConfig::standard_recursion_config();
         let mut builder = CircuitBuilder::<F, D>::new(config);
-        println!("input len: {} (len/4 = {})", input.len(), input.len() / 4);
+        tracing::info!("input len: {} (len/4 = {})", input.len(), input.len() / 4);
 
         let preimage_target = builder.add_virtual_u32_targets(input.len() / 4);
-        println!("preimage target len {}", preimage_target.len());
+        tracing::info!("preimage target len {}", preimage_target.len());
 
         let expected_output_target = builder.add_virtual_hash256_target();
 
@@ -589,7 +589,7 @@ mod tests {
 
         let num_gates = builder.num_gates();
         let data = builder.build::<C>();
-        println!(
+        tracing::info!(
             "sha256 ({} bytes) num_gates={}, quotient_degree_factor={}",
             input.len(),
             num_gates,
@@ -602,7 +602,7 @@ mod tests {
         let start_time = std::time::Instant::now();
         let proof = data.prove(pw).unwrap();
         let duration_ms = start_time.elapsed().as_millis();
-        println!("sha256 ({} bytes) proved in {}ms", input.len(), duration_ms);
+        tracing::info!("sha256 ({} bytes) proved in {}ms", input.len(), duration_ms);
 
         assert!(data.verify(proof).is_ok());
     }
@@ -641,7 +641,7 @@ mod tests {
 
             let num_gates = builder.num_gates();
             let data = builder.build::<C>();
-            println!(
+            tracing::info!(
                 "sha256 ({} bytes) num_gates={}, quotient_degree_factor={}",
                 input.len(),
                 num_gates,
@@ -654,7 +654,7 @@ mod tests {
             let start_time = std::time::Instant::now();
             let proof = data.prove(pw).unwrap();
             let duration_ms = start_time.elapsed().as_millis();
-            println!("sha256 ({} bytes) proved in {}ms", input.len(), duration_ms);
+            tracing::info!("sha256 ({} bytes) proved in {}ms", input.len(), duration_ms);
 
             assert!(data.verify(proof).is_ok());
         }
@@ -692,7 +692,7 @@ mod tests {
 
         //let num_gates = builder.num_gates();
         let data = builder.build::<C>();
-        /*println!(
+        /*tracing::info!(
             "sha256 ({} bytes) num_gates={}, quotient_degree_factor={}",
             input.len(),
             num_gates,
@@ -705,7 +705,7 @@ mod tests {
         let start_time = std::time::Instant::now();
         let proof = data.prove(pw).unwrap();
         let duration_ms = start_time.elapsed().as_millis();
-        //println!("sha256 ({} bytes) proved in {}ms", input.len(), duration_ms);
+        //tracing::info!("sha256 ({} bytes) proved in {}ms", input.len(), duration_ms);
         let result_hash = u32_vec_to_bytes_be(
             &proof
                 .public_inputs
@@ -714,7 +714,7 @@ mod tests {
                 .collect::<Vec<_>>(),
         );
         assert_eq!(result_hash, expected_result.0.to_vec());
-        println!(
+        tracing::info!(
             "[sha256 {} bytes, proved in {}ms] sha256({}) = {} ",
             input.len(),
             duration_ms,
@@ -749,7 +749,7 @@ mod tests {
 
         //let num_gates = builder.num_gates();
         let data = builder.build::<C>();
-        /*println!(
+        /*tracing::info!(
             "sha256 ({} bytes) num_gates={}, quotient_degree_factor={}",
             input.len(),
             num_gates,
@@ -762,12 +762,12 @@ mod tests {
         let start_time = std::time::Instant::now();
         let proof = data.prove(pw).unwrap();
         let duration_ms = start_time.elapsed().as_millis();
-        //println!("sha256 ({} bytes) proved in {}ms", input.len(), duration_ms);
+        //tracing::info!("sha256 ({} bytes) proved in {}ms", input.len(), duration_ms);
         assert_eq!(
             proof.public_inputs.to_vec(),
             expected_result.elements.to_vec()
         );
-        println!(
+        tracing::info!(
             "[poseidon {} bytes, proved in {}ms] poseidon({}) = {} ",
             input.len(),
             duration_ms,
@@ -797,7 +797,7 @@ mod tests {
         builder.register_public_inputs(&hash_output.iter().map(|o| o.0).collect_vec());
 
         let data = builder.build::<C>();
-        /*println!(
+        /*tracing::info!(
             "sha256 ({} bytes) num_gates={}, quotient_degree_factor={}",
             input.len(),
             num_gates,
@@ -820,10 +820,10 @@ mod tests {
             .iter()
             .map(|x| x.to_canonical_u64() as u32)
             .collect();
-        println!("block_data: {:?}", block_data);
-        println!("hash_result: {:?}", hash_result);
+        tracing::info!("block_data: {:?}", block_data);
+        tracing::info!("hash_result: {:?}", hash_result);
 
-        //println!("sha256 ({} bytes) proved in {}ms", input.len(), duration_ms);
+        //tracing::info!("sha256 ({} bytes) proved in {}ms", input.len(), duration_ms);
         let result_hash = u32_vec_to_bytes_be(
             &proof
                 .public_inputs
@@ -832,7 +832,7 @@ mod tests {
                 .collect_vec(),
         );
         //assert_eq!(result_hash, expected_result.0.to_vec());
-        println!(
+        tracing::info!(
             "[sha256 {} bytes, proved in {}ms] sha256({}) = {} ",
             input.len(),
             duration_ms,
@@ -890,7 +890,7 @@ mod tests {
 
         let num_gates = builder.num_gates();
         let data = builder.build::<C>();
-        println!(
+        tracing::info!(
             "sha256 ({} bytes) num_gates={}, quotient_degree_factor={}",
             input.len(),
             num_gates,
@@ -903,7 +903,7 @@ mod tests {
         let start_time = std::time::Instant::now();
         let proof = data.prove(pw).unwrap();
         let duration_ms = start_time.elapsed().as_millis();
-        println!("sha256 ({} bytes) proved in {}ms", input.len(), duration_ms);
+        tracing::info!("sha256 ({} bytes) proved in {}ms", input.len(), duration_ms);
         assert!(data.verify(proof).is_ok());
 
     }*/

@@ -25,7 +25,7 @@ use crate::{
     introspection::gadgets::rollup::introspection_result::BTCRollupIntrospectionFinalizedResultGadget,
     worker::traits::QWorkerCircuitCustomWithDataSync,
 };
-fn reverse_endian_bits(bits: &[Target]) -> Vec<Target> {
+fn _reverse_endian_bits(bits: &[Target]) -> Vec<Target> {
     let mut byte_groups = bits.to_vec().chunks_exact(8).map(|chunk| {
         [
             chunk[0], chunk[1], chunk[2], chunk[3], chunk[4], chunk[5], chunk[6], chunk[7],
@@ -222,12 +222,12 @@ where
         sighash_wrapper_proof: &ProofWithPublicInputs<C::F, C, D>,
     ) -> anyhow::Result<ProofWithPublicInputs<C::F, C, D>> {
         /*
-        println!("input: {:?}", input);
-        println!(
+        tracing::info!("input: {:?}", input);
+        tracing::info!(
             "block_state_transition_proof.public_inputs: {:?}",
             block_state_transition_proof.public_inputs
         );
-        println!(
+        tracing::info!(
             "sighash_wrapper_proof.public_inputs: {:?}",
             sighash_wrapper_proof.public_inputs
         );*/

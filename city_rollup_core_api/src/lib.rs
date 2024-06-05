@@ -374,11 +374,6 @@ impl RpcServer for RpcServerImpl {
 }
 
 pub async fn run_server(server_addr: String, db: KVQRocksDBStore) -> anyhow::Result<()> {
-    tracing_subscriber::FmtSubscriber::builder()
-        .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
-        .try_init()
-        .expect("setting default subscriber failed");
-
     let server = Server::builder().build(server_addr).await?;
 
     let rpc_server_impl = RpcServerImpl { db };

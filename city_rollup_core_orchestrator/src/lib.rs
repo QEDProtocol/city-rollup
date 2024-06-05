@@ -80,7 +80,7 @@ pub fn run(args: OrchestratorArgs) -> anyhow::Result<()> {
             .unwrap();
 
        let _ = rt.block_on(async move {
-            println!("api server listening on http://{}", args.server_addr);
+            tracing::info!("api server listening on http://{}", args.server_addr);
             city_rollup_core_api::run_server(args.server_addr, storec).await?;
             Ok::<_, anyhow::Error>(())
         });
@@ -104,7 +104,7 @@ pub fn run(args: OrchestratorArgs) -> anyhow::Result<()> {
         setup_fee,
         genesis_state_hash.to_felt252_hash256(),
     )?;
-    println!(
+    tracing::info!(
         "funded genesis block with txid: {}",
         txid_fund_genesis.to_hex_string()
     );
@@ -129,7 +129,7 @@ pub fn run(args: OrchestratorArgs) -> anyhow::Result<()> {
     let _ = wallet.add_zk_private_key(QHashOut::from_values(102, 102, 102, 102));
     let _ = wallet.add_zk_private_key(QHashOut::from_values(103, 103, 103, 103));
     wallet.setup_circuits();
-    println!("block_2_address: {}", block_2_address.to_string());
+    tracing::info!("block_2_address: {}", block_2_address.to_string());
     api.fund_address_from_known_p2pkh_address(
         &wallet.secp256k1_wallet,
         deposit_0_address,
@@ -155,7 +155,7 @@ pub fn run(args: OrchestratorArgs) -> anyhow::Result<()> {
 
     sync_infinite_loop!(1000, {
         let block_state = CityStore::get_latest_block_state(&store)?;
-        println!(
+        tracing::info!(
             "last_block_state.checkpoint_id: {}",
             block_state.checkpoint_id
         );
@@ -182,7 +182,7 @@ pub fn run(args: OrchestratorArgs) -> anyhow::Result<()> {
             &mut api,
             &orchestrator_result_step_1,
         )?;
-        println!("funded next block: {}",txid.to_hex_string());
+        tracing::info!("funded next block: {}",txid.to_hex_string());
         api.mine_blocks(1)?;
     });
 }

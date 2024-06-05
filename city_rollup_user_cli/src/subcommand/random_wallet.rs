@@ -21,7 +21,7 @@ pub async fn run(_: RandomWalletArgs) -> Result<()> {
         public_key,
         private_key: private_key_base,
     };
-    println!(
+    tracing::info!(
         "L2 wallet: {}",
         serde_json::to_string_pretty(&random_wallet)
             .map_err(|e| anyhow::format_err!("{}", e.to_string()))?

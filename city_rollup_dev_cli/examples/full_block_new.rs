@@ -24,7 +24,7 @@ use city_store::store::{city::base::CityStore, sighash::SigHashMerkleTree};
 use kvq::memory::simple::KVQSimpleMemoryBackingStore;
 use plonky2::{field::goldilocks_field::GoldilocksField, plonk::config::PoseidonGoldilocksConfig};
 fn run_full_block() -> anyhow::Result<()> {
-    println!("{}", CITY_ROLLUP_BANNER);
+    tracing::info!("{}", CITY_ROLLUP_BANNER);
     let mut api = BTCLinkAPI::new_str(
         "http://devnet:devnet@localhost:1337/bitcoin-rpc/?network=dogeRegtest",
         "http://localhost:1337/api",
@@ -50,7 +50,7 @@ fn run_full_block() -> anyhow::Result<()> {
 
     /*
     let start_state_root = CityStore::get_city_root(&store, 1)?;
-    println!(
+    tracing::info!(
         "start_state_root: {} ({:?})",
         start_state_root.to_string(),
         start_state_root.0
@@ -115,16 +115,16 @@ fn run_full_block() -> anyhow::Result<()> {
         setup_fee,
         genesis_state_hash.to_felt252_hash256(),
     )?;
-    println!(
+    tracing::info!(
         "funded genesis block with txid: {}",
         txid_fund_genesis.to_hex_string()
     );
-    //println!("txid_fund_genesis: {}", txid_fund_genesis.to_hex_string());
+    //tracing::info!("txid_fund_genesis: {}", txid_fund_genesis.to_hex_string());
     let block_2_address =
         BTCAddress160::new_p2sh(CityStore::get_city_block_deposit_address(&store, 2)?);
 
     api.mine_blocks(1)?;
-    println!("block_2_address: {}", block_2_address.to_string());
+    tracing::info!("block_2_address: {}", block_2_address.to_string());
 
     timer.lap("start creating wallets");
     let user_0_public_key = wallet.add_zk_private_key(QHashOut::from_values(100, 100, 100, 100));
@@ -179,7 +179,7 @@ fn run_full_block() -> anyhow::Result<()> {
         &sighash_whitelist_tree,
     )?;
     let end_state_root = CityStore::get_city_root(&store, 2)?;
-    println!(
+    tracing::info!(
         "end_state_root: {} ({:?})",
         end_state_root.to_string(),
         end_state_root.0
@@ -196,13 +196,13 @@ fn run_full_block() -> anyhow::Result<()> {
         &mut api,
         &orchestrator_result_step_1,
     )?;
-    println!(
+    tracing::info!(
         "produced block, sent to : {}",
         orchestrator_result_step_2.to_hex_string()
     );
     api.mine_blocks(1)?;
     checkpoint_id = 3;
-    println!("starting block {}", checkpoint_id);
+    tracing::info!("starting block {}", checkpoint_id);
 
     timer.lap("start prepare block 3 events");
     let register_user_rpc_events = CityRegisterUserRPCRequest::new_batch(&[user_2_public_key]);
@@ -254,7 +254,7 @@ fn run_full_block() -> anyhow::Result<()> {
         &sighash_whitelist_tree,
     )?;
     /*let end_state_root = CityStore::get_city_root(&store, 2)?;
-    println!(
+    tracing::info!(
         "end_state_root: {} ({:?})",
         end_state_root.to_string(),
         end_state_root.0
@@ -271,13 +271,13 @@ fn run_full_block() -> anyhow::Result<()> {
         &mut api,
         &orchestrator_result_step_1,
     )?;
-    println!(
+    tracing::info!(
         "produced block, sent to : {}",
         orchestrator_result_step_2.to_hex_string()
     );
     api.mine_blocks(1)?;
     checkpoint_id = 4;
-    println!("starting block {}", checkpoint_id);
+    tracing::info!("starting block {}", checkpoint_id);
     Ok(())
 }
 

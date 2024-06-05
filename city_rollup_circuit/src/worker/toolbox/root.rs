@@ -260,13 +260,13 @@ impl<S: QProofStoreReaderSync> QWorkerGenericProverGroth16<S, PoseidonGoldilocks
         store: &S,
         job_id: QProvingJobDataID,
     ) -> anyhow::Result<CityGroth16ProofData> {
-        println!("job_id: {:?}",job_id);
+        tracing::info!("job_id: {:?}",job_id);
         let input_data = store.get_bytes_by_id(job_id)?;
         let input_proof_id = bincode::deserialize::<QProvingJobDataID>(&input_data)?;
         let (common_data, verifier_data, fingerprint) =
             self.get_verifier_triplet_for_circuit_type(input_proof_id.circuit_type);
 
-        println!("input_proof_id: {:?}",input_proof_id);
+        tracing::info!("input_proof_id: {:?}",input_proof_id);
         let inner_proof = store.get_proof_by_id(input_proof_id.get_output_id())?;
 
         /*
@@ -280,7 +280,7 @@ impl<S: QProofStoreReaderSync> QWorkerGenericProverGroth16<S, PoseidonGoldilocks
         );
         let pub_bits = inner_proof.public_inputs.iter().map(|x: &GoldilocksField|(*x).to_canonical_u64()).collect::<Vec<_>>();
 
-        println!("innerproof_public_input_bits: {:?}",pub_bits);
+        tracing::info!("innerproof_public_input_bits: {:?}",pub_bits);
 
         let wrapper_proof = wrapper.prove_base(&inner_proof, &verifier_data)?;
 
@@ -290,8 +290,8 @@ impl<S: QProofStoreReaderSync> QWorkerGenericProverGroth16<S, PoseidonGoldilocks
             Some(&format!("/tmp/plonky2_proof/{}", job_id.data_index)),
             &format!("{}/.city-rollup/keystore/", home::home_dir().unwrap().display())
         )?;
-        println!("proof: {}",proof_string);
-        println!("vk: {}",vk_string);
+        tracing::info!("proof: {}",proof_string);
+        tracing::info!("vk: {}",vk_string);
         /*
          let proof_string = serde_json::to_string(&CityGroth16ProofData {
              pi_a: Serialized2DFeltBLS12381([0u8; 48]),

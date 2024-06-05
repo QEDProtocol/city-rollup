@@ -8,10 +8,10 @@ fn run_tree() -> anyhow::Result<()> {
 
     let _r0 = CityStore::register_user(&mut store, 1, 0, QHashOut::from_values(1, 2, 3, 4))?;
     let leaf_1 = CityStore::get_user_tree_leaf(&store, 2, 1)?;
-    println!("leaf: {}", leaf_1.to_string());
+    tracing::info!("leaf: {}", leaf_1.to_string());
     //let r1 = CityStore::register_user(&mut store, 1, 1, QHashOut::from_values(5, 6, 7, 8))?;
-    //println!("r0: {}", serde_json::to_string(&r0).unwrap());
-    //println!("r0: {}", serde_json::to_string(&r1).unwrap());
+    //tracing::info!("r0: {}", serde_json::to_string(&r0).unwrap());
+    //tracing::info!("r0: {}", serde_json::to_string(&r1).unwrap());
 
     Ok(())
 }

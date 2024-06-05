@@ -72,8 +72,8 @@ where
         allowed_circuit_hashes_root: QHashOut<C::F>,
     ) -> anyhow::Result<ProofWithPublicInputs<C::F, C, D>> {
         let mut pw = PartialWitness::<C::F>::new();
-        //println!("agg_fingerprint: {}", agg_fingerprint.to_string());
-        //println!("leaf_fingerprint: {}", leaf_fingerprint.to_string());
+        //tracing::info!("agg_fingerprint: {}", agg_fingerprint.to_string());
+        //tracing::info!("leaf_fingerprint: {}", leaf_fingerprint.to_string());
         pw.set_hash_target(self.state_transition_hash, state_transition_hash.0);
         pw.set_hash_target(
             self.allowed_circuit_hashes_root,

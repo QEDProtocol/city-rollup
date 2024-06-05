@@ -1,5 +1,6 @@
 TRACE_ENABLED           := 1
 PROFILE                 := release
+LOG_LEVEL  			        := info,city_common_circuit=off,city_rollup_circuit=off,plonky2=off,city_crypto=off,city_store=off,city_rollup_common=off
 DOCKER_PROFILE    			:= lite
 
 .PHONY: check
@@ -41,62 +42,62 @@ run: run-orchestrator run-rpc-server run-l2-worker
 
 .PHONY: run-rpc-server
 run-rpc-server: build-if-not-exists
-	@RUST_BACKTRACE=${TRACE_ENABLED} ./target/${PROFILE}/city-rollup-cli rpc-server
+	@RUST_LOG=${LOG_LEVEL} RUST_BACKTRACE=${TRACE_ENABLED} ./target/${PROFILE}/city-rollup-cli rpc-server
 
 .PHONY: run-orchestrator
 run-orchestrator: build-if-not-exists
-	@RUST_BACKTRACE=${TRACE_ENABLED} ./target/${PROFILE}/city-rollup-cli orchestrator
+	@RUST_LOG=${LOG_LEVEL} RUST_BACKTRACE=${TRACE_ENABLED} ./target/${PROFILE}/city-rollup-cli orchestrator
 
 .PHONY: run-l2-worker
 run-l2-worker: build-if-not-exists
-	@RUST_BACKTRACE=${TRACE_ENABLED} ./target/${PROFILE}/city-rollup-cli l2-worker
+	@RUST_LOG=${LOG_LEVEL} RUST_BACKTRACE=${TRACE_ENABLED} ./target/${PROFILE}/city-rollup-cli l2-worker
 
 .PHONY: print-circuit-info
 print-circuit-info: build-if-not-exists
-	@RUST_BACKTRACE=${TRACE_ENABLED} ./target/${PROFILE}/city-rollup-dev-cli print-circuit-info
+	@RUST_LOG=${LOG_LEVEL} RUST_BACKTRACE=${TRACE_ENABLED} ./target/${PROFILE}/city-rollup-dev-cli print-circuit-info
 
 .PHONY: tree-prove-test
 tree-prove-test: build-if-not-exists
-	@RUST_BACKTRACE=${TRACE_ENABLED} ./target/${PROFILE}/city-rollup-dev-cli tree-prove-test
+	@RUST_LOG=${LOG_LEVEL} RUST_BACKTRACE=${TRACE_ENABLED} ./target/${PROFILE}/city-rollup-dev-cli tree-prove-test
 
 .PHONY: get-public-key
 get-public-key: build-if-not-exists
-	@RUST_BACKTRACE=${TRACE_ENABLED} ./target/${PROFILE}/city-rollup-user-cli get-public-key --private-key=2c6a1188f8739daaeff79c40f3690c573381c91a2359a0df2b45e4310b59f30b
+	@RUST_LOG=${LOG_LEVEL} RUST_BACKTRACE=${TRACE_ENABLED} ./target/${PROFILE}/city-rollup-user-cli get-public-key --private-key=2c6a1188f8739daaeff79c40f3690c573381c91a2359a0df2b45e4310b59f30b
 
 .PHONY: random-wallet
 random-wallet: build-if-not-exists
-	@RUST_BACKTRACE=${TRACE_ENABLED} ./target/${PROFILE}/city-rollup-user-cli random-wallet
+	@RUST_LOG=${LOG_LEVEL} RUST_BACKTRACE=${TRACE_ENABLED} ./target/${PROFILE}/city-rollup-user-cli random-wallet
 
 .PHONY: sign-hash
 sign-hash: build-if-not-exists
-	@RUST_BACKTRACE=${TRACE_ENABLED} ./target/${PROFILE}/city-rollup-user-cli sign-hash \
+	@RUST_LOG=${LOG_LEVEL} RUST_BACKTRACE=${TRACE_ENABLED} ./target/${PROFILE}/city-rollup-user-cli sign-hash \
 		--private-key=2c6a1188f8739daaeff79c40f3690c573381c91a2359a0df2b45e4310b59f30b \
 		--action-hash=010d831efabf0bd45a992f203683c1e38a5492054099b29596237efd5e5cdca8 \
 		--output=proof.txt
 
 .PHONY: full_block
 full_block: build-if-not-exists
-	@RUST_BACKTRACE=${TRACE_ENABLED} ./target/${PROFILE}/city-rollup-dev-cli --example full_block
+	@RUST_LOG=${LOG_LEVEL} RUST_BACKTRACE=${TRACE_ENABLED} ./target/${PROFILE}/city-rollup-dev-cli --example full_block
 
 .PHONY: full_block2
 full_block2: build-if-not-exists
-	@RUST_BACKTRACE=${TRACE_ENABLED} ./target/${PROFILE}/city-rollup-dev-cli --example full_block_v2
+	@RUST_LOG=${LOG_LEVEL} RUST_BACKTRACE=${TRACE_ENABLED} ./target/${PROFILE}/city-rollup-dev-cli --example full_block_v2
 
 .PHONY: fblockredis
 fblockredis: build-if-not-exists
-	@RUST_BACKTRACE=${TRACE_ENABLED} ./target/${PROFILE}/city-rollup-dev-cli --example fblockredis
+	@RUST_LOG=${LOG_LEVEL} RUST_BACKTRACE=${TRACE_ENABLED} ./target/${PROFILE}/city-rollup-dev-cli --example fblockredis
 
 .PHONY: hashes
 hashes: build-if-not-exists
-	@RUST_BACKTRACE=${TRACE_ENABLED} ./target/${PROFILE}/city-rollup-dev-cli --example hashes
+	@RUST_LOG=${LOG_LEVEL} RUST_BACKTRACE=${TRACE_ENABLED} ./target/${PROFILE}/city-rollup-dev-cli --example hashes
 
 .PHONY: print_hints
 print_hints: build-if-not-exists
-	@RUST_BACKTRACE=${TRACE_ENABLED} ./target/${PROFILE}/city-rollup-dev-cli --example print_hints
+	@RUST_LOG=${LOG_LEVEL} RUST_BACKTRACE=${TRACE_ENABLED} ./target/${PROFILE}/city-rollup-dev-cli --example print_hints
 
 .PHONY: prove_sighash_0_hints
 prove_sighash_0_hints: build-if-not-exists
-	@RUST_BACKTRACE=${TRACE_ENABLED} ./target/${PROFILE}/city-rollup-dev-cli --example prove_sighash_0_hints
+	@RUST_LOG=${LOG_LEVEL} RUST_BACKTRACE=${TRACE_ENABLED} ./target/${PROFILE}/city-rollup-dev-cli --example prove_sighash_0_hints
 
 .PHONY: launch
 launch:
@@ -126,24 +127,24 @@ relaunch: shutdown launch
 
 .PHONY: cr_register_user
 cr_register_user: build-if-not-exists
-	@RUST_BACKTRACE=${TRACE_ENABLED} ./target/${PROFILE}/city-rollup-user-cli register-user --private-key=2c6a1188f8739daaeff79c40f3690c573381c91a2359a0df2b45e4310b59f30b
+	@RUST_LOG=${LOG_LEVEL} RUST_BACKTRACE=${TRACE_ENABLED} ./target/${PROFILE}/city-rollup-user-cli register-user --private-key=2c6a1188f8739daaeff79c40f3690c573381c91a2359a0df2b45e4310b59f30b
 
 .PHONY: cr_l1_deposit
 cr_l1_deposit: build-if-not-exists
-	@RUST_BACKTRACE=${TRACE_ENABLED} ./target/${PROFILE}/city-rollup-user-cli l1-deposit \
+	@RUST_LOG=${LOG_LEVEL} RUST_BACKTRACE=${TRACE_ENABLED} ./target/${PROFILE}/city-rollup-user-cli l1-deposit \
 		--private-key=2c6a1188f8739daaeff79c40f3690c573381c91a2359a0df2b45e4310b59f30b \
 		--amount=100000000
 
 .PHONY: cr_claim_deposit
 cr_claim_deposit: build-if-not-exists
-	@RUST_BACKTRACE=${TRACE_ENABLED} ./target/${PROFILE}/city-rollup-user-cli claim-deposit \
+	@RUST_LOG=${LOG_LEVEL} RUST_BACKTRACE=${TRACE_ENABLED} ./target/${PROFILE}/city-rollup-user-cli claim-deposit \
 		--txid=${TXID} \
 		--private-key=2c6a1188f8739daaeff79c40f3690c573381c91a2359a0df2b45e4310b59f30b \
 		--user-id=2
 
 .PHONY: cr_token_transfer
 cr_token_transfer: build-if-not-exists
-	@RUST_BACKTRACE=${TRACE_ENABLED} ./target/${PROFILE}/city-rollup-user-cli token-transfer \
+	@RUST_LOG=${LOG_LEVEL} RUST_BACKTRACE=${TRACE_ENABLED} ./target/${PROFILE}/city-rollup-user-cli token-transfer \
 		--private-key=2c6a1188f8739daaeff79c40f3690c573381c91a2359a0df2b45e4310b59f30b \
 		--from=2 \
 		--to=0 \

@@ -3,7 +3,7 @@ use city_common::cli::args::L2WorkerArgs;
 use crate::build;
 
 pub fn run(args: L2WorkerArgs) -> anyhow::Result<()> {
-    println!(
+    tracing::info!(
         "
 ----------------------------------------
 |           CityRollup v{}          |

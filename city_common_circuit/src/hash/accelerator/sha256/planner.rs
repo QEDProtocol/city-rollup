@@ -425,7 +425,7 @@ where
                         CoreSha256Hasher::hash_bytes(&self.witness_preimages[preimages_index]);
                     witness
                         .set_hash256_bytes_target(&self.combo_hashes[*hash_id].digest, &digest.0);
-                    println!(
+                    tracing::info!(
                         "finwit: {}, {}",
                         self.combo_hashes[*hash_id].preimage.len(),
                         self.witness_preimages[preimages_index].len()

@@ -212,8 +212,8 @@ where
         signature_proof: &ProofWithPublicInputs<C::F, C, D>,
         signature_verifier_data: &VerifierOnlyCircuitData<C, D>,
     ) -> anyhow::Result<ProofWithPublicInputs<C::F, C, D>> {
-        println!("token_input: {:?}", input);
-        println!("token_input: {}", serde_json::to_string(&input).unwrap());
+        tracing::info!("token_input: {:?}", input);
+        tracing::info!("token_input: {}", serde_json::to_string(&input).unwrap());
 
         let mut pw = PartialWitness::new();
         self.l2_transfer_single_gadget

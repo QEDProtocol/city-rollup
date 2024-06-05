@@ -29,6 +29,7 @@ city_rollup_worker_dispatch = { path = "../city_rollup_worker_dispatch" }
 city_store = { path = "../city_store" }
 gnark-plonky2-wrapper = { workspace = true }
 home = { workspace = true }
+tracing = { workspace = true }
 
 [dev-dependencies]
 criterion = "0.5.1"

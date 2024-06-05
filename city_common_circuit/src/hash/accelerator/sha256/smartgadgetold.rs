@@ -681,8 +681,8 @@ mod tests {
 
         let proof = data.prove(pw).unwrap();
         let duration_ms = start_time.elapsed().as_millis();
-        println!("public_inputs: {:?}", proof.public_inputs);
-        println!("sha256 proved in {}ms", duration_ms);
+        tracing::info!("public_inputs: {:?}", proof.public_inputs);
+        tracing::info!("sha256 proved in {}ms", duration_ms);
         assert!(data.verify(proof).is_ok());
     }
 
@@ -766,8 +766,8 @@ mod tests {
 
         let proof = data.prove(pw).unwrap();
         let duration_ms = start_time.elapsed().as_millis();
-        println!("public_inputs: {:?}", proof.public_inputs);
-        println!("sha256 proved in {}ms", duration_ms);
+        tracing::info!("public_inputs: {:?}", proof.public_inputs);
+        tracing::info!("sha256 proved in {}ms", duration_ms);
         assert!(data.verify(proof).is_ok());
     }
 }

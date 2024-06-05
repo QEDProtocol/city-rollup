@@ -91,7 +91,7 @@ mod tests {
         let num_gates = builder.num_gates();
         // let copy_constraints = builder.copy_constraints.len();
         let data = builder.build::<C>();
-        println!(
+        tracing::info!(
             "circuit num_gates={}, quotient_degree_factor={}",
             num_gates, data.common.quotient_degree_factor
         );
@@ -120,7 +120,7 @@ mod tests {
 
         let proof = data.prove(pw).unwrap();
         let duration_ms = start_time.elapsed().as_millis();
-        println!("proved in {}ms", duration_ms);
+        tracing::info!("proved in {}ms", duration_ms);
         assert!(data.verify(proof).is_ok());
     }
 }

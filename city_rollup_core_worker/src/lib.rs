@@ -32,7 +32,7 @@ pub fn run(args: L2WorkerArgs) -> anyhow::Result<()> {
 
     gnark_plonky2_wrapper::initialize(&format!("{}/.city-rollup/keystore/", home::home_dir().unwrap().display()))?;
 
-    println!("CRWorkerToolboxCoreCircuitFingerprints: {}", serde_json::to_string(&toolbox.core.fingerprints).unwrap());
+    tracing::info!("CRWorkerToolboxCoreCircuitFingerprints: {}", serde_json::to_string(&toolbox.core.fingerprints).unwrap());
 
     loop {
         'inner: loop {

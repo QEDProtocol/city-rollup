@@ -113,7 +113,7 @@ pub fn send_entire_balance_simple_p2pkh<W: Secp256K1WalletProvider, A: QBitcoinA
         })
         .collect::<Vec<BTCTransactionInputWithoutScript>>();
     let tx = create_p2pkh_tx(wallet, from, &tx_inputs, outputs)?;
-    println!("tx: {}", hex::encode(tx.to_bytes()));
+    tracing::info!("tx: {}", hex::encode(tx.to_bytes()));
     api.send_transaction(&tx)
 }
 pub fn send_p2pkh_exact_value<W: Secp256K1WalletProvider, A: QBitcoinAPISync>(

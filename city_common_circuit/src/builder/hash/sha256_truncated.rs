@@ -269,7 +269,7 @@ mod tests {
         // let copy_constraints = builder.copy_constraints.len();
         let copy_constraints = "<private>";
         let data = builder.build::<C>();
-        println!(
+        tracing::info!(
             "two_to_one_truncated_sha256 num_gates={}, copy_constraints={}, quotient_degree_factor={}",
             num_gates, copy_constraints, data.common.quotient_degree_factor
         );
@@ -287,7 +287,7 @@ mod tests {
             let start = Instant::now();
             let proof = data.prove(pw).unwrap();
             let end = start.elapsed();
-            println!(
+            tracing::info!(
                 "two_to_one_truncated_sha256 proved in {}ms",
                 end.as_millis()
             );

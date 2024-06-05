@@ -41,7 +41,7 @@ impl SimpleActorWorker {
     ) -> anyhow::Result<()> {
         //let mut timer = TraceTimer::new("process_next_job");
         let job = event_receiver.wait_for_next_job()?;
-        println!("job: {:?}",job);
+        tracing::info!("job: {:?}",job);
         Self::process_job(store, event_receiver, prover, job)?;
         //timer.lap("processed next job");
         Ok(())
@@ -84,12 +84,12 @@ impl SimpleActorWorker {
         }
 
         let goal_counter = store.get_goal_by_job_id(job_id)?;
-        //println!("goal_counter: {}", goal_counter);
+        //tracing::info!("goal_counter: {}", goal_counter);
         if goal_counter != 0 {
             let result = store.inc_counter_by_id(job_id.get_sub_group_counter_id())?;
             if result == goal_counter {
                 let jobs = store.get_next_jobs_by_job_id(job_id)?;
-                //println!("[{:?}] enqueuing_jobs: {:?}", job_id, jobs);
+                //tracing::info!("[{:?}] enqueuing_jobs: {:?}", job_id, jobs);
                 event_receiver.enqueue_jobs(&jobs)?;
             }
         }

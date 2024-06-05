@@ -37,7 +37,7 @@ impl<S: KVQBinaryStoreReader> CityStore<S> {
             },
         )?;
         /*
-        println!(
+        tracing::info!(
             "start_root_state_hash[{}]: {:?}",
             checkpoint_id, start_root_state_hash.0
         );*/

@@ -735,7 +735,6 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "clap",
- "futures",
  "hex",
  "lazy_static",
  "rand",
@@ -743,6 +742,8 @@ dependencies = [
  "serde_json",
  "serde_with 3.8.1",
  "tokio",
+ "tracing",
+ "tracing-subscriber",
 ]
 
 [[package]]
@@ -780,6 +781,7 @@ dependencies = [
  "sha2",
  "starkyx",
  "tokio",
+ "tracing",
  "unroll",
  "url",
 ]
@@ -805,6 +807,7 @@ dependencies = [
  "serde_json",
  "serde_with 3.8.1",
  "sha2",
+ "tracing",
 ]
 
 [[package]]
@@ -857,6 +860,7 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_with 3.8.1",
+ "tracing",
 ]
 
 [[package]]
@@ -885,6 +889,7 @@ dependencies = [
  "serde_json",
  "serde_repr",
  "serde_with 3.8.1",
+ "tracing",
  "url",
 ]
 
@@ -903,7 +908,6 @@ dependencies = [
  "kvq_store_rocksdb",
  "redb",
  "tokio",
- "tracing-subscriber",
 ]
 
 [[package]]
@@ -939,6 +943,7 @@ dependencies = [
  "serde_json",
  "serde_with 3.8.1",
  "tokio",
+ "tracing",
  "url",
 ]
 
@@ -975,6 +980,7 @@ dependencies = [
  "serde_json",
  "serde_with 3.8.1",
  "tokio",
+ "tracing",
  "url",
 ]
 
@@ -1008,6 +1014,7 @@ dependencies = [
  "serde_json",
  "serde_with 3.8.1",
  "tokio",
+ "tracing",
  "url",
 ]
 
@@ -1086,6 +1093,7 @@ dependencies = [
  "serde_json",
  "serde_with 3.8.1",
  "tokio",
+ "tracing",
  "unroll",
  "url",
 ]
@@ -2411,7 +2419,7 @@ dependencies = [
 [[package]]
 name = "gnark-plonky2-verifier-ffi"
 version = "0.1.0"
-source = "git+https://github.com/cf/gnark-plonky2-verifier?rev=827af31853107f16de40932e964e44873f6b3164#827af31853107f16de40932e964e44873f6b3164"
+source = "git+https://github.com/cf/gnark-plonky2-verifier?rev=75681e2a0e20270734f082145d13cdfe3349d009#75681e2a0e20270734f082145d13cdfe3349d009"
 dependencies = [
  "anyhow",
  "bindgen 0.69.4",
@@ -2422,7 +2430,7 @@ dependencies = [
 [[package]]
 name = "gnark-plonky2-wrapper"
 version = "0.1.0"
-source = "git+https://github.com/cf/gnark-plonky2-verifier?rev=827af31853107f16de40932e964e44873f6b3164#827af31853107f16de40932e964e44873f6b3164"
+source = "git+https://github.com/cf/gnark-plonky2-verifier?rev=75681e2a0e20270734f082145d13cdfe3349d009#75681e2a0e20270734f082145d13cdfe3349d009"
 dependencies = [
  "anyhow",
  "ff",

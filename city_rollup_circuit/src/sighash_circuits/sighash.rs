@@ -147,7 +147,7 @@ where
             &self.circuit_data.common,
             &self.targets_to_constants,
         );
-        println!(
+        tracing::info!(
             "trace_result: {}",
             serde_json::to_string_pretty(&trace_result).unwrap()
         );*/

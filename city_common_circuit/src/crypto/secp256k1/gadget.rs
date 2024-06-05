@@ -547,7 +547,7 @@ mod tests {
         .unwrap();
         sig_gadget.set_witness_public_keys_update(&mut pw, &pk, &sig, ho);
         let proof = data.prove(pw).unwrap();
-        println!("proof.public_inputs: {:?}", proof.public_inputs);
+        tracing::info!("proof.public_inputs: {:?}", proof.public_inputs);
         data.verify(proof)
     }
 

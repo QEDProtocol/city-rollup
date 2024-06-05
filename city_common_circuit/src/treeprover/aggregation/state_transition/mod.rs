@@ -91,7 +91,7 @@ impl AggStateTrackableCircuitHeaderGadget {
         agg_fingerprint: QHashOut<F>,
         leaf_fingerprint: QHashOut<F>,
     ) {
-        //println!("set_witness: {}", serde_json::to_string(input).unwrap());
+        //tracing::info!("set_witness: {}", serde_json::to_string(input).unwrap());
         witness.set_hash_target(self.agg_fingerprint, agg_fingerprint.0);
         witness.set_hash_target(self.leaf_fingerprint, leaf_fingerprint.0);
 
@@ -268,8 +268,8 @@ where
         input: &AggStateTransitionInput<C::F>,
     ) -> anyhow::Result<ProofWithPublicInputs<C::F, C, D>> {
         let mut pw = PartialWitness::<C::F>::new();
-        //println!("agg_fingerprint: {}", agg_fingerprint.to_string());
-        //println!("leaf_fingerprint: {}", leaf_fingerprint.to_string());
+        //tracing::info!("agg_fingerprint: {}", agg_fingerprint.to_string());
+        //tracing::info!("leaf_fingerprint: {}", leaf_fingerprint.to_string());
         self.header_gadget
             .set_witness(&mut pw, input, agg_fingerprint, leaf_fingerprint);
 
@@ -294,7 +294,7 @@ where
         let result = self.circuit_data.prove(pw);
 
         if result.is_err() {
-            println!("error: {}", serde_json::to_string(&input).unwrap());
+            tracing::info!("error: {}", serde_json::to_string(&input).unwrap());
         }
         result
     }

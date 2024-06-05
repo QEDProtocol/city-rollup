@@ -70,7 +70,7 @@ impl DebugCircuitTracer {
                 .map(|target| {
                     witness.try_get_target(*target).unwrap_or_else(|| {
                         *targets_to_constants.get(target).unwrap_or_else(|| {
-                            println!("error value constant for {}", name);
+                            tracing::info!("error value constant for {}", name);
                             panic!("error getting value for {}", name);
                         })
                     })

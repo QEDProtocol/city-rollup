@@ -109,7 +109,7 @@ mod tests {
         let circuit = Secp256K1SignatureCircuit::<F, C, D>::new();
         let proof = circuit.prove(&pk, &sig, &msg)?;
         let common_data = circuit.minifier_chain.get_common_data();
-        println!("common_data: {:?}\n", common_data);
+        tracing::info!("common_data: {:?}\n", common_data);
 
         circuit.minifier_chain.verify(proof)
     }

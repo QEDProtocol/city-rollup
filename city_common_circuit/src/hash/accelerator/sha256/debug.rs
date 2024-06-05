@@ -43,6 +43,6 @@ impl Sha256DebugScenario {
         }
     }
     pub fn print(&self) {
-        println!("scenario = {};", serde_json::to_string(self).unwrap());
+        tracing::info!("scenario = {};", serde_json::to_string(self).unwrap());
     }
 }

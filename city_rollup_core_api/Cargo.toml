@@ -5,7 +5,6 @@ edition = "2021"
 
 [dependencies]
 jsonrpsee = { workspace = true }
-tracing-subscriber = { workspace = true }
 tokio = { workspace = true }
 anyhow = { workspace = true }
 redb = { workspace = true }

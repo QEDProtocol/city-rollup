@@ -15,7 +15,7 @@ use crate::subcommand::Commands;
 
 fn main() -> anyhow::Result<()> {
     dotenv::dotenv().ok();
-    //city_common::setup_logger();
+    city_common::logging::setup_env_logger();
 
     let cli = Cli::parse();
     match cli.command {

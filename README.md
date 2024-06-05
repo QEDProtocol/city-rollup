@@ -15,8 +15,8 @@ a proof of concept zk rollup on dogecoin
 Download the pre-generated `bls12_381` trust setup
 
 ```bash
-wget https://city-rollup.s3.amazonaws.com/alpha/groth16-bls12_381-setup.tgz
-tar -zxvf groth16-bls12_381-setup.tgz
+wget https://city-rollup.s3.amazonaws.com/alpha/city-rollup-bls12_381-setup.tgz
+tar -zxvf city-rollup-bls12_381-setup.tgz
 mkdir -p ~/.city-rollup
 mv trust-setup ~/.city-rollup/keystore
 ```
@@ -82,8 +82,8 @@ make cr_produce_block
 Download the pre-generated `bls12_381` trust setup
 
 ```bash
-wget https://city-rollup.s3.amazonaws.com/alpha/groth16-bls12_381-setup.tgz
-tar -zxvf groth16-bls12_381-setup.tgz
+wget https://city-rollup.s3.amazonaws.com/alpha/city-rollup-bls12_381-setup.tgz
+tar -zxvf city-rollup-bls12_381-setup.tgz
 mkdir -p ~/.city-rollup
 mv trust-setup ~/.city-rollup/keystore
 ```
@@ -99,7 +99,7 @@ make DOCKER_PROFILE=full relaunch
 ```
 
 
-## Troubleshot
+## Troubleshooting
 
 If you encounter the `DER` error on cli tools, it's normal, don't panic just retry until it works
 ```bash

@@ -111,7 +111,7 @@ impl<T: Witness<F>, F: PrimeField64> WitnessHelpersCore<F> for T {
     ) -> F {
         let rt = self.try_get_target(target);
         if rt.is_none() {
-            //println!("target empty, trying constant");
+            //tracing::info!("target empty, trying constant");
             let alt_result = alt_resolver.try_resolve_target_or_constant(target);
             if alt_result.is_none() {
                 panic!("cannot resolve target!");

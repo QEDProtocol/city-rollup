@@ -4,7 +4,7 @@ use crate::build;
 
 #[tokio::main]
 pub async fn run(_args: APIServerArgs) -> anyhow::Result<()> {
-    println!(
+    tracing::info!(
         "
 ----------------------------------------
 |           CityRollup v{}          |

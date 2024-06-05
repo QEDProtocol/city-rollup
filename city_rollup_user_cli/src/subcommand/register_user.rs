@@ -20,9 +20,9 @@ pub async fn run(args: RegisterUserArgs) -> anyhow::Result<()> {
     let l2_public_key = wallet.add_zk_private_key(private_key);
     let l1_public_key = wallet.add_secp256k1_private_key(Hash256::from_hex_string(&args.private_key)?)?;
 
-    println!("l1 public_key = {}", hex::encode(&l1_public_key.0));
-    println!("l1 p2pkh = {}", BTCAddress160::new_p2pkh(l1_public_key.to_p2pkh_address()).to_address_string());
-    println!("l2 public_key = {}", l2_public_key.to_string());
+    tracing::info!("l1 public_key = {}", hex::encode(&l1_public_key.0));
+    tracing::info!("l1 p2pkh = {}", BTCAddress160::new_p2pkh(l1_public_key.to_p2pkh_address()).to_address_string());
+    tracing::info!("l2 public_key = {}", l2_public_key.to_string());
 
     let city_register_user_rpcrequest = CityRegisterUserRPCRequest { public_key: l2_public_key };
 

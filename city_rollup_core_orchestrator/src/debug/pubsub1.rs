@@ -26,9 +26,9 @@ pub fn run_pub_sub_demo_1(args: OrchestratorArgs) {
     }
     timer.lap("stopped orchestrator");
     let end_time = timer.start_time;
-    println!("Received {} messages", count);
-    println!("Total time: {:?}", end_time - start_time);
-    println!(
+    tracing::info!("Received {} messages", count);
+    tracing::info!("Total time: {:?}", end_time - start_time);
+    tracing::info!(
         "Average time: {:?}ms per messsage",
         (end_time - start_time).as_millis() as f64 / (count as f64)
     );

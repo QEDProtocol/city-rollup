@@ -108,7 +108,7 @@ impl BTCRollupIntrospectionGadget {
             .clone();
 
         // start next redeem script
-        println!("config.block_script_length: {}", config.block_script_length);
+        tracing::info!("config.block_script_length: {}", config.block_script_length);
         let next_block_redeem_script = builder.add_virtual_targets(config.block_script_length);
         let next_block_redeem_script_hash =
             hash_domain.btc_hash160(builder, &next_block_redeem_script);
@@ -152,7 +152,7 @@ impl BTCRollupIntrospectionGadget {
         assert_eq!(script.len(), self.current_script.len() + offset);
 /*
 
-        
+
         OP_CHECKGROTH16VERIFY, // len-8
         OP_2DROP, // len-7
         OP_2DROP, // len-6
@@ -161,7 +161,7 @@ impl BTCRollupIntrospectionGadget {
         OP_2DROP, // len-3
         OP_2DROP, // len-2
         OP_1 // len-1
-        
+
 */
 
         // ensure the first byte is push 32 followed by state
@@ -178,11 +178,11 @@ impl BTCRollupIntrospectionGadget {
         offset: usize,
     ) {
 
-        if self.funding_transactions.len() == 1 { 
+        if self.funding_transactions.len() == 1 {
             assert_eq!(script.len(), self.current_script.len() + offset);
     /*
 
-            
+
             OP_CHECKGROTH16VERIFY, // len-8
             OP_2DROP, // len-7
             OP_2DROP, // len-6
@@ -191,7 +191,7 @@ impl BTCRollupIntrospectionGadget {
             OP_2DROP, // len-3
             OP_2DROP, // len-2
             OP_1 // len-1
-            
+
     */
             let current_script_check_proof_op_code_index = self.current_script.len()-8;
             let script_check_proof_op_code_index = script.len()-8;
@@ -209,12 +209,12 @@ impl BTCRollupIntrospectionGadget {
 
             // if the prev tx input is a single genesis spend, then allow for a NOP proof verify for the previous proof
             let genesis_state_hash_256: Hash256BytesTarget = builder.constant_hash256_bytes(&GENESIS_STATE_HASH);
-            let current_script_state_hash : Hash256BytesTarget = core::array::from_fn(|i| self.current_script[i + current_script_state_hash_index]);
+            let _current_script_state_hash : Hash256BytesTarget = core::array::from_fn(|i| self.current_script[i + current_script_state_hash_index]);
             let script_state_hash : Hash256BytesTarget = core::array::from_fn(|i| script[i + script_state_hash_index]);
             let is_prev_script_genesis = builder.is_equal_hash_256_bytes(script_state_hash, genesis_state_hash_256);
             let op_check_groth16_verify_op = builder.constant_u8(OP_CHECKGROTH16VERIFY);
             let op_check_groth16_verify_nop_op = builder.constant_u8(OP_CHECKGROTH16VERIFY_NOP);
-            
+
             let is_prev_script_op_groth16_verify = builder.is_equal(script[script_check_proof_op_code_index], op_check_groth16_verify_op);
             let is_prev_script_op_groth16_verify_nop = builder.is_equal(script[script_check_proof_op_code_index], op_check_groth16_verify_nop_op);
             let is_prev_script_op_groth16_verify_or_nop = builder.or(is_prev_script_op_groth16_verify, is_prev_script_op_groth16_verify_nop);
@@ -280,7 +280,7 @@ impl BTCRollupIntrospectionGadget {
                     // deposit, use der pad
                     funding_tx.connect_to_hash_deposit(builder, &mut self.hash_domain, spend_tx.hash, true)
                 }else{
-            
+
                     let funding_tx_bytes = funding_tx.to_byte_targets(builder);
                     let funding_tx_hash = self.hash_domain.btc_hash256(builder, &funding_tx_bytes);
                     // ensure the funding transaction provided is actually the transaction that funded this utxo
@@ -310,8 +310,8 @@ impl BTCRollupIntrospectionGadget {
 
                     // todo: support length 107 signatures
                     assert_eq!(
-                        funding_tx.inputs[0].script.len(), 
-                        106, 
+                        funding_tx.inputs[0].script.len(),
+                        106,
                         "the input script for a deposit should be a p2pkh signature + public key reveal"
                     );
                     let public_key = if funding_tx.inputs[0].script.len() == 106 {

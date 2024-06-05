@@ -33,6 +33,7 @@ http-body-util  = { workspace = true }
 hyper  = { workspace = true }
 hyper-util  = { workspace = true }
 jsonrpsee = { workspace = true }
+tracing = { workspace = true }
 
 [dev-dependencies]
 criterion = "0.5.1"

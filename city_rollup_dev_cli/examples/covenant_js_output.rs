@@ -16,5 +16,5 @@ fn main() {
         .iter()
         .map(|x| x.get_config())
         .collect::<Vec<_>>();
-    println!("configs: {}", serde_json::to_string(&configs).unwrap());
+    tracing::info!("configs: {}", serde_json::to_string(&configs).unwrap());
 }

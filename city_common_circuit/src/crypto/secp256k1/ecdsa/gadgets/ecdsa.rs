@@ -275,7 +275,7 @@ mod tests {
             .map(|x| x.to_canonical_u64())
             .collect::<Vec<u64>>();
         let result = sb.generate::<u64>(pubs);
-        println!("result:\n{}", serde_json::to_string(&result).unwrap());
+        tracing::info!("result:\n{}", serde_json::to_string(&result).unwrap());
 
         timer.lap("finish prove");
         data.verify(proof)
@@ -289,9 +289,9 @@ mod tests {
         let pk_value = ECDSAPublicKey::<Secp256K1>(
             (CurveScalar(sk_value.0) * Curve::GENERATOR_PROJECTIVE).to_affine(),
         );
-        println!("priv_key: {}", serde_json::to_string(&sk_value).unwrap());
-        println!("pub_key: {}", serde_json::to_string(&pk_value).unwrap());
-        println!("msg: {}", serde_json::to_string(&msg_value).unwrap());
+        tracing::info!("priv_key: {}", serde_json::to_string(&sk_value).unwrap());
+        tracing::info!("pub_key: {}", serde_json::to_string(&pk_value).unwrap());
+        tracing::info!("msg: {}", serde_json::to_string(&msg_value).unwrap());
         let sig_value = sign_message(msg_value, sk_value);
         print_all(&pk_value, &sig_value, &msg_value).unwrap();
     }

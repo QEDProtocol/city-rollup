@@ -157,7 +157,7 @@ macro_rules! async_infinite_loop {
 
                 Ok::<_, anyhow::Error>(())
             })().await {
-                println!("Error: {:?}", err);
+                tracing::info!("Error: {:?}", err);
             }
 
             tokio::time::sleep(Duration::from_millis($interval)).await;
@@ -174,7 +174,7 @@ macro_rules! sync_infinite_loop {
 
                 Ok::<_, anyhow::Error>(())
             })() {
-                println!("Error: {:?}", err);
+                tracing::info!("Error: {:?}", err);
             }
 
             std::thread::sleep(Duration::from_millis($interval));
@@ -198,7 +198,7 @@ macro_rules! spawn_async_infinite_loop {
 
                         Ok::<_, anyhow::Error>(())
                     })().await {
-                        println!("Error: {:?}", err);
+                        tracing::info!("Error: {:?}", err);
                     }
                     tokio::time::sleep(Duration::from_millis($interval)).await;
                 }
@@ -217,7 +217,7 @@ macro_rules! spawn_sync_infinite_loop {
 
                     Ok::<_, anyhow::Error>(())
                 })() {
-                    println!("Error: {:?}", err);
+                    tracing::info!("Error: {:?}", err);
                 }
                 std::thread::sleep(Duration::from_millis($interval));
             }

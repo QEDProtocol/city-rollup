@@ -21,5 +21,5 @@ fn main() {
     let path = format!("{}/examples/config_permutations_g16_4x4.json", root.display());
     let file_data = fs::read(path).unwrap();
     let hashes: Vec<QHashOut<GoldilocksField>> = serde_json::from_slice(&file_data).unwrap();
-    println!("[\n{}\n]", get_constant_hashes_string(&hashes));
+    tracing::info!("[\n{}\n]", get_constant_hashes_string(&hashes));
 }
