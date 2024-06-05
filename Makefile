@@ -121,7 +121,7 @@ shutdown:
 	@sudo rm -fr db || true
 	@sudo rm -fr /tmp/plonky2_proof || true
 	# @sudo rm -fr ~/.dogecoin || true
-	# @sudo rm -fr ~/.city-rollup/keystore || true
+	@sudo rm -fr ~/.city-rollup/keystore || true
 
 .PHONY: relaunch
 relaunch: shutdown launch

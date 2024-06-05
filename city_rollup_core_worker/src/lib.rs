@@ -30,7 +30,7 @@ pub fn run(args: L2WorkerArgs) -> anyhow::Result<()> {
     let toolbox =
         CRWorkerToolboxRootCircuits::<C, D>::new(network_magic, SIGHASH_WHITELIST_TREE_ROOT);
 
-    gnark_plonky2_wrapper::initialize(&format!("{}/.city-rollup/keystore/", home::home_dir().unwrap().display()))?;
+    // gnark_plonky2_wrapper::initialize(&format!("{}/.city-rollup/keystore/", home::home_dir().unwrap().display()))?;
 
     tracing::info!("CRWorkerToolboxCoreCircuitFingerprints: {}", serde_json::to_string(&toolbox.core.fingerprints).unwrap());
 
