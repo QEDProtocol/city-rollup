@@ -184,7 +184,7 @@ cr_get_deposit_by_id:
 	curl http://localhost:3000 \
 		-X POST \
 		-H "Content-Type: application/json" \
-		--data '{"method":"cr_getDepositById","params":[2,0],"id":1,"jsonrpc":"2.0"}'  | jq
+		--data '{"method":"cr_getDepositById","params":[4,0],"id":1,"jsonrpc":"2.0"}'  | jq
 
 .PHONY: cr_get_user_by_id
 cr_get_user_by_id:
