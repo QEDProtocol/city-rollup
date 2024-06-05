@@ -2,12 +2,12 @@ use plonky2::hash::hash_types::{HashOut, RichField};
 
 use super::hash256::Hash256;
 
-// we only clear the top bit, so HASH_252_FELT_MASK = ((1u64<<63u64)-1u64)
-const HASH_252_FELT_MASK: u64 = 0x7fffffffffffffffu64;
+// we only clear the top bit, so HASH_252_FELT_MASK = ((1u64<<60u64)-1u64)
+const HASH_252_FELT_MASK: u64 = 0x0fffffffffffffffu64;
 pub fn hashout_to_felt252_hashout<F: RichField>(hash: HashOut<F>) -> HashOut<F> {
-    let a = hash.elements[0].to_canonical_u64() & HASH_252_FELT_MASK;
-    let b = hash.elements[1].to_canonical_u64() & HASH_252_FELT_MASK;
-    let c = hash.elements[2].to_canonical_u64() & HASH_252_FELT_MASK;
+    let a = hash.elements[0].to_canonical_u64();
+    let b = hash.elements[1].to_canonical_u64();
+    let c = hash.elements[2].to_canonical_u64();
     let d = hash.elements[3].to_canonical_u64() & HASH_252_FELT_MASK;
     HashOut {
         elements: [
