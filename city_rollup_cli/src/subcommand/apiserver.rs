@@ -1,16 +1,11 @@
-use city_common::cli::args::APIServerArgs;
+use city_common::cli::{message::CITY_ROLLUP_BANNER, args::APIServerArgs};
 
-use crate::build;
 
 #[tokio::main]
 pub async fn run(_args: APIServerArgs) -> anyhow::Result<()> {
-    tracing::info!(
-        "
-----------------------------------------
-|           CityRollup v{}          |
-----------------------------------------
-",
-        build::PKG_VERSION
+    println!(
+        "{}",
+        CITY_ROLLUP_BANNER
     );
     Ok(())
 }
