@@ -229,7 +229,6 @@ impl<F: RichField> OrchestratorRPCEventSenderSync<F> for CityRollupRPCServerHand
     }
 
     fn notify_rpc_produce_block(&mut self) -> anyhow::Result<()> {
-        tracing::info!("produce block");
         self.tx_queue.dispatch(Q_CMD, QueueCmd::ProduceBlock)?;
         Ok(())
     }

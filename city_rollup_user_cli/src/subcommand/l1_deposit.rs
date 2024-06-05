@@ -31,7 +31,7 @@ pub async fn run(args: L1DepositArgs) -> Result<()> {
         BTCAddress160::new_p2sh(deposit_address),
         args.amount,
     )?;
-    api.mine_blocks(10)?;
+    api.mine_blocks(100)?;
 
     tracing::info!("txid: {}", txid.reversed().to_string());
     Ok(())
