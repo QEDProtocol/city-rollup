@@ -239,7 +239,7 @@ impl RpcServer for RpcServerImpl {
         &self,
         transaction_id: Hash256,
     ) -> Result<CityL1Deposit, ErrorObjectOwned> {
-        Ok(CityStore::get_deposit_by_txid(&self.db, transaction_id)
+        Ok(CityStore::get_deposit_by_txid(&self.db, transaction_id.reversed())
             .map_err(|_| ErrorObject::from(ErrorCode::InternalError))?)
     }
 
@@ -247,7 +247,7 @@ impl RpcServer for RpcServerImpl {
         &self,
         transaction_ids: Vec<Hash256>,
     ) -> Result<Vec<CityL1Deposit>, ErrorObjectOwned> {
-        Ok(CityStore::get_deposits_by_txid(&self.db, &transaction_ids)
+        Ok(CityStore::get_deposits_by_txid(&self.db, &transaction_ids.into_iter().map(|x|x.reversed()).collect::<Vec<_>>())
             .map_err(|_| ErrorObject::from(ErrorCode::InternalError))?)
     }
 

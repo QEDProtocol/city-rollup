@@ -33,7 +33,8 @@ build:
 
 .PHONY: build-if-not-exists
 build-if-not-exists:
-	if [ ! -f ./target/${PROFILE}/city-rollup-cli ] || [ ! -f ./target/${PROFILE}/city-rollup-user-cli ] || [ ! -f ./target/${PROFILE}/city-rollup-dev-cli ]; then \
+	@if [ ! -f ./target/${PROFILE}/city-rollup-cli ] || [ ! -f ./target/${PROFILE}/city-rollup-user-cli ] || [ ! -f ./target/${PROFILE}/city-rollup-dev-cli ]; then \
+		echo "Building project for profile ${PROFILE}..."; \
 		cargo build --${PROFILE}; \
 	fi
 
