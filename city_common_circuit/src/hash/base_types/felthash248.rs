@@ -1,11 +1,11 @@
 use plonky2::{
   field::extension::Extendable,
   hash::hash_types::{HashOutTarget, RichField},
-  iop::target::{BoolTarget, Target},
+  iop::target::BoolTarget,
   plonk::circuit_builder::CircuitBuilder,
 };
 
-use super::hash256bytes::Hash256BytesTarget;
+use super::hash256bytes::{CircuitBuilderHash256Bytes, Hash256BytesTarget};
 
 pub trait CircuitBuilderFelt248Hash<F: RichField + Extendable<D>, const D: usize> {
   fn hash256_bytes_to_felt248_hashout(&mut self, value: Hash256BytesTarget) -> HashOutTarget;
@@ -22,19 +22,8 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilderFelt248Hash<F, 
   for CircuitBuilder<F, D>
 {
   fn hash256_bytes_to_felt248_hashout(&mut self, value: Hash256BytesTarget) -> HashOutTarget {
-      let bits = value[0..31]
-          .iter()
-          .flat_map(|v| self.split_le(*v, 8))
-          .collect::<Vec<_>>();
-
-          let a = self.le_sum(bits[0..64].iter());
-          let b = self.le_sum(bits[64..128].iter());
-          let c = self.le_sum(bits[128..192].iter());
-          let d = self.le_sum(bits[192..248].iter());
-
-      HashOutTarget {
-          elements: [a,b,c,d]
-      }
+      let base = self.hash256_bytes_to_hashout(value);
+      self.hashout_to_felt248_hashout(base)
   }
 
   fn hashout_to_felt248_hashout(&mut self, value: HashOutTarget) -> HashOutTarget {

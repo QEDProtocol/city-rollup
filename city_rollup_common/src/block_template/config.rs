@@ -22,7 +22,7 @@ pub const OP_CHECKGROTH16VERIFY_NOP: u8 = OP_0NOTEQUAL;
 // note: OP_CHECKGROTH16VERIFY is 0xb3, but 0x61 is OP_NOP and can be used for testing without verifying proofs
 pub const OP_CHECKGROTH16VERIFY: u8 = 0xb3; //0x61;
 
-pub const GENESIS_STATE_HASH: [u8; 32] = hex_literal::hex!("caec89bedcab3c6707981a6fa86d27387b2c0a732feee3717aaddd6728877c5b");
+pub const GENESIS_STATE_HASH: [u8; 32] = [202, 236, 137, 190, 220, 171, 60, 231, 7, 152, 26, 111, 168, 109, 39, 184, 123, 44, 10, 115, 47, 238, 227, 113, 122, 173, 221, 103, 40, 135, 124, 0];
 
 //  size = 3 + 1 + 32 + 1 + 5*(2+80) + 9 = 456
 const STANDARD_BLOCK_SCRIPT_BODY: [u8; 456] = city_macros::const_concat_arrays!(
