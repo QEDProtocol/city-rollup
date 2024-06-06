@@ -149,8 +149,6 @@ where
             &input.withdrawal_tree_delta_merkle_proof,
             &input.user_tree_delta_merkle_proof,
         );
-        println!("CRAddL1WithdrawalCircuitInput: {:?}",input);
-        println!("signature_proof.public_inputs: {:?}",signature_proof.public_inputs);
         pw.set_proof_with_pis_target(&self.signature_proof_target, signature_proof);
         pw.set_verifier_data_target(
             &self.signature_verifier_data_target,

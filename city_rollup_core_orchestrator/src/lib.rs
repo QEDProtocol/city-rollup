@@ -85,8 +85,6 @@ pub fn run(args: OrchestratorArgs) -> anyhow::Result<()> {
     });
     CityStore::set_block_state(&mut store, &block0)?;
     CityStore::set_block_state(&mut store, &block1)?;
-    println!("genesis_hash: {:?}",CityStore::get_city_root(&store, 1)?);
-    println!("genesis_hash_felt248_hash256: {:?}",CityStore::get_city_root(&store, 1)?.to_felt248_hash256());
 
     let genesis_state_hash = CityStore::get_city_root(&store, 0)?;
     let setup_fee = 100000 * 500;

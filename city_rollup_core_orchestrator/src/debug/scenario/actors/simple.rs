@@ -113,11 +113,6 @@ pub fn create_hints_for_block(
             funding_transactions: all_inputs.to_vec(),
             next_block_redeem_script: next_script.to_vec(),
         };
-        tracing::info!("hint[{}]: {}",i, serde_json::to_string(&hint).unwrap());
-        tracing::info!("sighash: {}", hint.sighash_preimage.get_hash().to_hex_string());
-        tracing::info!("sighash 252: {:?}", hint.sighash_preimage.get_hash_felt252::<F>());
-        tracing::info!("sighash 252 hex: {}", felt252_hashout_to_hash256_le(hint.sighash_preimage.get_hash_felt252::<F>()).to_hex_string());
-
         spend_hints.push(hint);
     }
 
@@ -301,11 +296,9 @@ impl SimpleActorOrchestrator {
             "start process requests block {} RPC",
             checkpoint_id
         ));
-        tracing::info!("d");
 
         let (_block_state, block_op_job_ids, _block_state_transition, _block_end_jobs, withdrawals) =
             block_planner.process_requests(store, proof_store, &block_requested)?;
-        tracing::info!("e");
 
         let next_address = CityStore::get_city_block_deposit_address(store, checkpoint_id + 1)?;
         let next_script = CityStore::get_city_block_script(store, checkpoint_id + 1)?;

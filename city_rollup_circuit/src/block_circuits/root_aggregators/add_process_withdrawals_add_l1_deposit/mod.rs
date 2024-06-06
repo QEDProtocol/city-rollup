@@ -180,14 +180,6 @@ where
     ) -> anyhow::Result<ProofWithPublicInputs<C::F, C, D>> {
         let mut pw = PartialWitness::new();
 
-        println!("CRAggAddProcessL1WithdrawalAddL1DepositCircuitInput: {:?}",input);
-        println!("op_add_l1_deposit_transition_deposit_tree.combined_hash: {:?}",input.op_add_l1_deposit_transition_deposit_tree.get_combined_hash::<C::Hasher>());
-        println!("op_add_l1_withdrawal_transition_user_state_tree.combined_hash: {:?}",input.op_add_l1_withdrawal_transition_user_state_tree.get_combined_hash::<C::Hasher>());
-        println!("op_process_l1_withdrawal_transition_withdrawal_tree.combined_hash: {:?}",input.op_process_l1_withdrawal_transition_withdrawal_tree.get_combined_hash::<C::Hasher>());
-        println!("op_add_l1_withdrawal_proof.public_inputs: {:?}", op_add_l1_withdrawal_proof.public_inputs);
-        println!("op_process_l1_withdrawal_proof.public_inputs: {:?}", op_process_l1_withdrawal_proof.public_inputs);
-        println!("op_add_l1_deposit_proof.public_inputs: {:?}", op_add_l1_deposit_proof.public_inputs);
-
         pw.set_proof_with_pis_target::<C, D>(
             &self.op_add_l1_withdrawal_proof,
             op_add_l1_withdrawal_proof,
