@@ -267,9 +267,7 @@ fn sha256_digest_u32_array_with_byte_length<F: RichField + Extendable<D>, const 
     }
     let remaining = data.len() - standard_rounds * 16;
     let rem_bytes = length_bytes % 4;
-    tracing::info!("length_bytes: {}, rem_bytes: {}", length_bytes, rem_bytes);
     let zero = builder.zero_u32();
-    tracing::info!("remaining: {}", remaining);
     if remaining <= 14 {
         let mut block_data = [zero; 16];
         for i in 0..remaining {

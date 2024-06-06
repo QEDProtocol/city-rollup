@@ -44,7 +44,7 @@ impl TraceTimer {
     pub fn lap(&mut self, event_name: &str) -> u64 {
         let elapsed = self.start_time.elapsed();
         let elapsed_ms = elapsed.as_millis() as u64;
-        tracing::info!(
+        println!(
             "\x1b[1m\x1b[38;5;227m\x1b[48;5;93m{}\x1b[0m - \x1b[94m{}\x1b[0m: {} {}ms \x1b[0m",
             self.name,
             event_name,
@@ -57,7 +57,7 @@ impl TraceTimer {
     pub fn event(&mut self, event_name: String) -> u64 {
         let elapsed = self.start_time.elapsed();
         let elapsed_ms = elapsed.as_millis() as u64;
-        tracing::info!(
+        println!(
             "\x1b[1m\x1b[38;5;227m\x1b[48;5;93m{}\x1b[0m - \x1b[94m{}\x1b[0m: {} {}ms \x1b[0m",
             self.name,
             event_name,

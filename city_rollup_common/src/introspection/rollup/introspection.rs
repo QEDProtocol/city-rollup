@@ -424,7 +424,6 @@ impl BlockSpendCoreConfig {
     }
 }
 
-#[serde_as]
 #[derive(Serialize, Deserialize, PartialEq, Clone, Debug, Hash, Eq, PartialOrd, Ord)]
 pub struct BlockSpendIntrospectionGadgetConfig {
     pub sighash_preimage_config: SigHashPreimageConfig,
@@ -507,4 +506,12 @@ impl BlockSpendIntrospectionGadgetConfig {
             current_spend_index: self.current_spend_index,
         }
     }
+}
+
+
+
+#[derive(Serialize, Deserialize, PartialEq, Clone, Debug, Hash, Eq, PartialOrd, Ord)]
+pub struct BlockSpendIntrospectionGadgetConfigWithIndex {
+    pub config: BlockSpendIntrospectionGadgetConfig,
+    pub index: usize,
 }
