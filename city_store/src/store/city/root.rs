@@ -1,7 +1,6 @@
 use city_crypto::hash::{
     base_types::{
-        felt252::{felt252_hashout_to_hash256_le, hashout_to_felt252_hashout},
-        hash160::Hash160,
+        felt248::felt248_hashout_to_hash256_le, hash160::Hash160
     },
     traits::hasher::{MerkleHasher, PoseidonHasher},
 };
@@ -41,8 +40,7 @@ impl<S: KVQBinaryStoreReader> CityStore<S> {
             "start_root_state_hash[{}]: {:?}",
             checkpoint_id, start_root_state_hash.0
         );*/
-        let root_state_hash_bytes =
-            felt252_hashout_to_hash256_le(hashout_to_felt252_hashout(start_root_state_hash.0)).0;
+        let root_state_hash_bytes = felt248_hashout_to_hash256_le(start_root_state_hash.0).0;
 
         Ok(get_block_script_bytes(
             root_state_hash_bytes,
@@ -61,8 +59,7 @@ impl<S: KVQBinaryStoreReader> CityStore<S> {
                 checkpoint_id - 1
             },
         )?;
-        let root_state_hash_bytes =
-            felt252_hashout_to_hash256_le(hashout_to_felt252_hashout(start_root_state_hash.0)).0;
+        let root_state_hash_bytes = felt248_hashout_to_hash256_le(start_root_state_hash.0).0;
 
         Ok(get_block_script_hash(
             root_state_hash_bytes,

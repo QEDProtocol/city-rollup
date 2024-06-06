@@ -14,8 +14,7 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_with::serde_as;
 
 use super::base_types::{
-    felt252::{felt252_hashout_to_hash256_le, hashout_to_felt252_hashout},
-    hash256::Hash256,
+    felt248::felt248_hashout_to_hash256_le, felt252::{felt252_hashout_to_hash256_le, hashout_to_felt252_hashout}, hash256::Hash256
 };
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -169,6 +168,9 @@ impl<F: RichField> QHashOut<F> {
     }
     pub fn to_felt252_hash256(&self) -> Hash256 {
         felt252_hashout_to_hash256_le(hashout_to_felt252_hashout(self.0))
+    }
+    pub fn to_felt248_hash256(&self) -> Hash256 {
+        felt248_hashout_to_hash256_le(self.0)
     }
     pub fn to_string_le(&self) -> String {
         hex::encode(self.to_le_bytes())

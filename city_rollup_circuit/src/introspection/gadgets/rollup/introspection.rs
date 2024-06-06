@@ -1,5 +1,5 @@
 use city_common::logging::trace_timer::TraceTimer;
-use city_common_circuit::{builder::{connect::CircuitBuilderConnectHelpers, core::{CircuitBuilderHelpersCore, WitnessHelpersCore}, select::CircuitBuilderSelectHelpers, signature::CircuitBuilderSignatureHelpers}, hash::{accelerator::sha256::planner::{Sha256AcceleratorDomain, Sha256AcceleratorDomainID, Sha256AcceleratorDomainPlanner, Sha256AcceleratorDomainResolver}, base_types::{felthash252::CircuitBuilderFelt252Hash, hash160bytes::Hash160BytesTarget, hash256bytes::{CircuitBuilderHash256Bytes, Hash256BytesTarget}}}};
+use city_common_circuit::{builder::{connect::CircuitBuilderConnectHelpers, core::{CircuitBuilderHelpersCore, WitnessHelpersCore}, select::CircuitBuilderSelectHelpers, signature::CircuitBuilderSignatureHelpers}, hash::{accelerator::sha256::planner::{Sha256AcceleratorDomain, Sha256AcceleratorDomainID, Sha256AcceleratorDomainPlanner, Sha256AcceleratorDomainResolver}, base_types::{felthash248::CircuitBuilderFelt248Hash, felthash252::CircuitBuilderFelt252Hash, hash160bytes::Hash160BytesTarget, hash256bytes::{CircuitBuilderHash256Bytes, Hash256BytesTarget}}}};
 use city_rollup_common::{block_template::config::{GENESIS_STATE_HASH, OP_CHECKGROTH16VERIFY, OP_CHECKGROTH16VERIFY_NOP}, introspection::rollup::introspection::{BlockSpendIntrospectionGadgetConfig, BlockSpendIntrospectionHint}};
 use plonky2::{
     field::extension::Extendable,
@@ -118,7 +118,7 @@ impl BTCRollupIntrospectionGadget {
         let current_state_hash_bytes: Hash256BytesTarget =
             core::array::from_fn(|i| current_script[i + 1]);
 
-        let current_state_hash = builder.hash256_bytes_to_felt252_hashout(current_state_hash_bytes);
+        let current_state_hash = builder.hash256_bytes_to_felt248_hashout(current_state_hash_bytes);
 
         assert_eq!(
             funding_transactions.len(),
@@ -376,7 +376,7 @@ impl BTCRollupIntrospectionGadget {
             .get_value_target_u64(builder);
         let sighash_felt252 = builder.hash256_bytes_to_felt252_hashout_packed(self.current_sighash);
 
-        let next_block_state_hash = builder.hash256_bytes_to_felt252_hashout(self.next_block_redeem_script[1..33].try_into().unwrap());
+        let next_block_state_hash = builder.hash256_bytes_to_felt248_hashout(self.next_block_redeem_script[1..33].try_into().unwrap());
         BTCRollupIntrospectionResultGadget {
             deposits,
             withdrawals,

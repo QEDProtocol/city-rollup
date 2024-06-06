@@ -1,6 +1,6 @@
 use city_common_circuit::{
     circuits::traits::qstandard::QStandardCircuit,
-    hash::base_types::felthash252::CircuitBuilderFelt252Hash,
+    hash::base_types::felthash248::CircuitBuilderFelt248Hash,
     proof_minifier::{
         pm_chain_dynamic::OASProofMinifierDynamicChain, pm_core::get_circuit_fingerprint_generic,
     },
@@ -107,9 +107,9 @@ where
             ],
         };
 
-        let expected_current_block_start_hash_252 =
+        let expected_current_block_start_hash_248 =
             introspection_finalized_result_gadget.current_block_state_hash;
-        let expected_current_block_end_hash_252 =
+        let expected_current_block_end_hash_248 =
             introspection_finalized_result_gadget.next_block_state_hash;
 
         let actual_current_block_start_hash = HashOutTarget {
@@ -129,13 +129,13 @@ where
                 block_state_transition_proof_target.public_inputs[7],
             ],
         };
-        builder.connect_full_hashout_to_felt252_hashout(
+        builder.connect_full_hashout_to_felt248_hashout(
             actual_current_block_start_hash,
-            expected_current_block_start_hash_252,
+            expected_current_block_start_hash_248,
         );
-        builder.connect_full_hashout_to_felt252_hashout(
+        builder.connect_full_hashout_to_felt248_hashout(
             actual_current_block_end_hash,
-            expected_current_block_end_hash_252,
+            expected_current_block_end_hash_248,
         );
         let expected_withdrawals_event_hash =
             introspection_finalized_result_gadget.withdrawals_hash;
@@ -163,17 +163,15 @@ where
         );
         builder.connect_hashes(actual_deposits_event_hash, expected_deposits_event_hash);
         let zero = builder.zero();
-        let bits_block_start_hash = expected_current_block_start_hash_252
+        let bits_block_start_hash = expected_current_block_start_hash_248
             .elements
             .iter()
             .map(|x| {
-                let mut bits = builder
-                    .split_le(*x, 63)
+                builder
+                    .split_le(*x, 64)
                     .iter()
                     .map(|b| b.target)
-                    .collect::<Vec<_>>();
-                bits.push(zero);
-                bits
+                    .collect::<Vec<_>>()
             })
             .flatten()
             .collect::<Vec<_>>();

@@ -127,7 +127,7 @@ fn run_full_block() -> anyhow::Result<()> {
         genesis_funder_address.address,
         fund_genesis_txid,
         setup_fee,
-        genesis_state_hash.to_felt252_hash256(),
+        genesis_state_hash.to_felt248_hash256(),
     )?;
     tracing::info!(
         "funded genesis block with txid: {}",
