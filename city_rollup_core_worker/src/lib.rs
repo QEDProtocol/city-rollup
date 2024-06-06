@@ -111,12 +111,15 @@ pub fn run(args: L2WorkerArgs) -> anyhow::Result<()> {
         ))?;
     }
 
-    
+    tracing::info!("worker setup completed");
 
+    
+/* 
     tracing::info!(
         "CRWorkerToolboxCoreCircuitFingerprints: {}",
         serde_json::to_string(&toolbox.core.fingerprints).unwrap()
     );
+    */
 
     loop {
         'inner: loop {
