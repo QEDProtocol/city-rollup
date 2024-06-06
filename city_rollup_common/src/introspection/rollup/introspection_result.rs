@@ -93,10 +93,19 @@ impl<F: RichField> BTCRollupIntrospectionResultWithdrawal<F> {
             "only supports p2sh (length = 23) and p2pkh withdrawals (length = 25), got length = {}",
             script_length
         );
-        let public_key_hash_bytes = self.script[2..22]
+        let public_key_hash_bytes = if script_length == 23 {
+            // p2sh
+            self.script[2..22]
             .iter()
             .map(|f| f.to_canonical_u64() as u8)
-            .collect::<Vec<u8>>();
+            .collect::<Vec<u8>>()
+        }else{
+            // p2pkh
+            self.script[3..23]
+            .iter()
+            .map(|f| f.to_canonical_u64() as u8)
+            .collect::<Vec<u8>>()
+        };
         let withdrawal_type_flag = if script_length == 23 {
             WITHDRAWAL_TYPE_P2SH
         } else {

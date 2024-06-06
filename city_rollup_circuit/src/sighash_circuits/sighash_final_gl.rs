@@ -221,16 +221,15 @@ where
         block_state_transition_proof: &ProofWithPublicInputs<C::F, C, D>,
         sighash_wrapper_proof: &ProofWithPublicInputs<C::F, C, D>,
     ) -> anyhow::Result<ProofWithPublicInputs<C::F, C, D>> {
-        /*
-        tracing::info!("input: {:?}", input);
-        tracing::info!(
+        println!("input: {:?}", input);
+        println!(
             "block_state_transition_proof.public_inputs: {:?}",
             block_state_transition_proof.public_inputs
         );
-        tracing::info!(
+        println!(
             "sighash_wrapper_proof.public_inputs: {:?}",
             sighash_wrapper_proof.public_inputs
-        );*/
+        );
         let mut pw = PartialWitness::new();
         pw.set_proof_with_pis_target(
             &self.block_state_transition_proof_target,

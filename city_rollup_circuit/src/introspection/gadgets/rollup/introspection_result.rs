@@ -101,9 +101,14 @@ impl BTCRollupIntrospectionResultWithdrawalGadget {
         } else {
             WITHDRAWAL_TYPE_P2PKH
         };
-        let first_56 = builder.le_bytes_to_u56_target(&self.script[2..9]);
-        let mid_56 = builder.le_bytes_to_u56_target(&self.script[9..16]);
-        let last_48 = builder.le_bytes_to_u48_target(&self.script[16..22]);
+        let offset = if script_length == 23 {
+            0
+        }else{
+            1
+        };
+        let first_56 = builder.le_bytes_to_u56_target(&self.script[(2+offset)..(9+offset)]);
+        let mid_56 = builder.le_bytes_to_u56_target(&self.script[(9+offset)..(16+offset)]);
+        let last_48 = builder.le_bytes_to_u48_target(&self.script[(16+offset)..(22+offset)]);
         let last_48_with_flag =
             builder.add_const(last_48, F::from_canonical_u64(withdrawal_type_flag));
 
