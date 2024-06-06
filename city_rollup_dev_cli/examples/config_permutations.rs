@@ -8,16 +8,16 @@ use plonky2::{field::goldilocks_field::GoldilocksField, plonk::config::PoseidonG
 
 fn main() {
     let mt = SigHashMerkleTree::new();
-    tracing::info!("root: {:?}", mt.root.0);
-    let max_deposits = 2;
-    let max_widthdrawals = 2;
+    println!("root: {:?}", mt.root.0);
+    let max_deposits = 1;
+    let max_widthdrawals = 1;
     let mut timer = TraceTimer::new("config_permutations");
     timer.lap("start");
     let permutations = BlockSpendCoreConfig::standard_p2sh_p2pkh()
         .generate_permutations(max_deposits, max_widthdrawals);
     let id_permutations = BlockSpendCoreConfig::standard_p2sh_p2pkh()
         .generate_id_permutations(max_deposits, max_widthdrawals);
-    tracing::info!(
+    println!(
         "id_permutations: {}",
         serde_json::to_string(&id_permutations).unwrap()
     );
@@ -30,12 +30,12 @@ fn main() {
     for i in 0..permutations.len() {
         let circuit = CRSigHashCircuit::<C, D>::new(permutations[i].clone());
         let fingerprint = circuit.get_fingerprint();
-        tracing::info!("[{}]: {}", i, fingerprint.to_string());
+        println!("[{}]: {}", i, fingerprint.to_string());
         fingerprints.push(fingerprint);
         timer.event(format!("generated fingerprint {}", i));
     }
-    tracing::info!("Total permutations: {}", permutations.len());
-    tracing::info!(
+    println!("Total permutations: {}", permutations.len());
+    println!(
         "permutations: {}",
         serde_json::to_string(&fingerprints).unwrap()
     );

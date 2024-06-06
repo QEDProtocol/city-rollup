@@ -18,8 +18,8 @@ fn get_constant_hashes_string<F: RichField>(hashes: &[QHashOut<F>]) -> String {
 
 fn main() {
     let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    let path = format!("{}/examples/config_permutations_g16_4x4.json", root.display());
+    let path = format!("{}/examples/config_permutations_1x1.json", root.display());
     let file_data = fs::read(path).unwrap();
     let hashes: Vec<QHashOut<GoldilocksField>> = serde_json::from_slice(&file_data).unwrap();
-    tracing::info!("[\n{}\n]", get_constant_hashes_string(&hashes));
+    println!("[\n{}\n]", get_constant_hashes_string(&hashes));
 }
