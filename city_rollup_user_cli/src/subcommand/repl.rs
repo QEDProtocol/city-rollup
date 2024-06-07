@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 
-use city_common::{binaryhelpers::bytes::CompressedPublicKey, cli::user_args::RPCReplArgs};
+use city_common::cli::user_args::RPCReplArgs;
 use city_crypto::{hash::base_types::hash256::Hash256, signature::secp256k1::wallet::MemorySecp256K1Wallet};
-use city_rollup_common::
-    link::{data::BTCAddress160, link_api::BTCLinkAPI, traits::{QBitcoinAPIFunderSync, QBitcoinAPISync}, tx::send_entire_balance_simple_p2pkh}
+use city_rollup_common::{introspection::transaction::BTCTransactionInputWithoutScript, 
+    link::{data::BTCAddress160, link_api::BTCLinkAPI, traits::{QBitcoinAPIFunderSync, QBitcoinAPISync}, tx::{send_entire_balance_simple_p2pkh, send_p2pkh_exact_value}}}
 ;
 
 use city_rollup_rpc_provider::{CityRpcProviderSync, RpcProviderSync};
@@ -149,12 +149,43 @@ fn spend_all(args: HashMap<String, Value>, context: &mut ReplContext) -> Result<
   Ok(Some(format!("{{\"txid\": \"{}\"}}", txid.to_hex_string())))
 }
 
+fn spend_utxo(args: HashMap<String, Value>, context: &mut ReplContext) -> Result<Option<String>> {
+  let private_key: String = args["private_key"].convert()?;
+  let txid_string: String = args["txid"].convert()?;
+  let txid = Hash256::from_hex_string(&txid_string)?;
+  let recipient: String = args["recipient"].convert()?;
+  let index: u32 = args["index"].convert()?;
+  let optional_fee = args.get("fee");
+  let fee = if optional_fee.is_some() {
+    optional_fee.unwrap().convert()?
+  } else {
+    10000000u64
+  };
+  let mut wallet = MemorySecp256K1Wallet::new();
+
+  let from = BTCAddress160::from_p2pkh_key(
+    wallet.add_private_key(Hash256::from_hex_string(&private_key)?)?,
+);
+  let to = BTCAddress160::try_from_string(&recipient)?;
+
+  let txid = send_p2pkh_exact_value(&context.btc_link_rpc, &wallet, from.address, to, &[
+    BTCTransactionInputWithoutScript{
+        hash: txid.reversed(),
+        index,
+        sequence: 0xffffffff,
+    }
+  ], fee)?;
+
+
+  Ok(Some(format!("{{\"txid\": \"{}\"}}", txid.to_hex_string())))
+}
+
 
 #[derive(Serialize, Deserialize, Clone)]
 struct L1P2PKHWallet {
   pub address: String,
   pub private_key: Hash256,
-  pub public_key: CompressedPublicKey,
+  pub public_key: String,
 }
 impl L1P2PKHWallet{
   pub fn new_random() -> anyhow::Result<Self> {
@@ -165,7 +196,7 @@ impl L1P2PKHWallet{
     Ok(Self {
       address: address.to_address_string(),
       private_key,
-      public_key,
+      public_key: hex::encode(&public_key.0),
     })
 
   }
@@ -227,6 +258,14 @@ pub async fn run(args: RPCReplArgs) -> Result<()> {
           .with_parameter(Parameter::new("recipient").set_required(true)?)?
           .with_parameter(Parameter::new("fee").set_required(false)?)?
   ).add_command(
+    Command::new("spend_utxo", spend_utxo)
+        .with_help("spend a utxo for a P2PKH dogecoin address")
+        .with_parameter(Parameter::new("private_key").set_required(true)?)?
+        .with_parameter(Parameter::new("txid").set_required(true)?)?
+        .with_parameter(Parameter::new("index").set_required(true)?)?
+        .with_parameter(Parameter::new("recipient").set_required(true)?)?
+        .with_parameter(Parameter::new("fee").set_required(false)?)?
+).add_command(
     Command::new("random_l1_wallet", random_dogecoin_wallet)
         .with_help("generate a random dogecoin P2PKH wallet")
   ).add_command(
