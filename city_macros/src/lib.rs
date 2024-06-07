@@ -310,6 +310,32 @@ macro_rules! capture {
 }
 
 #[macro_export]
+macro_rules! city_external_rpc_call_sync {
+    ($instance:ident, $method:expr, $params:expr, $rtype:ty) => {{
+        let response = $instance
+            .client
+            .post($instance.url)
+            .json(&RpcRequest {
+                jsonrpc: Version::V2,
+                request: ExternalRequestParams {
+                    method: $method.to_string(),
+                    params: RpcParams($params),
+                },
+                id: Id::Number(1),
+            })
+            .send()?
+            .json::<RpcResponse<$rtype>>()?;
+
+        if let ResponseResult::Success(s) = response.result {
+            Ok(s)
+        } else {
+            Err(anyhow::format_err!("rpc call failed"))
+        }
+    }};
+}
+
+
+#[macro_export]
 macro_rules! city_external_rpc_call {
     ($instance:ident, $method:expr, $params:expr, $rtype:ty) => {{
         let response = $instance
@@ -351,6 +377,29 @@ macro_rules! city_rpc_call {
             .await?
             .json::<RpcResponse<()>>()
             .await?;
+
+        if let ResponseResult::Success(s) = response.result {
+            Ok(s)
+        } else {
+            Err(anyhow::format_err!("rpc call failed"))
+        }
+    }};
+}
+
+
+#[macro_export]
+macro_rules! city_rpc_call_sync {
+    ($instance:ident, $params:expr) => {{
+        let response = $instance
+            .client
+            .post($instance.url)
+            .json(&RpcRequest {
+                jsonrpc: Version::V2,
+                request: $params,
+                id: Id::Number(1),
+            })
+            .send()?
+            .json::<RpcResponse<()>>()?;
 
         if let ResponseResult::Success(s) = response.result {
             Ok(s)

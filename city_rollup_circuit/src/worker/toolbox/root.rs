@@ -23,7 +23,7 @@ use city_rollup_common::{
     },
 };
 use plonky2::{
-    field::{goldilocks_field::GoldilocksField, types::PrimeField64}, hash::hash_types::HashOut, plonk::{
+    hash::hash_types::HashOut, plonk::{
         circuit_data::{CommonCircuitData, VerifierOnlyCircuitData},
         config::{AlgebraicHasher, GenericConfig, PoseidonGoldilocksConfig},
         proof::ProofWithPublicInputs,
@@ -278,20 +278,20 @@ impl<S: QProofStoreReaderSync> QWorkerGenericProverGroth16<S, PoseidonGoldilocks
             fingerprint,
             verifier_data.constants_sigmas_cap.height(),
         );
-        let pub_bits = inner_proof.public_inputs.iter().map(|x: &GoldilocksField|(*x).to_canonical_u64()).collect::<Vec<_>>();
+        //let pub_bits = inner_proof.public_inputs.iter().map(|x: &GoldilocksField|(*x).to_canonical_u64()).collect::<Vec<_>>();
 
-        tracing::info!("innerproof_public_input_bits: {:?}",pub_bits);
+        //tracing::info!("innerproof_public_input_bits: {:?}",pub_bits);
 
         let wrapper_proof = wrapper.prove_base(&inner_proof, &verifier_data)?;
 
-        let (proof_string, vk_string) = gnark_plonky2_wrapper::wrap_plonky2_proof(
+        let (proof_string, _vk_string) = gnark_plonky2_wrapper::wrap_plonky2_proof(
             wrapper.circuit_data,
             &wrapper_proof,
             Some(&format!("/tmp/plonky2_proof/{}", job_id.data_index)),
             &format!("{}/.city-rollup/keystore/", home::home_dir().unwrap().display())
         )?;
-        println!("proof: {}",proof_string);
-        println!("vk: {}",vk_string);
+        //println!("proof: {}",proof_string);
+        //println!("vk: {}",vk_string);
         /*
          let proof_string = serde_json::to_string(&CityGroth16ProofData {
              pi_a: Serialized2DFeltBLS12381([0u8; 48]),
