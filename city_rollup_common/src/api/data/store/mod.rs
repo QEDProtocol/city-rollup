@@ -242,7 +242,7 @@ impl CityL1Withdrawal {
             script: [
                 vec![0x76u8, 0xA9u8, 0x14u8],
                 self.address.0.to_vec(),
-                vec![0x38u8, 0xACu8],
+                vec![0x88u8, 0xACu8],
             ]
             .concat(),
         }

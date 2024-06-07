@@ -2,7 +2,7 @@ use city_common::{
     config::rollup_constants::{BLOCK_SCRIPT_SPEND_BASE_FEE_AMOUNT, WITHDRAWAL_FEE_AMOUNT},
     logging::debug_timer::DebugTimer,
 };
-use city_crypto::hash::base_types::{felt252::felt252_hashout_to_hash256_le, hash160::Hash160, hash256::Hash256};
+use city_crypto::hash::base_types::{hash160::Hash160, hash256::Hash256};
 use city_rollup_common::{
     actors::{
         requested_actions::CityScenarioRequestedActions,

@@ -101,8 +101,11 @@ pub struct RegisterUserArgs {
     #[clap(long, short, default_value = "http://127.0.0.1:3000", env)]
     pub rpc_address: String,
     /// user private key
-    #[clap(long, short)]
+    #[clap(long, short, default_value = "")]
     pub private_key: String,
+    /// user public key
+    #[clap(long, short, default_value = "")]
+    pub public_key: String,
 }
 
 #[derive(Clone, Args)]

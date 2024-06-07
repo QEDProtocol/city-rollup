@@ -32,21 +32,6 @@ pub fn hash256_le_to_felt248_hashout<F: RichField>(hash: &[u8]) -> HashOut<F> {
         ],
     }
 }
-const fn u8_to_bits_le(value: u8) -> [u8; 8] {
-    [
-        (value >> 0) & 1,
-        (value >> 1) & 1,
-        (value >> 2) & 1,
-        (value >> 3) & 1,
-        (value >> 4) & 1,
-        (value >> 5) & 1,
-        (value >> 6) & 1,
-        (value >> 7) & 1,
-    ]
-}
-fn sum_le_bits(bits: &[u8]) -> u64 {
-    bits.iter().fold(0u64, |acc, &b| (acc << 1) | (b as u64))
-}
 pub fn felt248_hashout_to_hash256_le<F: RichField>(hash: HashOut<F>) -> Hash256 {
     //let top_bit = 1u64 << 63u64;
     let a = hash.elements[0].to_canonical_u64();

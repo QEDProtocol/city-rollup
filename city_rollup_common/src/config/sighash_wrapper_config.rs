@@ -8,14 +8,14 @@ pub const SIGHASH_CIRCUIT_WHITELIST_TREE_HEIGHT: u8 = 16;
 
 // OP_CHECKGROTH16VERIFY
 
-pub const SIGHASH_CIRCUIT_MAX_WITHDRAWALS: usize = 1;
-pub const SIGHASH_CIRCUIT_MAX_DEPOSITS: usize = 1;
+pub const SIGHASH_CIRCUIT_MAX_WITHDRAWALS: usize = 4;
+pub const SIGHASH_CIRCUIT_MAX_DEPOSITS: usize = 4;
 pub const SIGHASH_WHITELIST_TREE_ROOT: QHashOut<F> = QHashOut(HashOut {
     elements: [
-        GoldilocksField(10171884674402713944),
-        GoldilocksField(6119005395919906102),
-        GoldilocksField(7538130335462088937),
-        GoldilocksField(3108728272622150826),
+        GoldilocksField(9101853662221658477),
+        GoldilocksField(14745997315659058479),
+        GoldilocksField(419509373493847491),
+        GoldilocksField(15100808374844590173),
     ],
 });
 pub const SIGHASH_CIRCUIT_FINGERPRINTS: [QHashOut<F>; 1875] =[

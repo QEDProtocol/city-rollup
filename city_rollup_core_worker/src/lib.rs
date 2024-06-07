@@ -28,10 +28,10 @@ pub fn run_debug_outer(args: L2WorkerArgs) -> anyhow::Result<()> {
     let network_magic = get_network_magic_for_str(args.network.to_string())?;
     let toolbox =
         CRWorkerToolboxRootCircuits::<C, D>::new(network_magic, SIGHASH_WHITELIST_TREE_ROOT);
-    println!(
+    /*println!(
         "CRWorkerToolboxCoreCircuitFingerprints: {}",
         serde_json::to_string(&toolbox.core.fingerprints).unwrap()
-    );
+    );*/
 
     if args.worker_mode.is_groth16_enabled() {
         gnark_plonky2_wrapper::initialize(&format!(
@@ -103,6 +103,8 @@ pub fn run(args: L2WorkerArgs) -> anyhow::Result<()> {
 
     let toolbox =
         CRWorkerToolboxRootCircuits::<C, D>::new(network_magic, SIGHASH_WHITELIST_TREE_ROOT);
+
+    //println!("fingerprints: {}", serde_json::to_string(&toolbox.core.fingerprints).unwrap());
     
     if args.worker_mode.is_groth16_enabled() {
         gnark_plonky2_wrapper::initialize(&format!(
@@ -111,15 +113,8 @@ pub fn run(args: L2WorkerArgs) -> anyhow::Result<()> {
         ))?;
     }
 
-    tracing::info!("worker setup completed");
+    println!("worker setup completed");
 
-    
-/* 
-    tracing::info!(
-        "CRWorkerToolboxCoreCircuitFingerprints: {}",
-        serde_json::to_string(&toolbox.core.fingerprints).unwrap()
-    );
-    */
 
     loop {
         'inner: loop {
