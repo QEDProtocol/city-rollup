@@ -1,7 +1,7 @@
 use city_crypto::{
     field::conversions::bytes33_to_public_key,
     hash::{
-        base_types::{felt252::hash256_le_to_felt252_hashout, hash256::Hash256},
+        base_types::{felt248::hash256_le_to_felt248_hashout, hash256::Hash256},
         core::btc::btc_hash160,
         qhashout::QHashOut,
     },
@@ -115,10 +115,10 @@ impl BlockSpendIntrospectionHint {
             withdrawals,
             current_block_rollup_balance,
             next_block_rollup_balance,
-            current_block_state_hash: QHashOut(hash256_le_to_felt252_hashout(
+            current_block_state_hash: QHashOut(hash256_le_to_felt248_hashout(
                 &current_block_state_hash,
             )),
-            next_block_state_hash: QHashOut(hash256_le_to_felt252_hashout(
+            next_block_state_hash: QHashOut(hash256_le_to_felt248_hashout(
                 &self.next_block_redeem_script[1..33],
             )),
         }
@@ -424,7 +424,6 @@ impl BlockSpendCoreConfig {
     }
 }
 
-#[serde_as]
 #[derive(Serialize, Deserialize, PartialEq, Clone, Debug, Hash, Eq, PartialOrd, Ord)]
 pub struct BlockSpendIntrospectionGadgetConfig {
     pub sighash_preimage_config: SigHashPreimageConfig,
@@ -507,4 +506,12 @@ impl BlockSpendIntrospectionGadgetConfig {
             current_spend_index: self.current_spend_index,
         }
     }
+}
+
+
+
+#[derive(Serialize, Deserialize, PartialEq, Clone, Debug, Hash, Eq, PartialOrd, Ord)]
+pub struct BlockSpendIntrospectionGadgetConfigWithIndex {
+    pub config: BlockSpendIntrospectionGadgetConfig,
+    pub index: usize,
 }

@@ -1,9 +1,8 @@
 use crate::error::Result;
 use city_common::cli::user_args::RandomWalletArgs;
 use city_crypto::hash::qhashout::QHashOut;
-use city_rollup_common::introspection::rollup::signature::SimpleL2PrivateKey;
-use plonky2::field::goldilocks_field::GoldilocksField;
-use plonky2::hash::poseidon::PoseidonHash;
+use city_rollup_core_orchestrator::debug::scenario::wallet::DebugScenarioWallet;
+use plonky2::{field::goldilocks_field::GoldilocksField, plonk::config::PoseidonGoldilocksConfig};
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]
@@ -12,17 +11,18 @@ struct RandomWalletOutputJSON {
     private_key: QHashOut<GoldilocksField>,
 }
 pub async fn run(_: RandomWalletArgs) -> Result<()> {
-    let private_key_base = QHashOut::<GoldilocksField>::rand();
-    let private_key = SimpleL2PrivateKey::new(private_key_base);
+    let private_key = QHashOut::<GoldilocksField>::rand();
+    let mut debug_wallet = DebugScenarioWallet::<PoseidonGoldilocksConfig, 2>::new_fast_setup();
+    let public_key = debug_wallet.add_zk_private_key(private_key);
 
-    let public_key = private_key.get_public_key::<PoseidonHash>();
+
 
     let random_wallet = RandomWalletOutputJSON {
         public_key,
-        private_key: private_key_base,
+        private_key,
     };
     println!(
-        "L2 wallet: {}",
+        "{}",
         serde_json::to_string_pretty(&random_wallet)
             .map_err(|e| anyhow::format_err!("{}", e.to_string()))?
     );

@@ -26,17 +26,17 @@ fn run_btc_link_demos() -> anyhow::Result<()> {
         hex_literal::hex!("072565005c5a2d84c1ec342c3c758450407f25129406805cd0463059289e20e9"),
     ))?);
 
-    println!("address_0: {}", address_0.to_string());
-    println!("address_1: {}", address_1.to_string());
-    println!("address_2: {}", address_2.to_string());
+    tracing::info!("address_0: {}", address_0.to_string());
+    tracing::info!("address_1: {}", address_1.to_string());
+    tracing::info!("address_2: {}", address_2.to_string());
 
     let txid_0 = api.fund_address(address_0, 2 * UNIT_BTC)?;
-    println!("txid_0: {}", txid_0.to_hex_string());
+    tracing::info!("txid_0: {}", txid_0.to_hex_string());
     api.mine_blocks(10)?;
     sleep(Duration::from_millis(3000));
     let txid_1 =
         send_entire_balance_simple_p2pkh(&api, &wallet, address_0.address, address_1, 60000)?;
-    println!("txid_1: {}", txid_1.to_hex_string());
+    tracing::info!("txid_1: {}", txid_1.to_hex_string());
 
     Ok(())
 }

@@ -48,7 +48,7 @@ impl WorkerEventTransmitterSync for CityEventProcessorMemory {
         if !self.core_job_completed {
             anyhow::bail!("core job not yet completed!");
         }
-        //println!("CityEventProcessorMemory::wait_for_block_proving_jobs is a no-op since its for local (sync) testing only.");
+        //tracing::info!("CityEventProcessorMemory::wait_for_block_proving_jobs is a no-op since its for local (sync) testing only.");
         Ok(false)
     }
 }

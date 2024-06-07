@@ -6,7 +6,7 @@ use city_rollup_common::introspection::rollup::constants::get_network_magic_for_
 use plonky2::plonk::config::PoseidonGoldilocksConfig;
 
 pub async fn run(args: PrintCircuitInfoArgs) -> Result<()> {
-    println!(
+    tracing::info!(
         "
 ----------------------------------------
 |           CityRollup v{}             |

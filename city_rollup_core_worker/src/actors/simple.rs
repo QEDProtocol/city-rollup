@@ -1,9 +1,11 @@
-use city_common::logging::trace_timer::TraceTimer;
+use std::time::Duration;
+
+use city_common::{cli::modes::QWorkerMode, logging::trace_timer::TraceTimer};
 use city_rollup_circuit::worker::traits::{QWorkerGenericProver, QWorkerGenericProverGroth16};
 use city_rollup_common::{
     actors::traits::WorkerEventReceiverSync,
     qworker::{
-        job_id::{ProvingJobCircuitType, QJobTopic, QProvingJobDataID},
+        job_id::{ProvingJobCircuitType, QJobTopic, QProvingJobDataID, QWorkerModeFilter},
         proof_store::QProofStore,
     },
 };
@@ -24,7 +26,7 @@ impl SimpleActorWorker {
         prover: &G,
     ) -> anyhow::Result<()> {
         loop {
-            Self::process_next_job(store, event_receiver, prover)?;
+            Self::process_next_job(store, event_receiver, prover, QWorkerMode::All)?;
         }
     }
     pub fn process_next_job<
@@ -38,12 +40,18 @@ impl SimpleActorWorker {
         store: &mut PS,
         event_receiver: &mut ER,
         prover: &G,
+        mode: QWorkerMode,
     ) -> anyhow::Result<()> {
         //let mut timer = TraceTimer::new("process_next_job");
         let job = event_receiver.wait_for_next_job()?;
-        println!("job: {:?}",job);
-        Self::process_job(store, event_receiver, prover, job)?;
-        //timer.lap("processed next job");
+        if mode.can_process_job(job) {
+            tracing::info!("job: {:?}", job);
+            Self::process_job(store, event_receiver, prover, job)?;
+            //timer.lap("processed next job");
+        } else {
+            event_receiver.enqueue_jobs(&[job])?;
+            std::thread::sleep(Duration::from_millis(750));
+        }
         Ok(())
     }
     fn process_job<
@@ -84,12 +92,12 @@ impl SimpleActorWorker {
         }
 
         let goal_counter = store.get_goal_by_job_id(job_id)?;
-        //println!("goal_counter: {}", goal_counter);
+        //tracing::info!("goal_counter: {}", goal_counter);
         if goal_counter != 0 {
             let result = store.inc_counter_by_id(job_id.get_sub_group_counter_id())?;
             if result == goal_counter {
                 let jobs = store.get_next_jobs_by_job_id(job_id)?;
-                //println!("[{:?}] enqueuing_jobs: {:?}", job_id, jobs);
+                //tracing::info!("[{:?}] enqueuing_jobs: {:?}", job_id, jobs);
                 event_receiver.enqueue_jobs(&jobs)?;
             }
         }

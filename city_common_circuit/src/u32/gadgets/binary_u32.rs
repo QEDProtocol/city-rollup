@@ -153,7 +153,7 @@ mod tests {
 
             let proof = data.prove(pw).unwrap();
 
-            println!("public inputs: {:?}", proof.public_inputs);
+            tracing::info!("public inputs: {:?}", proof.public_inputs);
             assert!(data.verify(proof).is_ok());
         }
     }

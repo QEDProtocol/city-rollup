@@ -239,7 +239,7 @@ impl RpcServer for RpcServerImpl {
         &self,
         transaction_id: Hash256,
     ) -> Result<CityL1Deposit, ErrorObjectOwned> {
-        Ok(CityStore::get_deposit_by_txid(&self.db, transaction_id)
+        Ok(CityStore::get_deposit_by_txid(&self.db, transaction_id.reversed())
             .map_err(|_| ErrorObject::from(ErrorCode::InternalError))?)
     }
 
@@ -247,7 +247,7 @@ impl RpcServer for RpcServerImpl {
         &self,
         transaction_ids: Vec<Hash256>,
     ) -> Result<Vec<CityL1Deposit>, ErrorObjectOwned> {
-        Ok(CityStore::get_deposits_by_txid(&self.db, &transaction_ids)
+        Ok(CityStore::get_deposits_by_txid(&self.db, &transaction_ids.into_iter().map(|x|x.reversed()).collect::<Vec<_>>())
             .map_err(|_| ErrorObject::from(ErrorCode::InternalError))?)
     }
 
@@ -374,11 +374,6 @@ impl RpcServer for RpcServerImpl {
 }
 
 pub async fn run_server(server_addr: String, db: KVQRocksDBStore) -> anyhow::Result<()> {
-    tracing_subscriber::FmtSubscriber::builder()
-        .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
-        .try_init()
-        .expect("setting default subscriber failed");
-
     let server = Server::builder().build(server_addr).await?;
 
     let rpc_server_impl = RpcServerImpl { db };

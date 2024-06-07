@@ -240,7 +240,7 @@ where
         let result = self.circuit_data.prove(pw);
 
         if result.is_err() {
-            println!("error: {}", serde_json::to_string(&input).unwrap());
+            tracing::info!("error: {}", serde_json::to_string(&input).unwrap());
         }
         result
     }

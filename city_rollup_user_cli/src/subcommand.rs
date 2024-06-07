@@ -11,6 +11,7 @@ pub mod l1_deposit;
 pub mod sign_hash;
 pub mod get_public_key;
 pub mod random_wallet;
+pub mod repl;
 
 #[derive(Parser)]
 pub struct Cli {
@@ -29,4 +30,5 @@ pub enum Commands {
     SignHash(city_common::cli::user_args::SignHashArgs),
     GetPublicKey(city_common::cli::user_args::GetPublicKeyArgs),
     RandomWallet(city_common::cli::user_args::RandomWalletArgs),
+    Repl(city_common::cli::user_args::RPCReplArgs),
 }

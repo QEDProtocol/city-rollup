@@ -1,5 +1,5 @@
 use city_crypto::hash::{
-    base_types::{felt252::hash256_le_to_felt252_hashout_packed, hash256::Hash256},
+    base_types::{felt248::hash256_le_to_felt248_hashout, felt252::hash256_le_to_felt252_hashout_packed, hash256::Hash256},
     core::btc::btc_hash256,
 };
 use plonky2::hash::hash_types::{HashOut, RichField};
@@ -140,6 +140,9 @@ impl SigHashPreimage {
     }
     pub fn get_hash_felt252<F: RichField>(&self) -> HashOut<F> {
         hash256_le_to_felt252_hashout_packed::<F>(&self.get_hash().0)
+    }
+    pub fn get_hash_felt248<F: RichField>(&self) -> HashOut<F> {
+        hash256_le_to_felt248_hashout::<F>(&self.get_hash().0)
     }
     pub fn get_sighash_config(&self) -> SigHashPreimageConfig {
         SigHashPreimageConfig {

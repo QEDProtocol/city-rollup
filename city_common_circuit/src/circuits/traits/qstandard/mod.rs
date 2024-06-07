@@ -14,11 +14,11 @@ pub trait QStandardCircuit<C: GenericConfig<D>, const D: usize> {
     fn get_verifier_config_ref(&self) -> &VerifierOnlyCircuitData<C, D>;
     fn get_common_circuit_data_ref(&self) -> &CommonCircuitData<C::F, D>;
     fn print_config(&self) {
-        println!(
+        tracing::info!(
             "constants_sigmas_cap_height: {}",
             self.get_verifier_config_ref().constants_sigmas_cap.height()
         );
-        println!("common_data: {:?}", self.get_common_circuit_data_ref());
+        tracing::info!("common_data: {:?}", self.get_common_circuit_data_ref());
     }
     fn print_config_with_name(&self, name: &str) {
         /*let common_data_bytes = self
@@ -26,7 +26,7 @@ pub trait QStandardCircuit<C: GenericConfig<D>, const D: usize> {
             .to_bytes(&gate_serializer)
             .unwrap();
         let common_data_hash = CoreSha256Hasher::hash_bytes(&common_data_bytes).to_hex_string();
-        println!(
+        tracing::info!(
             "[{}] {{constants_sigmas_cap_height: {}, common_data_hash: {}}}",
             name,
             self.get_verifier_config_ref().constants_sigmas_cap.height(),
@@ -34,19 +34,19 @@ pub trait QStandardCircuit<C: GenericConfig<D>, const D: usize> {
         );
         */
         /*
-        println!(
+        tracing::info!(
             "[{}] common_data: {:?}",
             name,
             self.get_common_circuit_data_ref()
         );
         */
 
-        /*println!(
+        /*tracing::info!(
             "[{}] {{constants_sigmas_cap_height: {}}}",
             name,
             self.get_verifier_config_ref().constants_sigmas_cap.height(),
         );*/
-        println!("{}: \"{:?}\",", name, self.get_common_circuit_data_ref());
+        tracing::info!("{}: \"{:?}\",", name, self.get_common_circuit_data_ref());
     }
     fn get_verifier_triplet(
         &self,

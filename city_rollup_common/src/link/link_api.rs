@@ -344,7 +344,7 @@ impl QBitcoinAPISync for BTCLinkAPI {
 
     fn send_transaction(&self, tx: &BTCTransaction) -> anyhow::Result<Hash256> {
         let bytes = tx.to_bytes();
-        println!("send_transaction: {}", hex::encode(&bytes));
+        tracing::info!("send_transaction: {}", hex::encode(&bytes));
         let txid = self.btc_send_raw_transaction(&bytes)?;
         Ok(txid)
     }
@@ -372,7 +372,7 @@ impl QBitcoinAPISync for BTCLinkAPI {
         address: BTCAddress160,
     ) -> anyhow::Result<Vec<BTCTransactionWithVout>> {
         let utxos = self.btc_get_utxos(address.to_string())?;
-        println!("utxos len: {}", utxos.len());
+        tracing::info!("utxos len: {}", utxos.len());
         let transactions = utxos
             .into_iter()
             .filter(|x| x.status.confirmed)
@@ -391,7 +391,7 @@ impl QBitcoinAPISync for BTCLinkAPI {
 
 impl QBitcoinAPIFunderSync for BTCLinkAPI {
     fn fund_address(&self, address: BTCAddress160, amount: u64) -> anyhow::Result<Hash256> {
-        self.mine_blocks(60)?;
+        self.mine_blocks(100)?;
 
         let txid = self
             .btc_send_to_address_str(
@@ -401,7 +401,7 @@ impl QBitcoinAPIFunderSync for BTCLinkAPI {
             )
             .map_err(|err| anyhow::format_err!("Failed to fund address: {}", err.message))?;
 
-        self.mine_blocks(60)?;
+        self.mine_blocks(100)?;
         Ok(txid)
     }
 

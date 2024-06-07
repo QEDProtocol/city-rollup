@@ -13,12 +13,17 @@ a proof of concept zk rollup on dogecoin
 ## Getting Started
 
 Download the pre-generated `bls12_381` trust setup
-
 ```bash
-wget https://city-rollup.s3.amazonaws.com/alpha/groth16-bls12_381-setup.tgz
-tar -zxvf groth16-bls12_381-setup.tgz
-mkdir -p ~/.city-rollup
-mv trust-setup ~/.city-rollup/keystore
+wget https://city.qed.me/alpha/v1/cr-trusted-setup.zip
+rm -rf ~/.city-rollup/keystore 
+mkdir -p ~/.city-rollup/keystore
+unzip cr-trusted-setup.zip -d ~/.city-rollup/keystore
+rm cr-trusted-setup.zip
+```
+
+Download the pre-generated `bls12_381` trust setup (one-liner):
+```bash
+wget https://city.qed.me/alpha/v1/cr-trusted-setup.zip && rm -rf ~/.city-rollup/keystore && mkdir -p ~/.city-rollup/keystore && unzip cr-trusted-setup.zip -d ~/.city-rollup/keystore && rm cr-trusted-setup.zip
 ```
 
 Build the rollup in release mode
@@ -82,10 +87,7 @@ make cr_produce_block
 Download the pre-generated `bls12_381` trust setup
 
 ```bash
-wget https://city-rollup.s3.amazonaws.com/alpha/groth16-bls12_381-setup.tgz
-tar -zxvf groth16-bls12_381-setup.tgz
-mkdir -p ~/.city-rollup
-mv trust-setup ~/.city-rollup/keystore
+wget https://city.qed.me/alpha/v1/cr-trusted-setup.zip && rm -rf ~/.city-rollup/keystore && mkdir -p ~/.city-rollup/keystore && unzip cr-trusted-setup.zip -d ~/.city-rollup/keystore && rm cr-trusted-setup.zip
 ```
 
 Build the rollup in release mode
@@ -99,7 +101,7 @@ make DOCKER_PROFILE=full relaunch
 ```
 
 
-## Troubleshot
+## Troubleshooting
 
 If you encounter the `DER` error on cli tools, it's normal, don't panic just retry until it works
 ```bash

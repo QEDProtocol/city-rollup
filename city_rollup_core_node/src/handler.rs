@@ -178,8 +178,8 @@ impl<F: RichField> CityRollupRPCServerHandler<F> {
 
     async fn verify_signature_proof(
         &self,
-        user_id: u64,
-        signature_proof: Vec<u8>,
+        _user_id: u64,
+        _signature_proof: Vec<u8>,
     ) -> anyhow::Result<()> {
         // let pubkey_bytes = self.store.get_user_state(user_id)?.public_key;
         //
@@ -229,7 +229,6 @@ impl<F: RichField> OrchestratorRPCEventSenderSync<F> for CityRollupRPCServerHand
     }
 
     fn notify_rpc_produce_block(&mut self) -> anyhow::Result<()> {
-        println!("produce block");
         self.tx_queue.dispatch(Q_CMD, QueueCmd::ProduceBlock)?;
         Ok(())
     }
@@ -239,7 +238,7 @@ pub async fn run<F: RichField>(args: RPCServerArgs) -> anyhow::Result<()> {
     let addr: SocketAddr = args.rollup_rpc_address.parse()?;
 
     let listener = TcpListener::bind(addr).await?;
-    println!("Listening on http://{}", addr);
+    tracing::info!("Listening on http://{}", addr);
     let store = RedisStore::new(&args.redis_uri)?;
     let handler = CityRollupRPCServerHandler::<F>::new(args, store).await?;
 
@@ -253,7 +252,7 @@ pub async fn run<F: RichField>(args: RPCServerArgs) -> anyhow::Result<()> {
             let service = service_fn(|req| async { handler.clone().handle(req).await });
 
             if let Err(err) = http1::Builder::new().serve_connection(io, service).await {
-                println!("Failed to serve connection: {:?}", err);
+                tracing::info!("Failed to serve connection: {:?}", err);
             }
         });
     }

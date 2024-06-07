@@ -84,7 +84,6 @@ impl ProvingDispatcher for RedisQueue {
         topic: &'static str,
         value: impl Serialize + Send + 'static,
     ) -> Result<()> {
-        println!("dispatching message to queue: {}", topic);
         self.queue
             .send_message(topic, serde_json::to_vec(&value)?, None)?;
         Ok(())

@@ -77,7 +77,7 @@ impl<F: RichField> CityEventReceiver<F> {
             0,
             &self.flush_rpc_requests::<CityAddWithdrawalRPCRequest>(Q_RPC_ADD_WITHDRAWAL)?,
         )?;
-        println!(
+        tracing::info!(
             "rpc requests: {}",
             serde_json::to_string(&rpc_processor.output).unwrap()
         );
@@ -173,7 +173,7 @@ impl<F: RichField> OrchestratorRPCEventSenderSync<F> for CityEventReceiver<F> {
         &mut self,
         event: &CityRegisterUserRPCRequest<F>,
     ) -> anyhow::Result<()> {
-        println!("got rpc_register_user: {:?}", event);
+        tracing::info!("got rpc_register_user: {:?}", event);
         self.tx_queue.dispatch(Q_RPC_REGISTER_USER, event.clone())?;
         Ok(())
     }

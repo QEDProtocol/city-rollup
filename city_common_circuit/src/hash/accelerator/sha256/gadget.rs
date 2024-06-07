@@ -290,7 +290,7 @@ where
                 padded_msg
             })
             .collect::<Vec<_>>();
-        println!("endbits: {:?}", end_bits_values);
+        tracing::info!("endbits: {:?}", end_bits_values);
         assert_eq!(end_bits_values.len() * 16, padded_chunks_values.len());
         let num_rounds = end_bits_values.len();
         assert_eq!(self.end_bits_array_register.len(), num_rounds);
@@ -344,7 +344,7 @@ where
             }
         });
 
-        println!("rec_digest_inds: {:?}", rec_digest_inds);
+        tracing::info!("rec_digest_inds: {:?}", rec_digest_inds);
         // Compare expected digests with the trace values.
         let writer = writer_data.public_writer();
         for (digest, expected) in self.hash_state.iter().zip_eq(expected_digests) {
@@ -531,9 +531,9 @@ mod tests {
         sha256_acc_gadget.set_witness(&mut pw, &preimages);
 
         let proof = data.prove(pw).unwrap();
-        println!("extra_data: {:?}", proof.public_inputs);
+        tracing::info!("extra_data: {:?}", proof.public_inputs);
         let duration_ms = start_time.elapsed().as_millis();
-        println!("sha256 proved in {}ms", duration_ms);
+        tracing::info!("sha256 proved in {}ms", duration_ms);
         assert!(data.verify(proof).is_ok());
     }
 
@@ -622,7 +622,7 @@ mod tests {
         Sha256DebugScenario::from_result(&preimages, &proof.public_inputs).print();
 
         let duration_ms = start_time.elapsed().as_millis();
-        println!("sha256 proved in {}ms", duration_ms);
+        tracing::info!("sha256 proved in {}ms", duration_ms);
         assert!(data.verify(proof).is_ok());
     }
 
@@ -703,7 +703,7 @@ mod tests {
 
         let proof = data.prove(pw).unwrap();
         let duration_ms = start_time.elapsed().as_millis();
-        println!("sha256 proved in {}ms", duration_ms);
+        tracing::info!("sha256 proved in {}ms", duration_ms);
         let mut pub_inputs_pos = 0usize;
 
         let result_preimages: Vec<Vec<u8>> = preimages
@@ -714,7 +714,7 @@ mod tests {
                     .map(|f| f.to_canonical_u64() as u8)
                     .collect::<Vec<u8>>();
                 pub_inputs_pos += result.len();
-                println!("got preimage: {}", hex::encode(&result));
+                tracing::info!("got preimage: {}", hex::encode(&result));
                 result
             })
             .collect();
@@ -726,10 +726,10 @@ mod tests {
                 assert_eq!(*result, *expected);
             });
         expected_digests.iter().for_each(|d| {
-            println!("expected digest: {:?}", &d.0);
+            tracing::info!("expected digest: {:?}", &d.0);
         });
 
-        println!("got pub inputs: {:?}", proof.public_inputs);
+        tracing::info!("got pub inputs: {:?}", proof.public_inputs);
 
         assert!(data.verify(proof).is_ok());
     }

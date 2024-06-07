@@ -143,7 +143,7 @@ pub fn msm_execute_parallel<C: Curve>(
             affine_multisummation_best(summations)
         })
         .collect();
-    // println!("Computing the per-digit summations (in parallel) took {}s", start.elapsed().as_secs_f64());
+    // tracing::info!("Computing the per-digit summations (in parallel) took {}s", start.elapsed().as_secs_f64());
 
     let mut y = ProjectivePoint::ZERO;
     let mut u = ProjectivePoint::ZERO;
@@ -151,7 +151,7 @@ pub fn msm_execute_parallel<C: Curve>(
         u = u + digit_acc[digit];
         y = y + u;
     }
-    // println!("Final summation (sequential) {}s", start.elapsed().as_secs_f64());
+    // tracing::info!("Final summation (sequential) {}s", start.elapsed().as_secs_f64());
     y
 }
 

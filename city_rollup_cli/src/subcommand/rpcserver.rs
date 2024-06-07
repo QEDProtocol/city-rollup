@@ -1,7 +1,6 @@
 use city_common::cli::{args::RPCServerArgs, message::CITY_ROLLUP_BANNER};
 use city_store::config::F;
 
-use crate::build;
 
 #[tokio::main]
 pub async fn run(args: RPCServerArgs) -> anyhow::Result<()> {

@@ -1,5 +1,7 @@
 use clap::Args;
 
+use super::modes::QWorkerMode;
+
 #[derive(Clone, Args)]
 pub struct RPCServerArgs {
     #[clap(long, default_value = "0.0.0.0:3000", env)]
@@ -54,6 +56,12 @@ pub struct L2WorkerArgs {
     pub redis_uri: String,
     #[clap(short, long, default_value = "dogeregtest", env)]
     pub network: String,
+    
+    #[clap(long, short, default_value_t = QWorkerMode::All)]
+    pub worker_mode: QWorkerMode,
+    
+    #[clap(long, short, default_value = "0")]
+    pub debug_mode: u32,
 }
 #[derive(Clone, Args)]
 pub struct L2TransferArgs {

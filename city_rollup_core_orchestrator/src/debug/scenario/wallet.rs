@@ -133,7 +133,7 @@ where
             l1_deposit.value,
             DEPOSIT_FEE_AMOUNT,
         );
-        println!(
+        tracing::info!(
             "sig_preimage: {}",
             serde_json::to_string(&sig_preimage).unwrap()
         );

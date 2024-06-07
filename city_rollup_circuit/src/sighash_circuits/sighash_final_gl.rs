@@ -1,6 +1,6 @@
 use city_common_circuit::{
     circuits::traits::qstandard::QStandardCircuit,
-    hash::base_types::felthash252::CircuitBuilderFelt252Hash,
+    hash::base_types::felthash248::CircuitBuilderFelt248Hash,
     proof_minifier::{
         pm_chain_dynamic::OASProofMinifierDynamicChain, pm_core::get_circuit_fingerprint_generic,
     },
@@ -25,7 +25,7 @@ use crate::{
     introspection::gadgets::rollup::introspection_result::BTCRollupIntrospectionFinalizedResultGadget,
     worker::traits::QWorkerCircuitCustomWithDataSync,
 };
-fn reverse_endian_bits(bits: &[Target]) -> Vec<Target> {
+fn _reverse_endian_bits(bits: &[Target]) -> Vec<Target> {
     let mut byte_groups = bits.to_vec().chunks_exact(8).map(|chunk| {
         [
             chunk[0], chunk[1], chunk[2], chunk[3], chunk[4], chunk[5], chunk[6], chunk[7],
@@ -107,9 +107,9 @@ where
             ],
         };
 
-        let expected_current_block_start_hash_252 =
+        let expected_current_block_start_hash_248 =
             introspection_finalized_result_gadget.current_block_state_hash;
-        let expected_current_block_end_hash_252 =
+        let expected_current_block_end_hash_248 =
             introspection_finalized_result_gadget.next_block_state_hash;
 
         let actual_current_block_start_hash = HashOutTarget {
@@ -129,13 +129,13 @@ where
                 block_state_transition_proof_target.public_inputs[7],
             ],
         };
-        builder.connect_full_hashout_to_felt252_hashout(
+        builder.connect_full_hashout_to_felt248_hashout(
             actual_current_block_start_hash,
-            expected_current_block_start_hash_252,
+            expected_current_block_start_hash_248,
         );
-        builder.connect_full_hashout_to_felt252_hashout(
+        builder.connect_full_hashout_to_felt248_hashout(
             actual_current_block_end_hash,
-            expected_current_block_end_hash_252,
+            expected_current_block_end_hash_248,
         );
         let expected_withdrawals_event_hash =
             introspection_finalized_result_gadget.withdrawals_hash;
@@ -163,17 +163,15 @@ where
         );
         builder.connect_hashes(actual_deposits_event_hash, expected_deposits_event_hash);
         let zero = builder.zero();
-        let bits_block_start_hash = expected_current_block_start_hash_252
+        let bits_block_start_hash = expected_current_block_start_hash_248
             .elements
             .iter()
             .map(|x| {
-                let mut bits = builder
-                    .split_le(*x, 63)
+                builder
+                    .split_le(*x, 64)
                     .iter()
                     .map(|b| b.target)
-                    .collect::<Vec<_>>();
-                bits.push(zero);
-                bits
+                    .collect::<Vec<_>>()
             })
             .flatten()
             .collect::<Vec<_>>();
@@ -221,16 +219,6 @@ where
         block_state_transition_proof: &ProofWithPublicInputs<C::F, C, D>,
         sighash_wrapper_proof: &ProofWithPublicInputs<C::F, C, D>,
     ) -> anyhow::Result<ProofWithPublicInputs<C::F, C, D>> {
-        /*
-        println!("input: {:?}", input);
-        println!(
-            "block_state_transition_proof.public_inputs: {:?}",
-            block_state_transition_proof.public_inputs
-        );
-        println!(
-            "sighash_wrapper_proof.public_inputs: {:?}",
-            sighash_wrapper_proof.public_inputs
-        );*/
         let mut pw = PartialWitness::new();
         pw.set_proof_with_pis_target(
             &self.block_state_transition_proof_target,

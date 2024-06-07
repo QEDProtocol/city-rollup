@@ -67,7 +67,7 @@ impl QProofStoreWriterSync for SimpleProofStoreMemory {
     fn inc_counter_by_id(&mut self, id: QProvingJobDataID) -> anyhow::Result<u32> {
         let zero = 0u32;
         let new_value = 1 + *(self.counters.get(&id).unwrap_or(&zero));
-        //println!("new_counter: {}", new_value);
+        //tracing::info!("new_counter: {}", new_value);
         self.counters.insert(id, new_value);
         Ok(new_value)
     }

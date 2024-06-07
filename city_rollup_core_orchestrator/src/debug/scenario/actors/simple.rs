@@ -2,7 +2,7 @@ use city_common::{
     config::rollup_constants::{BLOCK_SCRIPT_SPEND_BASE_FEE_AMOUNT, WITHDRAWAL_FEE_AMOUNT},
     logging::debug_timer::DebugTimer,
 };
-use city_crypto::hash::base_types::{felt252::felt252_hashout_to_hash256_le, hash160::Hash160, hash256::Hash256};
+use city_crypto::hash::base_types::{hash160::Hash160, hash256::Hash256};
 use city_rollup_common::{
     actors::{
         requested_actions::CityScenarioRequestedActions,
@@ -113,11 +113,6 @@ pub fn create_hints_for_block(
             funding_transactions: all_inputs.to_vec(),
             next_block_redeem_script: next_script.to_vec(),
         };
-        println!("hint[{}]: {}",i, serde_json::to_string(&hint).unwrap());
-        println!("sighash: {}", hint.sighash_preimage.get_hash().to_hex_string());
-        println!("sighash 252: {:?}", hint.sighash_preimage.get_hash_felt252::<F>());
-        println!("sighash 252 hex: {}", felt252_hashout_to_hash256_le(hint.sighash_preimage.get_hash_felt252::<F>()).to_hex_string());
-
         spend_hints.push(hint);
     }
 
@@ -198,7 +193,7 @@ impl SimpleActorOrchestrator {
         worker_queue.wait_for_block_proving_jobs(step_1_result.checkpoint_id)?;
         let txid =
             Self::step_2_produce_block_finalize_and_transact(proof_store, btc_api, &step_1_result)?;
-        println!(
+        tracing::info!(
             "produce_block_l1_txid {}: {}",
             step_1_result.checkpoint_id,
             txid.to_hex_string()
@@ -235,16 +230,16 @@ impl SimpleActorOrchestrator {
         let claim_l1_deposits = event_receiver.flush_claim_deposits()?;
         let add_withdrawals = event_receiver.flush_add_withdrawals()?;
         let token_transfers = event_receiver.flush_token_transfers()?;
-        println!(
+        tracing::info!(
             "last_block_address: {}",
             BTCAddress160::new_p2sh(last_block_address,).to_address_string()
         );
-        println!(
+        tracing::info!(
             "current_block_address: {}",
             BTCAddress160::new_p2sh(current_block_address,).to_address_string()
         );
 
-        println!(
+        tracing::info!(
             "current_block_address: {}",
             BTCAddress160::new_p2sh(current_block_address,).to_address_string()
         );
@@ -260,20 +255,20 @@ impl SimpleActorOrchestrator {
         let mut deposit_utxos = vec![];
         let mut last_block_utxo = BTCTransaction::dummy();
         for utxo in utxos.into_iter() {
-            //println!("utxos: {}", hex::encode(&utxo.to_bytes()));
+            //tracing::info!("utxos: {}", hex::encode(&utxo.to_bytes()));
 
             if utxo.is_block_spend_for_state(last_block_address) {
                 last_block_utxo = utxo;
             } else if utxo.is_p2pkh() {
                 deposit_utxos.push(utxo);
             } else {
-                println!("abnormal utxo, ignoring: {}", hex::encode(&utxo.to_bytes()));
+                tracing::info!("abnormal utxo, ignoring: {}", hex::encode(&utxo.to_bytes()));
             }
         }
         if last_block_utxo.is_dummy() {
             anyhow::bail!("utxo not funded by last block");
         }
-        println!(
+        tracing::info!(
             "found {} deposits for block {}",
             deposit_utxos.len(),
             checkpoint_id
@@ -301,15 +296,13 @@ impl SimpleActorOrchestrator {
             "start process requests block {} RPC",
             checkpoint_id
         ));
-        println!("d");
 
         let (_block_state, block_op_job_ids, _block_state_transition, _block_end_jobs, withdrawals) =
             block_planner.process_requests(store, proof_store, &block_requested)?;
-        println!("e");
 
         let next_address = CityStore::get_city_block_deposit_address(store, checkpoint_id + 1)?;
         let next_script = CityStore::get_city_block_script(store, checkpoint_id + 1)?;
-        /*println!(
+        /*tracing::info!(
             "next_address: {}",
             BTCAddress160::new_p2sh(next_address).to_address_string()
         );*/
@@ -521,7 +514,7 @@ impl SimpleActorOrchestrator {
             .into_iter()
             .map(|x| {
                 let bytes = proof_store.get_bytes_by_id(x)?;
-                //println!("proof_output_bytes: {}", hex::encode(&bytes));
+                //tracing::info!("proof_output_bytes: {}", hex::encode(&bytes));
                 let proof = bincode::deserialize::<CityGroth16ProofData>(&bytes)?;
                 Ok(proof)
             })

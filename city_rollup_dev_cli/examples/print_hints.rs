@@ -9,5 +9,5 @@ fn main() {
     let simple_spend_info: SimpleRollupBTCSpendInfo = serde_json::from_slice(&file_data).unwrap();
 
     let introspection_hints = simple_spend_info.to_block_spend_hints().unwrap();
-    println!("{}", serde_json::to_string(&introspection_hints).unwrap());
+    tracing::info!("{}", serde_json::to_string(&introspection_hints).unwrap());
 }

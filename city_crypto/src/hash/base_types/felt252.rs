@@ -115,8 +115,8 @@ mod test {
                 F::from_noncanonical_u64(6917529027641081855u64),
             ],
         };
-        println!("ho: {:?}", ho1);
-        println!(
+        tracing::info!("ho: {:?}", ho1);
+        tracing::info!(
             "252: {}:",
             felt252_hashout_to_hash256_le_packed::<F>(ho1).to_hex_string()
         );

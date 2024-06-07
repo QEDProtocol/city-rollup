@@ -259,7 +259,7 @@ mod tests {
             builder.connect_hash192(expected_new_root_target, delta_merkle_proof_gadget.new_root);
             let num_gates = builder.num_gates();
             let data = builder.build::<C>();
-            println!(
+            tracing::info!(
                 "DeltaMerkleProofTruncatedSha256Gadget (height = {}) circuit num_gates={}, quotient_degree_factor={}",
                 proof.siblings.len(), num_gates, data.common.quotient_degree_factor
             );
@@ -273,7 +273,7 @@ mod tests {
 
             let proof = data.prove(pw).unwrap();
             let duration_ms = start_time.elapsed().as_millis();
-            println!("proved in {}ms", duration_ms);
+            tracing::info!("proved in {}ms", duration_ms);
             assert!(data.verify(proof).is_ok());
         }
     }

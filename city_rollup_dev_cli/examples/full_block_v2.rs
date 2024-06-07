@@ -121,12 +121,12 @@ fn prove_block_demo(hints: &[BlockSpendIntrospectionHint]) -> anyhow::Result<()>
         &modified_hints,
     )?;
     timer.lap("end process requests block 1");
-    /*println!(
+    /*tracing::info!(
             "block_1_job_ids: {}",
             serde_json::to_string(&block_1_job_ids).unwrap()
         );
-        println!("block_1_job_ids: {:?}", block_1_job_ids);
-        println!(
+        tracing::info!("block_1_job_ids: {:?}", block_1_job_ids);
+        tracing::info!(
             "block_1_state_transition: {}",
             serde_json::to_string(&block_1_state_transition).unwrap()
         );
@@ -163,19 +163,19 @@ fn prove_block_demo(hints: &[BlockSpendIntrospectionHint]) -> anyhow::Result<()>
     /*
         let state_root_proof =
             proof_store.get_proof_by_id::<C, D>(block_1_end_jobs.last().unwrap().get_output_id())?;
-        println!(
+        tracing::info!(
             "state_root_proof.public_inputs: {:?}",
             state_root_proof.public_inputs
         );
         let first_sighash_proof = proof_store
             .get_proof_by_id::<C, D>(sighash_jobs.sighash_final_gl_job_ids[0].get_output_id())?;
-        println!(
+        tracing::info!(
             "first_sighash_proof.public_inputs: {:?}",
             first_sighash_proof.public_inputs
         );
         let first_wrap_sighash_final_gl_proof = proof_store
             .get_bytes_by_id(sighash_jobs.wrap_sighash_final_bls12381_job_ids[0].get_output_id())?;
-        println!(
+        tracing::info!(
             "first_wrap_sighash_final_gl_proof {:?}",
             std::str::from_utf8(&first_wrap_sighash_final_gl_proof)?
         );
@@ -189,10 +189,10 @@ fn prove_block_demo(hints: &[BlockSpendIntrospectionHint]) -> anyhow::Result<()>
 
     let add_deposit_proof =
         proof_store.get_proof_by_id::<C, D>(root_proof_ids.add_deposit_job_root_id)?;
-    println!("got register_users_proof: {:?}", register_users_proof);*/
+    tracing::info!("got register_users_proof: {:?}", register_users_proof);*/
 
     let block_1_state = CityStore::<S>::get_block_state(&store, 1)?;
-    println!("block_1_state: {:?}", block_1_state);
+    tracing::info!("block_1_state: {:?}", block_1_state);
     let mut block_2_builder = QRPCProcessor::<F>::new(2);
 
     let l1_deposit_0 = CityStore::<S>::get_deposit_by_id(&store, 1, 0)?;
@@ -252,5 +252,5 @@ fn main() {
     let introspection_hints = simple_spend_info.to_block_spend_hints().unwrap();
     prove_block_demo(&introspection_hints).unwrap();
 
-    //println!("Proof: {:?}", proof);
+    //tracing::info!("Proof: {:?}", proof);
 }

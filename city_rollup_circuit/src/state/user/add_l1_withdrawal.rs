@@ -152,7 +152,16 @@ impl AddL1WithdrawalSingleGadget {
         let new_user_nonce = withdrawal_gadget.new_user_state.nonce;
         let withdrawal_hash = withdrawal_gadget.withdrawal_hash;
         let withdrawal_fee = withdrawal_gadget.withdrawal_fee;
-
+/*
+        let expected_signature_hash = compute_sig_action_hash_circuit::<H, F, D>(
+            builder,
+            network_magic_target,
+            sender_user_id,
+            sig_action_id,
+            new_sender_user_nonce,
+            &[recipient_user_id, amount],
+        );
+        let expected_p*/
         let expected_signature_hash = compute_sig_action_hash_circuit::<H, F, D>(
             builder,
             network_magic_target,
@@ -173,7 +182,7 @@ impl AddL1WithdrawalSingleGadget {
             .user_tree_delta_merkle_proof_gadget
             .old_root;
         let new_user_tree_root = withdrawal_gadget
-            .withdrawal_tree_delta_merkle_proof_gadget
+            .user_tree_delta_merkle_proof_gadget
             .new_root;
 
         let old_withdrawal_tree_root = withdrawal_gadget

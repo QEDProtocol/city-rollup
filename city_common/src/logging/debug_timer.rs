@@ -26,7 +26,7 @@ impl DebugTimer {
     pub fn lap(&mut self, event_name: &str) -> u64 {
         let elapsed = self.start_time.elapsed();
         let elapsed_ms = elapsed.as_millis() as u64;
-        println!(
+        tracing::info!(
             "\x1b[96m{}\x1b[0m - \x1b[94m{}\x1b[0m: {} {}ms \x1b[0m",
             self.name,
             event_name,
@@ -39,7 +39,7 @@ impl DebugTimer {
     pub fn event(&mut self, event_name: String) -> u64 {
         let elapsed = self.start_time.elapsed();
         let elapsed_ms = elapsed.as_millis() as u64;
-        println!(
+        tracing::info!(
             "\x1b[96m{}\x1b[0m - \x1b[94m{}\x1b[0m: {} {}ms \x1b[0m",
             self.name,
             event_name,

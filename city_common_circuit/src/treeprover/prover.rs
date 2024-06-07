@@ -30,16 +30,16 @@ pub fn generate_agg_jobs<
     leaf_inputs: &[IL],
 ) -> Vec<Vec<TreeAggJob<IO>>> {
     let tree_positions = BinaryTreePlanner::new(leaf_inputs.len()).levels;
-    println!(
+    tracing::info!(
         "tree_positions = {}",
         serde_json::to_string(&tree_positions).unwrap()
     );
     let mut output: Vec<Vec<TreeAggJob<IO>>> = Vec::with_capacity(tree_positions.len());
     for level in tree_positions {
-        println!("output.len() = {}", output.len());
+        tracing::info!("output.len() = {}", output.len());
         let mut level_output: Vec<TreeAggJob<IO>> = Vec::with_capacity(level.len());
         for job in level {
-            println!("job: {:?}", job);
+            tracing::info!("job: {:?}", job);
             let input = if job.left_job.is_leaf() {
                 if job.right_job.is_leaf() {
                     LA::get_output_from_leaves(
@@ -120,7 +120,7 @@ pub fn prove_tree_serial<
                 &right_proof,
                 &job.input,
             )?;
-            println!(
+            tracing::info!(
                 "proved agg: {}, {}",
                 current_proofs.len(),
                 level_proofs.len()

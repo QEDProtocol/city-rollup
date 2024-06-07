@@ -48,7 +48,7 @@ where
         }
         /*
         for m in &minifiers {
-          println!("deg_bits: {} ",m.common_circuit_data.degree_bits());
+          tracing::info!("deg_bits: {} ",m.common_circuit_data.degree_bits());
         }
         */
 
@@ -97,7 +97,7 @@ where
         }
         /*
         for m in &minifiers {
-          println!("deg_bits: {} ",m.common_circuit_data.degree_bits());
+          tracing::info!("deg_bits: {} ",m.common_circuit_data.degree_bits());
         }
         */
 
@@ -147,7 +147,7 @@ where
         }
         /*
         for m in &minifiers {
-          println!("deg_bits: {} ",m.common_circuit_data.degree_bits());
+          tracing::info!("deg_bits: {} ",m.common_circuit_data.degree_bits());
         }
         */
 
@@ -173,7 +173,7 @@ where
         }
         /*
         for m in &minifiers {
-            println!("deg_bits: {} ", m.circuit_data.common.degree_bits());
+            tracing::info!("deg_bits: {} ", m.circuit_data.common.degree_bits());
         }*/
 
         Self { minifiers }
@@ -218,7 +218,7 @@ where
         }
         /*
         for m in &minifiers {
-          println!("deg_bits: {} ",m.common_circuit_data.degree_bits());
+          tracing::info!("deg_bits: {} ",m.common_circuit_data.degree_bits());
         }
         */
 

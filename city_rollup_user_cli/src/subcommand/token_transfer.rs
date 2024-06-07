@@ -23,7 +23,7 @@ pub async fn run(args: TokenTransferArgs) -> Result<()> {
     let private_key = QHashOut::<GoldilocksField>::from_str(&args.private_key)
         .map_err(|e| anyhow::format_err!("{}", e.to_string()))?;
 
-    let mut wallet = DebugScenarioWallet::<C, D>::new();
+    let mut wallet = DebugScenarioWallet::<C, D>::new_fast_setup();
 
     let public_key = wallet.add_zk_private_key(private_key);
 

@@ -36,18 +36,18 @@ where
     let result_finalized_hash = QHashOut::from_felt_slice(&proof.public_inputs[0..4]);
     let result_sighash_felt252 = QHashOut::from_felt_slice(&proof.public_inputs[4..8]);
 
-    println!(
+    tracing::info!(
         "result_finalized_hash: {}",
         result_finalized_hash.to_string()
     );
-    println!(
+    tracing::info!(
         "result_sighash_felt252: {}",
         result_sighash_felt252.to_string_le()
     );
 
     let expected_result = hint.get_introspection_result::<C::Hasher, C::F>();
     let expected_finalized_result = expected_result.get_finalized_result::<C::Hasher>();
-    /*println!(
+    /*tracing::info!(
         "expected_trace_result:\n{}",
         serde_json::to_string_pretty(&expected_finalized_result).unwrap()
     );*/
@@ -56,15 +56,15 @@ where
     let expected_sighash_felt252 = expected_result.sighash_felt252;
     let real_sighash = expected_result.sighash;
 
-    println!(
+    tracing::info!(
         "expected_finalized_hash: {}",
         expected_finalized_hash.to_string()
     );
-    println!(
+    tracing::info!(
         "expected_sighash_felt252: {}",
         expected_sighash_felt252.to_string_le()
     );
-    println!("real_sighash: {}", real_sighash.to_string());
+    tracing::info!("real_sighash: {}", real_sighash.to_string());
     /*
         for (i, d) in expected_result.deposits.iter().enumerate() {
             let preimage = vec![
@@ -76,8 +76,8 @@ where
             .iter()
             .map(|x| x.to_canonical_u64())
             .collect::<Vec<_>>();
-            println!("deposit_{i}_preimage: {:?}", preimage);
-            println!("deposit_{i}_hash: {}", d.get_hash::<C::Hasher>());
+            tracing::info!("deposit_{i}_preimage: {:?}", preimage);
+            tracing::info!("deposit_{i}_hash: {}", d.get_hash::<C::Hasher>());
         }
     */
     Ok(proof)
@@ -97,5 +97,5 @@ fn main() {
     let _proof = prove_hint::<C, D>(&introspection_hints[0]).unwrap();
     timer.lap("finished proving");
 
-    //println!("Proof: {:?}", proof);
+    //tracing::info!("Proof: {:?}", proof);
 }

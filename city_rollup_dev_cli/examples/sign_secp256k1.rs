@@ -44,5 +44,5 @@ fn prove_sig_demo() -> anyhow::Result<()> {
 fn main() {
     prove_sig_demo().unwrap();
 
-    //println!("Proof: {:?}", proof);
+    //tracing::info!("Proof: {:?}", proof);
 }

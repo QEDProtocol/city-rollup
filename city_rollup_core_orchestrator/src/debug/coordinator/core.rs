@@ -37,7 +37,7 @@ impl<F: RichField> DevMemoryCoordinatatorRPCQueue<F> {
         rpc_processor.process_deposits(proof_store, 0, &self.claim_l1_deposits)?;
         rpc_processor.process_transfers(proof_store, 0, &self.token_transfers)?;
         rpc_processor.process_withdrawals(proof_store, 0, &self.add_withdrawals)?;
-        println!(
+        tracing::info!(
             "rpc requests: {}",
             serde_json::to_string(&rpc_processor.output).unwrap()
         );

@@ -1,5 +1,5 @@
 pub fn get_user_id_from_leaf_id(leaf_id: u64) -> anyhow::Result<u64> {
-    println!("got leaf_id {}", leaf_id);
+    tracing::info!("got leaf_id {}", leaf_id);
     if leaf_id & 1u64 != 0 {
         anyhow::bail!("Leaf id is not even")
     } else {
@@ -18,10 +18,10 @@ fn main() {
 
     let results = get_user_ids(&inputs);
     if results.is_err() {
-        println!("Error: {:?}", results.err().unwrap());
+        tracing::info!("Error: {:?}", results.err().unwrap());
     } else {
         let results = results.unwrap();
-        println!("Results: {:?}", results);
+        tracing::info!("Results: {:?}", results);
     }
     /*
     let mut ctr = 0;
@@ -32,11 +32,11 @@ fn main() {
             get_user_id_from_leaf_id(*x)
         })
         .collect();
-    println!("ctr: {}", ctr);
+    tracing::info!("ctr: {}", ctr);
     if results.is_err() {
-        println!("Error: {:?}", results.err().unwrap());
+        tracing::info!("Error: {:?}", results.err().unwrap());
     } else {
         let results = results.unwrap();
-        println!("Results: {:?}", results);
+        tracing::info!("Results: {:?}", results);
     }*/
 }

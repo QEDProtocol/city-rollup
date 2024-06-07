@@ -103,7 +103,6 @@ pub fn plan_tree_prover_from_leaves_with_events<
     dummy_state_root: QHashOut<F>,
     allowed_circuit_hashes_root: QHashOut<F>,
 ) -> anyhow::Result<(Vec<Vec<QProvingJobDataID>>, AggStateTransitionWithEvents<F>)> {
-    println!("leaves: {:?}", leaves);
     if leaves.len() == 0 {
         let dummy = DummyAggStateTransitionWithEvents {
             state_transition_hash: dummy_state_root,
