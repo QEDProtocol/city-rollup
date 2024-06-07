@@ -6,7 +6,10 @@ type F = GoldilocksField;
 
 pub const SIGHASH_CIRCUIT_WHITELIST_TREE_HEIGHT: u8 = 16;
 
-// OP_CHECKGROTH16VERIFY
+
+// set SIGHASH_WHITELIST_DISABLED_DEV_MODE = true in development ONLY, this sighash whitelist inclusion check for debugging circuits
+pub const SIGHASH_WHITELIST_DISABLED_DEV_MODE: bool = true;
+
 
 pub const SIGHASH_CIRCUIT_MAX_WITHDRAWALS: usize = 4;
 pub const SIGHASH_CIRCUIT_MAX_DEPOSITS: usize = 4;

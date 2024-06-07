@@ -9,7 +9,7 @@ use city_common_circuit::{
 };
 use city_crypto::hash::qhashout::QHashOut;
 use city_rollup_common::{
-    config::sighash_wrapper_config::SIGHASH_CIRCUIT_WHITELIST_TREE_HEIGHT,
+    config::sighash_wrapper_config::{SIGHASH_CIRCUIT_WHITELIST_TREE_HEIGHT, SIGHASH_WHITELIST_DISABLED_DEV_MODE},
     introspection::rollup::introspection::BlockSpendCoreConfig,
     qworker::{
         job_id::QProvingJobDataID, job_witnesses::sighash::CRSigHashWrapperCircuitInput,
@@ -96,7 +96,11 @@ where
 
         let proof_fingerprint = builder.get_circuit_fingerprint::<C::Hasher>(&verifier_data_target);
 
-        builder.connect_hashes(proof_fingerprint, expected_sighash_proof_fingerprint);
+        if SIGHASH_WHITELIST_DISABLED_DEV_MODE {
+            println!("\x1B[0m\x1B[38;5;227m\x1B[48;5;9m[SECURITY WARNING]\x1B[0m SIGHASH_WHITELIST_DISABLED_DEV_MODE is set to true, so the sighash wrapper circuit doesn't validate that the sighash introspection proof comes from a valid sighash circuit. SIGHASH_WHITELIST_DISABLED_DEV_MODE should \x1B[1m\x1B[38;5;9mNEVER\x1B[0m be set to true in production!\x1B[0m");
+        }else{
+            builder.connect_hashes(proof_fingerprint, expected_sighash_proof_fingerprint);
+        }
 
         builder.register_public_inputs(&proof_target.public_inputs);
         let circuit_data = builder.build::<C>();

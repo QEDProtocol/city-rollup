@@ -114,6 +114,12 @@ impl<F: RichField> QRPCProcessor<F> {
             self.checkpoint_id,
             count,
         );
+        println!(
+            "[injest_rpc_claim_deposit] setting_signature_proof_id: {} ({:?})",
+            signature_proof_id.to_hex_string(),
+            signature_proof_id
+        );
+
         ps.set_bytes_by_id(signature_proof_id, &req.signature_proof)?;
 
         Ok(CityClaimDepositRequest::new(
@@ -141,6 +147,11 @@ impl<F: RichField> QRPCProcessor<F> {
         let count = self.output.token_transfers.len() as u32;
         let signature_proof_id =
             QProvingJobDataID::transfer_signature_proof(rpc_node_id, self.checkpoint_id, count);
+        println!(
+            "[injest_rpc_token_transfer] setting_signature_proof_id: {} ({:?})",
+            signature_proof_id.to_hex_string(),
+            signature_proof_id
+        );
         ps.set_bytes_by_id(signature_proof_id, &req.signature_proof)?;
 
         Ok(CityTokenTransferRequest::new(
@@ -159,7 +170,12 @@ impl<F: RichField> QRPCProcessor<F> {
     ) -> anyhow::Result<CityAddWithdrawalRequest> {
         let count = self.output.add_withdrawals.len() as u32;
         let signature_proof_id =
-            QProvingJobDataID::transfer_signature_proof(rpc_node_id, self.checkpoint_id, count);
+            QProvingJobDataID::withdrawal_signature_proof(rpc_node_id, self.checkpoint_id, count);
+        println!(
+            "[injest_rpc_add_withdrawal] setting_signature_proof_id: {} ({:?})",
+            signature_proof_id.to_hex_string(),
+            signature_proof_id
+        );
         ps.set_bytes_by_id(signature_proof_id, &req.signature_proof)?;
 
         Ok(CityAddWithdrawalRequest::new(

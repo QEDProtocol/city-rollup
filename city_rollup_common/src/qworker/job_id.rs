@@ -278,7 +278,7 @@ impl QProvingJobDataID {
         Self {
             topic: QJobTopic::BlockUserSignatureProof,
             goal_id: block_id,
-            group_id: 2,
+            group_id: 3,
             circuit_type: ProvingJobCircuitType::Secp256K1SignatureProof,
             sub_group_id: rpc_node_id,
             task_index: deposit_id,
@@ -523,6 +523,9 @@ impl QProvingJobDataID {
     }
     pub fn to_fixed_bytes(&self) -> QProvingJobDataIDSerialized {
         self.into()
+    }
+    pub fn to_hex_string(&self) -> String {
+        hex::encode(&self.to_fixed_bytes())
     }
 }
 
