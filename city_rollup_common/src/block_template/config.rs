@@ -4,7 +4,7 @@ use super::{
     BLOCK_GROTH16_ENCODED_VERIFIER_DATA, BLOCK_GROTH16_ENCODED_VERIFIER_DATA_0_SHA_256_HASH,
 };
 // set GROTH16_DISABLED_DEV_MODE = true in development ONLY, this disables the groth16 verifier for debugging circuits
-pub const GROTH16_DISABLED_DEV_MODE: bool = true;
+pub const GROTH16_DISABLED_DEV_MODE: bool = false;
 
 
 // DATA INSTRUCTIONS
