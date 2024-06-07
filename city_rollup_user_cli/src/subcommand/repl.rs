@@ -154,7 +154,6 @@ fn spend_utxo(args: HashMap<String, Value>, context: &mut ReplContext) -> Result
   let txid_string: String = args["txid"].convert()?;
   let txid = Hash256::from_hex_string(&txid_string)?;
   let recipient: String = args["recipient"].convert()?;
-  let index: u32 = args["index"].convert()?;
   let optional_fee = args.get("fee");
   let fee = if optional_fee.is_some() {
     optional_fee.unwrap().convert()?
@@ -168,13 +167,27 @@ fn spend_utxo(args: HashMap<String, Value>, context: &mut ReplContext) -> Result
 );
   let to = BTCAddress160::try_from_string(&recipient)?;
 
-  let txid = send_p2pkh_exact_value(&context.btc_link_rpc, &wallet, from.address, to, &[
+  let funding_tx = context.btc_link_rpc.get_transaction(txid)?;
+  let vouts = funding_tx.get_vouts_for_address(&from);
+  let value: u64 = vouts.iter().map(|x| {
+    let index: usize = (*x) as usize;
+    funding_tx.outputs[index].value
+  }).sum();
+  let inputs = vouts.into_iter().map(|x|{
     BTCTransactionInputWithoutScript{
-        hash: txid.reversed(),
-        index,
-        sequence: 0xffffffff,
-    }
-  ], fee)?;
+      hash: txid.reversed(),
+      index: x,
+      sequence: 0xffffffff,
+  }
+  }).collect::<Vec<_>>();
+
+  if value <= fee {
+    anyhow::bail!("balance ({} sats) must be greater than fee ({} sats) ",value, fee);
+  }
+
+
+
+  let txid = send_p2pkh_exact_value(&context.btc_link_rpc, &wallet, from.address, to, &inputs, value-fee)?;
 
 
   Ok(Some(format!("{{\"txid\": \"{}\"}}", txid.to_hex_string())))
@@ -262,7 +275,6 @@ pub async fn run(args: RPCReplArgs) -> Result<()> {
         .with_help("spend a utxo for a P2PKH dogecoin address")
         .with_parameter(Parameter::new("private_key").set_required(true)?)?
         .with_parameter(Parameter::new("txid").set_required(true)?)?
-        .with_parameter(Parameter::new("index").set_required(true)?)?
         .with_parameter(Parameter::new("recipient").set_required(true)?)?
         .with_parameter(Parameter::new("fee").set_required(false)?)?
 ).add_command(
