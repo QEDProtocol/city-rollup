@@ -98,6 +98,26 @@ fn get_block_by_id(
 
     Ok(Some(serde_json::to_string_pretty(&result)?))
 }
+// Get a withdrawal by id
+fn get_withdrawal_by_id(
+    args: HashMap<String, Value>,
+    context: &mut ReplContext,
+) -> Result<Option<String>> {
+    let withdrawal_id: u64 = args["withdrawal_id"].convert()?;
+    let checkpoint_option = args.get("checkpoint");
+    let checkpoint_id: u64 = if checkpoint_option.is_some() {
+        checkpoint_option.unwrap().convert()?
+    } else {
+        MAX_CHECKPOINT_ID
+    };
+
+    let result = context
+        .city_rpc
+        .get_withdrawal_by_id_sync(checkpoint_id, withdrawal_id)?;
+
+    Ok(Some(serde_json::to_string_pretty(&result)?))
+}
+
 // Get block deposit addresss by id
 fn get_block_deposit_address_by_id(
     args: HashMap<String, Value>,
@@ -301,6 +321,12 @@ pub async fn run(args: RPCReplArgs) -> Result<()> {
             .with_parameter(Parameter::new("checkpoint").set_required(false)?)?,
     )
     .add_command(
+        Command::new("withdrawal", get_withdrawal_by_id)
+            .with_help("fetch withdrawal by id")
+            .with_parameter(Parameter::new("withdrawal_id").set_required(true)?)?
+            .with_parameter(Parameter::new("checkpoint").set_required(false)?)?,
+    )
+    .add_command(
         Command::new("block", get_block_by_id)
             .with_help("fetch block state by block id (checkpoint id)")
             .with_parameter(Parameter::new("checkpoint").set_required(false)?)?,
@@ -350,6 +376,7 @@ pub async fn run(args: RPCReplArgs) -> Result<()> {
         Command::new("random_l1_wallet", random_dogecoin_wallet)
             .with_help("generate a random dogecoin P2PKH wallet"),
     )
-    .add_command(Command::new("exit", exit_repl).with_help("exits the repl"));
+    .add_command(Command::new("exit", exit_repl).with_help("exits the repl"))
+    .add_command(Command::new("quit", exit_repl).with_help("exits the repl"));
     repl.run().map_err(|err| err.into())
 }

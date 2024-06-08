@@ -60,7 +60,7 @@ fn get_perm_set(prev_max_deposits: i32, prev_max_withdrawals: i32, target_max_de
 
   }else{
     let existing_configs = BlockSpendCoreConfig::standard_p2sh_p2pkh()
-      .generate_permutations(target_max_deposits, target_max_withdrawals);
+      .generate_permutations(prev_max_deposits as usize, prev_max_withdrawals as usize);
     let all_target_configs = BlockSpendCoreConfig::standard_p2sh_p2pkh()
       .generate_permutations(target_max_deposits, target_max_withdrawals);
     let mut existing_index_map: HashMap<BlockSpendIntrospectionGadgetConfig, usize> = HashMap::new();
@@ -99,15 +99,18 @@ fn get_perm_set(prev_max_deposits: i32, prev_max_withdrawals: i32, target_max_de
   }
 }
 fn compute_permutations(perm_set: SighashPermutationSet) -> SighashPermutationSetResult {
-  println!("existing_set: {}", serde_json::to_string(&perm_set.existing_set).unwrap());
-  println!("target_set: {}", serde_json::to_string(&perm_set.target_set).unwrap());
+  //println!("existing_set: {}", serde_json::to_string(&perm_set.existing_set).unwrap());
+  //println!("target_set: {}", serde_json::to_string(&perm_set.target_set).unwrap());
   let mut timer = TraceTimer::new("config_permutations");
   timer.lap("start");
-  
+  let total = perm_set.target_configs.len();
+  let average_time = 6500f64;
+  println!("Circuits to Generate: {}", total);
+  println!("Estimated completion time: {:.2} minutes", (total as f64)*average_time/(60_000f64));
 
   let mut fingerprints: Vec<QHashOut<F>> = Vec::new();
   for i in 0..perm_set.target_configs.len() {
-      let circuit = CRSigHashCircuit::<C, D>::new(perm_set.target_configs[i].clone());
+      let circuit: CRSigHashCircuit<PoseidonGoldilocksConfig, 2> = CRSigHashCircuit::<C, D>::new(perm_set.target_configs[i].clone());
       let fingerprint = circuit.get_fingerprint();
       println!("[{}]: {}", i, fingerprint.to_string());
       fingerprints.push(fingerprint);
@@ -127,10 +130,10 @@ fn compute_permutations(perm_set: SighashPermutationSet) -> SighashPermutationSe
 fn main() {
     let mt = SigHashMerkleTree::new();
     println!("root: {:?}", mt.root.0);
-    let prev_max_deposits: i32 = -1;
-    let prev_max_withdrawals: i32 = -1;
-    let target_max_deposits = 4;
-    let target_max_withdrawals = 4;
+    let prev_max_deposits: i32 = 4;
+    let prev_max_withdrawals: i32 = 4;
+    let target_max_deposits = 5;
+    let target_max_withdrawals = 5;
 
     let perm_set = get_perm_set(prev_max_deposits, prev_max_withdrawals, target_max_deposits, target_max_withdrawals);
     let result = compute_permutations(perm_set);

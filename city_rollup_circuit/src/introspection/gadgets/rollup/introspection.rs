@@ -16,7 +16,7 @@ use super::introspection_result::{
     BTCRollupIntrospectionResultWithdrawalGadget,
 };
 
-fn ensure_output_script_is_p2pkh<F: RichField + Extendable<D>, const D: usize>(builder: &mut CircuitBuilder<F, D>, script_bytes: &[Target]) {
+pub fn ensure_output_script_is_p2pkh<F: RichField + Extendable<D>, const D: usize>(builder: &mut CircuitBuilder<F, D>, script_bytes: &[Target]) -> Hash160BytesTarget {
 
     // ensure withdrawal output script is p2pkh
     assert_eq!(script_bytes.len(), 25, "P2PKH transaction output scripts must be 25 bytes long");
@@ -40,6 +40,9 @@ fn ensure_output_script_is_p2pkh<F: RichField + Extendable<D>, const D: usize>(b
 
     builder.connect(script_bytes[23], op_equalverify);
     builder.connect(script_bytes[24], op_checksig);
+    core::array::from_fn(|i| {
+        script_bytes[i+3]
+    })
 }
 
 #[derive(Debug, Clone)]
