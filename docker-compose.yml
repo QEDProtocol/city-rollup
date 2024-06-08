@@ -74,6 +74,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    env_file:
+      - .env
     command:
       - "rpc-server"
       - "--api-server-address=http://172.16.238.15:7777"
@@ -92,6 +94,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    env_file:
+      - .env
     command:
       - "orchestrator"
       - "--bitcoin-rpc=http://devnet:devnet@172.16.238.11:18443"
@@ -115,6 +119,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    env_file:
+      - .env
     command:
       - "l2-worker"
       - "--redis-uri=redis://172.16.238.13:6379/0"
@@ -132,6 +138,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    env_file:
+      - .env
     command:
       - "l2-worker"
       - "--redis-uri=redis://172.16.238.13:6379/0"
@@ -149,6 +157,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    env_file:
+      - .env
     command:
       - "l2-worker"
       - "--redis-uri=redis://172.16.238.13:6379/0"
