@@ -48,8 +48,16 @@ impl<S: KVQBinaryStore> CityOrchestratorOpRequestProcessor<S> {
         Self {
             last_block_state,
             checkpoint_id: last_block_state.checkpoint_id + 1,
-            next_add_withdrawal_id: last_block_state.next_add_withdrawal_id,
-            next_process_withdrawal_id: last_block_state.next_process_withdrawal_id,
+            next_add_withdrawal_id: if last_block_state.next_add_withdrawal_id == last_block_state.next_process_withdrawal_id{
+                0
+            }else{
+                last_block_state.next_add_withdrawal_id
+            },
+            next_process_withdrawal_id: if last_block_state.next_add_withdrawal_id == last_block_state.next_process_withdrawal_id{
+                0
+            }else{
+                last_block_state.next_process_withdrawal_id
+            },
             next_deposit_id: last_block_state.next_deposit_id,
             next_user_id: last_block_state.next_user_id,
             total_deposits_claimed_epoch: last_block_state.total_deposits_claimed_epoch,
@@ -66,8 +74,16 @@ impl<S: KVQBinaryStore> CityOrchestratorOpRequestProcessor<S> {
     pub fn get_finalized_block_state(&self) -> CityL2BlockState {
         CityL2BlockState {
             checkpoint_id: self.checkpoint_id,
-            next_add_withdrawal_id: self.next_add_withdrawal_id,
-            next_process_withdrawal_id: self.next_process_withdrawal_id,
+            next_add_withdrawal_id: if self.next_add_withdrawal_id == self.next_process_withdrawal_id {
+                0
+            }else{
+                self.next_add_withdrawal_id
+            },
+            next_process_withdrawal_id: if self.next_add_withdrawal_id == self.next_process_withdrawal_id {
+                0
+            }else{
+                self.next_process_withdrawal_id
+            },
             next_deposit_id: self.next_deposit_id,
             next_user_id: self.next_user_id,
             total_deposits_claimed_epoch: self.total_deposits_claimed_epoch,

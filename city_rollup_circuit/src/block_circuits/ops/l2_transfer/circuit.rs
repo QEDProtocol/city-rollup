@@ -212,11 +212,6 @@ where
         signature_proof: &ProofWithPublicInputs<C::F, C, D>,
         signature_verifier_data: &VerifierOnlyCircuitData<C, D>,
     ) -> anyhow::Result<ProofWithPublicInputs<C::F, C, D>> {
-        
-        println!("transfer_token_input: {:?}", input);
-        println!("transfer_token_input_json: {}", serde_json::to_string(&input).unwrap());
-        println!("signature_proof_public_inputs: {:?}",signature_proof.public_inputs);
-
         let mut pw = PartialWitness::new();
         self.l2_transfer_single_gadget
             .l2_transfer_gadget
@@ -276,8 +271,6 @@ where
     ) -> anyhow::Result<ProofWithPublicInputs<C::F, C, D>> {
         let signature_proof = store.get_proof_by_id(input.signature_proof_id)?;
 
-        println!("[CRL2TransferCircuit] sig_proof_id: {:?}",input.signature_proof_id);
-        println!("[CRL2TransferCircuit] sig_proof_id_hex: {}",hex::encode(&input.signature_proof_id.to_fixed_bytes()));
         self.prove_base(
             input,
             &signature_proof,

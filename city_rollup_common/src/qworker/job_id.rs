@@ -486,7 +486,7 @@ impl QProvingJobDataID {
             data_index: 0,
             circuit_type: parent_type,
             sub_group_id: self.sub_group_id + 1,
-            task_index: self.sub_group_id >> 1u32,
+            task_index: self.task_index >> 1u32,
             ..*self
         }
     }

@@ -5,7 +5,7 @@ use city_rollup_core_orchestrator::debug::scenario::wallet::DebugScenarioWallet;
 use city_rollup_rpc_provider::{CityRpcProvider, RpcProvider};
 use plonky2::{field::goldilocks_field::GoldilocksField, plonk::config::PoseidonGoldilocksConfig};
 use serde::{Deserialize, Serialize};
-use std::str::FromStr;
+use std::{str::FromStr, time::Duration};
 
 const D: usize = 2;
 type C = PoseidonGoldilocksConfig;
@@ -46,6 +46,7 @@ async fn register_users_with_public_keys(
                 public_key: *public_key,
             })
             .await?;
+        tokio::time::sleep(Duration::from_millis(500)).await;
     }
     Ok(())
 }

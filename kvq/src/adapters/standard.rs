@@ -104,6 +104,23 @@ impl<S: KVQBinaryStoreReader, K: KVQSerializable, V: KVQSerializable> KVQStoreAd
             .collect();
         Ok(kvs?)
     }
+
+    fn get_fuzzy_range_leq_kv(
+        s: &S,
+        key: &K,
+        fuzzy_bytes: usize,
+    ) -> anyhow::Result<Vec<KVQPair<K, V>>> {
+        let key = key.to_bytes()?;
+        s.get_fuzzy_range_leq_kv(&key, fuzzy_bytes)?
+            .into_iter()
+            .map(|kv| {
+                Ok(KVQPair {
+                    key: K::from_bytes(&kv.key)?,
+                    value: V::from_bytes(&kv.value)?,
+                })
+            })
+            .collect()
+    }
 }
 
 impl<S: KVQBinaryStore, K: KVQSerializable, V: KVQSerializable> KVQStoreAdapter<S, K, V>

@@ -1,8 +1,8 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, str::FromStr};
 
 use city_common::cli::user_args::RPCReplArgs;
 use city_crypto::{
-    hash::base_types::hash256::Hash256, signature::secp256k1::wallet::MemorySecp256K1Wallet,
+    hash::{base_types::hash256::Hash256, qhashout::QHashOut}, signature::secp256k1::wallet::MemorySecp256K1Wallet,
 };
 use city_rollup_common::{
     introspection::transaction::BTCTransactionInputWithoutScript,
@@ -17,6 +17,7 @@ use city_rollup_common::{
 use city_rollup_rpc_provider::{CityRpcProviderSync, RpcProviderSync};
 
 use anyhow::Result;
+use plonky2::field::goldilocks_field::GoldilocksField;
 use repl_rs::{Command, Convert, Parameter, Repl, Value};
 use serde::{Deserialize, Serialize};
 /*
@@ -156,6 +157,17 @@ fn mine_l1_blocks(
     let results = context.btc_link_rpc.mine_blocks(count)?;
 
     Ok(Some(serde_json::to_string_pretty(&results)?))
+}
+fn get_user_ids_for_public_key(
+    args: HashMap<String, Value>,
+    context: &mut ReplContext,
+) -> Result<Option<String>> {
+    let public_key_string: String = args["public_key"].convert()?;
+    let public_key = QHashOut::<GoldilocksField>::from_str(&public_key_string)?;
+    let results = context.city_rpc.get_user_ids_for_public_key_sync(public_key)?;
+
+
+    Ok(Some(serde_json::to_string(&results)?))
 }
 
 fn spend_all(args: HashMap<String, Value>, context: &mut ReplContext) -> Result<Option<String>> {
@@ -328,6 +340,11 @@ pub async fn run(args: RPCReplArgs) -> Result<()> {
         Command::new("mine_l1_blocks", mine_l1_blocks)
             .with_help("mine n blocks on dogecoin layer 1 (regtest/local testnet ONLY)")
             .with_parameter(Parameter::new("count").set_required(false)?)?,
+    )
+    .add_command(
+        Command::new("user_ids", get_user_ids_for_public_key)
+            .with_help("get the user ids that have a given public key hash")
+            .with_parameter(Parameter::new("public_key").set_required(true)?)?,
     )
     .add_command(
         Command::new("random_l1_wallet", random_dogecoin_wallet)

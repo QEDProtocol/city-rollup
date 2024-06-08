@@ -7,9 +7,14 @@ use plonky2::{
 };
 
 use crate::{
-    config::{CityDeltaMerkleProof, CityHash, CityMerkleProof, GlobalUserTreeStore, F},
-    models::kvq_merkle::model::{
-        KVQFixedConfigMerkleTreeModelCore, KVQFixedConfigMerkleTreeModelReaderCore,
+    config::{
+        CityDeltaMerkleProof, CityHash, CityMerkleProof, GlobalUserTreeStore, L2UserIdsStore, F,
+    },
+    models::{
+        kvq_merkle::model::{
+            KVQFixedConfigMerkleTreeModelCore, KVQFixedConfigMerkleTreeModelReaderCore,
+        },
+        user::model::{L2UserIdsModelCore, L2UserIdsModelReaderCore},
     },
 };
 
@@ -18,6 +23,9 @@ use super::base::CityStore;
 impl<S: KVQBinaryStoreReader> CityStore<S> {
     pub fn get_user_tree_root(store: &S, checkpoint_id: u64) -> anyhow::Result<CityHash> {
         GlobalUserTreeStore::<S>::get_root_fc(store, checkpoint_id)
+    }
+    pub fn get_user_ids_for_public_key(store: &S, public_key: CityHash) -> anyhow::Result<Vec<u64>>{
+        L2UserIdsStore::<S>::get_user_ids_for_public_key(store, public_key)
     }
     pub fn get_user_by_id(
         store: &S,
@@ -93,6 +101,7 @@ impl<S: KVQBinaryStore> CityStore<S> {
         public_key: CityHash,
     ) -> anyhow::Result<CityDeltaMerkleProof> {
         let leaf_id = user_id * 2;
+        L2UserIdsStore::set_user_id_public_key_pair(store, user_id, public_key)?;
         GlobalUserTreeStore::set_leaf_fc(store, checkpoint_id, leaf_id + 1, public_key)
     }
     pub fn decrement_user_balance(

@@ -136,6 +136,72 @@ impl KVQBinaryStoreReader for KVQSimpleMemoryBackingStore {
             Ok(None)
         }
     }
+    /*
+
+    fn get_range_kv(
+        &self,
+        min_included: &Vec<u8>,
+        max_included: &Vec<u8>,
+    ) -> anyhow::Result<Vec<KVQPair<Vec<u8>, Vec<u8>>>> {
+        let rq = self
+            .map
+            .range((
+                Included(min_included.to_vec()),
+                Included(max_included.to_vec()),
+            ))
+            .map(|(k, v)| KVQPair {
+                key: k.to_owned(),
+                value: v.to_owned(),
+            })
+            .collect::<Vec<_>>();
+        Ok(rq)
+    }
+
+    fn get_prefix_range_kv(
+        &self,
+        prefix: &Vec<u8>,
+        fuzzy_bytes: usize,
+    ) -> anyhow::Result<Vec<KVQPair<Vec<u8>, Vec<u8>>>> {
+        let mut base_key = vec![0u8; prefix.len() + fuzzy_bytes];
+        base_key[0..prefix.len()].copy_from_slice(prefix);
+
+        let mut key_end = base_key.to_vec();
+        for i in ((prefix.len() - fuzzy_bytes)..prefix.len()) {
+            key_end[i] = 0xff;
+        }
+        Ok(self
+            .map
+            .range((Included(base_key), Included(key_end)))
+            .map(|(k, v)| KVQPair {
+                key: k.to_owned(),
+                value: v.to_owned(),
+            })
+            .collect::<Vec<_>>())
+    }*/
+    
+    fn get_fuzzy_range_leq_kv(&self, key: &Vec<u8>, fuzzy_bytes: usize) -> anyhow::Result<Vec<KVQPair<Vec<u8>, Vec<u8>>>> {
+        let key_end = key.to_vec();
+        let mut base_key = key.to_vec();
+        let key_len = base_key.len();
+        if fuzzy_bytes > key_len {
+            return Err(anyhow::anyhow!(
+                "Fuzzy bytes must be less than or equal to key length"
+            ));
+        }
+
+        for i in 0..fuzzy_bytes {
+            base_key[key_len - i - 1] = 0;
+        }
+
+        Ok(self
+            .map
+            .range((Included(base_key), Included(key_end)))
+            .map(|(k, v)| KVQPair {
+                key: k.to_owned(),
+                value: v.to_owned(),
+            })
+            .collect::<Vec<_>>())
+    }
 }
 
 impl KVQBinaryStoreWriter for KVQSimpleMemoryBackingStore {

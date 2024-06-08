@@ -17,6 +17,12 @@ pub trait Rpc {
     #[method(name = "getUserTreeRoot")]
     async fn get_user_tree_root(&self, checkpoint_id: u64) -> Result<CityHash, ErrorObjectOwned>;
 
+    #[method(name = "getUserIdsForPublicKey")]
+    async fn get_user_ids_for_public_key(
+        &self,
+        public_key: CityHash,
+    ) -> Result<Vec<u64>, ErrorObjectOwned>;
+
     #[method(name = "getUserById")]
     async fn get_user_by_id(
         &self,
@@ -169,6 +175,14 @@ impl RpcServer for RpcServerImpl {
         user_id: u64,
     ) -> Result<CityUserState, ErrorObjectOwned> {
         Ok(CityStore::get_user_by_id(&self.db, checkpoint_id, user_id)
+            .map_err(|_| ErrorObject::from(ErrorCode::InternalError))?)
+    }
+
+    async fn get_user_ids_for_public_key(
+        &self,
+        public_key: CityHash,
+    ) -> Result<Vec<u64>, ErrorObjectOwned> {
+        Ok(CityStore::get_user_ids_for_public_key(&self.db, public_key)
             .map_err(|_| ErrorObject::from(ErrorCode::InternalError))?)
     }
 
