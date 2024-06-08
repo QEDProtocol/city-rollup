@@ -11,8 +11,8 @@ use city_rollup_common::link::{
 
 fn run_btc_link_demos() -> anyhow::Result<()> {
     let api = BTCLinkAPI::new_str(
-        "http://devnet:devnet@localhost:1337/bitcoin-rpc/?network=dogeRegtest",
-        "http://localhost:1337/api",
+        "http://devnet:devnet@localhost:18443",
+        "http://localhost:50000",
     );
 
     let mut wallet = MemorySecp256K1Wallet::new();

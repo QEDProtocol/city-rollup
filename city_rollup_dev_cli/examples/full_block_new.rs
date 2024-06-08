@@ -26,8 +26,8 @@ use plonky2::{field::goldilocks_field::GoldilocksField, plonk::config::PoseidonG
 fn run_full_block() -> anyhow::Result<()> {
     tracing::info!("{}", CITY_ROLLUP_BANNER);
     let mut api = BTCLinkAPI::new_str(
-        "http://devnet:devnet@localhost:1337/bitcoin-rpc/?network=dogeRegtest",
-        "http://localhost:1337/api",
+        "http://devnet:devnet@localhost:18443",
+        "http://localhost:50000",
     );
 
     const D: usize = 2;
