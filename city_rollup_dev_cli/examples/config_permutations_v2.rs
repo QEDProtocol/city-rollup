@@ -60,7 +60,7 @@ fn get_perm_set(prev_max_deposits: i32, prev_max_withdrawals: i32, target_max_de
 
   }else{
     let existing_configs = BlockSpendCoreConfig::standard_p2sh_p2pkh()
-      .generate_permutations(target_max_deposits, target_max_withdrawals);
+      .generate_permutations(prev_max_deposits as usize, prev_max_withdrawals as usize);
     let all_target_configs = BlockSpendCoreConfig::standard_p2sh_p2pkh()
       .generate_permutations(target_max_deposits, target_max_withdrawals);
     let mut existing_index_map: HashMap<BlockSpendIntrospectionGadgetConfig, usize> = HashMap::new();
