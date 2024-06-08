@@ -1,6 +1,6 @@
 use city_common_circuit::{
     circuits::traits::qstandard::QStandardCircuit,
-    proof_minifier::pm_chain_dynamic::OASProofMinifierDynamicChain,
+    proof_minifier::pm_chain_dynamic::QEDProofMinifierDynamicChain,
 };
 use city_crypto::hash::qhashout::QHashOut;
 use city_rollup_common::qworker::{
@@ -32,7 +32,7 @@ where
 
     pub transition_gadget: BlockStateTransitionGadget,
     // end circuit targets
-    pub minifier_chain: OASProofMinifierDynamicChain<D, C::F, C>,
+    pub minifier_chain: QEDProofMinifierDynamicChain<D, C::F, C>,
     pub circuit_data: CircuitData<C::F, C, D>,
 }
 impl<C: GenericConfig<D> + 'static, const D: usize> CRBlockStateTransitionCircuit<C, D>
@@ -93,7 +93,7 @@ where
 
         let circuit_data = builder.build::<C>();
         let minifier_chain =
-            OASProofMinifierDynamicChain::new(&circuit_data.verifier_only, &circuit_data.common, 1);
+            QEDProofMinifierDynamicChain::new(&circuit_data.verifier_only, &circuit_data.common, 1);
         Self {
             agg_add_process_withdrawals_add_l1_deposit_proof,
             agg_user_register_claim_deposits_l2_transfer_proof,

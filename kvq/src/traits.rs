@@ -68,6 +68,7 @@ pub trait KVQStoreAdapterReader<S, K: KVQSerializable, V: KVQSerializable> {
     fn get_exact(s: &S, key: &K) -> anyhow::Result<V>;
     fn get_many_exact(s: &S, keys: &[K]) -> anyhow::Result<Vec<V>>;
 
+    fn get_fuzzy_range_leq_kv(s: &S, key: &K, fuzzy_bytes: usize) -> anyhow::Result<Vec<KVQPair<K, V>>>;
     fn get_leq(s: &S, key: &K, fuzzy_bytes: usize) -> anyhow::Result<Option<V>>;
     fn get_leq_kv(s: &S, key: &K, fuzzy_bytes: usize) -> anyhow::Result<Option<KVQPair<K, V>>>;
 
@@ -140,6 +141,7 @@ pub trait KVQBinaryStoreReader {
     fn get_many_exact(&self, keys: &[Vec<u8>]) -> anyhow::Result<Vec<Vec<u8>>>;
 
     fn get_leq(&self, key: &Vec<u8>, fuzzy_bytes: usize) -> anyhow::Result<Option<Vec<u8>>>;
+    fn get_fuzzy_range_leq_kv(&self, key: &Vec<u8>, fuzzy_bytes: usize) -> anyhow::Result<Vec<KVQPair<Vec<u8>, Vec<u8>>>>;
     fn get_leq_kv(
         &self,
         key: &Vec<u8>,

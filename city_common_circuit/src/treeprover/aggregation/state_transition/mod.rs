@@ -268,8 +268,12 @@ where
         input: &AggStateTransitionInput<C::F>,
     ) -> anyhow::Result<ProofWithPublicInputs<C::F, C, D>> {
         let mut pw = PartialWitness::<C::F>::new();
-        //tracing::info!("agg_fingerprint: {}", agg_fingerprint.to_string());
-        //tracing::info!("leaf_fingerprint: {}", leaf_fingerprint.to_string());
+        /* 
+        println!("agg_fingerprint: {} ({:?})", agg_fingerprint.to_string(), agg_fingerprint);
+        println!("leaf_fingerprint: {} ({:?})", leaf_fingerprint.to_string(), leaf_fingerprint);
+        println!("left_proof_public_inputs: {:?}", left_proof.public_inputs);
+        println!("right_proof_public_inputs: {:?}", right_proof.public_inputs);
+        println!("agg_input: {:?}",input);*/
         self.header_gadget
             .set_witness(&mut pw, input, agg_fingerprint, leaf_fingerprint);
 

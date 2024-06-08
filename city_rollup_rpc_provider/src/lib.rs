@@ -49,7 +49,7 @@ impl RpcProviderSync {
 #[async_trait::async_trait]
 pub trait CityRpcProvider {
     async fn get_user_tree_root(&self, checkpoint_id: u64) -> anyhow::Result<CityHash>;
-
+    async fn get_user_ids_for_public_key(&self, public_key: CityHash) -> anyhow::Result<Vec<u64>>;
     async fn get_user_by_id(
         &self,
         checkpoint_id: u64,
@@ -171,6 +171,7 @@ pub trait CityRpcProvider {
 
 pub trait CityRpcProviderSync {
     fn get_user_tree_root_sync(&self, checkpoint_id: u64) -> anyhow::Result<CityHash>;
+    fn get_user_ids_for_public_key_sync(&self, public_key: CityHash) -> anyhow::Result<Vec<u64>>;
 
     fn get_user_by_id_sync(
         &self,
@@ -295,6 +296,10 @@ pub trait CityRpcProviderSync {
 impl CityRpcProvider for RpcProvider {
     async fn get_user_tree_root(&self, checkpoint_id: u64) -> anyhow::Result<CityHash> {
         city_external_rpc_call!(self, "cr_getUserTreeRoot", json!([checkpoint_id]), CityHash)
+    }
+
+    async fn get_user_ids_for_public_key(&self, public_key: CityHash) -> anyhow::Result<Vec<u64>> {
+        city_external_rpc_call!(self, "cr_getUserIdsForPublicKey", json!([public_key]), Vec<u64>)
     }
 
     async fn get_user_by_id(
@@ -575,6 +580,10 @@ impl CityRpcProviderSync for RpcProviderSync {
         city_external_rpc_call_sync!(self, "cr_getUserTreeRoot", json!([checkpoint_id]), CityHash)
     }
 
+    fn get_user_ids_for_public_key_sync(&self, public_key: CityHash) -> anyhow::Result<Vec<u64>> {
+        city_external_rpc_call_sync!(self, "cr_getUserIdsForPublicKey", json!([public_key]), Vec<u64>)
+    }
+    
     fn get_user_by_id_sync(
         &self,
         checkpoint_id: u64,

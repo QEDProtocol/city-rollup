@@ -16,6 +16,32 @@ use super::introspection_result::{
     BTCRollupIntrospectionResultWithdrawalGadget,
 };
 
+fn ensure_output_script_is_p2pkh<F: RichField + Extendable<D>, const D: usize>(builder: &mut CircuitBuilder<F, D>, script_bytes: &[Target]) {
+
+    // ensure withdrawal output script is p2pkh
+    assert_eq!(script_bytes.len(), 25, "P2PKH transaction output scripts must be 25 bytes long");
+
+    /*
+        Length = 25 bytes
+        OP_DUP OP_HASH160 OP_PUSHBYTES_20 <hash160(public_key)> OP_EQUALVERIFY OP_CHECKSIG
+        76 a9 14 <hash160(public_key)> 88 ac
+    */
+
+    let op_dup = builder.constant_u8(0x76);
+    let op_hash160 = builder.constant_u8(0xa9);
+    let op_pushbytes_20 = builder.constant_u8(0x14);
+
+    let op_equalverify = builder.constant_u8(0x88);
+    let op_checksig = builder.constant_u8(0xac);
+
+    builder.connect(script_bytes[0], op_dup);
+    builder.connect(script_bytes[1], op_hash160);
+    builder.connect(script_bytes[2], op_pushbytes_20);
+
+    builder.connect(script_bytes[23], op_equalverify);
+    builder.connect(script_bytes[24], op_checksig);
+}
+
 #[derive(Debug, Clone)]
 pub struct BTCRollupIntrospectionGadget {
     pub sighash_preimage: SigHashPreimageBytesGadget,
@@ -308,7 +334,6 @@ impl BTCRollupIntrospectionGadget {
                         "deposits should only have one output (send to layer 2)"
                     );
 
-                    // todo: support length 107 signatures
                     assert_eq!(
                         funding_tx.inputs[0].script.len(),
                         106,
@@ -348,6 +373,7 @@ impl BTCRollupIntrospectionGadget {
                         25,
                         "withdrawals should be to a p2pkh address",
                     );
+                    ensure_output_script_is_p2pkh(builder, &output.script);
                     Some(BTCRollupIntrospectionResultWithdrawalGadget {
                         script: output.script.clone(),
                         value: output.get_value_target_u64(builder),

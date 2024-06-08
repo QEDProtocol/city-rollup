@@ -218,7 +218,7 @@ impl<F: RichField> AggStateTrackableWithEventsInput<F> for CRProcessL1Withdrawal
         AggStateTransitionWithEvents {
             state_transition_start: self.withdrawal_tree_delta_merkle_proof.old_root,
             state_transition_end: self.withdrawal_tree_delta_merkle_proof.new_root,
-            event_hash: self.withdrawal_tree_delta_merkle_proof.new_value,
+            event_hash: self.withdrawal_tree_delta_merkle_proof.old_value,
         }
     }
 }

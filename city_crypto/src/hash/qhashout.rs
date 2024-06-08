@@ -177,6 +177,8 @@ impl<F: RichField> QHashOut<F> {
     }
 }
 
+
+
 impl<F: RichField> KVQSerializable for QHashOut<F> {
     fn to_bytes(&self) -> anyhow::Result<Vec<u8>> {
         KVQSerializable::to_bytes(&self.0)

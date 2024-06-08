@@ -10,7 +10,7 @@ use serde::{de::DeserializeOwned, Serialize};
 
 use crate::{
     circuits::traits::qstandard::{QStandardCircuit, QStandardCircuitProvableWithProofStoreSync},
-    proof_minifier::pm_chain::OASProofMinifierChain,
+    proof_minifier::pm_chain::QEDProofMinifierChain,
 };
 
 #[derive(Debug, Clone, Eq, PartialEq, Serialize)]
@@ -47,7 +47,7 @@ where
     C::Hasher: AlgebraicHasher<C::F>,
 {
     pub circuit: AC,
-    pub minifier: OASProofMinifierChain<D, C::F, C>,
+    pub minifier: QEDProofMinifierChain<D, C::F, C>,
 }
 impl<AC: QStandardCircuit<C, D> + Clone, C: 'static + GenericConfig<D>, const D: usize> Clone
     for TreeProverAggCircuitWrapper<AC, C, D>
@@ -56,7 +56,7 @@ where
 {
     fn clone(&self) -> Self {
         let circuit = self.circuit.clone();
-        let minifier = OASProofMinifierChain::new(
+        let minifier = QEDProofMinifierChain::new(
             circuit.get_verifier_config_ref(),
             circuit.get_common_circuit_data_ref(),
             self.minifier.minifiers.len(),
@@ -121,7 +121,7 @@ where
 {
     fn new(child_common_data: &CommonCircuitData<C::F, D>, verifier_cap_height: usize) -> Self {
         let circuit = AC::new(child_common_data, verifier_cap_height);
-        let minifier = OASProofMinifierChain::new(
+        let minifier = QEDProofMinifierChain::new(
             circuit.get_verifier_config_ref(),
             circuit.get_common_circuit_data_ref(),
             1,

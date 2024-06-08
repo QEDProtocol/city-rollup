@@ -7,14 +7,14 @@ use city_common_circuit::{
     field::cubic::CubicExtendable,
 };
 use city_crypto::{
-    field::qfield::QRichField,
+    field::{qfield::QRichField, serialized_2d_felt_bls12381::Serialized2DFeltBLS12381},
     hash::{
         merkle::treeprover::TPCircuitFingerprintConfig, qhashout::QHashOut,
         traits::hasher::MerkleZeroHasher,
     },
 };
 use city_rollup_common::{
-    block_template::data::CityGroth16ProofData,
+    block_template::{config::GROTH16_DISABLED_DEV_MODE, data::CityGroth16ProofData},
     qworker::{
         fingerprints::CRWorkerToolboxRootCircuitFingerprints,
         job_id::{ProvingJobCircuitType, QProvingJobDataID},
@@ -23,11 +23,12 @@ use city_rollup_common::{
     },
 };
 use plonky2::{
-    hash::hash_types::HashOut, plonk::{
+    hash::hash_types::HashOut,
+    plonk::{
         circuit_data::{CommonCircuitData, VerifierOnlyCircuitData},
         config::{AlgebraicHasher, GenericConfig, PoseidonGoldilocksConfig},
         proof::ProofWithPublicInputs,
-    }
+    },
 };
 
 use crate::{
@@ -260,13 +261,13 @@ impl<S: QProofStoreReaderSync> QWorkerGenericProverGroth16<S, PoseidonGoldilocks
         store: &S,
         job_id: QProvingJobDataID,
     ) -> anyhow::Result<CityGroth16ProofData> {
-        tracing::info!("job_id: {:?}",job_id);
+        tracing::info!("job_id: {:?}", job_id);
         let input_data = store.get_bytes_by_id(job_id)?;
         let input_proof_id = bincode::deserialize::<QProvingJobDataID>(&input_data)?;
         let (common_data, verifier_data, fingerprint) =
             self.get_verifier_triplet_for_circuit_type(input_proof_id.circuit_type);
 
-        tracing::info!("input_proof_id: {:?}",input_proof_id);
+        tracing::info!("input_proof_id: {:?}", input_proof_id);
         let inner_proof = store.get_proof_by_id(input_proof_id.get_output_id())?;
 
         /*
@@ -283,24 +284,36 @@ impl<S: QProofStoreReaderSync> QWorkerGenericProverGroth16<S, PoseidonGoldilocks
         //tracing::info!("innerproof_public_input_bits: {:?}",pub_bits);
 
         let wrapper_proof = wrapper.prove_base(&inner_proof, &verifier_data)?;
-
-        let (proof_string, _vk_string) = gnark_plonky2_wrapper::wrap_plonky2_proof(
-            wrapper.circuit_data,
-            &wrapper_proof,
-            Some(&format!("/tmp/plonky2_proof/{}", job_id.data_index)),
-            &format!("{}/.city-rollup/keystore/", home::home_dir().unwrap().display())
-        )?;
-        //println!("proof: {}",proof_string);
-        //println!("vk: {}",vk_string);
-        /*
-         let proof_string = serde_json::to_string(&CityGroth16ProofData {
-             pi_a: Serialized2DFeltBLS12381([0u8; 48]),
-             pi_b_a0: Serialized2DFeltBLS12381([0u8; 48]),
-             pi_b_a1: Serialized2DFeltBLS12381([0u8; 48]),
-             pi_c: Serialized2DFeltBLS12381([0u8; 48]),
-         })?;
-         */
-        let proof_data = serde_json::from_str::<CityGroth16ProofData>(&proof_string)?;
-        Ok(proof_data)
+        if GROTH16_DISABLED_DEV_MODE {
+            println!("\x1B[0m\x1B[38;5;227m\x1B[48;5;9m[SECURITY WARNING]\x1B[0m GROTH16_DISABLED_DEV_MODE is set to true, so the rollup will not verify the groth16 proofs on doge (OP_CHECKGROTH16VERIFY is replaced with OP_NOP). GROTH16_DISABLED_DEV_MODE should \x1B[1m\x1B[38;5;9mNEVER\x1B[0m be set to true in production!\x1B[0m");
+            Ok(CityGroth16ProofData {
+                pi_a: Serialized2DFeltBLS12381([0u8; 48]),
+                pi_b_a0: Serialized2DFeltBLS12381([0u8; 48]),
+                pi_b_a1: Serialized2DFeltBLS12381([0u8; 48]),
+                pi_c: Serialized2DFeltBLS12381([0u8; 48]),
+            })
+        } else {
+            let (proof_string, _vk_string) = gnark_plonky2_wrapper::wrap_plonky2_proof(
+                wrapper.circuit_data,
+                &wrapper_proof,
+                Some(&format!("/tmp/plonky2_proof/{}", job_id.data_index)),
+                &format!(
+                    "{}/.city-rollup/keystore/",
+                    home::home_dir().unwrap().display()
+                ),
+            )?;
+            //println!("proof: {}",proof_string);
+            //println!("vk: {}",vk_string);
+            /*
+            let proof_string = serde_json::to_string(&CityGroth16ProofData {
+                pi_a: Serialized2DFeltBLS12381([0u8; 48]),
+                pi_b_a0: Serialized2DFeltBLS12381([0u8; 48]),
+                pi_b_a1: Serialized2DFeltBLS12381([0u8; 48]),
+                pi_c: Serialized2DFeltBLS12381([0u8; 48]),
+            })?;
+            */
+            let proof_data = serde_json::from_str::<CityGroth16ProofData>(&proof_string)?;
+            Ok(proof_data)
+        }
     }
 }

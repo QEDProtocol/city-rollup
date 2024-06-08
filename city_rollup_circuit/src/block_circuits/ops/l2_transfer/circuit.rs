@@ -212,10 +212,6 @@ where
         signature_proof: &ProofWithPublicInputs<C::F, C, D>,
         signature_verifier_data: &VerifierOnlyCircuitData<C, D>,
     ) -> anyhow::Result<ProofWithPublicInputs<C::F, C, D>> {
-/*         println!("token_input: {:?}", input);
-        println!("token_input: {}", serde_json::to_string(&input).unwrap());
-        println!("signature_proof_public_inputs: {:?}",signature_proof.public_inputs);
-*/
         let mut pw = PartialWitness::new();
         self.l2_transfer_single_gadget
             .l2_transfer_gadget
@@ -274,6 +270,7 @@ where
         _job_id: QProvingJobDataID,
     ) -> anyhow::Result<ProofWithPublicInputs<C::F, C, D>> {
         let signature_proof = store.get_proof_by_id(input.signature_proof_id)?;
+
         self.prove_base(
             input,
             &signature_proof,

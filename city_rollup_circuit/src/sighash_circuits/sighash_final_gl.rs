@@ -2,7 +2,7 @@ use city_common_circuit::{
     circuits::traits::qstandard::QStandardCircuit,
     hash::base_types::felthash248::CircuitBuilderFelt248Hash,
     proof_minifier::{
-        pm_chain_dynamic::OASProofMinifierDynamicChain, pm_core::get_circuit_fingerprint_generic,
+        pm_chain_dynamic::QEDProofMinifierDynamicChain, pm_core::get_circuit_fingerprint_generic,
     },
 };
 use city_crypto::hash::qhashout::QHashOut;
@@ -47,7 +47,7 @@ where
     // [END] circuit targets
     pub circuit_data: CircuitData<C::F, C, D>,
     pub fingerprint: QHashOut<C::F>,
-    pub minifier: OASProofMinifierDynamicChain<D, C::F, C>,
+    pub minifier: QEDProofMinifierDynamicChain<D, C::F, C>,
     //pub tracer: DebugCircuitTracer,
 }
 impl<C: GenericConfig<D>, const D: usize> CRSigHashFinalGLCircuit<C, D>
@@ -195,7 +195,7 @@ where
         builder.register_public_inputs(&bits_sighash);
         let circuit_data = builder.build::<C>();
 
-        let minifier = OASProofMinifierDynamicChain::new_with_dynamic_constant_verifier(
+        let minifier = QEDProofMinifierDynamicChain::new_with_dynamic_constant_verifier(
             &circuit_data.verifier_only,
             &circuit_data.common,
             &[false],

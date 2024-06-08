@@ -1,6 +1,6 @@
 use city_common_circuit::{
     circuits::traits::qstandard::QStandardCircuit,
-    proof_minifier::pm_chain::OASProofMinifierChain,
+    proof_minifier::pm_chain::QEDProofMinifierChain,
     treeprover::aggregation::gadgets::{
         AggStateTransitionProofValidityGadget, AggStateTransitionWithEventsProofValidityGadget,
     },
@@ -47,7 +47,7 @@ pub struct CRAggAddProcessL1WithdrawalAddL1DepositCircuit<
 
     pub transition_gadget: AggAddProcessL1WithdrawalAddL1DepositGadget,
     // end circuit targets
-    pub minifier_chain: OASProofMinifierChain<D, C::F, C>,
+    pub minifier_chain: QEDProofMinifierChain<D, C::F, C>,
     pub op_add_l1_withdrawal_fingerprint: TPCircuitFingerprintConfig<C::F>,
     pub op_process_l1_withdrawal_fingerprint: TPCircuitFingerprintConfig<C::F>,
     pub op_add_l1_deposit_fingerprint: TPCircuitFingerprintConfig<C::F>,
@@ -152,7 +152,7 @@ where
 
         let circuit_data = builder.build::<C>();
         let minifier_chain =
-            OASProofMinifierChain::new(&circuit_data.verifier_only, &circuit_data.common, 1);
+            QEDProofMinifierChain::new(&circuit_data.verifier_only, &circuit_data.common, 1);
         Self {
             op_add_l1_withdrawal_proof,
             op_add_l1_withdrawal_verifier_data,

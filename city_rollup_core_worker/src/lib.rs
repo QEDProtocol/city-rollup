@@ -5,7 +5,7 @@ use std::time::Duration;
 use city_common::cli::args::L2WorkerArgs;
 use city_redis_store::RedisStore;
 use city_rollup_circuit::worker::toolbox::root::CRWorkerToolboxRootCircuits;
-use city_rollup_common::config::sighash_wrapper_config::SIGHASH_WHITELIST_TREE_ROOT;
+use city_rollup_common::{block_template::config::GROTH16_DISABLED_DEV_MODE, config::sighash_wrapper_config::SIGHASH_WHITELIST_TREE_ROOT};
 use city_rollup_common::introspection::rollup::constants::get_network_magic_for_str;
 use city_rollup_worker_dispatch::implementations::redis::RedisQueue;
 use city_rollup_worker_dispatch::traits::proving_worker::ProvingWorkerListener;
@@ -104,13 +104,16 @@ pub fn run(args: L2WorkerArgs) -> anyhow::Result<()> {
     let toolbox =
         CRWorkerToolboxRootCircuits::<C, D>::new(network_magic, SIGHASH_WHITELIST_TREE_ROOT);
 
-    //println!("fingerprints: {}", serde_json::to_string(&toolbox.core.fingerprints).unwrap());
-    
-    if args.worker_mode.is_groth16_enabled() {
-        gnark_plonky2_wrapper::initialize(&format!(
-            "{}/.city-rollup/keystore/",
-            home::home_dir().unwrap().display()
-        ))?;
+    //println!("fingerprints:\n{}", serde_json::to_string(&toolbox.core.fingerprints).unwrap());
+    if GROTH16_DISABLED_DEV_MODE {
+        println!("\x1B[0m\x1B[38;5;227m\x1B[48;5;9m[SECURITY WARNING]\x1B[0m GROTH16_DISABLED_DEV_MODE is set to true, so the rollup will not verify the groth16 proofs on doge (OP_CHECKGROTH16VERIFY is replaced with OP_NOP). GROTH16_DISABLED_DEV_MODE should \x1B[1m\x1B[38;5;9mNEVER\x1B[0m be set to true in production!\x1B[0m");
+    }else{
+        if args.worker_mode.is_groth16_enabled() {
+            gnark_plonky2_wrapper::initialize(&format!(
+                "{}/.city-rollup/keystore/",
+                home::home_dir().unwrap().display()
+            ))?;
+        }
     }
 
     println!("worker setup completed");

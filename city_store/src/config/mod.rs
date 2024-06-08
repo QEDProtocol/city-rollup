@@ -19,6 +19,7 @@ use crate::models::{
         model::L1DepositsModel,
     },
     l2_block_state::{data::L2BlockStateKeyCore, model::L2BlockStatesModel},
+    user::{data::L2UserIdKeyByPubicKeyIdCore, model::L2UserIdsModel},
 };
 
 pub type F = GoldilocksField;
@@ -34,6 +35,7 @@ pub const TREE_TABLE_TYPE: u16 = 1;
 pub const L1_DEPOSITS_BY_ID_TABLE_TYPE: u16 = 2;
 pub const L1_DEPOSITS_BY_TXID_TABLE_TYPE: u16 = 3;
 pub const L2_BLOCK_STATE_TABLE_TYPE: u16 = 4;
+pub const L2_USER_IDS_BY_PUBLIC_KEY_TABLE_TYPE: u16 = 5;
 
 pub const GLOBAL_USER_TREE_ID: u8 = 1;
 pub const L1_DEPOSIT_TREE_ID: u8 = 2;
@@ -73,4 +75,10 @@ pub type L2BlockStateStore<S> = L2BlockStatesModel<
     L2_BLOCK_STATE_TABLE_TYPE,
     S,
     KVQStandardAdapter<S, L2BlockStateKeyCore<L2_BLOCK_STATE_TABLE_TYPE>, CityL2BlockState>,
+>;
+
+pub type L2UserIdsStore<S> = L2UserIdsModel<
+    L2_USER_IDS_BY_PUBLIC_KEY_TABLE_TYPE,
+    S,
+    KVQStandardAdapter<S, L2UserIdKeyByPubicKeyIdCore<L2_USER_IDS_BY_PUBLIC_KEY_TABLE_TYPE>, u64>,
 >;

@@ -9,6 +9,7 @@ use crate::u32::multiple_comparison::list_lte_circuit;
 
 pub trait CircuitBuilderComparison<F: RichField + Extendable<D>, const D: usize> {
     fn is_less_than_or_equal(&mut self, num_bits: usize, x: Target, y: Target) -> BoolTarget;
+    fn is_less_than_or_equal_split(&mut self, num_bits: usize, x: Target, y: Target) -> BoolTarget;
     fn is_less_than(&mut self, num_bits: usize, x: Target, y: Target) -> BoolTarget;
     fn is_greater_than_or_equal(&mut self, num_bits: usize, x: Target, y: Target) -> BoolTarget;
     fn is_greater_than(&mut self, num_bits: usize, x: Target, y: Target) -> BoolTarget;
@@ -25,7 +26,8 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilderComparison<F, D
     for CircuitBuilder<F, D>
 {
     fn is_less_than_or_equal(&mut self, num_bits: usize, x: Target, y: Target) -> BoolTarget {
-        list_lte_circuit(self, vec![x], vec![y], num_bits)
+        //list_lte_circuit(self, vec![x], vec![y], num_bits)
+        self.is_less_than_or_equal_split(num_bits, x, y)
     }
 
     fn is_less_than(&mut self, num_bits: usize, x: Target, y: Target) -> BoolTarget {
@@ -79,5 +81,46 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilderComparison<F, D
         let is_eq = self.is_equal(x, y);
         let zero = self.zero();
         self.connect(is_eq.target, zero);
+    }
+    
+    
+    fn is_less_than_or_equal_split(&mut self, num_bits: usize, x: Target, y: Target) -> BoolTarget {
+        if num_bits <= 32 {
+            list_lte_circuit(self, vec![x], vec![y], num_bits)
+        }else{
+            // x_low = x & 0xffffffff, x_high = x >> 32
+            let (x_low_target, x_high_target) = self.split_low_high(x, 32, 64);
+            // y_low = x & 0xffffffff, y_high = y >> 32
+            let (y_low_target, y_high_target) = self.split_low_high(y, 32, 64);
+
+            // is_gt = (x_high > y_high) || (x_high == y_high && x_low > y_low)
+            // is_leq = !is_gt
+
+            // high_leq_target = (x_high <= y_high)
+            let high_leq_target = list_lte_circuit(self, vec![x_high_target], vec![y_high_target], 32);
+
+            // low_leq_target = (x_low <= y_low)
+            let low_leq_target = list_lte_circuit(self, vec![x_low_target], vec![y_low_target], 32);
+
+            // high_gt_target = (x_high > y_high) = !(x_high <= y_high)
+            let high_gt_target = self.not(high_leq_target);
+
+            // low_gt_target = (x_low > y_low) = !(x_low <= y_low)
+            let low_gt_target = self.not(low_leq_target);
+
+            // high_eq_target = x_high == y_high
+            let high_eq_target = self.is_equal(x_high_target, y_high_target);
+
+            // equal_high_bits_case_target = (x_high == y_high && x_low > y_low)
+            let equal_high_bits_case_target = self.and(high_eq_target, low_gt_target);
+
+            // is_gt = (x_high > y_high) || (x_high == y_high && x_low > y_low)
+
+            let is_gt = self.or(high_gt_target, equal_high_bits_case_target);
+
+            // is_leq = !is_gt = !((x_high > y_high) || (x_high == y_high && x_low > y_low))
+            let is_leq = self.not(is_gt);
+            is_leq
+        }
     }
 }
