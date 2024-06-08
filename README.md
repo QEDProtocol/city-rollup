@@ -1,121 +1,37 @@
-# City Rollup
+<p align="center"><a href="https://cityrollup.com"><img src="static/github_banner.png" height="420" alt="City Rollup" /></a></p>
 
-a proof of concept zk rollup on dogecoin
+<h1 align="center">City Rollup</h1>
+
+<hr/>
+<p align="center">
+  a proof of concept, fully trustless, zk rollup on dogecoin
+</p>
 
 
 ## Requirements
-
 - docker
 - docker-compose
+- go
 - rust toolchain
 
 
 ## Getting Started
-
-Download the pre-generated `bls12_381` trust setup
-```bash
-wget https://city.qed.me/alpha/v1/cr-trusted-setup.zip
-rm -rf ~/.city-rollup/keystore 
-mkdir -p ~/.city-rollup/keystore
-unzip cr-trusted-setup.zip -d ~/.city-rollup/keystore
-rm cr-trusted-setup.zip
-```
-
-Download the pre-generated `bls12_381` trust setup (one-liner):
-```bash
-wget https://city.qed.me/alpha/v1/cr-trusted-setup.zip && rm -rf ~/.city-rollup/keystore && mkdir -p ~/.city-rollup/keystore && unzip cr-trusted-setup.zip -d ~/.city-rollup/keystore && rm cr-trusted-setup.zip
-```
-
-Build the rollup in release mode
-```bash
-make build
-```
-
-Launch dogecoin, electrs, redis and clean old data
-```bash
-make relaunch
-```
-
-Run rpc node to handle rpc requests
-```bash
-make run-rpc-server
-```
-
-Run orchestrator to dispatch proving tasks
-```bash
-make run-orchestrator
-```
-
-Run the worker to handle proving tasks, you can run as many workers as you want
-```bash
-make run-l2-worker # wait until it successfully loaded the trust setup, often it'll take 3 minutes
-#make run-l2-worker
-```
-
-Send command to produce the next block and dispatch proving tasks to workers
-```bash
-make cr_produce_block
-```
-
-Register two users on L2
-```bash
-make cr_register_user
-make cr_produce_block
-```
-
-Deposit funds from Dogecoin to L2
-```bash
-make cr_l1_deposit #please copy the txid
-make cr_produce_block #Produce another block to mark the deposits as claimable on L2
-```
-
-Claim deposited funds
-```bash
-make TXID=... cr_claim_deposit #no 0x prefix
-make cr_produce_block
-```
-
-Transfer claimed funds from to another
-```bash
-make cr_token_transfer
-make cr_produce_block
-```
-
-## Docker(experimental)
+Read the [Getting Started Guide](https://cityrollup.com/docs/tutorial/getting_started)
 
 
-Download the pre-generated `bls12_381` trust setup
-
-```bash
-wget https://city.qed.me/alpha/v1/cr-trusted-setup.zip && rm -rf ~/.city-rollup/keystore && mkdir -p ~/.city-rollup/keystore && unzip cr-trusted-setup.zip -d ~/.city-rollup/keystore && rm cr-trusted-setup.zip
-```
-
-Build the rollup in release mode
-```bash
-make build
-```
-
-Launch
-```bash
-make DOCKER_PROFILE=full relaunch
-```
+## Disclaimer
+This is a **proof of concept** demonstrating how a fully featured, fully trustless, end-to-end zkRollup on Dogecoin with the use of OP_CHECKGROTH16VERIFY instruction. 
+**This code has not yet been audited, and should not be used in any production systems.**
 
 
-## Troubleshooting
+## License
+Copyright 2024 Zero Knowledge Labs Limited
 
-If you encounter the `DER` error on cli tools, it's normal, don't panic just retry until it works
-```bash
-Error: AnyhowError(error in BTCDataResolver: {"result":null,"error":{"code":-26,"message":"64: non-mandatory-script-verify-flag (Non-canonical DER signature)"},"id":1}
-```
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the “Software”), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
-If you encounter the `Insufficient funds` error on orchestrator, don't panic just retry until it works, it's something wierd with confirmations that we didn't fix yet
-```bash
-Error: Failed to fund address: {"result":null,"error":{"code":-6,"message":"Insufficient funds"},"id":1}
-```
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 
-If you encounter constraint error while claiming deposit, don't panic just retry
-```bash
-assertion `left == right` failed: Partition containing Wire(Wire { row: 3087, column: 38 }) was set twice with different values: 11780246312495197923 != 4265533886750191950
-  left: 4265533886750191950
- right: 11780246312495197923
-```
+THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+
+Made with ❤️ by <a href="https://qedprotocol.com">QED</a>
