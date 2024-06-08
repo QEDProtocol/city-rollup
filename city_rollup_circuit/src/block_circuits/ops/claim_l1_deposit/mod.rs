@@ -10,7 +10,7 @@ use city_rollup_common::qworker::{
     proof_store::QProofStoreReaderSync, verifier::QWorkerVerifyHelper,
 };
 use plonky2::{
-    hash::{hash_types::HashOutTarget, poseidon::PoseidonHash},
+    hash::hash_types::HashOutTarget,
     iop::witness::{PartialWitness, WitnessWrite},
     plonk::{
         circuit_builder::CircuitBuilder,

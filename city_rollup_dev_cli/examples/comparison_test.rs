@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 struct LEQComparisonTestGadget {
   pub x: Target,
   pub y: Target,
-  pub is_leq: BoolTarget,
+  pub _is_leq: BoolTarget,
   pub expected: BoolTarget,
   pub is_correct: BoolTarget,
 }
@@ -36,7 +36,7 @@ impl<F: RichField> NumberPair<F> {
   pub fn rand_vec(count: usize) -> Vec<Self> {
     (0..count).map(|_|Self::rand()).collect()
   }
-  fn print_result(&self, is_leq: bool, is_correct: bool) {
+  fn _print_result(&self, is_leq: bool, is_correct: bool) {
     let is_really_leq = self.x.to_canonical_u64() <= self.y.to_canonical_u64();
     println!("{} <= {} (known: {}, is_leq: {}, is_correct: {})", self.x.to_canonical_u64(), self.y.to_canonical_u64(), is_really_leq, is_leq, is_correct);
   }
@@ -63,7 +63,7 @@ impl LEQComparisonTestGadget {
     Self {
         x,
         y,
-        is_leq,
+        _is_leq: is_leq,
         expected,
         is_correct,
     }

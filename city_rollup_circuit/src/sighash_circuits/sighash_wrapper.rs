@@ -51,7 +51,7 @@ where
     // [END] circuit targets
     pub circuit_data: CircuitData<C::F, C, D>,
     pub fingerprint: QHashOut<C::F>,
-    //pub minifier: OASProofMinifierDynamicChain<D, C::F, C>,
+    //pub minifier: QEDProofMinifierDynamicChain<D, C::F, C>,
     //pub tracer: DebugCircuitTracer,
 }
 impl<C: GenericConfig<D>, const D: usize> CRSigHashWrapperCircuit<C, D>
@@ -105,7 +105,7 @@ where
         builder.register_public_inputs(&proof_target.public_inputs);
         let circuit_data = builder.build::<C>();
         /*
-        let minifier = OASProofMinifierDynamicChain::new_with_dynamic_constant_verifier(
+        let minifier = QEDProofMinifierDynamicChain::new_with_dynamic_constant_verifier(
             &circuit_data.verifier_only,
             &circuit_data.common,
             &[false, true, true],

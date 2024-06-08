@@ -21,7 +21,7 @@ use crate::builder::verify::CircuitBuilderVerifyProofHelpers;
 use super::{pm_core::get_circuit_fingerprint_generic, pm_custom::PMCircuitCustomizer};
 
 #[derive(Debug)]
-pub struct OASProofMinifierDynamic<
+pub struct QEDProofMinifierDynamic<
     const D: usize,
     F: RichField + Extendable<D>,
     C: GenericConfig<D, F = F> + 'static,
@@ -36,7 +36,7 @@ pub struct OASProofMinifierDynamic<
 }
 
 impl<const D: usize, F: RichField + Extendable<D>, C: GenericConfig<D, F = F> + 'static>
-    OASProofMinifierDynamic<D, F, C>
+    QEDProofMinifierDynamic<D, F, C>
 where
     <C as GenericConfig<D>>::Hasher: AlgebraicHasher<F>,
 {

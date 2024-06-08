@@ -15,7 +15,7 @@ use plonky2::{
 
 use crate::{
     crypto::secp256k1::gadget::DogeQEDSignatureGadget,
-    proof_minifier::pm_chain_dynamic::OASProofMinifierDynamicChain,
+    proof_minifier::pm_chain_dynamic::QEDProofMinifierDynamicChain,
 };
 
 use super::traits::qstandard::QStandardCircuit;
@@ -27,7 +27,7 @@ where
 {
     pub signature_gadget: DogeQEDSignatureGadget,
     pub base_circuit_data: CircuitData<C::F, C, D>,
-    pub minifier_chain: OASProofMinifierDynamicChain<D, C::F, C>,
+    pub minifier_chain: QEDProofMinifierDynamicChain<D, C::F, C>,
 }
 impl<C: GenericConfig<D> + 'static, const D: usize> Clone for L1Secp256K1SignatureCircuit<C, D>
 where
@@ -51,7 +51,7 @@ where
         let circuit_data = builder.build::<C>();
 
         let minifier_chain =
-            OASProofMinifierDynamicChain::<D, C::F, C>::new_with_dynamic_constant_verifier(
+            QEDProofMinifierDynamicChain::<D, C::F, C>::new_with_dynamic_constant_verifier(
                 &circuit_data.verifier_only,
                 &circuit_data.common,
                 &[true, false],
