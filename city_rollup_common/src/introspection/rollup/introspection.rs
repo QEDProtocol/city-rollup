@@ -22,6 +22,13 @@ use super::introspection_result::{
     BTCRollupIntrospectionResultWithdrawal,
 };
 
+#[derive(Serialize, Deserialize, PartialEq, Clone, Debug)]
+pub struct RefundSpendIntrospectionHint {
+    pub sighash_preimage: SigHashPreimage,
+    pub current_spend_index: usize,
+    pub funding_transaction: BTCTransaction,
+
+}
 #[serde_as]
 #[derive(Serialize, Deserialize, PartialEq, Clone, Debug)]
 pub struct BlockSpendIntrospectionHint {
@@ -422,6 +429,14 @@ impl BlockSpendCoreConfig {
 
         result
     }
+}
+
+#[derive(Serialize, Deserialize, PartialEq, Clone, Debug, Hash, Eq, PartialOrd, Ord)]
+pub struct RefundIntrospectionGadgetConfig {
+    pub sighash_preimage_config: SigHashPreimageConfig,
+    pub funding_transaction_config: BTCTransactionConfig,
+    pub block_script_length: usize,
+    pub current_spend_index: usize,
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Clone, Debug, Hash, Eq, PartialOrd, Ord)]
