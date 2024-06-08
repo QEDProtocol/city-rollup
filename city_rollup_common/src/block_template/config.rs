@@ -3,6 +3,9 @@ use city_macros::const_concat_arrays;
 use super::{
     BLOCK_GROTH16_ENCODED_VERIFIER_DATA, BLOCK_GROTH16_ENCODED_VERIFIER_DATA_0_SHA_256_HASH,
 };
+// set GROTH16_DISABLED_DEV_MODE = true in development ONLY, this disables the groth16 verifier for debugging circuits
+pub const GROTH16_DISABLED_DEV_MODE: bool = false;
+
 
 // DATA INSTRUCTIONS
 const OP_PUSHBYTES_32: u8 = 0x20;
@@ -15,12 +18,16 @@ const OP_SHA256: u8 = 0xa8;
 const OP_EQUALVERIFY: u8 = 0x88;
 const OP_1: u8 = 0x51;
 const OP_2DROP: u8 = 0x6d;
-
+const OP_NOP: u8 = 0x61;
 // Action Instructions
 const OP_0NOTEQUAL: u8 = 0x92;
 pub const OP_CHECKGROTH16VERIFY_NOP: u8 = OP_0NOTEQUAL;
 // note: OP_CHECKGROTH16VERIFY is 0xb3, but 0x61 is OP_NOP and can be used for testing without verifying proofs
-pub const OP_CHECKGROTH16VERIFY: u8 = 0xb3; //0x61;
+pub const OP_CHECKGROTH16VERIFY: u8 = if GROTH16_DISABLED_DEV_MODE {
+    OP_NOP
+}else{
+    0xb3
+};
 
 pub const GENESIS_STATE_HASH: [u8; 32] = [202, 236, 137, 190, 220, 171, 60, 231, 7, 152, 26, 111, 168, 109, 39, 184, 123, 44, 10, 115, 47, 238, 227, 113, 122, 173, 221, 103, 40, 135, 124, 0];
 

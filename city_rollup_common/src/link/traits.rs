@@ -85,6 +85,6 @@ pub trait QBitcoinAPIFunderSync: QBitcoinAPISync {
         )?;
         self.send_transaction(&tx)
     }
-    fn mine_blocks(&self, count: u32) -> anyhow::Result<()>;
+    fn mine_blocks(&self, count: u32) -> anyhow::Result<Vec<Hash256>>;
     fn mine_blocks_to_address(&self, count: u32, address: BTCAddress160) -> anyhow::Result<()>;
 }

@@ -9,21 +9,21 @@ use plonky2::{
     },
 };
 
-use super::{pm_core::OASProofMinifier, pm_custom::PMCircuitCustomizer};
+use super::{pm_core::QEDProofMinifier, pm_custom::PMCircuitCustomizer};
 
 #[derive(Debug)]
-pub struct OASProofMinifierChain<
+pub struct QEDProofMinifierChain<
     const D: usize,
     F: RichField + Extendable<D>,
     C: GenericConfig<D, F = F> + 'static,
 > where
     <C as GenericConfig<D>>::Hasher: AlgebraicHasher<F>,
 {
-    pub minifiers: Vec<OASProofMinifier<D, F, C>>,
+    pub minifiers: Vec<QEDProofMinifier<D, F, C>>,
 }
 
 impl<const D: usize, F: RichField + Extendable<D>, C: GenericConfig<D, F = F> + 'static>
-    OASProofMinifierChain<D, F, C>
+    QEDProofMinifierChain<D, F, C>
 where
     <C as GenericConfig<D>>::Hasher: AlgebraicHasher<F>,
 {
@@ -32,14 +32,14 @@ where
         base_circuit_common_data: &CommonCircuitData<F, D>,
         minifier_configs: Vec<CircuitConfig>,
     ) -> Self {
-        let mut minifiers = vec![OASProofMinifier::<D, F, C>::new_with_cfg(
+        let mut minifiers = vec![QEDProofMinifier::<D, F, C>::new_with_cfg(
             minifier_configs[0].clone(),
             base_circuit_verifier_data,
             base_circuit_common_data,
             None,
         )];
         for i in 1..minifier_configs.len() {
-            minifiers.push(OASProofMinifier::<D, F, C>::new_with_cfg(
+            minifiers.push(QEDProofMinifier::<D, F, C>::new_with_cfg(
                 minifier_configs[i].clone(),
                 &minifiers[i - 1].circuit_data.verifier_only,
                 &minifiers[i - 1].circuit_data.common,
@@ -62,7 +62,7 @@ where
         customizer: &PMCC,
     ) -> Self {
         let mut minifiers = vec![if n_minifiers == 1 {
-            OASProofMinifier::<D, F, C>::new_with_cfg_customizer(
+            QEDProofMinifier::<D, F, C>::new_with_cfg_customizer(
                 CircuitConfig::standard_recursion_config(),
                 base_circuit_verifier_data,
                 base_circuit_common_data,
@@ -70,7 +70,7 @@ where
                 Some(customizer),
             )
         } else {
-            OASProofMinifier::<D, F, C>::new_with_cfg(
+            QEDProofMinifier::<D, F, C>::new_with_cfg(
                 CircuitConfig::standard_recursion_config(),
                 base_circuit_verifier_data,
                 base_circuit_common_data,
@@ -79,7 +79,7 @@ where
         }];
         for i in 1..n_minifiers {
             if i == (n_minifiers - 1) {
-                minifiers.push(OASProofMinifier::<D, F, C>::new_with_cfg_customizer(
+                minifiers.push(QEDProofMinifier::<D, F, C>::new_with_cfg_customizer(
                     CircuitConfig::standard_recursion_config(),
                     &minifiers[i - 1].circuit_data.verifier_only,
                     &minifiers[i - 1].circuit_data.common,
@@ -87,7 +87,7 @@ where
                     Some(customizer),
                 ));
             } else {
-                minifiers.push(OASProofMinifier::<D, F, C>::new_with_cfg(
+                minifiers.push(QEDProofMinifier::<D, F, C>::new_with_cfg(
                     CircuitConfig::standard_recursion_config(),
                     &minifiers[i - 1].circuit_data.verifier_only,
                     &minifiers[i - 1].circuit_data.common,
@@ -112,7 +112,7 @@ where
         customizer: Option<&PMCC>,
     ) -> Self {
         let mut minifiers = vec![if n_minifiers == 1 {
-            OASProofMinifier::<D, F, C>::new_with_cfg_customizer(
+            QEDProofMinifier::<D, F, C>::new_with_cfg_customizer(
                 CircuitConfig::standard_recursion_config(),
                 base_circuit_verifier_data,
                 base_circuit_common_data,
@@ -120,7 +120,7 @@ where
                 customizer,
             )
         } else {
-            OASProofMinifier::<D, F, C>::new_with_cfg(
+            QEDProofMinifier::<D, F, C>::new_with_cfg(
                 CircuitConfig::standard_recursion_config(),
                 base_circuit_verifier_data,
                 base_circuit_common_data,
@@ -129,7 +129,7 @@ where
         }];
         for i in 1..n_minifiers {
             if i == (n_minifiers - 1) {
-                minifiers.push(OASProofMinifier::<D, F, C>::new_with_cfg_customizer(
+                minifiers.push(QEDProofMinifier::<D, F, C>::new_with_cfg_customizer(
                     CircuitConfig::standard_recursion_config(),
                     &minifiers[i - 1].circuit_data.verifier_only,
                     &minifiers[i - 1].circuit_data.common,
@@ -137,7 +137,7 @@ where
                     customizer,
                 ));
             } else {
-                minifiers.push(OASProofMinifier::<D, F, C>::new_with_cfg(
+                minifiers.push(QEDProofMinifier::<D, F, C>::new_with_cfg(
                     CircuitConfig::standard_recursion_config(),
                     &minifiers[i - 1].circuit_data.verifier_only,
                     &minifiers[i - 1].circuit_data.common,
@@ -161,12 +161,12 @@ where
         if n_minifiers == 0 {
             return Self { minifiers: vec![] };
         }
-        let mut minifiers = vec![OASProofMinifier::<D, F, C>::new(
+        let mut minifiers = vec![QEDProofMinifier::<D, F, C>::new(
             base_circuit_verifier_data,
             base_circuit_common_data,
         )];
         for i in 1..n_minifiers {
-            minifiers.push(OASProofMinifier::<D, F, C>::new(
+            minifiers.push(QEDProofMinifier::<D, F, C>::new(
                 &minifiers[i - 1].circuit_data.verifier_only,
                 &minifiers[i - 1].circuit_data.common,
             ));
@@ -185,14 +185,14 @@ where
         add_gates: Option<&[GateRef<F, D>]>,
     ) -> Self {
         let mut minifiers = vec![if n_minifiers == 1 {
-            OASProofMinifier::<D, F, C>::new_with_cfg(
+            QEDProofMinifier::<D, F, C>::new_with_cfg(
                 CircuitConfig::standard_recursion_config(),
                 base_circuit_verifier_data,
                 base_circuit_common_data,
                 add_gates,
             )
         } else {
-            OASProofMinifier::<D, F, C>::new_with_cfg(
+            QEDProofMinifier::<D, F, C>::new_with_cfg(
                 CircuitConfig::standard_recursion_config(),
                 base_circuit_verifier_data,
                 base_circuit_common_data,
@@ -201,14 +201,14 @@ where
         }];
         for i in 1..n_minifiers {
             if i == (n_minifiers - 1) {
-                minifiers.push(OASProofMinifier::<D, F, C>::new_with_cfg(
+                minifiers.push(QEDProofMinifier::<D, F, C>::new_with_cfg(
                     CircuitConfig::standard_recursion_config(),
                     &minifiers[i - 1].circuit_data.verifier_only,
                     &minifiers[i - 1].circuit_data.common,
                     add_gates,
                 ));
             } else {
-                minifiers.push(OASProofMinifier::<D, F, C>::new_with_cfg(
+                minifiers.push(QEDProofMinifier::<D, F, C>::new_with_cfg(
                     CircuitConfig::standard_recursion_config(),
                     &minifiers[i - 1].circuit_data.verifier_only,
                     &minifiers[i - 1].circuit_data.common,

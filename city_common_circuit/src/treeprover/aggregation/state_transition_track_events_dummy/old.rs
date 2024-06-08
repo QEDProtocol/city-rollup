@@ -34,7 +34,7 @@ where
     // end circuit targets
     pub circuit_data: CircuitData<C::F, C, D>,
     pub fingerprint: QHashOut<C::F>,
-    //pub minifier_chain: OASProofMinifierChain<D, C::F, C>,
+    //pub minifier_chain: QEDProofMinifierChain<D, C::F, C>,
 }
 impl<C: GenericConfig<D>, const D: usize> Clone for AggStateTransitionWithEventsDummyCircuit<C, D>
 where
@@ -70,7 +70,7 @@ where
 
         /*
         let minifier_chain =
-            OASProofMinifierChain::new(&circuit_data.verifier_only, &circuit_data.common, 1);*/
+            QEDProofMinifierChain::new(&circuit_data.verifier_only, &circuit_data.common, 1);*/
         Self {
             state_transition_hash,
             allowed_circuit_hashes_root,

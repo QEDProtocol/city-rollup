@@ -46,6 +46,10 @@ pub struct AggStateTrackableWithEventsCircuitHeaderGadget {
     pub allowed_circuit_hashes_root: HashOutTarget,
     pub state_transition_hash: HashOutTarget,
     pub event_transition_hash: HashOutTarget,
+
+
+    pub expected_left_child_transition_hash: HashOutTarget,
+    pub expected_right_child_transition_hash: HashOutTarget,
 }
 impl AggStateTrackableWithEventsCircuitHeaderGadget {
     pub fn add_virtual_to<H: AlgebraicHasher<F>, F: RichField + Extendable<D>, const D: usize>(
@@ -67,6 +71,12 @@ impl AggStateTrackableWithEventsCircuitHeaderGadget {
             builder.hash_two_to_one::<H>(left_state_transition_start, right_state_transition_end);
         let event_transition_hash = builder.hash_two_to_one::<H>(left_event_hash, right_event_hash);
 
+        let expected_left_child_transition_hash =
+            builder.hash_two_to_one::<H>(left_state_transition_start, left_state_transition_end);
+
+        let expected_right_child_transition_hash =
+            builder.hash_two_to_one::<H>(right_state_transition_start, right_state_transition_end);
+
         // start constraints
         builder.connect_hashes(left_state_transition_end, right_state_transition_start);
         // end constraints
@@ -84,6 +94,8 @@ impl AggStateTrackableWithEventsCircuitHeaderGadget {
             allowed_circuit_hashes_root,
             state_transition_hash,
             event_transition_hash,
+            expected_left_child_transition_hash,
+            expected_right_child_transition_hash,
         }
     }
     pub fn set_witness<W: Witness<F>, F: RichField>(
@@ -186,6 +198,79 @@ where
                 header_gadget.leaf_fingerprint,
             ],
         );
+
+        let left_child_allowed_circuit_hashes_root = HashOutTarget {
+            elements: [
+                left_proof.public_inputs[0],
+                left_proof.public_inputs[1],
+                left_proof.public_inputs[2],
+                left_proof.public_inputs[3],
+            ],
+        };
+        let left_child_transition_hash = HashOutTarget {
+            elements: [
+                left_proof.public_inputs[4],
+                left_proof.public_inputs[5],
+                left_proof.public_inputs[6],
+                left_proof.public_inputs[7],
+            ],
+        };
+        let right_child_allowed_circuit_hashes_root = HashOutTarget {
+            elements: [
+                right_proof.public_inputs[0],
+                right_proof.public_inputs[1],
+                right_proof.public_inputs[2],
+                right_proof.public_inputs[3],
+            ],
+        };
+        let right_child_transition_hash = HashOutTarget {
+            elements: [
+                right_proof.public_inputs[4],
+                right_proof.public_inputs[5],
+                right_proof.public_inputs[6],
+                right_proof.public_inputs[7],
+            ],
+        };
+        let right_child_event_hash = HashOutTarget {
+            elements: [
+                right_proof.public_inputs[8],
+                right_proof.public_inputs[9],
+                right_proof.public_inputs[10],
+                right_proof.public_inputs[11],
+            ],
+        };
+        let left_child_event_hash = HashOutTarget {
+            elements: [
+                left_proof.public_inputs[8],
+                left_proof.public_inputs[9],
+                left_proof.public_inputs[10],
+                left_proof.public_inputs[11],
+            ],
+        };
+        builder.connect_hashes(
+            left_child_allowed_circuit_hashes_root,
+            header_gadget.allowed_circuit_hashes_root,
+        );
+        builder.connect_hashes(
+            right_child_allowed_circuit_hashes_root,
+            header_gadget.allowed_circuit_hashes_root,
+        );
+        builder.connect_hashes(
+            left_child_transition_hash,
+            header_gadget.expected_left_child_transition_hash,
+        );
+        builder.connect_hashes(
+            right_child_transition_hash,
+            header_gadget.expected_right_child_transition_hash,
+        );
+        builder.connect_hashes(
+            left_child_event_hash,
+            header_gadget.left_event_hash,
+        );
+        builder.connect_hashes(
+            right_child_event_hash,
+            header_gadget.right_event_hash,
+        );
         builder.register_public_inputs(&header_gadget.allowed_circuit_hashes_root.elements);
         builder.register_public_inputs(&header_gadget.state_transition_hash.elements);
         builder.register_public_inputs(&header_gadget.event_transition_hash.elements);
@@ -215,6 +300,13 @@ where
         right_proof: &ProofWithPublicInputs<C::F, C, D>,
         input: &AggStateTransitionWithEventsInput<C::F>,
     ) -> anyhow::Result<ProofWithPublicInputs<C::F, C, D>> {
+        /*
+        println!("agg_fingerprint: {} ({:?})", agg_fingerprint.to_string(), agg_fingerprint);
+        println!("leaf_fingerprint: {} ({:?})", leaf_fingerprint.to_string(), leaf_fingerprint);
+        println!("left_proof_public_inputs: {:?}", left_proof.public_inputs);
+        println!("right_proof_public_inputs: {:?}", right_proof.public_inputs);
+        println!("agg_input: {:?}",input);
+        */
         let mut pw = PartialWitness::<C::F>::new();
         self.header_gadget
             .set_witness(&mut pw, input, agg_fingerprint, leaf_fingerprint);

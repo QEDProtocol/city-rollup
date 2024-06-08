@@ -405,10 +405,9 @@ impl QBitcoinAPIFunderSync for BTCLinkAPI {
         Ok(txid)
     }
 
-    fn mine_blocks(&self, count: u32) -> anyhow::Result<()> {
+    fn mine_blocks(&self, count: u32) -> anyhow::Result<Vec<Hash256>> {
         self.btc_mine_blocks(count, None)
-            .map_err(|err| anyhow::format_err!("Failed to mine blocks: {}", err.message))?;
-        Ok(())
+            .map_err(|err| anyhow::format_err!("Failed to mine blocks: {}", err.message))
     }
 
     fn mine_blocks_to_address(&self, count: u32, address: BTCAddress160) -> anyhow::Result<()> {

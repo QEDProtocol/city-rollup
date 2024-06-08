@@ -16,7 +16,7 @@ use plonky2::{
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    proof_minifier::pm_chain::OASProofMinifierChain,
+    proof_minifier::pm_chain::QEDProofMinifierChain,
     verify_template::{
         circuit_template::QEDCircuitVerifyTemplate,
         ser_data::{VTFriConfig, VTFriParams, VTFriReductionStrategy},
@@ -158,7 +158,7 @@ where
     pub private_key: HashOutTarget,
     pub action_hash: HashOutTarget,
     // end circuit targets
-    pub minifier_chain: OASProofMinifierChain<D, C::F, C>,
+    pub minifier_chain: QEDProofMinifierChain<D, C::F, C>,
     pub circuit_data: CircuitData<C::F, C, D>,
     pub fingerprint: QHashOut<C::F>,
     pub public_key: QHashOut<C::F>,
@@ -222,7 +222,7 @@ where
         builder.register_public_inputs(&action_hash.elements);
         let circuit_data = builder.build::<C>();
 
-        let minifier_chain = OASProofMinifierChain::<D, C::F, C>::new(
+        let minifier_chain = QEDProofMinifierChain::<D, C::F, C>::new(
             &circuit_data.verifier_only,
             &circuit_data.common,
             2,

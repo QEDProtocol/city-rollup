@@ -8,7 +8,7 @@ use plonky2::plonk::{
 };
 use serde::Serialize;
 
-use crate::proof_minifier::pm_chain::OASProofMinifierChain;
+use crate::proof_minifier::pm_chain::QEDProofMinifierChain;
 
 use super::QStandardCircuit;
 
@@ -49,7 +49,7 @@ pub struct QStandardCircuitProvableWrapped<
     C::Hasher: AlgebraicHasher<C::F>,
 {
     pub circuit: IC,
-    pub minifier: OASProofMinifierChain<D, C::F, C>,
+    pub minifier: QEDProofMinifierChain<D, C::F, C>,
     _phantom_i: PhantomData<I>,
 }
 
@@ -64,7 +64,7 @@ where
     C::Hasher: AlgebraicHasher<C::F>,
 {
     pub fn new_wrapped(inner_circuit: IC) -> Self {
-        let minifier = OASProofMinifierChain::new(
+        let minifier = QEDProofMinifierChain::new(
             inner_circuit.get_verifier_config_ref(),
             inner_circuit.get_common_circuit_data_ref(),
             M,

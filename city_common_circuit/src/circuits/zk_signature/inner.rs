@@ -13,7 +13,7 @@ use plonky2::{
 };
 
 use crate::{
-    builder::hash::core::CircuitBuilderHashCore, proof_minifier::pm_chain::OASProofMinifierChain,
+    builder::hash::core::CircuitBuilderHashCore, proof_minifier::pm_chain::QEDProofMinifierChain,
 };
 
 use super::{
@@ -28,7 +28,7 @@ where
     pub private_key: HashOutTarget,
     pub action_hash: HashOutTarget,
     // end circuit targets
-    pub minifier_chain: OASProofMinifierChain<D, C::F, C>,
+    pub minifier_chain: QEDProofMinifierChain<D, C::F, C>,
     pub circuit_data: CircuitData<C::F, C, D>,
     pub fingerprint: QHashOut<C::F>,
 }
@@ -91,7 +91,7 @@ where
         builder.register_public_inputs(&combined_hash.elements);
         let circuit_data = builder.build::<C>();
 
-        let minifier_chain = OASProofMinifierChain::<D, C::F, C>::new(
+        let minifier_chain = QEDProofMinifierChain::<D, C::F, C>::new(
             &circuit_data.verifier_only,
             &circuit_data.common,
             2,

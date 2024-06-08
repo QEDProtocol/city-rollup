@@ -11,7 +11,7 @@ use city_common_circuit::{
         smartgadget::Sha256AirParametersStandard,
         Sha256Acc,
     },
-    proof_minifier::pm_chain_dynamic::OASProofMinifierDynamicChain,
+    proof_minifier::pm_chain_dynamic::QEDProofMinifierDynamicChain,
 };
 use city_crypto::hash::qhashout::QHashOut;
 use city_rollup_common::{
@@ -62,7 +62,7 @@ where
     pub targets_to_constants: HashMap<Target, C::F>,
     pub fingerprint: QHashOut<C::F>,
 
-    pub minifier: OASProofMinifierDynamicChain<D, C::F, C>,
+    pub minifier: QEDProofMinifierDynamicChain<D, C::F, C>,
     //pub tracer: DebugCircuitTracer,
 }
 impl<C: GenericConfig<D> + 'static, const D: usize> Clone for CRSigHashCircuit<C, D>
@@ -111,7 +111,7 @@ where
         let targets_to_constants = builder.get_targets_to_constants_map();
         let circuit_data = builder.build::<C>();
 
-        let minifier = OASProofMinifierDynamicChain::new_with_dynamic_constant_verifier(
+        let minifier = QEDProofMinifierDynamicChain::new_with_dynamic_constant_verifier(
             &circuit_data.verifier_only,
             &circuit_data.common,
             &[false, true, true],

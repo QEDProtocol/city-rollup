@@ -127,6 +127,36 @@ where
             Ok(None)
         }
     }
+
+    fn get_fuzzy_range_leq_kv(
+        &self,
+        key: &Vec<u8>,
+        fuzzy_bytes: usize,
+    ) -> anyhow::Result<Vec<KVQPair<Vec<u8>, Vec<u8>>>> {
+        let key_end = key.to_vec();
+        let mut base_key = key.to_vec();
+        let key_len = base_key.len();
+        if fuzzy_bytes > key_len {
+            return Err(anyhow::anyhow!(
+                "Fuzzy bytes must be less than or equal to key length"
+            ));
+        }
+
+        for i in 0..fuzzy_bytes {
+            base_key[key_len - i - 1] = 0;
+        }
+
+        self.kv
+            .range(base_key.as_slice()..=key_end.as_slice())?
+            .map(|x| {
+                let x = x?;
+                Ok(KVQPair {
+                    key: x.0.value().to_vec(),
+                    value: x.1.value().to_vec(),
+                })
+            })
+            .collect::<Result<Vec<_>, _>>()
+    }
 }
 
 impl<'db, 'txn> KVQBinaryStoreWriter

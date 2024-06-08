@@ -102,7 +102,7 @@ impl<S: KVQBinaryStore, PS: QProofStore> CityOrchestratorBlockProcessor<S, PS> {
             0,
         );
 
-        proof_store.set_bytes_by_id(job_id, &(&op_result).to_bytes()?)?;
+        proof_store.set_bytes_by_id(job_id, &op_result.to_bytes()?)?;
         self.block_l2_transfer_count += 1;
         Ok(CircuitInputWithJobId::new(op_result, job_id))
     }

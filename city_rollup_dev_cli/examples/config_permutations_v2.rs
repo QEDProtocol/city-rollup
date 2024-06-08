@@ -127,10 +127,10 @@ fn compute_permutations(perm_set: SighashPermutationSet) -> SighashPermutationSe
 fn main() {
     let mt = SigHashMerkleTree::new();
     println!("root: {:?}", mt.root.0);
-    let prev_max_deposits: i32 = 4;
-    let prev_max_withdrawals: i32 = 4;
-    let target_max_deposits = 5;
-    let target_max_withdrawals = 5;
+    let prev_max_deposits: i32 = -1;
+    let prev_max_withdrawals: i32 = -1;
+    let target_max_deposits = 4;
+    let target_max_withdrawals = 4;
 
     let perm_set = get_perm_set(prev_max_deposits, prev_max_withdrawals, target_max_deposits, target_max_withdrawals);
     let result = compute_permutations(perm_set);

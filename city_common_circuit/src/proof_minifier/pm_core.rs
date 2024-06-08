@@ -41,7 +41,7 @@ where
     output
 }
 #[derive(Debug)]
-pub struct OASProofMinifier<
+pub struct QEDProofMinifier<
     const D: usize,
     F: RichField + Extendable<D>,
     C: GenericConfig<D, F = F> + 'static,
@@ -54,7 +54,7 @@ pub struct OASProofMinifier<
 }
 
 impl<const D: usize, F: RichField + Extendable<D>, C: GenericConfig<D, F = F> + 'static>
-    OASProofMinifier<D, F, C>
+    QEDProofMinifier<D, F, C>
 where
     <C as GenericConfig<D>>::Hasher: AlgebraicHasher<F>,
 {

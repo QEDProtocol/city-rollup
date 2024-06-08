@@ -10,7 +10,7 @@ use city_rollup_common::qworker::{
     proof_store::QProofStoreReaderSync, verifier::QWorkerVerifyHelper,
 };
 use plonky2::{
-    hash::{hash_types::HashOutTarget, poseidon::PoseidonHash},
+    hash::hash_types::HashOutTarget,
     iop::witness::{PartialWitness, WitnessWrite},
     plonk::{
         circuit_builder::CircuitBuilder,
@@ -122,14 +122,6 @@ where
         signature_proof: &ProofWithPublicInputs<C::F, C, D>,
         signature_verifier_data: &VerifierOnlyCircuitData<C, D>,
     ) -> anyhow::Result<ProofWithPublicInputs<C::F, C, D>> {
-        tracing::info!(
-            "input_hash: {:?}",
-            input
-                .compute_desired_public_inputs::<PoseidonHash>()
-                .0
-                .elements
-        );
-        tracing::info!("public_inputs: {:?}", signature_proof.public_inputs);
         let mut pw = PartialWitness::new();
         self.claim_single_gadget.claim_gadget.set_witness(
             &mut pw,

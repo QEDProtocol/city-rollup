@@ -89,56 +89,34 @@ impl<F: RichField> OrchestratorEventReceiverSync<F> for CityEventReceiver<F> {
     fn flush_claim_deposits(&mut self) -> anyhow::Result<Vec<CityClaimDepositRequest>> {
         let reqs = self.flush_rpc_requests::<CityClaimDepositRPCRequest>(Q_RPC_CLAIM_DEPOSIT)?;
 
-        let mut res = Vec::with_capacity(reqs.len());
-        for req in reqs {
-            res.push(self.rpc_processor.injest_rpc_claim_deposit(
-                &mut self.proof_store,
-                0,
-                &req,
-            )?);
-        }
+        self.rpc_processor.process_deposits(&mut self.proof_store, 0, &reqs)?;
+        let mut res: Vec<CityClaimDepositRequest> = Vec::new();
+        res.append(&mut self.rpc_processor.output.claim_l1_deposits);
 
         Ok(res)
     }
 
     fn flush_register_users(&mut self) -> anyhow::Result<Vec<CityRegisterUserRequest<F>>> {
         let reqs = self.flush_rpc_requests::<CityRegisterUserRPCRequest<F>>(Q_RPC_REGISTER_USER)?;
-
-        let mut res = Vec::with_capacity(reqs.len());
-        for req in reqs {
-            res.push(self.rpc_processor.injest_rpc_register_user(0, &req)?);
-        }
-
+        self.rpc_processor.process_register_users(0, &reqs)?;
+        let mut res: Vec<CityRegisterUserRequest<F>> = Vec::new();
+        res.append(&mut self.rpc_processor.output.register_users);
         Ok(res)
     }
 
     fn flush_add_withdrawals(&mut self) -> anyhow::Result<Vec<CityAddWithdrawalRequest>> {
         let reqs = self.flush_rpc_requests::<CityAddWithdrawalRPCRequest>(Q_RPC_ADD_WITHDRAWAL)?;
-
-        let mut res = Vec::with_capacity(reqs.len());
-        for req in reqs {
-            res.push(self.rpc_processor.injest_rpc_add_withdrawal(
-                &mut self.proof_store,
-                0,
-                &req,
-            )?);
-        }
-
+        self.rpc_processor.process_withdrawals(&mut self.proof_store, 0, &reqs)?;
+        let mut res: Vec<CityAddWithdrawalRequest> = Vec::new();
+        res.append(&mut self.rpc_processor.output.add_withdrawals);
         Ok(res)
     }
 
     fn flush_token_transfers(&mut self) -> anyhow::Result<Vec<CityTokenTransferRequest>> {
         let reqs = self.flush_rpc_requests::<CityTokenTransferRPCRequest>(Q_RPC_TOKEN_TRANSFER)?;
-
-        let mut res = Vec::with_capacity(reqs.len());
-        for req in reqs {
-            res.push(self.rpc_processor.injest_rpc_token_transfer(
-                &mut self.proof_store,
-                0,
-                &req,
-            )?);
-        }
-
+        self.rpc_processor.process_transfers(&mut self.proof_store, 0, &reqs)?;
+        let mut res: Vec<CityTokenTransferRequest> = Vec::new();
+        res.append(&mut self.rpc_processor.output.token_transfers);
         Ok(res)
     }
 
@@ -173,7 +151,6 @@ impl<F: RichField> OrchestratorRPCEventSenderSync<F> for CityEventReceiver<F> {
         &mut self,
         event: &CityRegisterUserRPCRequest<F>,
     ) -> anyhow::Result<()> {
-        tracing::info!("got rpc_register_user: {:?}", event);
         self.tx_queue.dispatch(Q_RPC_REGISTER_USER, event.clone())?;
         Ok(())
     }
