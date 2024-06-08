@@ -376,6 +376,7 @@ pub async fn run(args: RPCReplArgs) -> Result<()> {
         Command::new("random_l1_wallet", random_dogecoin_wallet)
             .with_help("generate a random dogecoin P2PKH wallet"),
     )
-    .add_command(Command::new("exit", exit_repl).with_help("exits the repl"));
+    .add_command(Command::new("exit", exit_repl).with_help("exits the repl"))
+    .add_command(Command::new("quit", exit_repl).with_help("exits the repl"));
     repl.run().map_err(|err| err.into())
 }
