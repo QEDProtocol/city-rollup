@@ -12,6 +12,8 @@
 - docker
 - docker-compose
 - go
+- librocksdb-dev
+- jq
 - rust toolchain
 
 
