@@ -4642,7 +4642,7 @@ checksum = "afab94fb28594581f62d981211a9a4d53cc8130bbcbbb89a0440d9b8e81a7746"
 [[package]]
 name = "rsmq"
 version = "9.0.0"
-source = "git+https://github.com/GopherJ/rsmq-async-rs?rev=72358a7c4b946ff01515e111ccbe8b0f8a04ede2#72358a7c4b946ff01515e111ccbe8b0f8a04ede2"
+source = "git+https://github.com/GopherJ/rsmq-async-rs?rev=2af5a5c06a0341cb60f73ba0f0af066f65fb5e77#2af5a5c06a0341cb60f73ba0f0af066f65fb5e77"
 dependencies = [
  "lazy_static",
  "r2d2",

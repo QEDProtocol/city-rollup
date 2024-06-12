@@ -110,7 +110,7 @@ env_logger = { version = "0.9.0", default-features = false }
 hashbrown = { version = "0.14.3", default-features = false, features = ["ahash", "serde"] } # NOTE: When upgrading, see `ahash` dependency.
 url = "2.5.0"
 redis = { version = "^0.25", default-features = false, features = ["acl", "keep-alive", "script"] }
-rsmq = { git = "https://github.com/GopherJ/rsmq-async-rs", rev = "72358a7c4b946ff01515e111ccbe8b0f8a04ede2", default-features = false }
+rsmq = { git = "https://github.com/GopherJ/rsmq-async-rs", rev = "2af5a5c06a0341cb60f73ba0f0af066f65fb5e77", default-features = false }
 r2d2 = { git = "https://github.com/GopherJ/r2d2", rev = "976ca74a74871d78764da2a040edcadad1af9be9" }
 r2d2_redis = { git = "https://github.com/GopherJ/r2d2-redis", rev = "63be37454cf441b832251aa915b1a9cb8bc27bff" }
 
