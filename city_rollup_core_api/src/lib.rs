@@ -1,6 +1,8 @@
+use std::sync::Arc;
 
 use city_crypto::hash::base_types::hash160::Hash160;
 use city_crypto::hash::base_types::hash256::Hash256;
+use city_macros::define_table;
 use city_rollup_common::api::data::store::{
     CityL1Deposit, CityL1Withdrawal, CityL2BlockState, CityUserState,
 };
@@ -10,7 +12,10 @@ use jsonrpsee::core::async_trait;
 use jsonrpsee::proc_macros::rpc;
 use jsonrpsee::server::Server;
 use jsonrpsee::types::{ErrorCode, ErrorObject, ErrorObjectOwned};
-use kvq_store_rocksdb::KVQRocksDBStore;
+use kvq_store_redb::KVQReDBStore;
+use redb::{Database, ReadOnlyTable, TableDefinition};
+
+define_table! { KV, &[u8], &[u8] }
 
 #[rpc(server, client, namespace = "cr")]
 pub trait Rpc {
@@ -159,13 +164,26 @@ pub trait Rpc {
 
 #[derive(Clone)]
 pub struct RpcServerImpl {
-    db: KVQRocksDBStore,
+    db: Arc<Database>,
+}
+
+impl RpcServerImpl {
+    pub fn query_store<T>(
+        &self,
+        f: impl FnOnce(KVQReDBStore<ReadOnlyTable<&'static [u8], &'static [u8]>>) -> anyhow::Result<T>,
+    ) -> anyhow::Result<T> {
+        let rxn = self.db.begin_read()?;
+        let table = rxn.open_table(KV)?;
+
+        f(KVQReDBStore::new(table))
+    }
 }
 
 #[async_trait]
 impl RpcServer for RpcServerImpl {
     async fn get_user_tree_root(&self, checkpoint_id: u64) -> Result<CityHash, ErrorObjectOwned> {
-        Ok(CityStore::get_user_tree_root(&self.db, checkpoint_id)
+        Ok(self
+            .query_store(|store| Ok(CityStore::get_user_tree_root(&store, checkpoint_id)?))
             .map_err(|_| ErrorObject::from(ErrorCode::InternalError))?)
     }
 
@@ -174,7 +192,8 @@ impl RpcServer for RpcServerImpl {
         checkpoint_id: u64,
         user_id: u64,
     ) -> Result<CityUserState, ErrorObjectOwned> {
-        Ok(CityStore::get_user_by_id(&self.db, checkpoint_id, user_id)
+        Ok(self
+            .query_store(|store| Ok(CityStore::get_user_by_id(&store, checkpoint_id, user_id)?))
             .map_err(|_| ErrorObject::from(ErrorCode::InternalError))?)
     }
 
@@ -182,7 +201,8 @@ impl RpcServer for RpcServerImpl {
         &self,
         public_key: CityHash,
     ) -> Result<Vec<u64>, ErrorObjectOwned> {
-        Ok(CityStore::get_user_ids_for_public_key(&self.db, public_key)
+        Ok(self
+            .query_store(|store| Ok(CityStore::get_user_ids_for_public_key(&store, public_key)?))
             .map_err(|_| ErrorObject::from(ErrorCode::InternalError))?)
     }
 
@@ -191,10 +211,15 @@ impl RpcServer for RpcServerImpl {
         checkpoint_id: u64,
         user_id: u64,
     ) -> Result<CityMerkleProof, ErrorObjectOwned> {
-        Ok(
-            CityStore::get_user_merkle_proof_by_id(&self.db, checkpoint_id, user_id)
-                .map_err(|_| ErrorObject::from(ErrorCode::InternalError))?,
-        )
+        Ok(self
+            .query_store(|store| {
+                Ok(CityStore::get_user_merkle_proof_by_id(
+                    &store,
+                    checkpoint_id,
+                    user_id,
+                )?)
+            })
+            .map_err(|_| ErrorObject::from(ErrorCode::InternalError))?)
     }
 
     async fn get_user_tree_leaf(
@@ -202,10 +227,15 @@ impl RpcServer for RpcServerImpl {
         checkpoint_id: u64,
         leaf_id: u64,
     ) -> Result<CityHash, ErrorObjectOwned> {
-        Ok(
-            CityStore::get_user_tree_leaf(&self.db, checkpoint_id, leaf_id)
-                .map_err(|_| ErrorObject::from(ErrorCode::InternalError))?,
-        )
+        Ok(self
+            .query_store(|store| {
+                Ok(CityStore::get_user_tree_leaf(
+                    &store,
+                    checkpoint_id,
+                    leaf_id,
+                )?)
+            })
+            .map_err(|_| ErrorObject::from(ErrorCode::InternalError))?)
     }
 
     async fn get_user_tree_leaf_merkle_proof(
@@ -213,17 +243,23 @@ impl RpcServer for RpcServerImpl {
         checkpoint_id: u64,
         leaf_id: u64,
     ) -> Result<CityMerkleProof, ErrorObjectOwned> {
-        Ok(
-            CityStore::get_user_tree_leaf_merkle_proof(&self.db, checkpoint_id, leaf_id)
-                .map_err(|_| ErrorObject::from(ErrorCode::InternalError))?,
-        )
+        Ok(self
+            .query_store(|store| {
+                Ok(CityStore::get_user_tree_leaf_merkle_proof(
+                    &store,
+                    checkpoint_id,
+                    leaf_id,
+                )?)
+            })
+            .map_err(|_| ErrorObject::from(ErrorCode::InternalError))?)
     }
 
     async fn get_deposit_tree_root(
         &self,
         checkpoint_id: u64,
     ) -> Result<CityHash, ErrorObjectOwned> {
-        Ok(CityStore::get_deposit_tree_root(&self.db, checkpoint_id)
+        Ok(self
+            .query_store(|store| Ok(CityStore::get_deposit_tree_root(&store, checkpoint_id)?))
             .map_err(|_| ErrorObject::from(ErrorCode::InternalError))?)
     }
 
@@ -232,10 +268,15 @@ impl RpcServer for RpcServerImpl {
         checkpoint_id: u64,
         deposit_id: u64,
     ) -> Result<CityL1Deposit, ErrorObjectOwned> {
-        Ok(
-            CityStore::get_deposit_by_id(&self.db, checkpoint_id, deposit_id)
-                .map_err(|_| ErrorObject::from(ErrorCode::InternalError))?,
-        )
+        Ok(self
+            .query_store(|store| {
+                Ok(CityStore::get_deposit_by_id(
+                    &store,
+                    checkpoint_id,
+                    deposit_id,
+                )?)
+            })
+            .map_err(|_| ErrorObject::from(ErrorCode::InternalError))?)
     }
 
     async fn get_deposits_by_id(
@@ -243,17 +284,28 @@ impl RpcServer for RpcServerImpl {
         checkpoint_id: u64,
         deposit_ids: Vec<u64>,
     ) -> Result<Vec<CityL1Deposit>, ErrorObjectOwned> {
-        Ok(
-            CityStore::get_deposits_by_id(&self.db, checkpoint_id, &deposit_ids)
-                .map_err(|_| ErrorObject::from(ErrorCode::InternalError))?,
-        )
+        Ok(self
+            .query_store(|store| {
+                Ok(CityStore::get_deposits_by_id(
+                    &store,
+                    checkpoint_id,
+                    &deposit_ids,
+                )?)
+            })
+            .map_err(|_| ErrorObject::from(ErrorCode::InternalError))?)
     }
 
     async fn get_deposit_by_txid(
         &self,
         transaction_id: Hash256,
     ) -> Result<CityL1Deposit, ErrorObjectOwned> {
-        Ok(CityStore::get_deposit_by_txid(&self.db, transaction_id.reversed())
+        Ok(self
+            .query_store(|store| {
+                Ok(CityStore::get_deposit_by_txid(
+                    &store,
+                    transaction_id.reversed(),
+                )?)
+            })
             .map_err(|_| ErrorObject::from(ErrorCode::InternalError))?)
     }
 
@@ -261,7 +313,16 @@ impl RpcServer for RpcServerImpl {
         &self,
         transaction_ids: Vec<Hash256>,
     ) -> Result<Vec<CityL1Deposit>, ErrorObjectOwned> {
-        Ok(CityStore::get_deposits_by_txid(&self.db, &transaction_ids.into_iter().map(|x|x.reversed()).collect::<Vec<_>>())
+        Ok(self
+            .query_store(|store| {
+                Ok(CityStore::get_deposits_by_txid(
+                    &store,
+                    &transaction_ids
+                        .into_iter()
+                        .map(|x| x.reversed())
+                        .collect::<Vec<_>>(),
+                )?)
+            })
             .map_err(|_| ErrorObject::from(ErrorCode::InternalError))?)
     }
 
@@ -270,10 +331,15 @@ impl RpcServer for RpcServerImpl {
         checkpoint_id: u64,
         deposit_id: u64,
     ) -> Result<CityHash, ErrorObjectOwned> {
-        Ok(
-            CityStore::get_deposit_hash(&self.db, checkpoint_id, deposit_id)
-                .map_err(|_| ErrorObject::from(ErrorCode::InternalError))?,
-        )
+        Ok(self
+            .query_store(|store| {
+                Ok(CityStore::get_deposit_hash(
+                    &store,
+                    checkpoint_id,
+                    deposit_id,
+                )?)
+            })
+            .map_err(|_| ErrorObject::from(ErrorCode::InternalError))?)
     }
 
     async fn get_deposit_leaf_merkle_proof(
@@ -281,33 +347,42 @@ impl RpcServer for RpcServerImpl {
         checkpoint_id: u64,
         deposit_id: u64,
     ) -> Result<CityMerkleProof, ErrorObjectOwned> {
-        Ok(
-            CityStore::get_deposit_leaf_merkle_proof(&self.db, checkpoint_id, deposit_id)
-                .map_err(|_| ErrorObject::from(ErrorCode::InternalError))?,
-        )
+        Ok(self
+            .query_store(|store| {
+                Ok(CityStore::get_deposit_leaf_merkle_proof(
+                    &store,
+                    checkpoint_id,
+                    deposit_id,
+                )?)
+            })
+            .map_err(|_| ErrorObject::from(ErrorCode::InternalError))?)
     }
 
     async fn get_block_state(
         &self,
         checkpoint_id: u64,
     ) -> Result<CityL2BlockState, ErrorObjectOwned> {
-        Ok(CityStore::get_block_state(&self.db, checkpoint_id)
+        Ok(self
+            .query_store(|store| Ok(CityStore::get_block_state(&store, checkpoint_id)?))
             .map_err(|_| ErrorObject::from(ErrorCode::InternalError))?)
     }
 
     async fn get_latest_block_state(&self) -> Result<CityL2BlockState, ErrorObjectOwned> {
-        Ok(CityStore::get_latest_block_state(&self.db)
+        Ok(self
+            .query_store(|store| Ok(CityStore::get_latest_block_state(&store)?))
             .map_err(|_| ErrorObject::from(ErrorCode::InternalError))?)
     }
 
     async fn get_city_root(&self, checkpoint_id: u64) -> Result<CityHash, ErrorObjectOwned> {
-        Ok(CityStore::get_city_root(&self.db, checkpoint_id)
+        Ok(self
+            .query_store(|store| Ok(CityStore::get_city_root(&store, checkpoint_id)?))
             .map_err(|_| ErrorObject::from(ErrorCode::InternalError))?)
     }
 
     async fn get_city_block_script(&self, checkpoint_id: u64) -> Result<String, ErrorObjectOwned> {
         Ok(hex::encode(
-            &CityStore::get_city_block_script(&self.db, checkpoint_id)
+            &self
+                .query_store(|store| Ok(CityStore::get_city_block_script(&store, checkpoint_id)?))
                 .map_err(|_| ErrorObject::from(ErrorCode::InternalError))?,
         ))
     }
@@ -316,30 +391,37 @@ impl RpcServer for RpcServerImpl {
         &self,
         checkpoint_id: u64,
     ) -> Result<Hash160, ErrorObjectOwned> {
-        Ok(
-            CityStore::get_city_block_deposit_address(&self.db, checkpoint_id)
-                .map_err(|_| ErrorObject::from(ErrorCode::InternalError))?,
-        )
+        Ok(self
+            .query_store(|store| {
+                Ok(CityStore::get_city_block_deposit_address(
+                    &store,
+                    checkpoint_id,
+                )?)
+            })
+            .map_err(|_| ErrorObject::from(ErrorCode::InternalError))?)
     }
 
     async fn get_city_block_deposit_address_string(
         &self,
         checkpoint_id: u64,
     ) -> Result<String, ErrorObjectOwned> {
-        Ok(
-            CityStore::get_city_block_deposit_address_string(&self.db, checkpoint_id)
-                .map_err(|_| ErrorObject::from(ErrorCode::InternalError))?,
-        )
+        Ok(self
+            .query_store(|store| {
+                Ok(CityStore::get_city_block_deposit_address_string(
+                    &store,
+                    checkpoint_id,
+                )?)
+            })
+            .map_err(|_| ErrorObject::from(ErrorCode::InternalError))?)
     }
 
     async fn get_withdrawal_tree_root(
         &self,
         checkpoint_id: u64,
     ) -> Result<CityHash, ErrorObjectOwned> {
-        Ok(
-            CityStore::get_withdrawal_tree_root(&self.db, checkpoint_id)
-                .map_err(|_| ErrorObject::from(ErrorCode::InternalError))?,
-        )
+        Ok(self
+            .query_store(|store| Ok(CityStore::get_withdrawal_tree_root(&store, checkpoint_id)?))
+            .map_err(|_| ErrorObject::from(ErrorCode::InternalError))?)
     }
 
     async fn get_withdrawal_by_id(
@@ -347,10 +429,15 @@ impl RpcServer for RpcServerImpl {
         checkpoint_id: u64,
         withdrawal_id: u64,
     ) -> Result<CityL1Withdrawal, ErrorObjectOwned> {
-        Ok(
-            CityStore::get_withdrawal_by_id(&self.db, checkpoint_id, withdrawal_id)
-                .map_err(|_| ErrorObject::from(ErrorCode::InternalError))?,
-        )
+        Ok(self
+            .query_store(|store| {
+                Ok(CityStore::get_withdrawal_by_id(
+                    &store,
+                    checkpoint_id,
+                    withdrawal_id,
+                )?)
+            })
+            .map_err(|_| ErrorObject::from(ErrorCode::InternalError))?)
     }
 
     async fn get_withdrawals_by_id(
@@ -358,10 +445,15 @@ impl RpcServer for RpcServerImpl {
         checkpoint_id: u64,
         withdrawal_ids: Vec<u64>,
     ) -> Result<Vec<CityL1Withdrawal>, ErrorObjectOwned> {
-        Ok(
-            CityStore::get_withdrawals_by_id(&self.db, checkpoint_id, &withdrawal_ids)
-                .map_err(|_| ErrorObject::from(ErrorCode::InternalError))?,
-        )
+        Ok(self
+            .query_store(|store| {
+                Ok(CityStore::get_withdrawals_by_id(
+                    &store,
+                    checkpoint_id,
+                    &withdrawal_ids,
+                )?)
+            })
+            .map_err(|_| ErrorObject::from(ErrorCode::InternalError))?)
     }
 
     async fn get_withdrawal_hash(
@@ -369,10 +461,15 @@ impl RpcServer for RpcServerImpl {
         checkpoint_id: u64,
         withdrawal_id: u64,
     ) -> Result<CityHash, ErrorObjectOwned> {
-        Ok(
-            CityStore::get_withdrawal_hash(&self.db, checkpoint_id, withdrawal_id)
-                .map_err(|_| ErrorObject::from(ErrorCode::InternalError))?,
-        )
+        Ok(self
+            .query_store(|store| {
+                Ok(CityStore::get_withdrawal_hash(
+                    &store,
+                    checkpoint_id,
+                    withdrawal_id,
+                )?)
+            })
+            .map_err(|_| ErrorObject::from(ErrorCode::InternalError))?)
     }
 
     async fn get_withdrawal_leaf_merkle_proof(
@@ -380,14 +477,19 @@ impl RpcServer for RpcServerImpl {
         checkpoint_id: u64,
         withdrawal_id: u64,
     ) -> Result<CityMerkleProof, ErrorObjectOwned> {
-        Ok(
-            CityStore::get_withdrawal_leaf_merkle_proof(&self.db, checkpoint_id, withdrawal_id)
-                .map_err(|_| ErrorObject::from(ErrorCode::InternalError))?,
-        )
+        Ok(self
+            .query_store(|store| {
+                Ok(CityStore::get_withdrawal_leaf_merkle_proof(
+                    &store,
+                    checkpoint_id,
+                    withdrawal_id,
+                )?)
+            })
+            .map_err(|_| ErrorObject::from(ErrorCode::InternalError))?)
     }
 }
 
-pub async fn run_server(server_addr: String, db: KVQRocksDBStore) -> anyhow::Result<()> {
+pub async fn run_server(server_addr: String, db: Arc<Database>) -> anyhow::Result<()> {
     let server = Server::builder().build(server_addr).await?;
 
     let rpc_server_impl = RpcServerImpl { db };

@@ -9,7 +9,7 @@ members = [
   "city_macros",
   "kvq",
   "kvq_store_redb",
-  "kvq_store_rocksdb",
+  # "kvq_store_rocksdb",
   "city_rollup_cli",
   "city_rollup_user_cli",
   "city_rollup_dev_cli",
@@ -19,7 +19,7 @@ members = [
   "city_rollup_worker_dispatch",
   "city_rollup_core_orchestrator",
   "city_rollup_core_api",
-  "city_rollup_rpc_provider" ]
+  "city_rollup_rpc_provider"]
 resolver = "2"
 
 [workspace.dependencies]
