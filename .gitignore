@@ -44,4 +44,5 @@ ordhook-data/
 db/
 redis-data/
 blocks/
+qbench_data/
 hints.json
