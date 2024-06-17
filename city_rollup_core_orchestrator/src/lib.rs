@@ -17,7 +17,7 @@ use city_rollup_common::{
         data::BTCAddress160, link_api::BTCLinkAPI, traits::QBitcoinAPIFunderSync,
         tx::setup_genesis_block,
     },
-    qworker::fingerprints::CRWorkerToolboxCoreCircuitFingerprints,
+    qworker::{fingerprints::CRWorkerToolboxCoreCircuitFingerprints, proof_store::QDummyProofStore},
 };
 use city_rollup_core_worker::event_processor::CityEventProcessor;
 use city_rollup_worker_dispatch::implementations::redis::RedisQueue;
@@ -76,6 +76,8 @@ pub fn run(args: OrchestratorArgs) -> anyhow::Result<()> {
     };
     let mut store = KVQRocksDBStore::open_default(&args.db_path)?;
     let storec = store.clone();
+    let expose_proof_store_api = args.expose_proof_store_api;
+    let api_proof_store = proof_store.clone();
     std::thread::spawn(move || {
         let rt = tokio::runtime::Builder::new_multi_thread()
             .enable_all()
@@ -84,7 +86,11 @@ pub fn run(args: OrchestratorArgs) -> anyhow::Result<()> {
 
        let _ = rt.block_on(async move {
             tracing::info!("api server listening on http://{}", args.server_addr);
-            city_rollup_core_api::run_server(args.server_addr, storec).await?;
+            if expose_proof_store_api {
+                city_rollup_core_api::run_server(args.server_addr, storec, api_proof_store).await?;
+            }else{
+                city_rollup_core_api::run_server(args.server_addr, storec, QDummyProofStore::new()).await?;
+            }
             Ok::<_, anyhow::Error>(())
         });
     });

@@ -32,6 +32,18 @@ pub struct CircuitInputWithJobId<I: Debug + Clone + Serialize + DeserializeOwned
     pub input: I,
     pub job_id: QProvingJobDataID,
 }
+#[derive(Debug, Copy, Clone, Deserialize, Serialize, PartialEq)]
+#[serde(bound = "")]
+pub struct DummyCircuitInputWithJobId(pub QProvingJobDataID);
+
+impl<F: RichField> AggStateTrackableInput<F> for DummyCircuitInputWithJobId {
+    fn get_state_transition(&self) -> AggStateTransition<F> {
+        AggStateTransition{
+            state_transition_start: QHashOut::ZERO,
+            state_transition_end: QHashOut::ZERO,
+        }
+    }
+}
 
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
 #[serde(bound = "")]

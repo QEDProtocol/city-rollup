@@ -93,4 +93,20 @@ impl QProofStoreWriterSync for RedisStore {
         conn.hset_nx(PROOFS, <[u8; 24]>::from(&id).to_vec(), data)?;
         Ok(())
     }
+    
+    fn write_next_jobs(
+        &mut self,
+        jobs: &[QProvingJobDataID],
+        next_jobs: &[QProvingJobDataID],
+    ) -> anyhow::Result<()> {
+        self.write_next_jobs_core(jobs, next_jobs)
+    }
+    
+    fn write_multidimensional_jobs(
+        &mut self,
+        jobs_levels: &[Vec<QProvingJobDataID>],
+        next_jobs: &[QProvingJobDataID],
+    ) -> anyhow::Result<()> {
+        self.write_multidimensional_jobs_core(jobs_levels, next_jobs)
+    }
 }

@@ -645,6 +645,7 @@ dependencies = [
  "city_rollup_core_node",
  "city_rollup_core_orchestrator",
  "city_rollup_core_worker",
+ "city_rollup_core_worker_qbench",
  "city_store",
  "clap",
  "dotenv",
@@ -1022,11 +1023,49 @@ dependencies = [
 ]
 
 [[package]]
+name = "city_rollup_core_worker_qbench"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bincode",
+ "bitcoin",
+ "city_common",
+ "city_common_circuit",
+ "city_crypto",
+ "city_macros",
+ "city_redis_store",
+ "city_rollup_circuit",
+ "city_rollup_common",
+ "city_rollup_core_orchestrator",
+ "city_rollup_core_worker",
+ "city_rollup_worker_dispatch",
+ "city_store",
+ "criterion",
+ "crossterm",
+ "gnark-plonky2-wrapper",
+ "hex",
+ "hex-literal",
+ "home",
+ "k256",
+ "plonky2",
+ "rand",
+ "rand_chacha",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "serde_with 3.8.1",
+ "tokio",
+ "tracing",
+ "url",
+]
+
+[[package]]
 name = "city_rollup_rpc_provider"
 version = "0.1.0"
 dependencies = [
  "anyhow",
  "async-trait",
+ "city_common",
  "city_crypto",
  "city_macros",
  "city_rollup_common",

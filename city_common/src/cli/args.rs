@@ -23,6 +23,10 @@ pub struct RPCServerArgs {
 pub struct OrchestratorArgs {
     #[clap(long, default_value = "0.0.0.0:7777", env)]
     pub server_addr: String,
+
+    #[clap(long, default_value = "true", env)]
+    pub expose_proof_store_api: bool,
+
     #[clap(
         env,
         long,
@@ -63,6 +67,41 @@ pub struct L2WorkerArgs {
     #[clap(long, short, default_value = "0")]
     pub debug_mode: u32,
 }
+
+
+#[derive(Clone, Args)]
+pub struct L2DumpProofStoreArgs {
+    #[clap(
+        env,
+        long,
+        default_value = "redis://localhost:6379/0",
+        env
+    )]
+    pub redis_uri: String,
+    #[clap(short, long, default_value = "dogeregtest", env)]
+    pub network: String,
+    
+    #[clap(long, short)]
+    pub checkpoint_id: u64,
+    
+    #[clap(long, short)]
+    pub output: String,
+}
+
+
+#[derive(Clone, Args)]
+pub struct QBenchArgs {
+    #[clap(long, short)]
+    pub input: String,
+
+    #[clap(short, long, default_value = "dogeregtest", env)]
+    pub network: String,
+    
+    #[clap(long, short, default_value = "1")]
+    pub num_iterations: u32,
+}
+
+
 #[derive(Clone, Args)]
 pub struct L2TransferArgs {
     #[clap(long, default_value = "0.0.0.0:3000", env)]

@@ -51,7 +51,7 @@ run-orchestrator: build-if-not-exists
 
 .PHONY: run-l2-worker
 run-l2-worker: build-if-not-exists
-	@RUST_LOG=${LOG_LEVEL} RUST_BACKTRACE=${TRACE_ENABLED} ./target/${PROFILE}/city-rollup-cli l2-worker
+	@RUST_LOG=${LOG_LEVEL} RUST_BACKTRACE=${TRACE_ENABLED} ./target/${PROFILE}/city-rollup-cli l2-worker --debug-mode 1
 
 .PHONY: run-l2-worker-g16
 run-l2-worker-g16: build-if-not-exists

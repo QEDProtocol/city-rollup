@@ -31,6 +31,7 @@ pub trait QWorkerGenericProverGroth16<S: QProofStoreReaderSync, C: GenericConfig
         job_id: QProvingJobDataID,
     ) -> anyhow::Result<CityGroth16ProofData>;
 }
+
 pub trait QWorkerGenericProverMut<S: QProofStoreReaderSync, C: GenericConfig<D>, const D: usize>:
     QWorkerVerifyHelper<C, D>
 {

@@ -16,6 +16,7 @@ members = [
   "city_rollup_core_node",
   "city_redis_store",
   "city_rollup_core_worker",
+  "city_rollup_core_worker_qbench",
   "city_rollup_worker_dispatch",
   "city_rollup_core_orchestrator",
   "city_rollup_core_api",

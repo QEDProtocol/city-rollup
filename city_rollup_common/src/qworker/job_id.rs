@@ -1,6 +1,8 @@
 use city_common::cli::modes::QWorkerMode;
+use hex::FromHexError;
 use serde::{Deserialize, Serialize};
 use serde_repr::{Deserialize_repr, Serialize_repr};
+use serde_with::serde_as;
 
 #[derive(
     Serialize_repr, Deserialize_repr, PartialEq, Debug, Clone, Copy, Eq, Hash, PartialOrd, Ord,
@@ -175,6 +177,31 @@ impl From<ProvingJobCircuitType> for u8 {
 
 pub type QProvingJobDataIDSerialized = [u8; 24];
 
+#[serde_as]
+#[derive(Serialize, Deserialize, PartialEq, Copy, Eq, Hash, Clone, Debug)]
+pub struct QProvingJobDataIDSerializedWrapped(#[serde_as(as = "serde_with::hex::Hex")] pub QProvingJobDataIDSerialized);
+
+impl QProvingJobDataIDSerializedWrapped {
+    pub fn from_hex_string(s: &str) -> Result<Self, FromHexError> {
+        let bytes = hex::decode(s)?;
+        assert_eq!(bytes.len(), 24);
+        let mut array = [0u8; 24];
+        array.copy_from_slice(&bytes);
+        Ok(Self(array))
+    }
+}
+
+#[serde_as]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+pub struct QWorkerJobBenchmark {
+  #[serde_as(as = "serde_with::hex::Hex")]
+  pub job_id: QProvingJobDataIDSerialized,
+
+
+  pub duration: u64,
+}
+
+
 #[derive(Serialize, Deserialize, PartialEq, Debug, Clone, Copy, Eq, Hash, PartialOrd, Ord)]
 pub struct QProvingJobDataID {
     pub topic: QJobTopic,
@@ -245,6 +272,18 @@ impl QProvingJobDataID {
             data_type,
             data_index,
         }
+    }
+    pub fn core_op_witness(circuit_type: ProvingJobCircuitType, checkpoint_id: u64, task_index: u32) -> Self {
+        Self::new(
+            QJobTopic::GenerateStandardProof,
+            checkpoint_id,
+            circuit_type.to_circuit_group_id(),
+            0,
+            task_index,
+            circuit_type,
+            ProvingJobDataType::InputWitness,
+            0,
+        )
     }
     pub fn transfer_signature_proof(rpc_node_id: u32, block_id: u64, transfer_id: u32) -> Self {
         Self {
@@ -429,6 +468,9 @@ impl QProvingJobDataID {
             ..*self
         }
     }
+    pub fn is_notify_orchestrator_complete(&self) -> bool {
+        self.topic == QJobTopic::NotifyOrchestratorComplete
+    }
     pub fn get_tree_parent_proof_input_id(&self) -> Self {
         let parent_type = match self.circuit_type {
             ProvingJobCircuitType::RegisterUser => ProvingJobCircuitType::RegisterUserAggregate,
@@ -523,6 +565,12 @@ impl QProvingJobDataID {
     }
     pub fn to_fixed_bytes(&self) -> QProvingJobDataIDSerialized {
         self.into()
+    }
+    pub fn with_task_index(&self, task_index: u32) -> Self {
+        Self {
+            task_index,
+            ..*self
+        }
     }
     pub fn to_hex_string(&self) -> String {
         hex::encode(&self.to_fixed_bytes())

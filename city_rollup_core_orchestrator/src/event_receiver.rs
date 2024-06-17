@@ -22,6 +22,7 @@ use city_rollup_worker_dispatch::traits::proving_worker::ProvingWorkerListener;
 use plonky2::hash::hash_types::RichField;
 use serde::de::DeserializeOwned;
 
+#[derive(Clone)]
 pub struct CityEventReceiver<F: RichField> {
     tx_queue: RedisQueue,
     rpc_processor: QRPCProcessor<F>,

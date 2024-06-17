@@ -1,12 +1,13 @@
 use std::sync::Arc;
 
+use city_common::data::{kv::SimpleKVPair, u8bytes::U8Bytes};
 use city_crypto::hash::base_types::hash160::Hash160;
 use city_crypto::hash::base_types::hash256::Hash256;
 use city_macros::{city_external_rpc_call, city_external_rpc_call_sync, city_rpc_call, city_rpc_call_sync};
-use city_rollup_common::api::data::{
+use city_rollup_common::{api::data::{
     block::rpc_request::*,
     store::{CityL1Deposit, CityL1Withdrawal, CityL2BlockState, CityUserState},
-};
+}, qworker::job_id::QProvingJobDataIDSerializedWrapped};
 use city_rollup_core_node::rpc::{
     ExternalRequestParams, Id, RequestParams, ResponseResult, RpcParams, RpcRequest, RpcResponse,
     Version,
@@ -148,6 +149,16 @@ pub trait CityRpcProvider {
         withdrawal_id: u64,
     ) -> anyhow::Result<CityMerkleProof>;
 
+    async fn get_proof_store_value(
+        &self,
+        key: QProvingJobDataIDSerializedWrapped,
+    ) -> anyhow::Result<U8Bytes>;
+
+    async fn get_proof_store_values(
+        &self,
+        keys: &[QProvingJobDataIDSerializedWrapped],
+    ) -> anyhow::Result<Vec<SimpleKVPair<QProvingJobDataIDSerializedWrapped, U8Bytes>>>;
+
     async fn register_user<F: RichField>(
         &self,
         req: CityRegisterUserRPCRequest<F>,
@@ -270,6 +281,16 @@ pub trait CityRpcProviderSync {
         checkpoint_id: u64,
         withdrawal_id: u64,
     ) -> anyhow::Result<CityMerkleProof>;
+
+    fn get_proof_store_value_sync(
+        &self,
+        key: QProvingJobDataIDSerializedWrapped,
+    ) -> anyhow::Result<U8Bytes>;
+
+    fn get_proof_store_values_sync(
+        &self,
+        keys: &[QProvingJobDataIDSerializedWrapped],
+    ) -> anyhow::Result<Vec<SimpleKVPair<QProvingJobDataIDSerializedWrapped, U8Bytes>>>;
 
     fn register_user_sync<F: RichField>(
         &self,
@@ -541,6 +562,29 @@ impl CityRpcProvider for RpcProvider {
             "cr_getWithdrawalLeafMerkleProof",
             json!([checkpoint_id, withdrawal_id]),
             CityMerkleProof
+        )
+    }
+
+    async fn get_proof_store_value(
+        &self,
+        key: QProvingJobDataIDSerializedWrapped,
+    ) -> anyhow::Result<U8Bytes> {
+        city_external_rpc_call!(
+            self,
+            "cr_getProofStoreValue",
+            json!([key]),
+            U8Bytes
+        )
+    }
+    async fn get_proof_store_values(
+        &self,
+        keys: &[QProvingJobDataIDSerializedWrapped],
+    ) -> anyhow::Result<Vec<SimpleKVPair<QProvingJobDataIDSerializedWrapped, U8Bytes>>> {
+        city_external_rpc_call!(
+            self,
+            "cr_getProofStoreValues",
+            json!([keys]),
+            Vec<SimpleKVPair<QProvingJobDataIDSerializedWrapped, U8Bytes>>
         )
     }
 
@@ -823,6 +867,30 @@ impl CityRpcProviderSync for RpcProviderSync {
             "cr_getWithdrawalLeafMerkleProof",
             json!([checkpoint_id, withdrawal_id]),
             CityMerkleProof
+        )
+    }
+
+    fn get_proof_store_value_sync(
+        &self,
+        key: QProvingJobDataIDSerializedWrapped,
+    ) -> anyhow::Result<U8Bytes> {
+        city_external_rpc_call_sync!(
+            self,
+            "cr_getProofStoreValue",
+            json!([key]),
+            U8Bytes
+        )
+    }
+
+    fn get_proof_store_values_sync(
+        &self,
+        keys: &[QProvingJobDataIDSerializedWrapped],
+    ) -> anyhow::Result<Vec<SimpleKVPair<QProvingJobDataIDSerializedWrapped, U8Bytes>>> {
+        city_external_rpc_call_sync!(
+            self,
+            "cr_getProofStoreValues",
+            json!([keys]),
+            Vec<SimpleKVPair<QProvingJobDataIDSerializedWrapped, U8Bytes>>
         )
     }
 

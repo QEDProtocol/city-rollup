@@ -237,6 +237,7 @@ pub trait TPLeafAggregator<IL, IO> {
     fn get_output_from_right_leaf(left: &IO, right: &IL) -> IO;
     fn get_output_from_leaves(left: &IL, right: &IL) -> IO;
 }
+
 pub struct AggWTLeafAggregator;
 
 impl<IL: AggStateTrackableInput<F>, F: RichField> TPLeafAggregator<IL, AggStateTransitionInput<F>>

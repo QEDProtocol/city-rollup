@@ -5,7 +5,7 @@ use city_crypto::hash::{
     qhashout::QHashOut,
 };
 use city_rollup_common::qworker::{
-    job_id::QProvingJobDataID,
+    job_id::{ProvingJobCircuitType, QProvingJobDataID},
     job_witnesses::agg::{
         CRAggAddProcessL1WithdrawalAddL1DepositCircuitInput,
         CRAggUserRegisterClaimDepositL2TransferCircuitInput,
@@ -13,6 +13,8 @@ use city_rollup_common::qworker::{
 };
 use plonky2::hash::hash_types::RichField;
 use serde::{Deserialize, Serialize};
+
+use super::tree_helper::get_dummy_tree_prover_ids_op_circuit;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(bound = "")]
@@ -82,7 +84,15 @@ pub struct CityOpRootJobIds {
     pub process_withdrawal_job_root_id: QProvingJobDataID,
     pub add_deposit_job_root_id: QProvingJobDataID,
 }
-
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+pub struct CityOpJobConfig {
+    pub register_user_count: usize,
+    pub claim_deposit_count: usize,
+    pub token_transfer_count: usize,
+    pub add_withdrawal_count: usize,
+    pub process_withdrawal_count: usize,
+    pub add_deposit_count: usize,
+}
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(bound = "")]
 pub struct CityOpJobIds {
@@ -98,6 +108,53 @@ fn vec_2d_size<T>(arr: &[Vec<T>]) -> usize {
     arr.iter().map(|x| x.len()).sum()
 }
 impl CityOpJobIds {
+    pub fn dummy_from_config(checkpoint_id: u64, config: &CityOpJobConfig) -> Self {
+        let register_user_job_ids = get_dummy_tree_prover_ids_op_circuit(
+            ProvingJobCircuitType::RegisterUser,
+            ProvingJobCircuitType::DummyRegisterUserAggregate,
+            checkpoint_id,
+            config.register_user_count,
+        );
+        let claim_deposit_job_ids = get_dummy_tree_prover_ids_op_circuit(
+            ProvingJobCircuitType::ClaimL1Deposit,
+            ProvingJobCircuitType::DummyClaimL1DepositAggregate,
+            checkpoint_id,
+            config.claim_deposit_count,
+        );
+        let token_transfer_job_ids = get_dummy_tree_prover_ids_op_circuit(
+            ProvingJobCircuitType::TransferTokensL2,
+            ProvingJobCircuitType::DummyTransferTokensL2Aggregate,
+            checkpoint_id,
+            config.token_transfer_count,
+        );
+        let add_withdrawal_job_ids = get_dummy_tree_prover_ids_op_circuit(
+            ProvingJobCircuitType::AddL1Withdrawal,
+            ProvingJobCircuitType::DummyAddL1WithdrawalAggregate,
+            checkpoint_id,
+            config.add_withdrawal_count,
+        );
+        let process_withdrawal_job_ids = get_dummy_tree_prover_ids_op_circuit(
+            ProvingJobCircuitType::ProcessL1Withdrawal,
+            ProvingJobCircuitType::DummyProcessL1WithdrawalAggregate,
+            checkpoint_id,
+            config.process_withdrawal_count,
+        );
+        let add_deposit_job_ids = get_dummy_tree_prover_ids_op_circuit(
+            ProvingJobCircuitType::AddL1Deposit,
+            ProvingJobCircuitType::DummyAddL1DepositAggregate,
+            checkpoint_id,
+            config.add_deposit_count,
+        );
+        Self {
+            register_user_job_ids,
+            claim_deposit_job_ids,
+            token_transfer_job_ids,
+            add_withdrawal_job_ids,
+            process_withdrawal_job_ids,
+            add_deposit_job_ids,
+        
+        }
+    }
     pub fn get_total_job_ids(&self) -> usize {
         vec_2d_size(&self.register_user_job_ids)
             + vec_2d_size(&self.claim_deposit_job_ids)

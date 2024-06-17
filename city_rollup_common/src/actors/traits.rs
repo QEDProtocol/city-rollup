@@ -108,6 +108,7 @@ pub trait WorkerEventReceiverSync {
     fn wait_for_next_job(&mut self) -> anyhow::Result<QProvingJobDataID>;
     fn enqueue_jobs(&mut self, jobs: &[QProvingJobDataID]) -> anyhow::Result<()>;
     fn notify_core_goal_completed(&mut self, job: QProvingJobDataID) -> anyhow::Result<()>;
+    fn record_job_bench(&mut self, job: QProvingJobDataID, duration: u64) -> anyhow::Result<()>;
 }
 
 pub trait WorkerEventTransmitterSync {
