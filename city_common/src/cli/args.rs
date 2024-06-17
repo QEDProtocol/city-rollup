@@ -91,9 +91,9 @@ pub struct L2DumpProofStoreArgs {
 
 #[derive(Clone, Args)]
 pub struct QBenchArgs {
-    #[clap(long, short)]
-    pub input: String,
-    
+    #[clap(short, long, value_parser, num_args = 1.., value_delimiter = ' ')]
+    pub input: Vec<String>,
+
     #[clap(long, short)]
     pub output: String,
 
