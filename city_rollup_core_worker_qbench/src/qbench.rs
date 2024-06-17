@@ -18,6 +18,7 @@ pub fn run_worker_qbench(
 ) -> anyhow::Result<Vec<QWorkerJobBenchmark>> {
     type C = PoseidonGoldilocksConfig;
     const D: usize = 2;
+    println!("Initializing QBench...");
 
     let dump_config = dump.config.clone();
     let block_op_job_ids =
@@ -35,6 +36,8 @@ pub fn run_worker_qbench(
         "{}/.city-rollup/keystore/",
         home::home_dir().unwrap().display()
     ))?;
+    println!("QBench Initialization Complete!");
+    println!("Running qbench with {} iterations", args.num_iterations);
 
     for _ in 0..args.num_iterations {
         let leaves = plan_jobs(
@@ -58,10 +61,14 @@ pub fn run_worker_qbench(
 pub fn run_qbench(args: &QBenchArgs) -> anyhow::Result<()> {
     let root = std::env::current_dir()?;
     let input_path = root.join(args.input.clone()).display().to_string();
+    let output_path = root.join(args.output.clone()).display().to_string();
+
     let input_bytes = std::fs::read(input_path)?;
     let dump: BlockProofStoreDump = bincode::deserialize(&input_bytes)?;
     let results = run_worker_qbench(args, &dump)?;
-    println!("results: {}", serde_json::to_string(&results)?);
+
+    let results_json_bytes = serde_json::to_vec_pretty(&results)?;
+    std::fs::write(output_path, results_json_bytes)?;
 
     Ok(())
 }

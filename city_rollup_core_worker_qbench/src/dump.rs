@@ -2,7 +2,7 @@ use city_common::cli::args::L2DumpProofStoreArgs;
 use city_redis_store::RedisStore;
 use city_rollup_common::qworker::{
     dump::dump_job_dependencies_from_store,
-    job_id::{ProvingJobCircuitType, QProvingJobDataID, QProvingJobDataIDSerializedWrapped},
+    job_id::{ProvingJobCircuitType, QProvingJobDataID},
     memory_proof_store::SimpleProofStoreMemory,
     proof_store::{QProofStore, QProofStoreReaderSync},
 };
@@ -70,6 +70,8 @@ fn dump_proof_store<PS: QProofStoreReaderSync>(
         num_input_witnesses,
         config.checkpoint_id,
     )?;
+
+    /*
     println!(
         "leaf_jobs: {}",
         serde_json::to_string(
@@ -79,18 +81,17 @@ fn dump_proof_store<PS: QProofStoreReaderSync>(
                 .collect::<Vec<_>>()
         )?
     );
+    */
 
 
     let dependency_map = dump_job_dependencies_from_store(real_store, &leaves)?;
 
     let dep_tree = dependency_map.get_dependency_tree_for_block(config.checkpoint_id);
     let rpc_signature_proof_dependencies = get_rpc_proof_dependencies(config)?;
-    println!("mirroring signature proofs");
     mirror_proof_store(&rpc_signature_proof_dependencies, real_store, &mut mirror_store)?;
 
 
     let proof_witnesses = dep_tree.get_all_dependencies();
-    println!("mirroring proof witnesses");
     mirror_proof_store(&proof_witnesses, real_store, &mut mirror_store)?;
 
 
@@ -153,7 +154,7 @@ pub fn run_dump_block_proof_store(args: &L2DumpProofStoreArgs) -> anyhow::Result
   let output_path = root.join(args.output.clone()).display().to_string();
   let real_store = RedisStore::new(&args.redis_uri)?;
   let config = get_proof_store_config(&real_store, args.checkpoint_id, 0)?;
-  println!("got config: {}", serde_json::to_string_pretty(&config)?);
+  //println!("got config: {}", serde_json::to_string_pretty(&config)?);
   let result = dump_proof_store(&config, &real_store)?;
   std::fs::write(output_path, &bincode::serialize(&result)?)?;
   Ok(())

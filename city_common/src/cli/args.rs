@@ -93,6 +93,9 @@ pub struct L2DumpProofStoreArgs {
 pub struct QBenchArgs {
     #[clap(long, short)]
     pub input: String,
+    
+    #[clap(long, short)]
+    pub output: String,
 
     #[clap(short, long, default_value = "dogeregtest", env)]
     pub network: String,
