@@ -1,6 +1,6 @@
 use clap::Args;
 
-use super::modes::QWorkerMode;
+use super::modes::{QDumpInspectionData, QWorkerMode};
 
 #[derive(Clone, Args)]
 pub struct RPCServerArgs {
@@ -85,6 +85,18 @@ pub struct L2DumpProofStoreArgs {
     pub checkpoint_id: u64,
     
     #[clap(long, short)]
+    pub output: String,
+}
+
+#[derive(Clone, Args)]
+pub struct InspectL2DumpArgs {
+    #[clap(long, short)]
+    pub input: String,
+
+    #[clap(short, long, value_parser, num_args = 1.., value_delimiter = ' ')]
+    pub data: Vec<QDumpInspectionData>,
+
+    #[clap(short, long, default_value = "")]
     pub output: String,
 }
 

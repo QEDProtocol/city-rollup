@@ -12,7 +12,7 @@ use city_rollup_core_orchestrator::debug::scenario::{
 };
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Debug, Copy, Clone)]
 pub struct DumpProofStoreConfig {
     pub checkpoint_id: u64,
     pub rpc_node_id: u32,
@@ -32,7 +32,7 @@ fn mirror_proof_store<PSource: QProofStoreReaderSync, PDestination: QProofStore>
     Ok(())
 }
 // this only works when running a single rpc node with a the node id "rpc_node_id", which is ok because this is for debugging only
-fn get_rpc_proof_dependencies(
+pub fn get_rpc_proof_dependencies(
     config: &DumpProofStoreConfig,
 ) -> anyhow::Result<Vec<QProvingJobDataID>> {
     let token_transfer_signature_proof_ids = (0..config.job_config.token_transfer_count).map(|i| {
@@ -56,7 +56,7 @@ fn get_rpc_proof_dependencies(
         .chain(withdrawal_signature_proof_ids)
         .collect())
 }
-fn dump_proof_store<PS: QProofStoreReaderSync>(
+pub fn dump_proof_store<PS: QProofStoreReaderSync>(
     config: &DumpProofStoreConfig,
     real_store: &PS,
 ) -> anyhow::Result<BlockProofStoreDump> {

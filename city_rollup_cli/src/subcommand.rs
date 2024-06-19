@@ -8,7 +8,7 @@ pub mod rpcserver;
 pub mod apiserver;
 pub mod dumpblock;
 pub mod qbench;
-
+pub mod inspectdump;
 #[derive(Parser)]
 pub struct Cli {
     #[command(subcommand)]
@@ -23,4 +23,5 @@ pub enum Commands {
     APIServer(city_common::cli::args::APIServerArgs),
     DumpBlock(city_common::cli::args::L2DumpProofStoreArgs),
     QBench(city_common::cli::args::QBenchArgs),
+    InspectDump(city_common::cli::args::InspectL2DumpArgs),
 }
