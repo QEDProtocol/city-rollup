@@ -712,6 +712,7 @@ dependencies = [
  "city_rollup_core_node",
  "city_rollup_core_orchestrator",
  "city_rollup_rpc_provider",
+ "city_rollup_user_prover_api",
  "city_store",
  "clap",
  "dotenv",
@@ -1075,6 +1076,26 @@ dependencies = [
  "plonky2",
  "reqwest",
  "serde_json",
+]
+
+[[package]]
+name = "city_rollup_user_prover_api"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "city_common",
+ "city_common_circuit",
+ "city_crypto",
+ "city_macros",
+ "city_rollup_circuit",
+ "city_rollup_common",
+ "futures",
+ "hex",
+ "jsonrpsee",
+ "plonky2",
+ "redb",
+ "serde",
+ "tokio",
 ]
 
 [[package]]

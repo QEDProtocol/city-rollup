@@ -151,7 +151,20 @@ where
                 anyhow::bail!("Key not found");
             }
         } else {
-            anyhow::bail!("Key not found");
+            let fixed_circuit = ZKSignatureCircuitSimpleFixedPublicKey::new_from_isc(
+                &self.inner_circuit,
+                hash_public_key,
+            );
+            let circuit_fingerprint_public_key = fixed_circuit.get_fingerprint();
+            let key = SimpleZKSignatureWalletKey {
+                circuit_fingerprint_public_key,
+                hash_public_key,
+                fixed_circuit,
+            };
+            let inner_proof = self.inner_circuit.prove_base(private_key, action_hash)?;
+                let fixed_proof = key.fixed_circuit.prove_base(&inner_proof)?;
+                self.wrapper_circuit
+                    .prove_base(&fixed_proof, key.fixed_circuit.get_verifier_config_ref())
         }
     }
 

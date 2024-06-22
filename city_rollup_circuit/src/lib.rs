@@ -6,3 +6,4 @@ pub mod common_gates;
 pub mod sighash_circuits;
 pub mod verify_templates;
 pub mod worker;
+pub mod wallet;

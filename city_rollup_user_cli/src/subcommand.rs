@@ -12,6 +12,7 @@ pub mod sign_hash;
 pub mod get_public_key;
 pub mod random_wallet;
 pub mod repl;
+pub mod prover_rpc;
 
 #[derive(Parser)]
 pub struct Cli {
@@ -31,4 +32,5 @@ pub enum Commands {
     GetPublicKey(city_common::cli::user_args::GetPublicKeyArgs),
     RandomWallet(city_common::cli::user_args::RandomWalletArgs),
     Repl(city_common::cli::user_args::RPCReplArgs),
+    ProverRPC(city_common::cli::user_args::ProverRPCArgs),
 }

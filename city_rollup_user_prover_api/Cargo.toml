@@ -1,0 +1,23 @@
+[package]
+name = "city_rollup_user_prover_api"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+city_crypto           = { path = "../city_crypto" }
+city_common_circuit   = { path = "../city_common_circuit" }
+city_common           = { path = "../city_common" }
+city_rollup_common    = { path = "../city_rollup_common" }
+city_macros = { path = "../city_macros" }
+city_rollup_circuit = { path = "../city_rollup_circuit" }
+
+plonky2 = { workspace = true }
+jsonrpsee = { workspace = true }
+tokio = { workspace = true }
+anyhow = { workspace = true }
+redb = { workspace = true }
+hex = { workspace = true }
+futures = { workspace = true }
+serde = { workspace = true }
+
+

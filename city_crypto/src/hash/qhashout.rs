@@ -172,6 +172,17 @@ impl<F: RichField> QHashOut<F> {
     pub fn to_felt248_hash256(&self) -> Hash256 {
         felt248_hashout_to_hash256_le(self.0)
     }
+    pub fn from_hash256_le(hash: Hash256) -> Self {
+        let u64_x4 = hash.to_le_u64_x4();
+        Self(HashOut {
+            elements: [
+                F::from_noncanonical_u64(u64_x4[0]),
+                F::from_noncanonical_u64(u64_x4[1]),
+                F::from_noncanonical_u64(u64_x4[2]),
+                F::from_noncanonical_u64(u64_x4[3]),
+            ],
+        })
+    }
     pub fn to_string_le(&self) -> String {
         hex::encode(self.to_le_bytes())
     }

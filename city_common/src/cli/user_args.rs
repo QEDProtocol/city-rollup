@@ -21,6 +21,16 @@ pub struct RPCReplArgs {
     pub rpc_address: String,
 }
 
+
+#[derive(Clone, Args)]
+pub struct ProverRPCArgs {
+    #[clap(long, short, default_value = "0.0.0.0:1447", env)]
+    pub prover_rpc_address: String,
+    #[clap(long, short, default_value = "")]
+    pub api_key: String,
+}
+
+
 #[derive(Clone, Args)]
 pub struct GetPublicKeyArgs {
     /// user private key
