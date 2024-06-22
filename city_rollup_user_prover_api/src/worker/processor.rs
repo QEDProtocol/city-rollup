@@ -25,7 +25,7 @@ impl<E: SimpleEncryptionHelper + 'static> UserProverWorker<E> {
         println!("processing request: {}", request.request_id.to_hex_string());
         let result = self.prover.prove_request::<E>(&self.encryption_helper, &request);
         if result.is_ok() {
-            self.store.lock().unwrap().set_result(request.request_id, result.unwrap().to_bytes().to_vec());
+            self.store.lock().unwrap().set_result(request.request_id, result.unwrap());
             println!("processed request: {}", request.request_id.to_hex_string());
         }else{
             println!("error processing request: {}, ({:?})", request.request_id.to_hex_string(), result.err());

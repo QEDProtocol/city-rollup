@@ -12,6 +12,7 @@ city_macros = { path = "../city_macros" }
 city_rollup_circuit = { path = "../city_rollup_circuit" }
 
 plonky2 = { workspace = true }
+bincode = { workspace = true }
 jsonrpsee = { workspace = true }
 tokio = { workspace = true }
 anyhow = { workspace = true }

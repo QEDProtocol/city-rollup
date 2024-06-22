@@ -9,8 +9,7 @@ use jsonrpsee::proc_macros::rpc;
 use jsonrpsee::types::{ErrorObject, ErrorObjectOwned};
 
 use crate::common::request::{
-    UPWEncryptedZKSignatureJobRequestPayload, UPWJobRequest, UPWJobRequestPayload,
-    UPWZKSignatureJobRequestPayload,
+    UPWEncryptedPublicKeyJobRequestPayload, UPWEncryptedZKSignatureJobRequestPayload, UPWJobRequest, UPWJobRequestPayload, UPWZKSignatureJobRequestPayload
 };
 use crate::worker::store::UserProverWorkerStore;
 
@@ -36,6 +35,17 @@ pub trait Rpc {
         &self,
         encrypted_private_key: Hash256,
         message: Hash256,
+        salt: Hash256,
+    ) -> Result<Hash256, ErrorObjectOwned>;
+    #[method(name = "get_zk_public_key")]
+    async fn get_zk_public_key(
+        &self,
+        private_key: Hash256,
+    ) -> Result<Hash256, ErrorObjectOwned>;
+    #[method(name = "get_zk_public_key_enc")]
+    async fn get_zk_public_key_enc(
+        &self,
+        encrypted_private_key: Hash256,
         salt: Hash256,
     ) -> Result<Hash256, ErrorObjectOwned>;
     #[method(name = "get_result")]
@@ -113,6 +123,41 @@ impl RpcServer for RpcServerImpl {
             payload: UPWJobRequestPayload::EncryptedZKSignatureProof(
                 UPWEncryptedZKSignatureJobRequestPayload {
                     message,
+                    salt,
+                    encrypted_private_key,
+                },
+            ),
+        };
+        self.tx_worker
+            .send(request)
+            .map_err(|_| ErrorObject::owned(500, "Error sending request to worker", Some(0)))?;
+        Ok(id)
+    }
+
+    async fn get_zk_public_key(
+        &self,
+        private_key: Hash256,
+    ) -> Result<Hash256, ErrorObjectOwned>{
+        let id = Hash256::rand();
+        let request = UPWJobRequest {
+            request_id: id,
+            payload: UPWJobRequestPayload::GetPublicKey(private_key),
+        };
+        self.tx_worker
+            .send(request)
+            .map_err(|_| ErrorObject::owned(500, "Error sending request to worker", Some(0)))?;
+        Ok(id)
+    }
+    async fn get_zk_public_key_enc(
+        &self,
+        encrypted_private_key: Hash256,
+        salt: Hash256,
+    ) -> Result<Hash256, ErrorObjectOwned> {
+        let id = Hash256::rand();
+        let request = UPWJobRequest {
+            request_id: id,
+            payload: UPWJobRequestPayload::EncryptedGetPublicKey(
+                UPWEncryptedPublicKeyJobRequestPayload {
                     salt,
                     encrypted_private_key,
                 },

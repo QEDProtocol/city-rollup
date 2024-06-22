@@ -25,12 +25,24 @@ pub struct UPWZKSignatureJobRequestPayload {
   pub private_key: Hash256,
   pub message: Hash256,
 }
+#[derive(Clone, Serialize, Deserialize, Debug, PartialEq, Copy)]
+pub struct UPWEncryptedPublicKeyJobRequestPayload {
+  pub encrypted_private_key: Hash256,
+  pub salt: Hash256,
+}
+impl UPWEncryptedPublicKeyJobRequestPayload {
+  pub fn decrypt<E: SimpleEncryptionHelper>(&self, encryption_helper: &E) -> Hash256 {
+    encryption_helper.decrypt_32(self.salt, self.encrypted_private_key)
+  }
+}
 
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
 pub enum UPWJobRequestPayload {
   Secp256K1SignatureProof(QEDCompressedSecp256K1Signature),
   ZKSignatureProof(UPWZKSignatureJobRequestPayload),
-  EncryptedZKSignatureProof(UPWEncryptedZKSignatureJobRequestPayload), 
+  EncryptedZKSignatureProof(UPWEncryptedZKSignatureJobRequestPayload),
+  GetPublicKey(Hash256),
+  EncryptedGetPublicKey(UPWEncryptedPublicKeyJobRequestPayload),
 }
 
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]

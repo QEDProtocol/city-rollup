@@ -124,6 +124,16 @@ where
             hash_public_key_to_fingerprint: HashMap::new(),
         }
     }
+    pub fn get_fingerprint_public_key_for_private_key(&self, private_key: QHashOut<C::F>) -> QHashOut<C::F>{
+        let pk = SimpleL2PrivateKey::new(private_key);
+        let hash_public_key = pk.get_public_key::<C::Hasher>();
+        let fixed_circuit = ZKSignatureCircuitSimpleFixedPublicKey::new_from_isc(
+            &self.inner_circuit,
+            hash_public_key,
+        );
+        fixed_circuit.get_fingerprint()
+
+    }
 }
 
 impl<C: GenericConfig<D> + 'static, const D: usize> ZKSignatureBasicWalletProvider<C, D>
