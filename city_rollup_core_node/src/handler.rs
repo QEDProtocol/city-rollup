@@ -75,6 +75,7 @@ impl<F: RichField> CityRollupRPCServerHandler<F> {
         match (req.method(), req.uri().path()) {
             (&Method::GET, "/editor") => Ok(editor()),
             (&Method::POST, "/") => self.rpc(req).await,
+            (&Method::OPTIONS, "/") => self.preflight(req).await,
             _ => Ok(not_found()),
         }
     }
@@ -136,7 +137,16 @@ impl<F: RichField> CityRollupRPCServerHandler<F> {
             .header(header::CONTENT_TYPE, "application/json")
             .body(full(serde_json::to_vec(&response)?))?)
     }
-
+    pub async fn preflight(&self, req: Request<Incoming>) -> anyhow::Result<Response<BoxBody>> {
+        let _whole_body = req.collect().await?;
+		let response = Response::builder()
+			.status(StatusCode::OK)
+			.header("Access-Control-Allow-Origin", "*")
+			.header("Access-Control-Allow-Headers", "*")
+			.header("Access-Control-Allow-Methods", "POST, GET, OPTIONS")
+			.body(BoxBody::default())?;
+		Ok(response)
+	}
     fn register_user(&mut self, req: CityRegisterUserRPCRequest<F>) -> Result<(), anyhow::Error> {
         self.notify_rpc_register_user(&req)?;
         Ok(())

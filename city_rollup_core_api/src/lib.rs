@@ -4,7 +4,7 @@ use city_common::data::u8bytes::U8Bytes;
 use city_crypto::hash::base_types::hash160::Hash160;
 use city_crypto::hash::base_types::hash256::Hash256;
 use city_rollup_common::api::data::store::{
-    CityL1Deposit, CityL1DepositJSON, CityL1Withdrawal, CityL2BlockState, CityUserState
+    CityL1DepositJSON, CityL1Withdrawal, CityL2BlockState, CityUserState
 };
 use city_rollup_common::qworker::job_id::{QProvingJobDataID, QProvingJobDataIDSerializedWrapped};
 use city_rollup_common::qworker::proof_store::QProofStoreReaderSync;
