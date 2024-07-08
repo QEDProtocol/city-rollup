@@ -5,7 +5,7 @@ use serde_with::serde_as;
 use std::fmt::Display;
 
 #[serde_as]
-#[derive(Serialize, Deserialize, PartialEq, Clone, Debug)]
+#[derive(Serialize, Deserialize, PartialEq, Clone, Copy, Eq, PartialOrd, Ord, Debug, Hash)]
 pub struct U8BytesFixed<const N: usize>(#[serde_as(as = "serde_with::hex::Hex")] pub [u8; N]);
 
 impl<const N: usize> Display for U8BytesFixed<N> {

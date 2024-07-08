@@ -6,7 +6,7 @@ use city_crypto::hash::base_types::hash256::Hash256;
 use city_macros::{city_external_rpc_call, city_external_rpc_call_sync, city_rpc_call, city_rpc_call_sync};
 use city_rollup_common::{api::data::{
     block::rpc_request::*,
-    store::{CityL1Deposit, CityL1Withdrawal, CityL2BlockState, CityUserState},
+    store::{CityL1Deposit, CityL1DepositJSON, CityL1Withdrawal, CityL2BlockState, CityUserState},
 }, qworker::job_id::QProvingJobDataIDSerializedWrapped};
 use city_rollup_core_node::rpc::{
     ExternalRequestParams, Id, RequestParams, ResponseResult, RpcParams, RpcRequest, RpcResponse,
@@ -81,20 +81,20 @@ pub trait CityRpcProvider {
         &self,
         checkpoint_id: u64,
         deposit_id: u64,
-    ) -> anyhow::Result<CityL1Deposit>;
+    ) -> anyhow::Result<CityL1DepositJSON>;
 
     async fn get_deposits_by_id(
         &self,
         checkpoint_id: u64,
         deposit_ids: Vec<u64>,
-    ) -> anyhow::Result<Vec<CityL1Deposit>>;
+    ) -> anyhow::Result<Vec<CityL1DepositJSON>>;
 
-    async fn get_deposit_by_txid(&self, transaction_id: Hash256) -> anyhow::Result<CityL1Deposit>;
+    async fn get_deposit_by_txid(&self, transaction_id: Hash256) -> anyhow::Result<CityL1DepositJSON>;
 
     async fn get_deposits_by_txid(
         &self,
         transaction_ids: Vec<Hash256>,
-    ) -> anyhow::Result<Vec<CityL1Deposit>>;
+    ) -> anyhow::Result<Vec<CityL1DepositJSON>>;
 
     async fn get_deposit_hash(
         &self,
@@ -214,20 +214,20 @@ pub trait CityRpcProviderSync {
         &self,
         checkpoint_id: u64,
         deposit_id: u64,
-    ) -> anyhow::Result<CityL1Deposit>;
+    ) -> anyhow::Result<CityL1DepositJSON>;
 
     fn get_deposits_by_id_sync(
         &self,
         checkpoint_id: u64,
         deposit_ids: Vec<u64>,
-    ) -> anyhow::Result<Vec<CityL1Deposit>>;
+    ) -> anyhow::Result<Vec<CityL1DepositJSON>>;
 
-    fn get_deposit_by_txid_sync(&self, transaction_id: Hash256) -> anyhow::Result<CityL1Deposit>;
+    fn get_deposit_by_txid_sync(&self, transaction_id: Hash256) -> anyhow::Result<CityL1DepositJSON>;
 
     fn get_deposits_by_txid_sync(
         &self,
         transaction_ids: Vec<Hash256>,
-    ) -> anyhow::Result<Vec<CityL1Deposit>>;
+    ) -> anyhow::Result<Vec<CityL1DepositJSON>>;
 
     fn get_deposit_hash_sync(
         &self,
@@ -388,12 +388,12 @@ impl CityRpcProvider for RpcProvider {
         &self,
         checkpoint_id: u64,
         deposit_id: u64,
-    ) -> anyhow::Result<CityL1Deposit> {
+    ) -> anyhow::Result<CityL1DepositJSON> {
         city_external_rpc_call!(
             self,
             "cr_getDepositById",
             json!([checkpoint_id, deposit_id]),
-            CityL1Deposit
+            CityL1DepositJSON
         )
     }
 
@@ -401,33 +401,33 @@ impl CityRpcProvider for RpcProvider {
         &self,
         checkpoint_id: u64,
         deposit_ids: Vec<u64>,
-    ) -> anyhow::Result<Vec<CityL1Deposit>> {
+    ) -> anyhow::Result<Vec<CityL1DepositJSON>> {
         city_external_rpc_call!(
             self,
             "cr_getDepositsById",
             json!([checkpoint_id, deposit_ids]),
-            Vec<CityL1Deposit>
+            Vec<CityL1DepositJSON>
         )
     }
 
-    async fn get_deposit_by_txid(&self, transaction_id: Hash256) -> anyhow::Result<CityL1Deposit> {
+    async fn get_deposit_by_txid(&self, transaction_id: Hash256) -> anyhow::Result<CityL1DepositJSON> {
         city_external_rpc_call!(
             self,
             "cr_getDepositByTxid",
             json!([transaction_id]),
-            CityL1Deposit
+            CityL1DepositJSON
         )
     }
 
     async fn get_deposits_by_txid(
         &self,
         transaction_ids: Vec<Hash256>,
-    ) -> anyhow::Result<Vec<CityL1Deposit>> {
+    ) -> anyhow::Result<Vec<CityL1DepositJSON>> {
         city_external_rpc_call!(
             self,
             "cr_getDepositsByTxid",
             json!([transaction_ids]),
-            Vec<CityL1Deposit>
+            Vec<CityL1DepositJSON>
         )
     }
 
@@ -693,12 +693,12 @@ impl CityRpcProviderSync for RpcProviderSync {
         &self,
         checkpoint_id: u64,
         deposit_id: u64,
-    ) -> anyhow::Result<CityL1Deposit> {
+    ) -> anyhow::Result<CityL1DepositJSON> {
         city_external_rpc_call_sync!(
             self,
             "cr_getDepositById",
             json!([checkpoint_id, deposit_id]),
-            CityL1Deposit
+            CityL1DepositJSON
         )
     }
 
@@ -706,33 +706,33 @@ impl CityRpcProviderSync for RpcProviderSync {
         &self,
         checkpoint_id: u64,
         deposit_ids: Vec<u64>,
-    ) -> anyhow::Result<Vec<CityL1Deposit>> {
+    ) -> anyhow::Result<Vec<CityL1DepositJSON>> {
         city_external_rpc_call_sync!(
             self,
             "cr_getDepositsById",
             json!([checkpoint_id, deposit_ids]),
-            Vec<CityL1Deposit>
+            Vec<CityL1DepositJSON>
         )
     }
 
-    fn get_deposit_by_txid_sync(&self, transaction_id: Hash256) -> anyhow::Result<CityL1Deposit> {
+    fn get_deposit_by_txid_sync(&self, transaction_id: Hash256) -> anyhow::Result<CityL1DepositJSON> {
         city_external_rpc_call_sync!(
             self,
             "cr_getDepositByTxid",
             json!([transaction_id]),
-            CityL1Deposit
+            CityL1DepositJSON
         )
     }
 
     fn get_deposits_by_txid_sync(
         &self,
         transaction_ids: Vec<Hash256>,
-    ) -> anyhow::Result<Vec<CityL1Deposit>> {
+    ) -> anyhow::Result<Vec<CityL1DepositJSON>> {
         city_external_rpc_call_sync!(
             self,
             "cr_getDepositsByTxid",
             json!([transaction_ids]),
-            Vec<CityL1Deposit>
+            Vec<CityL1DepositJSON>
         )
     }
 

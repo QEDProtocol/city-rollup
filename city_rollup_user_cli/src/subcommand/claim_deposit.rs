@@ -26,7 +26,7 @@ pub async fn run(args: ClaimDepositArgs) -> Result<()> {
     let deposit = provider.get_deposit_by_txid(txid).await?;
 
     let city_claim_deposit_request =
-        wallet.sign_claim_deposit(network_magic, args.user_id, &deposit)?;
+        wallet.sign_claim_deposit(network_magic, args.user_id, &deposit.to_city_l1_deposit())?;
 
     provider
         .claim_deposit::<F>(city_claim_deposit_request)
