@@ -10,6 +10,9 @@ use crate::subcommand::apiserver;
 use crate::subcommand::l2worker;
 use crate::subcommand::orchestrator;
 use crate::subcommand::rpcserver;
+use crate::subcommand::dumpblock;
+use crate::subcommand::qbench;
+use crate::subcommand::inspectdump;
 use crate::subcommand::Cli;
 use crate::subcommand::Commands;
 
@@ -30,6 +33,15 @@ fn main() -> anyhow::Result<()> {
         }
         Commands::APIServer(args) => {
             apiserver::run(args)?;
+        }
+        Commands::DumpBlock(args) => {
+            dumpblock::run(args)?;
+        }
+        Commands::QBench(args) => {
+            qbench::run(args)?;
+        }
+        Commands::InspectDump(args) => {
+            inspectdump::run(args)?;
         }
     };
     Ok::<_, anyhow::Error>(())

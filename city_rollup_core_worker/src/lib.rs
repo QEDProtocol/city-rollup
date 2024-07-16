@@ -26,7 +26,7 @@ const D: usize = 2;
 type C = PoseidonGoldilocksConfig;
 pub fn run_debug_outer(args: L2WorkerArgs) -> anyhow::Result<()> {
     let network_magic = get_network_magic_for_str(args.network.to_string())?;
-    let toolbox =
+    let mut toolbox =
         CRWorkerToolboxRootCircuits::<C, D>::new(network_magic, SIGHASH_WHITELIST_TREE_ROOT);
     /*println!(
         "CRWorkerToolboxCoreCircuitFingerprints: {}",
@@ -41,7 +41,7 @@ pub fn run_debug_outer(args: L2WorkerArgs) -> anyhow::Result<()> {
     }
     println!("worker ready");
     loop {
-        run_debug_inner(&args, &toolbox)?;
+        run_debug_inner(&args, &mut toolbox)?;
         println!("press enter to reset worker");
         enable_raw_mode()?;
         loop {
@@ -59,12 +59,13 @@ pub fn run_debug_outer(args: L2WorkerArgs) -> anyhow::Result<()> {
 }
 pub fn run_debug_inner(
     args: &L2WorkerArgs,
-    toolbox: &CRWorkerToolboxRootCircuits<C, D>,
+    toolbox: &mut CRWorkerToolboxRootCircuits<C, D>,
 ) -> anyhow::Result<()> {
     let job_queue = RedisQueue::new(&args.redis_uri)?;
     let mut proof_store = RedisStore::new(&args.redis_uri)?;
-    let mut event_processor = CityEventProcessor::new(job_queue.clone());
+    let mut event_processor = CityEventProcessor::new_with_config(job_queue.clone(), true);
 
+    let mut should_print_benchmark = false;
     loop {
         'inner: loop {
             if event_processor.job_queue.is_empty() {
@@ -83,6 +84,10 @@ pub fn run_debug_inner(
             if event == Event::Key(KeyCode::Esc.into()) {
                 break;
             }
+            if event == Event::Key(KeyCode::Char('p').into()) {
+                should_print_benchmark = true;
+                break;
+            }
         }
         disable_raw_mode()?;
 
@@ -90,6 +95,10 @@ pub fn run_debug_inner(
     }
 
     disable_raw_mode()?;
+
+    if should_print_benchmark {
+        println!("benchmarks: {}", serde_json::to_string(&event_processor.benchmarks)?);
+    }
     Ok(())
 }
 pub fn run(args: L2WorkerArgs) -> anyhow::Result<()> {
@@ -101,7 +110,7 @@ pub fn run(args: L2WorkerArgs) -> anyhow::Result<()> {
     let network_magic = get_network_magic_for_str(args.network.to_string())?;
     let mut event_processor = CityEventProcessor::new(job_queue.clone());
 
-    let toolbox =
+    let mut toolbox =
         CRWorkerToolboxRootCircuits::<C, D>::new(network_magic, SIGHASH_WHITELIST_TREE_ROOT);
 
     //println!("fingerprints:\n{}", serde_json::to_string(&toolbox.core.fingerprints).unwrap());
@@ -127,7 +136,7 @@ pub fn run(args: L2WorkerArgs) -> anyhow::Result<()> {
             SimpleActorWorker::process_next_job(
                 &mut proof_store,
                 &mut event_processor,
-                &toolbox,
+                &mut toolbox,
                 args.worker_mode,
             )?;
         }

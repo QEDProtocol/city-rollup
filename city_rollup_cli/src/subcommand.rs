@@ -6,7 +6,9 @@ pub mod l2worker;
 pub mod orchestrator;
 pub mod rpcserver;
 pub mod apiserver;
-
+pub mod dumpblock;
+pub mod qbench;
+pub mod inspectdump;
 #[derive(Parser)]
 pub struct Cli {
     #[command(subcommand)]
@@ -19,4 +21,7 @@ pub enum Commands {
     L2Worker(city_common::cli::args::L2WorkerArgs),
     Orchestrator(city_common::cli::args::OrchestratorArgs),
     APIServer(city_common::cli::args::APIServerArgs),
+    DumpBlock(city_common::cli::args::L2DumpProofStoreArgs),
+    QBench(city_common::cli::args::QBenchArgs),
+    InspectDump(city_common::cli::args::InspectL2DumpArgs),
 }

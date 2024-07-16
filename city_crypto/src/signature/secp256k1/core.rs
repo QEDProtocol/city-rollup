@@ -48,7 +48,6 @@ pub fn secp256k1_base_from_bytes(bytes: &[u8], offset: usize) -> Secp256K1Base {
     });
     Secp256K1Base(arr)
 }
-
 #[serde_as]
 #[derive(Serialize, Deserialize, PartialEq, Clone, Copy, Debug)]
 pub struct QEDCompressedSecp256K1Signature {

@@ -5,9 +5,9 @@ use city_crypto::hash::{
     base_types::{felt252::felt252_hashout_to_hash256_le, hash256::Hash256},
     qhashout::QHashOut,
 };
-use city_rollup_circuit::worker::{
+use city_rollup_circuit::{wallet::memory::CityMemoryWallet, worker::{
     prover::QWorkerStandardProver, toolbox::root::CRWorkerToolboxRootCircuits,
-};
+}};
 use city_rollup_common::{
     actors::{requested_actions::CityScenarioRequestedActions, rpc_processor::QRPCProcessor},
     api::data::{block::rpc_request::CityRegisterUserRPCRequest, store::CityL2BlockState},
@@ -19,7 +19,6 @@ use city_rollup_common::{
 };
 use city_rollup_core_orchestrator::debug::scenario::{
     block_planner::planner::CityOrchestratorBlockPlanner, sighash::finalizer::SigHashFinalizer,
-    wallet::DebugScenarioWallet,
 };
 use city_store::store::{city::base::CityStore, sighash::SigHashMerkleTree};
 use kvq::memory::simple::KVQSimpleMemoryBackingStore;
@@ -67,7 +66,7 @@ fn prove_block_demo(hints: &[BlockSpendIntrospectionHint]) -> anyhow::Result<()>
 
     timer.lap("start creating wallets");
 
-    let mut wallet = DebugScenarioWallet::<C, D>::new();
+    let mut wallet = CityMemoryWallet::<C, D>::new();
 
     let _deposit_0_public_key = wallet.add_secp256k1_private_key(Hash256(hex_literal::hex!(
         "07e5cae38a63f487667075c54cb7791b86179e3becd9198e5ee0557eeffcda31"

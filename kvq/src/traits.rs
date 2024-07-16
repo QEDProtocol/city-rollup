@@ -1,13 +1,11 @@
 use serde::Deserialize;
 use serde::Serialize;
-use serde_with::serde_as;
 
 pub struct KVQPair<K, V> {
     pub key: K,
     pub value: V,
 }
 
-#[serde_as]
 #[derive(Serialize, Deserialize, PartialEq, Clone)]
 pub struct KVQPairSerializable<K, V> {
     pub key: K,

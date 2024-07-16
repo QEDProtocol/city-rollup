@@ -18,6 +18,7 @@ city_crypto           = { path = "../city_crypto" }
 city_common_circuit   = { path = "../city_common_circuit" }
 city_rollup_circuit   = { path = "../city_rollup_circuit" }
 city_common           = { path = "../city_common" }
+city_rollup_user_prover_api           = { path = "../city_rollup_user_prover_api" }
 city_rollup_common    = { path = "../city_rollup_common" }
 city_rollup_core_node    = { path = "../city_rollup_core_node" }
 city_rollup_core_orchestrator = { path = "../city_rollup_core_orchestrator" }

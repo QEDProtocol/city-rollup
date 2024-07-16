@@ -35,6 +35,9 @@ hyper-util  = { workspace = true }
 jsonrpsee = { workspace = true }
 tracing = { workspace = true }
 
+tower = { workspace = true }
+tower-http = { workspace = true }
+
 [dev-dependencies]
 criterion = "0.5.1"
 rand_chacha = "0.3.1"

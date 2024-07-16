@@ -1,7 +1,7 @@
 use city_common::cli::user_args::RegisterUserArgs;
 use city_crypto::hash::qhashout::QHashOut;
 use city_rollup_common::api::data::block::rpc_request::CityRegisterUserRPCRequest;
-use city_rollup_core_orchestrator::debug::scenario::wallet::DebugScenarioWallet;
+use city_rollup_circuit::wallet::memory::CityMemoryWallet;
 use city_rollup_rpc_provider::{CityRpcProvider, RpcProvider};
 use plonky2::{field::goldilocks_field::GoldilocksField, plonk::config::PoseidonGoldilocksConfig};
 use serde::{Deserialize, Serialize};
@@ -29,7 +29,7 @@ fn parse_multi_hash_string(hash_str: &str) -> anyhow::Result<Vec<QHashOut<Goldil
 fn l2_private_keys_to_public_keys(
     private_keys: &[QHashOut<GoldilocksField>],
 ) -> anyhow::Result<Vec<QHashOut<GoldilocksField>>> {
-    let mut wallet = DebugScenarioWallet::<C, D>::new_fast_setup();
+    let mut wallet = CityMemoryWallet::<C, D>::new_fast_setup();
     Ok(private_keys
         .iter()
         .map(|private_key| wallet.add_zk_private_key(*private_key))

@@ -5,6 +5,7 @@ use city_common::{
 };
 use city_crypto::hash::{base_types::hash256::Hash256, qhashout::QHashOut};
 use city_redis_store::RedisStore;
+use city_rollup_circuit::wallet::memory::CityMemoryWallet;
 use city_rollup_common::{
     actors::{
         rpc_processor::QRPCProcessor,
@@ -19,7 +20,7 @@ use city_rollup_common::{
     qworker::fingerprints::CRWorkerToolboxCoreCircuitFingerprints,
 };
 use city_rollup_core_orchestrator::{
-    debug::scenario::{actors::simple::SimpleActorOrchestrator, wallet::DebugScenarioWallet},
+    debug::scenario::actors::simple::SimpleActorOrchestrator,
     event_receiver::CityEventReceiver,
 };
 use city_rollup_core_worker::event_processor::CityEventProcessor;
@@ -64,7 +65,7 @@ fn run_full_block() -> anyhow::Result<()> {
 
     timer.lap("start creating wallets");
 
-    let mut wallet = DebugScenarioWallet::<C, D>::new_fast_setup();
+    let mut wallet = CityMemoryWallet::<C, D>::new_fast_setup();
 
     let genesis_funder_public_key = wallet.add_secp256k1_private_key(Hash256(
         hex_literal::hex!("133700f4676a0d0e16aaced646ed693626fcf1329db55be8eee13ad8df001337"),

@@ -1,7 +1,7 @@
 use crate::error::Result;
 use city_common::cli::user_args::RandomWalletArgs;
 use city_crypto::hash::qhashout::QHashOut;
-use city_rollup_core_orchestrator::debug::scenario::wallet::DebugScenarioWallet;
+use city_rollup_circuit::wallet::memory::CityMemoryWallet;
 use plonky2::{field::goldilocks_field::GoldilocksField, plonk::config::PoseidonGoldilocksConfig};
 use serde::{Deserialize, Serialize};
 
@@ -12,7 +12,7 @@ struct RandomWalletOutputJSON {
 }
 pub async fn run(_: RandomWalletArgs) -> Result<()> {
     let private_key = QHashOut::<GoldilocksField>::rand();
-    let mut debug_wallet = DebugScenarioWallet::<PoseidonGoldilocksConfig, 2>::new_fast_setup();
+    let mut debug_wallet = CityMemoryWallet::<PoseidonGoldilocksConfig, 2>::new_fast_setup();
     let public_key = debug_wallet.add_zk_private_key(private_key);
 
 

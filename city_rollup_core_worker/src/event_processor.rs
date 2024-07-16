@@ -2,20 +2,27 @@ use std::time::Duration;
 
 use city_rollup_common::{
     actors::traits::{WorkerEventReceiverSync, WorkerEventTransmitterSync},
-    qworker::job_id::QProvingJobDataID,
+    qworker::job_id::{QProvingJobDataID, QWorkerJobBenchmark},
 };
 use city_rollup_worker_dispatch::{
     implementations::redis::{QueueNotification, RedisQueue, Q_JOB, Q_NOTIFICATIONS},
     traits::{proving_dispatcher::ProvingDispatcher, proving_worker::ProvingWorkerListener},
 };
-
+#[derive(Clone)]
 pub struct CityEventProcessor {
     pub job_queue: RedisQueue,
+    pub benckmarks_enabled: bool,
+    pub benchmarks: Vec<QWorkerJobBenchmark>,
 }
 impl CityEventProcessor {
     pub fn new(dispatcher: RedisQueue) -> Self {
+        Self::new_with_config(dispatcher, false)
+    }
+    pub fn new_with_config(dispatcher: RedisQueue, benckmarks_enabled: bool) -> Self {
         Self {
             job_queue: dispatcher,
+            benckmarks_enabled,
+            benchmarks: Vec::new(),
         }
     }
 }
@@ -41,6 +48,16 @@ impl WorkerEventReceiverSync for CityEventProcessor {
 
     fn notify_core_goal_completed(&mut self, _job: QProvingJobDataID) -> anyhow::Result<()> {
         self.job_queue.dispatch(Q_NOTIFICATIONS, QueueNotification::CoreJobCompleted)?;
+        Ok(())
+    }
+    
+    fn record_job_bench(&mut self, job: QProvingJobDataID, duration: u64) -> anyhow::Result<()> {
+        if self.benckmarks_enabled {
+            self.benchmarks.push(QWorkerJobBenchmark {
+                job_id: job.to_fixed_bytes(),
+                duration,
+            });
+        }
         Ok(())
     }
 }
