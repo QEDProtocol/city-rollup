@@ -1,7 +1,6 @@
 TRACE_ENABLED           := 1
 PROFILE                 := release
 LOG_LEVEL  			        := info,city_common_circuit=off,city_rollup_circuit=off,plonky2=off,city_crypto=off,city_store=off,city_rollup_common=off
-DOCKER_PROFILE    			:= full
 
 .PHONY: check
 check:
@@ -112,7 +111,6 @@ prove_sighash_0_hints: build-if-not-exists
 launch:
 	@docker-compose \
 		-f docker-compose.yml \
-		--profile ${DOCKER_PROFILE} \
 		up \
 		--build \
 		-d \

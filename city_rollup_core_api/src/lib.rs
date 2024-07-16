@@ -4,7 +4,7 @@ use city_crypto::hash::base_types::hash160::Hash160;
 use city_crypto::hash::base_types::hash256::Hash256;
 use city_macros::define_table;
 use city_rollup_common::api::data::store::{
-    CityL1Deposit, CityL1Withdrawal, CityL2BlockState, CityUserState,
+    CityL1DepositJSON, CityL1Withdrawal, CityL2BlockState, CityUserState,
 };
 use city_store::config::{CityHash, CityMerkleProof};
 use city_store::store::city::base::CityStore;
@@ -65,26 +65,26 @@ pub trait Rpc {
         &self,
         checkpoint_id: u64,
         deposit_id: u64,
-    ) -> Result<CityL1Deposit, ErrorObjectOwned>;
+    ) -> Result<CityL1DepositJSON, ErrorObjectOwned>;
 
     #[method(name = "getDepositsById")]
     async fn get_deposits_by_id(
         &self,
         checkpoint_id: u64,
         deposit_ids: Vec<u64>,
-    ) -> Result<Vec<CityL1Deposit>, ErrorObjectOwned>;
+    ) -> Result<Vec<CityL1DepositJSON>, ErrorObjectOwned>;
 
     #[method(name = "getDepositByTxid")]
     async fn get_deposit_by_txid(
         &self,
         transaction_id: Hash256,
-    ) -> Result<CityL1Deposit, ErrorObjectOwned>;
+    ) -> Result<CityL1DepositJSON, ErrorObjectOwned>;
 
     #[method(name = "getDepositsByTxid")]
     async fn get_deposits_by_txid(
         &self,
         transaction_ids: Vec<Hash256>,
-    ) -> Result<Vec<CityL1Deposit>, ErrorObjectOwned>;
+    ) -> Result<Vec<CityL1DepositJSON>, ErrorObjectOwned>;
 
     #[method(name = "getDepositHash")]
     async fn get_deposit_hash(
@@ -267,7 +267,7 @@ impl RpcServer for RpcServerImpl {
         &self,
         checkpoint_id: u64,
         deposit_id: u64,
-    ) -> Result<CityL1Deposit, ErrorObjectOwned> {
+    ) -> Result<CityL1DepositJSON, ErrorObjectOwned> {
         Ok(self
             .query_store(|store| {
                 Ok(CityStore::get_deposit_by_id(
@@ -276,14 +276,15 @@ impl RpcServer for RpcServerImpl {
                     deposit_id,
                 )?)
             })
-            .map_err(|_| ErrorObject::from(ErrorCode::InternalError))?)
+            .map_err(|_| ErrorObject::from(ErrorCode::InternalError))?
+            .to_json_variant())
     }
 
     async fn get_deposits_by_id(
         &self,
         checkpoint_id: u64,
         deposit_ids: Vec<u64>,
-    ) -> Result<Vec<CityL1Deposit>, ErrorObjectOwned> {
+    ) -> Result<Vec<CityL1DepositJSON>, ErrorObjectOwned> {
         Ok(self
             .query_store(|store| {
                 Ok(CityStore::get_deposits_by_id(
@@ -292,13 +293,16 @@ impl RpcServer for RpcServerImpl {
                     &deposit_ids,
                 )?)
             })
-            .map_err(|_| ErrorObject::from(ErrorCode::InternalError))?)
+            .map_err(|_| ErrorObject::from(ErrorCode::InternalError))?
+            .into_iter()
+            .map(|x| x.to_json_variant())
+            .collect::<Vec<_>>())
     }
 
     async fn get_deposit_by_txid(
         &self,
         transaction_id: Hash256,
-    ) -> Result<CityL1Deposit, ErrorObjectOwned> {
+    ) -> Result<CityL1DepositJSON, ErrorObjectOwned> {
         Ok(self
             .query_store(|store| {
                 Ok(CityStore::get_deposit_by_txid(
@@ -306,13 +310,14 @@ impl RpcServer for RpcServerImpl {
                     transaction_id.reversed(),
                 )?)
             })
-            .map_err(|_| ErrorObject::from(ErrorCode::InternalError))?)
+            .map_err(|_| ErrorObject::from(ErrorCode::InternalError))?
+            .to_json_variant())
     }
 
     async fn get_deposits_by_txid(
         &self,
         transaction_ids: Vec<Hash256>,
-    ) -> Result<Vec<CityL1Deposit>, ErrorObjectOwned> {
+    ) -> Result<Vec<CityL1DepositJSON>, ErrorObjectOwned> {
         Ok(self
             .query_store(|store| {
                 Ok(CityStore::get_deposits_by_txid(
@@ -323,7 +328,10 @@ impl RpcServer for RpcServerImpl {
                         .collect::<Vec<_>>(),
                 )?)
             })
-            .map_err(|_| ErrorObject::from(ErrorCode::InternalError))?)
+            .map_err(|_| ErrorObject::from(ErrorCode::InternalError))?
+            .into_iter().map(|x| x.to_json_variant()).collect::<Vec<_>>()
+        )
+
     }
 
     async fn get_deposit_hash(
