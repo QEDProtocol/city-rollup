@@ -1,4 +1,4 @@
-<p align="center"><a href="https://cityrollup.com"><img src="static/github-banner.png" height="420" alt="City Rollup" /></a></p>
+<p align="center"><a href="https://cityrollup.com"><img src="static/github-banner.png" alt="City Rollup" /></a></p>
 
 <h1 align="center">City Rollup</h1>
 
@@ -12,6 +12,7 @@
 - docker
 - docker-compose
 - go
+- jq
 - rust toolchain
 
 

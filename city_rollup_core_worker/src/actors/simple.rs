@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use city_common::{cli::modes::QWorkerMode, logging::trace_timer::TraceTimer};
-use city_rollup_circuit::worker::traits::{QWorkerGenericProver, QWorkerGenericProverGroth16};
+use city_rollup_circuit::worker::traits::{QWorkerGenericProverGroth16, QWorkerGenericProverMut};
 use city_rollup_common::{
     actors::traits::WorkerEventReceiverSync,
     qworker::{
@@ -16,14 +16,14 @@ impl SimpleActorWorker {
     pub fn run_worker<
         PS: QProofStore,
         ER: WorkerEventReceiverSync,
-        G: QWorkerGenericProver<PS, C, D>
+        G: QWorkerGenericProverMut<PS, C, D>
             + QWorkerGenericProverGroth16<PS, PoseidonGoldilocksConfig, 2>,
         C: GenericConfig<D>,
         const D: usize,
     >(
         store: &mut PS,
         event_receiver: &mut ER,
-        prover: &G,
+        prover: &mut G,
     ) -> anyhow::Result<()> {
         loop {
             Self::process_next_job(store, event_receiver, prover, QWorkerMode::All)?;
@@ -32,14 +32,14 @@ impl SimpleActorWorker {
     pub fn process_next_job<
         PS: QProofStore,
         ER: WorkerEventReceiverSync,
-        G: QWorkerGenericProver<PS, C, D>
+        G: QWorkerGenericProverMut<PS, C, D>
             + QWorkerGenericProverGroth16<PS, PoseidonGoldilocksConfig, 2>,
         C: GenericConfig<D>,
         const D: usize,
     >(
         store: &mut PS,
         event_receiver: &mut ER,
-        prover: &G,
+        prover: &mut G,
         mode: QWorkerMode,
     ) -> anyhow::Result<()> {
         //let mut timer = TraceTimer::new("process_next_job");
@@ -57,18 +57,19 @@ impl SimpleActorWorker {
     fn process_job<
         PS: QProofStore,
         ER: WorkerEventReceiverSync,
-        G: QWorkerGenericProver<PS, C, D>
+        G: QWorkerGenericProverMut<PS, C, D>
             + QWorkerGenericProverGroth16<PS, PoseidonGoldilocksConfig, 2>,
         C: GenericConfig<D>,
         const D: usize,
     >(
         store: &mut PS,
         event_receiver: &mut ER,
-        prover: &G,
+        prover: &mut G,
         job_id: QProvingJobDataID,
     ) -> anyhow::Result<()> {
         let mut timer = TraceTimer::new("process_job");
         if job_id.topic == QJobTopic::GenerateStandardProof {
+            let start_time = std::time::Instant::now();
             let _ = match job_id.circuit_type {
                 ProvingJobCircuitType::WrapFinalSigHashProofBLS12381 => {
                     // TODO: implement conversion from proof to bytes
@@ -79,12 +80,14 @@ impl SimpleActorWorker {
                     output_id
                 }
                 _ => {
-                    let proof = prover.worker_prove(store, job_id)?;
+                    let proof = prover.worker_prove_mut(store, job_id)?;
                     let output_id = job_id.get_output_id();
                     store.set_proof_by_id(output_id, &proof)?;
                     output_id
                 }
             };
+            let duration = start_time.elapsed().as_millis() as u64;
+            event_receiver.record_job_bench(job_id, duration)?;
         }
         if job_id.topic == QJobTopic::NotifyOrchestratorComplete {
             event_receiver.notify_core_goal_completed(job_id)?;

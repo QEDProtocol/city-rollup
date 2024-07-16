@@ -1,4 +1,4 @@
-use std::fmt::Display;
+use std::{fmt::Display, ops};
 
 use hex::FromHexError;
 use kvq::traits::KVQSerializable;
@@ -24,7 +24,17 @@ impl Default for Hash256 {
     }
 }
 
+impl ops::BitXor<Hash256> for Hash256 {
+    type Output = Hash256;
+
+    fn bitxor(self, rhs: Hash256) -> Hash256 {
+       Hash256(core::array::from_fn(|i| self.0[i] ^ rhs.0[i]))
+    }
+}
+
+
 impl Hash256 {
+    pub const ZERO: Self = Self([0u8; 32]);
     pub fn from_hex_string(s: &str) -> Result<Self, FromHexError> {
         let bytes = hex::decode(s)?;
         assert_eq!(bytes.len(), 32);
@@ -45,6 +55,52 @@ impl Hash256 {
     }
     pub fn reversed(&self) -> Self {
         Hash256(core::array::from_fn(|i| self.0[31 - i]))
+    }
+    pub fn to_le_u64_x4(&self) -> [u64; 4] {
+        
+        [
+            u64::from_le_bytes([
+                self.0[0],
+                self.0[1],
+                self.0[2],
+                self.0[3],
+                self.0[4],
+                self.0[5],
+                self.0[6],
+                self.0[7],
+            ]),
+            u64::from_le_bytes([
+                self.0[8],
+                self.0[9],
+                self.0[10],
+                self.0[11],
+                self.0[12],
+                self.0[13],
+                self.0[14],
+                self.0[15],
+            ]),
+            u64::from_le_bytes([
+                self.0[16],
+                self.0[17],
+                self.0[18],
+                self.0[19],
+                self.0[20],
+                self.0[21],
+                self.0[22],
+                self.0[23],
+            ]),
+            u64::from_le_bytes([
+                self.0[24],
+                self.0[25],
+                self.0[26],
+                self.0[27],
+                self.0[28],
+                self.0[29],
+                self.0[30],
+                self.0[31],
+            ]),
+
+        ]
     }
 }
 

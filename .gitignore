@@ -41,7 +41,8 @@ coverage.json
 logs/
 chaindata/
 ordhook-data/
-db/
+db
 redis-data/
 blocks/
+qbench_data/
 hints.json

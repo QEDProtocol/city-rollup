@@ -90,6 +90,7 @@ impl<F: RichField> OrchestratorEventSenderSync<F> for CityScenarioRequestedActio
     }
 }
 
+#[derive(Clone)]
 pub struct QRPCProcessor<F: RichField> {
     pub checkpoint_id: u64,
     pub output: CityScenarioRequestedActionsFromRPC<F>,

@@ -1,4 +1,4 @@
-use city_common::binaryhelpers::bytes::CompressedPublicKey;
+use city_common::{binaryhelpers::bytes::CompressedPublicKey, data::u8bytes::U8BytesFixed};
 use city_crypto::hash::{
     base_types::{hash160::Hash160, hash256::Hash256},
     qhashout::QHashOut,
@@ -126,6 +126,38 @@ impl CityUserState {
         self.balance >= amount && self.nonce < nonce
     }
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize, Copy, Hash, Eq, PartialEq)]
+pub struct CityL1DepositJSON {
+    pub deposit_id: u64,
+    pub checkpoint_id: u64,
+    pub value: u64,
+    pub txid: Hash256,
+    pub public_key: U8BytesFixed<33>,
+}
+impl CityL1DepositJSON {
+    pub fn to_city_l1_deposit(&self) -> CityL1Deposit {
+        CityL1Deposit {
+            deposit_id: self.deposit_id,
+            checkpoint_id: self.checkpoint_id,
+            value: self.value,
+            txid: self.txid.reversed(),
+            public_key: CompressedPublicKey(self.public_key.0),
+        }
+    }
+    pub fn from_city_l1_deposit(deposit: &CityL1Deposit) -> Self {
+        Self {
+            deposit_id: deposit.deposit_id,
+            checkpoint_id: deposit.checkpoint_id,
+            value: deposit.value,
+            txid: deposit.txid.reversed(),
+            public_key: U8BytesFixed(deposit.public_key.0),
+        }
+    }
+
+}
+
+
 #[derive(Debug, Clone, Serialize, Deserialize, Copy, Hash, Eq, PartialEq)]
 pub struct CityL1Deposit {
     pub deposit_id: u64,
@@ -133,6 +165,12 @@ pub struct CityL1Deposit {
     pub value: u64,
     pub txid: Hash256,
     pub public_key: CompressedPublicKey,
+}
+impl CityL1Deposit {
+
+    pub fn to_json_variant(&self) -> CityL1DepositJSON {
+        CityL1DepositJSON::from_city_l1_deposit(&self)
+    }
 }
 impl KVQSerializable for CityL1Deposit {
     fn to_bytes(&self) -> anyhow::Result<Vec<u8>> {

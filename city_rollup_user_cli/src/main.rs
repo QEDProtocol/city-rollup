@@ -18,6 +18,8 @@ use crate::subcommand::get_public_key;
 use crate::subcommand::random_wallet;
 use crate::subcommand::sign_hash;
 use crate::subcommand::repl;
+use crate::subcommand::prover_rpc;
+
 use crate::subcommand::Cli;
 use crate::subcommand::Commands;
 
@@ -38,6 +40,7 @@ async fn main() -> Result<()> {
         Commands::GetPublicKey(args) => get_public_key::run(args).await?,
         Commands::RandomWallet(args) => random_wallet::run(args).await?,
         Commands::Repl(args) => repl::run(args).await?,
+        Commands::ProverRPC(args) => prover_rpc::run(args).await?,
     }
 
 

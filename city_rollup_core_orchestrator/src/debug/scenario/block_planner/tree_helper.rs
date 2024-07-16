@@ -1,5 +1,6 @@
 use std::fmt::Debug;
 
+use city_common::tree_planner::BinaryTreePlanner;
 use city_crypto::hash::{
     merkle::treeprover::{
         generate_tree_inputs_with_position, AggStateTrackableInput,
@@ -10,13 +11,61 @@ use city_crypto::hash::{
     qhashout::QHashOut,
 };
 use city_rollup_common::qworker::{
-    job_id::QProvingJobDataID,
+    job_id::{ProvingJobCircuitType, QProvingJobDataID},
     job_witnesses::op::{CircuitInputWithDependencies, CircuitInputWithJobId},
     proof_store::QProofStore,
 };
 use city_store::config::F;
 use serde::{de::DeserializeOwned, Serialize};
 
+pub fn get_dummy_tree_prover_ids_op_circuit(
+    circuit_type: ProvingJobCircuitType,
+    dummy_type: ProvingJobCircuitType,
+    checkpoint_id: u64,
+    leaf_count: usize,
+) -> Vec<Vec<QProvingJobDataID>> {
+    let dummy_id = QProvingJobDataID::new_proof_job_id(checkpoint_id, dummy_type, 0xDD, 0, 0);
+    let leaves = (0..leaf_count)
+        .map(|i| QProvingJobDataID::core_op_witness(circuit_type, checkpoint_id, i as u32))
+        .collect::<Vec<_>>();
+    get_dummy_tree_prover_ids(&leaves, dummy_id)
+}
+
+pub fn get_dummy_tree_prover_ids_leaf_template(
+    leaf_template: QProvingJobDataID,
+    dummy_id: QProvingJobDataID,
+    leaf_count: usize,
+) -> Vec<Vec<QProvingJobDataID>> {
+    let leaves = (0..leaf_count)
+        .map(|i| leaf_template.with_task_index(i as u32))
+        .collect::<Vec<_>>();
+    get_dummy_tree_prover_ids(&leaves, dummy_id)
+}
+pub fn get_dummy_tree_prover_ids(
+    leaves: &[QProvingJobDataID],
+    dummy_id: QProvingJobDataID,
+) -> Vec<Vec<QProvingJobDataID>> {
+    if leaves.len() == 0 {
+        vec![vec![dummy_id]]
+    } else {
+        let leaves_len = leaves.len();
+        let levels = BinaryTreePlanner::new(leaves_len).levels;
+        let mut job_ids = vec![leaves.to_vec()];
+
+        for level_nodes in levels.into_iter() {
+            let mut level_job_ids: Vec<QProvingJobDataID> = Vec::with_capacity(level_nodes.len());
+            for node in level_nodes.into_iter() {
+                let left_proof_id = job_ids[node.left_job.level as usize]
+                    [node.left_job.index as usize]
+                    .get_output_id();
+                let self_witness_id = left_proof_id.get_tree_parent_proof_input_id();
+                level_job_ids.push(self_witness_id);
+            }
+            job_ids.push(level_job_ids);
+        }
+        job_ids
+    }
+}
 pub fn plan_tree_prover_from_leaves<
     PS: QProofStore,
     LA: TPLeafAggregator<CircuitInputWithJobId<IL>, IO>,

@@ -1,0 +1,12 @@
+{
+  "checkpoint_id": 4,
+  "rpc_node_id": 0,
+  "job_config": {
+    "register_user_count": 4,
+    "claim_deposit_count": 2,
+    "token_transfer_count": 4,
+    "add_withdrawal_count": 4,
+    "process_withdrawal_count": 4,
+    "add_deposit_count": 2
+  }
+}

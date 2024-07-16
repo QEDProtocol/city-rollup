@@ -8,10 +8,11 @@ jsonrpsee = { workspace = true }
 tokio = { workspace = true }
 anyhow = { workspace = true }
 redb = { workspace = true }
-kvq_store_rocksdb = { path = "../kvq_store_rocksdb" }
+kvq_store_redb = { path = "../kvq_store_redb" }
 city_store = { path = "../city_store" }
 city_common = { path = "../city_common" }
 city_rollup_common = { path = "../city_rollup_common" }
+city_macros = { path = "../city_macros" }
 city_crypto = { path = "../city_crypto" }
 hex = { workspace = true }
 futures = { workspace = true }

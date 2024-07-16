@@ -11,7 +11,7 @@ use city_rollup_common::{
         link_api::BTCLinkAPI,
         traits::{QBitcoinAPIFunderSync, QBitcoinAPISync},
         tx::{send_entire_balance_simple_p2pkh, send_p2pkh_exact_value},
-    },
+    }, qworker::job_id::QProvingJobDataIDSerializedWrapped,
 };
 
 use city_rollup_rpc_provider::{CityRpcProviderSync, RpcProviderSync};
@@ -25,6 +25,17 @@ const D: usize = 2;
 type C = PoseidonGoldilocksConfig;
 type F = GoldilocksField;
 */
+
+fn parse_job_id_array(input_str: &str) -> anyhow::Result<Vec<QProvingJobDataIDSerializedWrapped>>{
+    input_str
+        .replace('\"', "")
+        .replace(' ', "")
+        .replace('[', "")
+        .replace(']', "")
+        .split(",")
+        .map(|x| QProvingJobDataIDSerializedWrapped::from_hex_string(x).map_err(|err| anyhow::anyhow!(err)))
+        .collect::<anyhow::Result<Vec<QProvingJobDataIDSerializedWrapped>>>()
+}
 const MAX_CHECKPOINT_ID: u64 = 0xffffffff;
 struct ReplContext {
     pub city_rpc: RpcProviderSync,
@@ -188,6 +199,27 @@ fn get_user_ids_for_public_key(
 
 
     Ok(Some(serde_json::to_string(&results)?))
+}
+fn get_proof_store_kv(
+    args: HashMap<String, Value>,
+    context: &mut ReplContext,
+) -> Result<Option<String>> {
+    let key_str: String = args["keys"].convert()?;
+    let key_str = key_str.trim();
+    println!("got keys: '{}'", key_str);
+
+    if key_str.len() == 48 {
+        let key = QProvingJobDataIDSerializedWrapped::from_hex_string(&key_str)?;
+        let result = context.city_rpc.get_proof_store_value_sync(key)?;
+        Ok(Some(hex::encode(&result.0)))
+
+
+
+    }else{
+        let keys: Vec<QProvingJobDataIDSerializedWrapped> = parse_job_id_array(key_str)?;
+        let results = context.city_rpc.get_proof_store_values_sync(&keys)?;
+        Ok(Some(serde_json::to_string_pretty(&results)?))
+    }
 }
 
 fn spend_all(args: HashMap<String, Value>, context: &mut ReplContext) -> Result<Option<String>> {
@@ -375,6 +407,11 @@ pub async fn run(args: RPCReplArgs) -> Result<()> {
     .add_command(
         Command::new("random_l1_wallet", random_dogecoin_wallet)
             .with_help("generate a random dogecoin P2PKH wallet"),
+    )
+    .add_command(
+        Command::new("get_proof_store_kv", get_proof_store_kv)
+            .with_help("get one or more keys from the proof store")
+            .with_parameter(Parameter::new("keys").set_required(true)?)?,
     )
     .add_command(Command::new("exit", exit_repl).with_help("exits the repl"))
     .add_command(Command::new("quit", exit_repl).with_help("exits the repl"));

@@ -1,7 +1,6 @@
 TRACE_ENABLED           := 1
 PROFILE                 := release
 LOG_LEVEL  			        := info,city_common_circuit=off,city_rollup_circuit=off,plonky2=off,city_crypto=off,city_store=off,city_rollup_common=off
-DOCKER_PROFILE    			:= lite
 
 .PHONY: check
 check:
@@ -51,7 +50,7 @@ run-orchestrator: build-if-not-exists
 
 .PHONY: run-l2-worker
 run-l2-worker: build-if-not-exists
-	@RUST_LOG=${LOG_LEVEL} RUST_BACKTRACE=${TRACE_ENABLED} ./target/${PROFILE}/city-rollup-cli l2-worker
+	@RUST_LOG=${LOG_LEVEL} RUST_BACKTRACE=${TRACE_ENABLED} ./target/${PROFILE}/city-rollup-cli l2-worker --debug-mode 1
 
 .PHONY: run-l2-worker-g16
 run-l2-worker-g16: build-if-not-exists
@@ -112,7 +111,6 @@ prove_sighash_0_hints: build-if-not-exists
 launch:
 	@docker-compose \
 		-f docker-compose.yml \
-		--profile ${DOCKER_PROFILE} \
 		up \
 		--build \
 		-d \

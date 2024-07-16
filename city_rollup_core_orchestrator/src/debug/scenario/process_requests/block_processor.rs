@@ -10,7 +10,7 @@ use city_rollup_common::{
     },
     qworker::{
         fingerprints::CRWorkerToolboxCoreCircuitFingerprints,
-        job_id::{ProvingJobCircuitType, ProvingJobDataType, QJobTopic, QProvingJobDataID},
+        job_id::{ProvingJobCircuitType, QProvingJobDataID},
         job_witnesses::op::{
             CRAddL1DepositCircuitInput, CRAddL1WithdrawalCircuitInput,
             CRClaimL1DepositCircuitInput, CRL2TransferCircuitInput,
@@ -67,15 +67,10 @@ impl<S: KVQBinaryStore, PS: QProofStore> CityOrchestratorBlockProcessor<S, PS> {
             .op_processor
             .process_register_user_request(store, req)?;
 
-        let job_id = QProvingJobDataID::new(
-            QJobTopic::GenerateStandardProof,
-            self.checkpoint_id,
-            ProvingJobCircuitType::RegisterUser.to_circuit_group_id(),
-            0,
-            self.block_register_user_count as u32,
+        let job_id = QProvingJobDataID::core_op_witness(
             ProvingJobCircuitType::RegisterUser,
-            ProvingJobDataType::InputWitness,
-            0,
+            self.checkpoint_id,
+            self.block_register_user_count as u32,
         );
 
         proof_store.set_bytes_by_id(job_id, &op_result.to_bytes()?)?;
@@ -90,16 +85,10 @@ impl<S: KVQBinaryStore, PS: QProofStore> CityOrchestratorBlockProcessor<S, PS> {
         req: &CityTokenTransferRequest,
     ) -> anyhow::Result<CircuitInputWithJobId<CRL2TransferCircuitInput<F>>> {
         let op_result = self.op_processor.process_l2_transfer_request(store, req)?;
-
-        let job_id = QProvingJobDataID::new(
-            QJobTopic::GenerateStandardProof,
-            self.checkpoint_id,
-            ProvingJobCircuitType::TransferTokensL2.to_circuit_group_id(),
-            0,
-            self.block_l2_transfer_count as u32,
+        let job_id = QProvingJobDataID::core_op_witness(
             ProvingJobCircuitType::TransferTokensL2,
-            ProvingJobDataType::InputWitness,
-            0,
+            self.checkpoint_id,
+            self.block_l2_transfer_count as u32,
         );
 
         proof_store.set_bytes_by_id(job_id, &op_result.to_bytes()?)?;
@@ -117,15 +106,11 @@ impl<S: KVQBinaryStore, PS: QProofStore> CityOrchestratorBlockProcessor<S, PS> {
             .op_processor
             .process_add_withdrawal_request(store, req)?;
 
-        let job_id = QProvingJobDataID::new(
-            QJobTopic::GenerateStandardProof,
-            self.checkpoint_id,
-            ProvingJobCircuitType::AddL1Withdrawal.to_circuit_group_id(),
-            0,
-            self.block_add_withdrawal_count as u32,
+
+        let job_id = QProvingJobDataID::core_op_witness(
             ProvingJobCircuitType::AddL1Withdrawal,
-            ProvingJobDataType::InputWitness,
-            0,
+            self.checkpoint_id,
+            self.block_add_withdrawal_count as u32,
         );
 
         proof_store.set_bytes_by_id(job_id, &op_result.to_bytes()?)?;
@@ -143,15 +128,11 @@ impl<S: KVQBinaryStore, PS: QProofStore> CityOrchestratorBlockProcessor<S, PS> {
             .op_processor
             .process_complete_l1_withdrawal_request(store, req)?;
 
-        let job_id = QProvingJobDataID::new(
-            QJobTopic::GenerateStandardProof,
-            self.checkpoint_id,
-            ProvingJobCircuitType::ProcessL1Withdrawal.to_circuit_group_id(),
-            0,
-            self.block_process_withdrawal_count as u32,
+
+        let job_id = QProvingJobDataID::core_op_witness(
             ProvingJobCircuitType::ProcessL1Withdrawal,
-            ProvingJobDataType::InputWitness,
-            0,
+            self.checkpoint_id,
+            self.block_process_withdrawal_count as u32,
         );
 
         proof_store.set_bytes_by_id(job_id, &op_result.to_bytes()?)?;
@@ -167,15 +148,10 @@ impl<S: KVQBinaryStore, PS: QProofStore> CityOrchestratorBlockProcessor<S, PS> {
     ) -> anyhow::Result<CircuitInputWithJobId<CRAddL1DepositCircuitInput<F>>> {
         let op_result = self.op_processor.process_add_deposit_request(store, req)?;
 
-        let job_id = QProvingJobDataID::new(
-            QJobTopic::GenerateStandardProof,
-            self.checkpoint_id,
-            ProvingJobCircuitType::AddL1Deposit.to_circuit_group_id(),
-            0,
-            self.block_add_deposit_count as u32,
+        let job_id = QProvingJobDataID::core_op_witness(
             ProvingJobCircuitType::AddL1Deposit,
-            ProvingJobDataType::InputWitness,
-            0,
+            self.checkpoint_id,
+            self.block_add_deposit_count as u32,
         );
 
         proof_store.set_bytes_by_id(job_id, &op_result.to_bytes()?)?;
@@ -193,16 +169,12 @@ impl<S: KVQBinaryStore, PS: QProofStore> CityOrchestratorBlockProcessor<S, PS> {
             .op_processor
             .process_claim_deposit_request(store, req)?;
 
-        let job_id = QProvingJobDataID::new(
-            QJobTopic::GenerateStandardProof,
-            self.checkpoint_id,
-            ProvingJobCircuitType::ClaimL1Deposit.to_circuit_group_id(),
-            0,
-            self.block_claim_deposit_count as u32,
+        let job_id = QProvingJobDataID::core_op_witness(
             ProvingJobCircuitType::ClaimL1Deposit,
-            ProvingJobDataType::InputWitness,
-            0,
+            self.checkpoint_id,
+            self.block_claim_deposit_count as u32,
         );
+        
 
         proof_store.set_bytes_by_id(job_id, &op_result.to_bytes()?)?;
         self.block_claim_deposit_count += 1;

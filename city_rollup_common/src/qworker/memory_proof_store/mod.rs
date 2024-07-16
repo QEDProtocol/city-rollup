@@ -1,12 +1,13 @@
 use std::collections::HashMap;
 
 use plonky2::plonk::{config::GenericConfig, proof::ProofWithPublicInputs};
+use serde::{Deserialize, Serialize};
 
 use super::{
     job_id::QProvingJobDataID,
     proof_store::{QProofStoreReaderSync, QProofStoreWriterSync},
 };
-
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SimpleProofStoreMemory {
     pub proofs: HashMap<QProvingJobDataID, Vec<u8>>,
     pub counters: HashMap<QProvingJobDataID, u32>,
@@ -17,6 +18,12 @@ impl SimpleProofStoreMemory {
             proofs: HashMap::new(),
             counters: HashMap::new(),
         }
+    }
+    pub fn to_serialized_bytes(&self) -> anyhow::Result<Vec<u8>> {
+        bincode::serialize(self).map_err(|err| anyhow::anyhow!("{}", err))
+    }
+    pub fn from_serialized_bytes(data: &[u8]) -> anyhow::Result<Self> {
+        bincode::deserialize(data).map_err(|err| anyhow::anyhow!("{}", err))
     }
 }
 
@@ -75,5 +82,21 @@ impl QProofStoreWriterSync for SimpleProofStoreMemory {
     fn set_bytes_by_id(&mut self, id: QProvingJobDataID, data: &[u8]) -> anyhow::Result<()> {
         self.proofs.insert(id, data.to_vec());
         Ok(())
+    }
+    
+    fn write_next_jobs(
+        &mut self,
+        jobs: &[QProvingJobDataID],
+        next_jobs: &[QProvingJobDataID],
+    ) -> anyhow::Result<()> {
+        self.write_next_jobs_core(jobs, next_jobs)
+    }
+    
+    fn write_multidimensional_jobs(
+        &mut self,
+        jobs_levels: &[Vec<QProvingJobDataID>],
+        next_jobs: &[QProvingJobDataID],
+    ) -> anyhow::Result<()> {
+        self.write_multidimensional_jobs_core(jobs_levels, next_jobs)
     }
 }

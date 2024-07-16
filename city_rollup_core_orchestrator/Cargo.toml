@@ -31,7 +31,8 @@ redis = { workspace = true }
 city_macros = { path = "../city_macros" }
 city_redis_store = { path = "../city_redis_store" }
 city_rollup_circuit = { path = "../city_rollup_circuit" }
-kvq_store_rocksdb = { path = "../kvq_store_rocksdb" }
+kvq_store_redb = { path = "../kvq_store_redb" }
+redb = { workspace = true }
 hex-literal = { workspace = true }
 tracing = { workspace = true }
 
