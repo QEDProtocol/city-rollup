@@ -6,7 +6,7 @@ use city_crypto::hash::base_types::hash256::Hash256;
 use city_macros::{city_external_rpc_call, city_external_rpc_call_sync, city_rpc_call, city_rpc_call_sync};
 use city_rollup_common::{api::data::{
     block::rpc_request::*,
-    store::{CityL1Deposit, CityL1DepositJSON, CityL1Withdrawal, CityL2BlockState, CityUserState},
+    store::{CityL1DepositJSON, CityL1Withdrawal, CityL2BlockState, CityUserState},
 }, qworker::job_id::QProvingJobDataIDSerializedWrapped};
 use city_rollup_core_node::rpc::{
     ExternalRequestParams, Id, RequestParams, ResponseResult, RpcParams, RpcRequest, RpcResponse,
@@ -627,7 +627,7 @@ impl CityRpcProviderSync for RpcProviderSync {
     fn get_user_ids_for_public_key_sync(&self, public_key: CityHash) -> anyhow::Result<Vec<u64>> {
         city_external_rpc_call_sync!(self, "cr_getUserIdsForPublicKey", json!([public_key]), Vec<u64>)
     }
-    
+
     fn get_user_by_id_sync(
         &self,
         checkpoint_id: u64,
