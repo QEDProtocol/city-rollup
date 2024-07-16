@@ -1,11 +1,15 @@
 use std::sync::Arc;
 
+use city_common::data::kv::SimpleKVPair;
+use city_common::data::u8bytes::U8Bytes;
 use city_crypto::hash::base_types::hash160::Hash160;
 use city_crypto::hash::base_types::hash256::Hash256;
 use city_macros::define_table;
 use city_rollup_common::api::data::store::{
     CityL1DepositJSON, CityL1Withdrawal, CityL2BlockState, CityUserState,
 };
+use city_rollup_common::qworker::job_id::{QProvingJobDataID, QProvingJobDataIDSerializedWrapped};
+use city_rollup_common::qworker::proof_store::QProofStoreReaderSync;
 use city_store::config::{CityHash, CityMerkleProof};
 use city_store::store::city::base::CityStore;
 use jsonrpsee::core::async_trait;
@@ -160,14 +164,27 @@ pub trait Rpc {
         checkpoint_id: u64,
         withdrawal_id: u64,
     ) -> Result<CityMerkleProof, ErrorObjectOwned>;
+
+    #[method(name = "getProofStoreValue")]
+    async fn get_proof_store_value(
+        &self,
+        key: QProvingJobDataIDSerializedWrapped,
+    ) -> Result<U8Bytes, ErrorObjectOwned>;
+
+    #[method(name = "getProofStoreValues")]
+    async fn get_proof_store_values(
+        &self,
+        keys: Vec<QProvingJobDataIDSerializedWrapped>,
+    ) -> Result<Vec<SimpleKVPair<QProvingJobDataIDSerializedWrapped, U8Bytes>>, ErrorObjectOwned>;
 }
 
 #[derive(Clone)]
-pub struct RpcServerImpl {
+pub struct RpcServerImpl<PS: QProofStoreReaderSync> {
     db: Arc<Database>,
+    proof_store: PS,
 }
 
-impl RpcServerImpl {
+impl<PS: QProofStoreReaderSync> RpcServerImpl<PS> {
     pub fn query_store<T>(
         &self,
         f: impl FnOnce(KVQReDBStore<ReadOnlyTable<&'static [u8], &'static [u8]>>) -> anyhow::Result<T>,
@@ -180,7 +197,7 @@ impl RpcServerImpl {
 }
 
 #[async_trait]
-impl RpcServer for RpcServerImpl {
+impl<PS: QProofStoreReaderSync + Clone + Sync + Send + 'static> RpcServer for RpcServerImpl<PS> {
     async fn get_user_tree_root(&self, checkpoint_id: u64) -> Result<CityHash, ErrorObjectOwned> {
         Ok(self
             .query_store(|store| Ok(CityStore::get_user_tree_root(&store, checkpoint_id)?))
@@ -329,9 +346,9 @@ impl RpcServer for RpcServerImpl {
                 )?)
             })
             .map_err(|_| ErrorObject::from(ErrorCode::InternalError))?
-            .into_iter().map(|x| x.to_json_variant()).collect::<Vec<_>>()
-        )
-
+            .into_iter()
+            .map(|x| x.to_json_variant())
+            .collect::<Vec<_>>())
     }
 
     async fn get_deposit_hash(
@@ -495,12 +512,49 @@ impl RpcServer for RpcServerImpl {
             })
             .map_err(|_| ErrorObject::from(ErrorCode::InternalError))?)
     }
+
+    async fn get_proof_store_value(
+        &self,
+        key: QProvingJobDataIDSerializedWrapped,
+    ) -> Result<U8Bytes, ErrorObjectOwned> {
+        let result = self
+            .proof_store
+            .get_bytes_by_id(
+                QProvingJobDataID::try_from(key.0)
+                    .map_err(|_| ErrorObject::from(ErrorCode::InvalidParams))?,
+            )
+            .map_err(|_| ErrorObject::from(ErrorCode::InternalError))?;
+
+        Ok(U8Bytes(result))
+    }
+    async fn get_proof_store_values(
+        &self,
+        keys: Vec<QProvingJobDataIDSerializedWrapped>,
+    ) -> Result<Vec<SimpleKVPair<QProvingJobDataIDSerializedWrapped, U8Bytes>>, ErrorObjectOwned>
+    {
+        let id_keys = keys
+            .iter()
+            .map(|x| {
+                QProvingJobDataID::try_from(x.0)
+                    .map_err(|_| ErrorObject::from(ErrorCode::InvalidParams))
+            })
+            .collect::<Result<Vec<QProvingJobDataID>, ErrorObjectOwned>>()?;
+
+        id_keys.iter().map(|key|{
+            let result = self.proof_store.get_bytes_by_id(*key).map_err(|_| ErrorObject::from(ErrorCode::InternalError))?;
+            Ok(SimpleKVPair{key: QProvingJobDataIDSerializedWrapped(key.to_fixed_bytes()), value: U8Bytes(result)})
+        }).collect::<Result<Vec<SimpleKVPair<QProvingJobDataIDSerializedWrapped, U8Bytes>>, ErrorObjectOwned>>()
+    }
 }
 
-pub async fn run_server(server_addr: String, db: Arc<Database>) -> anyhow::Result<()> {
+pub async fn run_server<PS: QProofStoreReaderSync + Send + Sync + Clone + 'static>(
+    server_addr: String,
+    db: Arc<Database>,
+    proof_store: PS,
+) -> anyhow::Result<()> {
     let server = Server::builder().build(server_addr).await?;
 
-    let rpc_server_impl = RpcServerImpl { db };
+    let rpc_server_impl = RpcServerImpl { db, proof_store };
     let handle = server.start(rpc_server_impl.into_rpc());
     tokio::spawn(handle.stopped());
     Ok(futures::future::pending::<()>().await)
