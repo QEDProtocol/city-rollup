@@ -9,7 +9,7 @@ members = [
   "city_macros",
   "kvq",
   "kvq_store_redb",
-  "kvq_store_rocksdb",
+  # "kvq_store_rocksdb",
   "city_rollup_cli",
   "city_rollup_user_cli",
   "city_rollup_dev_cli",

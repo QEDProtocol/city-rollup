@@ -8,7 +8,6 @@ services:
       testing_net:
         ipv4_address: 172.16.238.11
     restart: always
-    profiles: [lite,full]
 
   redis:
     image: redis
@@ -20,7 +19,6 @@ services:
       testing_net:
         ipv4_address: 172.16.238.13
     restart: always
-    profiles: [lite,full]
 networks:
   testing_net:
     ipam:

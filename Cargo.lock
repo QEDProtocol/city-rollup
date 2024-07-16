@@ -323,27 +323,6 @@ dependencies = [
 
 [[package]]
 name = "bindgen"
-version = "0.65.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cfdf7b466f9a4903edc73f95d6d2bcd5baf8ae620638762244d3f60143643cc5"
-dependencies = [
- "bitflags 1.2.1",
- "cexpr",
- "clang-sys",
- "lazy_static",
- "lazycell",
- "peeking_take_while",
- "prettyplease",
- "proc-macro2",
- "quote",
- "regex",
- "rustc-hash 1.1.0",
- "shlex",
- "syn 2.0.64",
-]
-
-[[package]]
-name = "bindgen"
 version = "0.69.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a00dc851838a2120612785d195287475a3ac45514741da670b735818822129a0"
@@ -944,12 +923,13 @@ dependencies = [
  "anyhow",
  "city_common",
  "city_crypto",
+ "city_macros",
  "city_rollup_common",
  "city_store",
  "futures",
  "hex",
  "jsonrpsee",
- "kvq_store_rocksdb",
+ "kvq_store_redb",
  "redb",
  "tokio",
 ]
@@ -1016,10 +996,11 @@ dependencies = [
  "hex-literal",
  "k256",
  "kvq",
- "kvq_store_rocksdb",
+ "kvq_store_redb",
  "plonky2",
  "rand",
  "rand_chacha",
+ "redb",
  "redis",
  "reqwest",
  "serde",
@@ -2584,7 +2565,7 @@ version = "0.1.0"
 source = "git+https://github.com/cf/gnark-plonky2-verifier?rev=75681e2a0e20270734f082145d13cdfe3349d009#75681e2a0e20270734f082145d13cdfe3349d009"
 dependencies = [
  "anyhow",
- "bindgen 0.69.4",
+ "bindgen",
  "gobuild",
  "libc",
 ]
@@ -3463,15 +3444,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "kvq_store_rocksdb"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "kvq",
- "rocksdb",
-]
-
-[[package]]
 name = "lalrpop"
 version = "0.20.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3558,22 +3530,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "librocksdb-sys"
-version = "0.11.0+8.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d3386f101bcb4bd252d8e9d2fb41ec3b0862a15a62b478c355b2982efa469e3e"
-dependencies = [
- "bindgen 0.65.1",
- "bzip2-sys",
- "cc",
- "glob",
- "libc",
- "libz-sys",
- "lz4-sys",
- "zstd-sys",
-]
-
-[[package]]
 name = "libz-sys"
 version = "1.1.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3606,16 +3562,6 @@ name = "log"
 version = "0.4.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "90ed8c1e510134f979dbc4f070f87d4313098b704861a105fe34231c70a3901c"
-
-[[package]]
-name = "lz4-sys"
-version = "1.9.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "57d27b317e207b10f69f5e75494119e391a96f48861ae870d1da6edac98ca900"
-dependencies = [
- "cc",
- "libc",
-]
 
 [[package]]
 name = "matchers"
@@ -4093,12 +4039,6 @@ dependencies = [
  "digest",
  "hmac",
 ]
-
-[[package]]
-name = "peeking_take_while"
-version = "0.1.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "19b17cddbe7ec3f8bc800887bab5e717348c95ea2ca0b1bf0837fb964dc67099"
 
 [[package]]
 name = "pem"
@@ -4792,17 +4732,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 1.0.109",
-]
-
-[[package]]
-name = "rocksdb"
-version = "0.21.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bb6f170a4041d50a0ce04b0d2e14916d6ca863ea2e422689a5b694395d299ffe"
-dependencies = [
- "libc",
- "librocksdb-sys",
- "serde",
 ]
 
 [[package]]
