@@ -15,8 +15,8 @@ pub async fn run(args: GetPublicKeyArgs) -> anyhow::Result<()> {
     let l1_public_key = MemorySecp256K1Wallet::new().add_private_key(Hash256::from_hex_string(&args.private_key)?)?;
     let l2_public_key = SimpleL2PrivateKey::new(private_key_base).get_public_key::<PoseidonHash>();
 
-    tracing::info!("l1 public_key = {}", hex::encode(&l1_public_key.0));
-    tracing::info!("l1 p2pkh = {}", BTCAddress160::new_p2pkh(l1_public_key.to_p2pkh_address()).to_address_string());
-    tracing::info!("l2 public_key = {}", l2_public_key.to_string());
+    println!("l1 public_key = {}", hex::encode(&l1_public_key.0));
+    println!("l1 p2pkh = {}", BTCAddress160::new_p2pkh(l1_public_key.to_p2pkh_address()).to_address_string());
+    println!("l2 public_key = {}", l2_public_key.to_string());
     Ok(())
 }

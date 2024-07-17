@@ -16,6 +16,9 @@ use jsonrpsee::server::Server;
 use jsonrpsee::types::{ErrorCode, ErrorObject, ErrorObjectOwned};
 use kvq_store_rocksdb::KVQRocksDBStore;
 
+use hyper::Method;
+use tower_http::cors::{Any, CorsLayer};
+
 #[rpc(server, client, namespace = "cr")]
 pub trait Rpc {
     #[method(name = "getUserTreeRoot")]
@@ -428,7 +431,17 @@ impl<PS: QProofStoreReaderSync + Clone + Sync + Send + 'static> RpcServer for Rp
 }
 
 pub async fn run_server<PS: QProofStoreReaderSync + Send + Sync + Clone + 'static>(server_addr: String, db: KVQRocksDBStore, proof_store: PS) -> anyhow::Result<()> {
-    let server = Server::builder().build(server_addr).await?;
+
+
+	let cors = CorsLayer::new()
+        // Allow `POST` when accessing the resource
+        .allow_methods([Method::POST])
+        // Allow requests from any origin
+        .allow_origin(Any)
+        .allow_headers([hyper::header::CONTENT_TYPE]);
+    let middleware = tower::ServiceBuilder::new().layer(cors);
+    let server = Server::builder().set_http_middleware(middleware).build(server_addr).await?;
+
 
     let rpc_server_impl = RpcServerImpl { db, proof_store };
     let handle = server.start(rpc_server_impl.into_rpc());

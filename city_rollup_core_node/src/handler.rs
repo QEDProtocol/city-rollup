@@ -134,6 +134,7 @@ impl<F: RichField> CityRollupRPCServerHandler<F> {
 
         Ok(Response::builder()
             .status(code)
+			.header("Access-Control-Allow-Origin", "*")
             .header(header::CONTENT_TYPE, "application/json")
             .body(full(serde_json::to_vec(&response)?))?)
     }

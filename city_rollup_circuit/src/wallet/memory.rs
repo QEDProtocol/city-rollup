@@ -146,10 +146,6 @@ where
           l1_deposit.value,
           DEPOSIT_FEE_AMOUNT,
       );
-      tracing::info!(
-          "sig_preimage: {}",
-          serde_json::to_string(&sig_preimage).unwrap()
-      );
       let hash = sig_preimage.get_qhash::<PoseidonHash>();
       let proof = self.zk_sign_hash_secp256k1(l1_deposit.public_key, hash)?;
 
@@ -176,7 +172,6 @@ where
           QEDSigAction::<C::F>::new_transfer_action(network_magic, from, nonce, to, value);
       let hash = sig_preimage.get_qhash::<PoseidonHash>();
       let proof = self.zk_sign(public_key, hash)?;
-
       let signature_proof = bincode::serialize(&proof)?;
       Ok(CityTokenTransferRPCRequest {
           signature_proof,
