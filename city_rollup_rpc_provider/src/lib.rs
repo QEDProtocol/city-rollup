@@ -3,11 +3,16 @@ use std::sync::Arc;
 use city_common::data::{kv::SimpleKVPair, u8bytes::U8Bytes};
 use city_crypto::hash::base_types::hash160::Hash160;
 use city_crypto::hash::base_types::hash256::Hash256;
-use city_macros::{city_external_rpc_call, city_external_rpc_call_sync, city_rpc_call, city_rpc_call_sync};
-use city_rollup_common::{api::data::{
-    block::rpc_request::*,
-    store::{CityL1DepositJSON, CityL1Withdrawal, CityL2BlockState, CityUserState},
-}, qworker::job_id::QProvingJobDataIDSerializedWrapped};
+use city_macros::{
+    city_external_rpc_call, city_external_rpc_call_sync, city_rpc_call, city_rpc_call_sync,
+};
+use city_rollup_common::{
+    api::data::{
+        block::rpc_request::*,
+        store::{CityL1DepositJSON, CityL1Withdrawal, CityL2BlockState, CityUserState},
+    },
+    qworker::{job_id::QProvingJobDataIDSerializedWrapped, job_witnesses::inspect::QJobWitness},
+};
 use city_rollup_core_node::rpc::{
     ExternalRequestParams, Id, RequestParams, ResponseResult, RpcParams, RpcRequest, RpcResponse,
     Version,
@@ -89,7 +94,10 @@ pub trait CityRpcProvider {
         deposit_ids: Vec<u64>,
     ) -> anyhow::Result<Vec<CityL1DepositJSON>>;
 
-    async fn get_deposit_by_txid(&self, transaction_id: Hash256) -> anyhow::Result<CityL1DepositJSON>;
+    async fn get_deposit_by_txid(
+        &self,
+        transaction_id: Hash256,
+    ) -> anyhow::Result<CityL1DepositJSON>;
 
     async fn get_deposits_by_txid(
         &self,
@@ -159,6 +167,16 @@ pub trait CityRpcProvider {
         keys: &[QProvingJobDataIDSerializedWrapped],
     ) -> anyhow::Result<Vec<SimpleKVPair<QProvingJobDataIDSerializedWrapped, U8Bytes>>>;
 
+    async fn get_proof_store_job_witness<F: RichField>(
+        &self,
+        key: QProvingJobDataIDSerializedWrapped,
+    ) -> anyhow::Result<QJobWitness<F>>;
+
+    async fn get_proof_store_job_witnesses<F: RichField>(
+        &self,
+        keys: Vec<QProvingJobDataIDSerializedWrapped>,
+    ) -> anyhow::Result<Vec<SimpleKVPair<QProvingJobDataIDSerializedWrapped, QJobWitness<F>>>>;
+
     async fn register_user<F: RichField>(
         &self,
         req: CityRegisterUserRPCRequest<F>,
@@ -196,11 +214,8 @@ pub trait CityRpcProviderSync {
         user_id: u64,
     ) -> anyhow::Result<CityMerkleProof>;
 
-    fn get_user_tree_leaf_sync(
-        &self,
-        checkpoint_id: u64,
-        leaf_id: u64,
-    ) -> anyhow::Result<CityHash>;
+    fn get_user_tree_leaf_sync(&self, checkpoint_id: u64, leaf_id: u64)
+        -> anyhow::Result<CityHash>;
 
     fn get_user_tree_leaf_merkle_proof_sync(
         &self,
@@ -222,7 +237,10 @@ pub trait CityRpcProviderSync {
         deposit_ids: Vec<u64>,
     ) -> anyhow::Result<Vec<CityL1DepositJSON>>;
 
-    fn get_deposit_by_txid_sync(&self, transaction_id: Hash256) -> anyhow::Result<CityL1DepositJSON>;
+    fn get_deposit_by_txid_sync(
+        &self,
+        transaction_id: Hash256,
+    ) -> anyhow::Result<CityL1DepositJSON>;
 
     fn get_deposits_by_txid_sync(
         &self,
@@ -292,6 +310,16 @@ pub trait CityRpcProviderSync {
         keys: &[QProvingJobDataIDSerializedWrapped],
     ) -> anyhow::Result<Vec<SimpleKVPair<QProvingJobDataIDSerializedWrapped, U8Bytes>>>;
 
+    fn get_proof_store_job_witness_sync<F: RichField>(
+        &self,
+        key: QProvingJobDataIDSerializedWrapped,
+    ) -> anyhow::Result<QJobWitness<F>>;
+
+    fn get_proof_store_job_witnesses_sync<F: RichField>(
+        &self,
+        keys: Vec<QProvingJobDataIDSerializedWrapped>,
+    ) -> anyhow::Result<Vec<SimpleKVPair<QProvingJobDataIDSerializedWrapped, QJobWitness<F>>>>;
+
     fn register_user_sync<F: RichField>(
         &self,
         req: CityRegisterUserRPCRequest<F>,
@@ -320,7 +348,12 @@ impl CityRpcProvider for RpcProvider {
     }
 
     async fn get_user_ids_for_public_key(&self, public_key: CityHash) -> anyhow::Result<Vec<u64>> {
-        city_external_rpc_call!(self, "cr_getUserIdsForPublicKey", json!([public_key]), Vec<u64>)
+        city_external_rpc_call!(
+            self,
+            "cr_getUserIdsForPublicKey",
+            json!([public_key]),
+            Vec<u64>
+        )
     }
 
     async fn get_user_by_id(
@@ -410,7 +443,10 @@ impl CityRpcProvider for RpcProvider {
         )
     }
 
-    async fn get_deposit_by_txid(&self, transaction_id: Hash256) -> anyhow::Result<CityL1DepositJSON> {
+    async fn get_deposit_by_txid(
+        &self,
+        transaction_id: Hash256,
+    ) -> anyhow::Result<CityL1DepositJSON> {
         city_external_rpc_call!(
             self,
             "cr_getDepositByTxid",
@@ -569,12 +605,7 @@ impl CityRpcProvider for RpcProvider {
         &self,
         key: QProvingJobDataIDSerializedWrapped,
     ) -> anyhow::Result<U8Bytes> {
-        city_external_rpc_call!(
-            self,
-            "cr_getProofStoreValue",
-            json!([key]),
-            U8Bytes
-        )
+        city_external_rpc_call!(self, "cr_getProofStoreValue", json!([key]), U8Bytes)
     }
     async fn get_proof_store_values(
         &self,
@@ -585,6 +616,29 @@ impl CityRpcProvider for RpcProvider {
             "cr_getProofStoreValues",
             json!([keys]),
             Vec<SimpleKVPair<QProvingJobDataIDSerializedWrapped, U8Bytes>>
+        )
+    }
+    async fn get_proof_store_job_witness<F: RichField>(
+        &self,
+        key: QProvingJobDataIDSerializedWrapped,
+    ) -> anyhow::Result<QJobWitness<F>> {
+        city_external_rpc_call!(
+            self,
+            "cr_getProofStoreJobWitness",
+            json!([key]),
+            QJobWitness<F>
+        )
+    }
+
+    async fn get_proof_store_job_witnesses<F: RichField>(
+        &self,
+        keys: Vec<QProvingJobDataIDSerializedWrapped>,
+    ) -> anyhow::Result<Vec<SimpleKVPair<QProvingJobDataIDSerializedWrapped, QJobWitness<F>>>> {
+        city_external_rpc_call!(
+            self,
+            "cr_getProofStoreJobWitnesses",
+            json!([keys]),
+            Vec<SimpleKVPair<QProvingJobDataIDSerializedWrapped, QJobWitness<F>>>
         )
     }
 
@@ -617,17 +671,20 @@ impl CityRpcProvider for RpcProvider {
     }
 }
 
-
-
 impl CityRpcProviderSync for RpcProviderSync {
     fn get_user_tree_root_sync(&self, checkpoint_id: u64) -> anyhow::Result<CityHash> {
         city_external_rpc_call_sync!(self, "cr_getUserTreeRoot", json!([checkpoint_id]), CityHash)
     }
 
     fn get_user_ids_for_public_key_sync(&self, public_key: CityHash) -> anyhow::Result<Vec<u64>> {
-        city_external_rpc_call_sync!(self, "cr_getUserIdsForPublicKey", json!([public_key]), Vec<u64>)
+        city_external_rpc_call_sync!(
+            self,
+            "cr_getUserIdsForPublicKey",
+            json!([public_key]),
+            Vec<u64>
+        )
     }
-    
+
     fn get_user_by_id_sync(
         &self,
         checkpoint_id: u64,
@@ -715,7 +772,10 @@ impl CityRpcProviderSync for RpcProviderSync {
         )
     }
 
-    fn get_deposit_by_txid_sync(&self, transaction_id: Hash256) -> anyhow::Result<CityL1DepositJSON> {
+    fn get_deposit_by_txid_sync(
+        &self,
+        transaction_id: Hash256,
+    ) -> anyhow::Result<CityL1DepositJSON> {
         city_external_rpc_call_sync!(
             self,
             "cr_getDepositByTxid",
@@ -874,12 +934,7 @@ impl CityRpcProviderSync for RpcProviderSync {
         &self,
         key: QProvingJobDataIDSerializedWrapped,
     ) -> anyhow::Result<U8Bytes> {
-        city_external_rpc_call_sync!(
-            self,
-            "cr_getProofStoreValue",
-            json!([key]),
-            U8Bytes
-        )
+        city_external_rpc_call_sync!(self, "cr_getProofStoreValue", json!([key]), U8Bytes)
     }
 
     fn get_proof_store_values_sync(
@@ -891,6 +946,30 @@ impl CityRpcProviderSync for RpcProviderSync {
             "cr_getProofStoreValues",
             json!([keys]),
             Vec<SimpleKVPair<QProvingJobDataIDSerializedWrapped, U8Bytes>>
+        )
+    }
+
+    fn get_proof_store_job_witness_sync<F: RichField>(
+        &self,
+        key: QProvingJobDataIDSerializedWrapped,
+    ) -> anyhow::Result<QJobWitness<F>> {
+        city_external_rpc_call_sync!(
+            self,
+            "cr_getProofStoreJobWitness",
+            json!([key]),
+            QJobWitness<F>
+        )
+    }
+    
+    fn get_proof_store_job_witnesses_sync<F: RichField>(
+        &self,
+        keys: Vec<QProvingJobDataIDSerializedWrapped>,
+    ) -> anyhow::Result<Vec<SimpleKVPair<QProvingJobDataIDSerializedWrapped, QJobWitness<F>>>> {
+        city_external_rpc_call_sync!(
+            self,
+            "cr_getProofStoreJobWitnesses",
+            json!([keys]),
+            Vec<SimpleKVPair<QProvingJobDataIDSerializedWrapped, QJobWitness<F>>>
         )
     }
 

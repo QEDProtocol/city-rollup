@@ -8,7 +8,7 @@ use city_rollup_common::api::data::store::{
 };
 use city_rollup_common::qworker::job_id::{QProvingJobDataID, QProvingJobDataIDSerializedWrapped};
 use city_rollup_common::qworker::proof_store::QProofStoreReaderSync;
-use city_store::config::{CityHash, CityMerkleProof};
+use city_store::config::{CityHash, CityJobWitness, CityMerkleProof};
 use city_store::store::city::base::CityStore;
 use jsonrpsee::core::async_trait;
 use jsonrpsee::proc_macros::rpc;
@@ -175,6 +175,18 @@ pub trait Rpc {
         &self,
         keys: Vec<QProvingJobDataIDSerializedWrapped>,
     ) -> Result<Vec<SimpleKVPair<QProvingJobDataIDSerializedWrapped, U8Bytes>>, ErrorObjectOwned>;
+
+    #[method(name = "getProofStoreJobWitness")]
+    async fn get_proof_store_job_witness(
+        &self,
+        key: QProvingJobDataIDSerializedWrapped,
+    ) -> Result<CityJobWitness, ErrorObjectOwned>;
+
+    #[method(name = "getProofStoreJobWitnesses")]
+    async fn get_proof_store_job_witnesses(
+        &self,
+        keys: Vec<QProvingJobDataIDSerializedWrapped>,
+    ) -> Result<Vec<SimpleKVPair<QProvingJobDataIDSerializedWrapped, CityJobWitness>>, ErrorObjectOwned>;
 }
 
 #[derive(Clone)]
@@ -427,6 +439,42 @@ impl<PS: QProofStoreReaderSync + Clone + Sync + Send + 'static> RpcServer for Rp
             let result = self.proof_store.get_bytes_by_id(*key).map_err(|_| ErrorObject::from(ErrorCode::InternalError))?;
             Ok(SimpleKVPair{key: QProvingJobDataIDSerializedWrapped(key.to_fixed_bytes()), value: U8Bytes(result)})
         }).collect::<Result<Vec<SimpleKVPair<QProvingJobDataIDSerializedWrapped, U8Bytes>>, ErrorObjectOwned>>()
+    }
+
+    async fn get_proof_store_job_witness(
+        &self,
+        key: QProvingJobDataIDSerializedWrapped,
+    ) -> Result<CityJobWitness, ErrorObjectOwned> {
+        
+        let job_id = QProvingJobDataID::try_from(key.0).map_err(|_| ErrorObject::from(ErrorCode::InvalidParams))?;
+
+        let result = self.proof_store
+            .get_bytes_by_id(job_id)
+            .map_err(|_| ErrorObject::from(ErrorCode::InternalError))?;
+        let value = if result.len() == 0 {
+            CityJobWitness::RawBytes(U8Bytes(vec![]))
+        }else{
+            CityJobWitness::try_deserialize_witness(job_id, &result).map_err(|_| ErrorObject::from(ErrorCode::InternalError))?
+        };
+        Ok(value)
+    }
+
+    async fn get_proof_store_job_witnesses(
+        &self,
+        keys: Vec<QProvingJobDataIDSerializedWrapped>,
+    ) -> Result<Vec<SimpleKVPair<QProvingJobDataIDSerializedWrapped, CityJobWitness>>, ErrorObjectOwned> {
+        let id_keys = keys.iter().map(|x| QProvingJobDataID::try_from(x.0).map_err(|_| ErrorObject::from(ErrorCode::InvalidParams))).collect::<Result<Vec<QProvingJobDataID>, ErrorObjectOwned>>()?;
+
+        id_keys.iter().map(|key|{
+            let result = self.proof_store.get_bytes_by_id(*key).map_err(|_| ErrorObject::from(ErrorCode::InternalError))?;
+            let value = if result.len() == 0 {
+                CityJobWitness::RawBytes(U8Bytes(vec![]))
+            }else{
+                CityJobWitness::try_deserialize_witness(*key, &result).map_err(|_| ErrorObject::from(ErrorCode::InternalError))?
+            };
+            Ok(SimpleKVPair{key: QProvingJobDataIDSerializedWrapped(key.to_fixed_bytes()), value })
+        }).collect::<Result<Vec<SimpleKVPair<QProvingJobDataIDSerializedWrapped, CityJobWitness>>, ErrorObjectOwned>>()
+
     }
 }
 

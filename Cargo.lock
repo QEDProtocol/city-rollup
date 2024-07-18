@@ -951,6 +951,7 @@ name = "city_rollup_core_api"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "bincode",
  "city_common",
  "city_crypto",
  "city_rollup_common",
