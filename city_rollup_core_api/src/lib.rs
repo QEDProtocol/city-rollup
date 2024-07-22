@@ -10,7 +10,7 @@ use city_rollup_common::api::data::store::{
 };
 use city_rollup_common::qworker::job_id::{QProvingJobDataID, QProvingJobDataIDSerializedWrapped};
 use city_rollup_common::qworker::proof_store::QProofStoreReaderSync;
-use city_store::config::{CityHash, CityMerkleProof};
+use city_store::config::{CityHash, CityJobWitness, CityMerkleProof};
 use city_store::store::city::base::CityStore;
 use jsonrpsee::core::async_trait;
 use jsonrpsee::proc_macros::rpc;
@@ -20,6 +20,9 @@ use kvq_store_redb::KVQReDBStore;
 use redb::{Database, ReadOnlyTable, TableDefinition};
 
 define_table! { KV, &[u8], &[u8] }
+
+use hyper::Method;
+use tower_http::cors::{Any, CorsLayer};
 
 #[rpc(server, client, namespace = "cr")]
 pub trait Rpc {
@@ -176,6 +179,18 @@ pub trait Rpc {
         &self,
         keys: Vec<QProvingJobDataIDSerializedWrapped>,
     ) -> Result<Vec<SimpleKVPair<QProvingJobDataIDSerializedWrapped, U8Bytes>>, ErrorObjectOwned>;
+
+    #[method(name = "getProofStoreJobWitness")]
+    async fn get_proof_store_job_witness(
+        &self,
+        key: QProvingJobDataIDSerializedWrapped,
+    ) -> Result<CityJobWitness, ErrorObjectOwned>;
+
+    #[method(name = "getProofStoreJobWitnesses")]
+    async fn get_proof_store_job_witnesses(
+        &self,
+        keys: Vec<QProvingJobDataIDSerializedWrapped>,
+    ) -> Result<Vec<SimpleKVPair<QProvingJobDataIDSerializedWrapped, CityJobWitness>>, ErrorObjectOwned>;
 }
 
 #[derive(Clone)]
@@ -545,14 +560,65 @@ impl<PS: QProofStoreReaderSync + Clone + Sync + Send + 'static> RpcServer for Rp
             Ok(SimpleKVPair{key: QProvingJobDataIDSerializedWrapped(key.to_fixed_bytes()), value: U8Bytes(result)})
         }).collect::<Result<Vec<SimpleKVPair<QProvingJobDataIDSerializedWrapped, U8Bytes>>, ErrorObjectOwned>>()
     }
+
+    async fn get_proof_store_job_witness(
+        &self,
+        key: QProvingJobDataIDSerializedWrapped,
+    ) -> Result<CityJobWitness, ErrorObjectOwned> {
+        
+        let job_id = QProvingJobDataID::try_from(key.0).map_err(|_| ErrorObject::from(ErrorCode::InvalidParams))?;
+
+        let result = self.proof_store
+            .get_bytes_by_id(job_id)
+            .map_err(|_| ErrorObject::from(ErrorCode::InternalError))?;
+        let value = if result.len() == 0 {
+            CityJobWitness::RawBytes(U8Bytes(vec![]))
+        }else{
+            CityJobWitness::try_deserialize_witness(job_id, &result).map_err(|_| ErrorObject::from(ErrorCode::InternalError))?
+        };
+        Ok(value)
+    }
+
+    async fn get_proof_store_job_witnesses(
+        &self,
+        keys: Vec<QProvingJobDataIDSerializedWrapped>,
+    ) -> Result<Vec<SimpleKVPair<QProvingJobDataIDSerializedWrapped, CityJobWitness>>, ErrorObjectOwned> {
+        let id_keys = keys.iter().map(|x| QProvingJobDataID::try_from(x.0).map_err(|_| ErrorObject::from(ErrorCode::InvalidParams))).collect::<Result<Vec<QProvingJobDataID>, ErrorObjectOwned>>()?;
+
+        id_keys.iter().map(|key|{
+            let result = self.proof_store.get_bytes_by_id(*key).map_err(|_| ErrorObject::from(ErrorCode::InternalError))?;
+            let value = if result.len() == 0 {
+                CityJobWitness::RawBytes(U8Bytes(vec![]))
+            }else{
+                CityJobWitness::try_deserialize_witness(*key, &result).map_err(|_| ErrorObject::from(ErrorCode::InternalError))?
+            };
+            Ok(SimpleKVPair{key: QProvingJobDataIDSerializedWrapped(key.to_fixed_bytes()), value })
+        }).collect::<Result<Vec<SimpleKVPair<QProvingJobDataIDSerializedWrapped, CityJobWitness>>, ErrorObjectOwned>>()
+
+    }
 }
 
+<<<<<<< HEAD
 pub async fn run_server<PS: QProofStoreReaderSync + Send + Sync + Clone + 'static>(
     server_addr: String,
     db: Arc<Database>,
     proof_store: PS,
 ) -> anyhow::Result<()> {
     let server = Server::builder().build(server_addr).await?;
+=======
+pub async fn run_server<PS: QProofStoreReaderSync + Send + Sync + Clone + 'static>(server_addr: String, db: KVQRocksDBStore, proof_store: PS) -> anyhow::Result<()> {
+
+
+	let cors = CorsLayer::new()
+        // Allow `POST` when accessing the resource
+        .allow_methods([Method::POST])
+        // Allow requests from any origin
+        .allow_origin(Any)
+        .allow_headers([hyper::header::CONTENT_TYPE]);
+    let middleware = tower::ServiceBuilder::new().layer(cors);
+    let server = Server::builder().set_http_middleware(middleware).build(server_addr).await?;
+
+>>>>>>> 350c57d8a65eda6583aeab33f97ef61c1bc26e01
 
     let rpc_server_impl = RpcServerImpl { db, proof_store };
     let handle = server.start(rpc_server_impl.into_rpc());

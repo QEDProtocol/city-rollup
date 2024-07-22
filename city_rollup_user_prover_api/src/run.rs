@@ -44,6 +44,8 @@ pub async fn run_server(server_addr: String, api_key: Hash256) -> anyhow::Result
     };
     timer.event(format!("server started at {}", server_addr_copy));
     let handle = server.start(rpc_server_impl.into_rpc());
+
+    
     tokio::spawn(handle.stopped());
     Ok(futures::future::pending::<()>().await)
 }

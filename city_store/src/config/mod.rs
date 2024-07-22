@@ -5,7 +5,7 @@ use city_crypto::hash::{
     merkle::core::{DeltaMerkleProofCore, MerkleProofCore},
     qhashout::QHashOut,
 };
-use city_rollup_common::api::data::store::{CityL1Deposit, CityL2BlockState};
+use city_rollup_common::{api::data::store::{CityL1Deposit, CityL2BlockState}, qworker::job_witnesses::inspect::QJobWitness};
 use kvq::adapters::standard::KVQStandardAdapter;
 use plonky2::{
     field::goldilocks_field::GoldilocksField, hash::poseidon::PoseidonHash,
@@ -28,6 +28,7 @@ pub type CityHasher = PoseidonHash;
 pub type CityHash = QHashOut<F>;
 pub type CityMerkleProof = MerkleProofCore<CityHash>;
 pub type CityDeltaMerkleProof = DeltaMerkleProofCore<CityHash>;
+pub type CityJobWitness = QJobWitness<F>;
 
 pub const D: usize = 2;
 

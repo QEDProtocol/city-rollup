@@ -1,6 +1,6 @@
 use city_crypto::{hash::{base_types::hash256::Hash256, qhashout::QHashOut}, signature::secp256k1::core::QEDCompressedSecp256K1Signature};
 use city_rollup_circuit::wallet::memory::CityMemoryWallet;
-use plonky2::{field::goldilocks_field::GoldilocksField, plonk::{config::PoseidonGoldilocksConfig, proof::ProofWithPublicInputs}};
+use plonky2::{field::goldilocks_field::GoldilocksField, plonk::{config::{GenericHashOut, PoseidonGoldilocksConfig}, proof::ProofWithPublicInputs}};
 
 use crate::common::{enc::SimpleEncryptionHelper, request::{UPWJobRequest, UPWJobRequestPayload}};
 
@@ -31,7 +31,7 @@ impl UPWProver {
   pub fn prove_request<E: SimpleEncryptionHelper>(&self, encryption_helper: &E, request: &UPWJobRequest) -> anyhow::Result<Vec<u8>> {
     match request.payload {
       UPWJobRequestPayload::Secp256K1SignatureProof(core) => bincode::serialize(&self.prove_secp256k1_signature(&core)?).map_err(|e| e.into()),
-      UPWJobRequestPayload::ZKSignatureProof(payload) => bincode::serialize(&self.prove_zk_signature(QHashOut::from_hash256_le(payload.private_key), QHashOut::from_hash256_le(payload.message))?).map_err(|e| e.into()),
+      UPWJobRequestPayload::ZKSignatureProof(payload) => bincode::serialize(&self.prove_zk_signature(QHashOut::from_bytes(&payload.private_key.0), QHashOut::from_bytes(&payload.message.0))?).map_err(|e| e.into()),
       UPWJobRequestPayload::EncryptedZKSignatureProof(payload) => {
         let decrypted_payload = payload.decrypt(encryption_helper);
         bincode::serialize(&self.prove_zk_signature(QHashOut::from_hash256_le(decrypted_payload.private_key), QHashOut::from_hash256_le(decrypted_payload.message))?).map_err(|e| e.into())
