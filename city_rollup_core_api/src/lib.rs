@@ -598,16 +598,11 @@ impl<PS: QProofStoreReaderSync + Clone + Sync + Send + 'static> RpcServer for Rp
     }
 }
 
-<<<<<<< HEAD
 pub async fn run_server<PS: QProofStoreReaderSync + Send + Sync + Clone + 'static>(
     server_addr: String,
     db: Arc<Database>,
     proof_store: PS,
 ) -> anyhow::Result<()> {
-    let server = Server::builder().build(server_addr).await?;
-=======
-pub async fn run_server<PS: QProofStoreReaderSync + Send + Sync + Clone + 'static>(server_addr: String, db: KVQRocksDBStore, proof_store: PS) -> anyhow::Result<()> {
-
 
 	let cors = CorsLayer::new()
         // Allow `POST` when accessing the resource
@@ -618,7 +613,6 @@ pub async fn run_server<PS: QProofStoreReaderSync + Send + Sync + Clone + 'stati
     let middleware = tower::ServiceBuilder::new().layer(cors);
     let server = Server::builder().set_http_middleware(middleware).build(server_addr).await?;
 
->>>>>>> 350c57d8a65eda6583aeab33f97ef61c1bc26e01
 
     let rpc_server_impl = RpcServerImpl { db, proof_store };
     let handle = server.start(rpc_server_impl.into_rpc());
