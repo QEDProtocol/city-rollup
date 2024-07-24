@@ -9,8 +9,8 @@ use plonky2::{field::goldilocks_field::GoldilocksField, plonk::config::PoseidonG
 fn main() {
     let mt = SigHashMerkleTree::new();
     println!("root: {:?}", mt.root.0);
-    let max_deposits = 1;
-    let max_widthdrawals = 1;
+    let max_deposits = 4;
+    let max_widthdrawals = 4;
     let mut timer = TraceTimer::new("config_permutations");
     timer.lap("start");
     let block_spend_config = BlockSpendCoreConfig::standard_p2sh_p2pkh();

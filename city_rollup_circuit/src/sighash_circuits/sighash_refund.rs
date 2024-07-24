@@ -21,7 +21,7 @@ use city_rollup_common::{
     qworker::proof_store::QProofStoreReaderSync,
 };
 use plonky2::{
-    hash::hash_types::{HashOutTarget, RichField},
+    hash::hash_types::RichField,
     iop::{target::Target, witness::PartialWitness},
     plonk::{
         circuit_builder::CircuitBuilder,
@@ -90,14 +90,7 @@ where
         let mut introspection_gadget =
             BTCRollupRefundIntrospectionGadget::add_virtual_to(&mut builder, &introspection_config);
         let sighash_felt252 = introspection_gadget.get_sighash_felt252(&mut builder);
-        let block_state_hash = builder.add_virtual_hash();
 
-        let zero_hash = HashOutTarget {
-            elements: core::array::from_fn(|_| builder.zero()),
-        };
-        builder.connect_hashes(block_state_hash, zero_hash);
-
-        builder.register_public_inputs(&block_state_hash.elements);
         builder.register_public_inputs(&sighash_felt252.elements);
 
         introspection_gadget.finalize(&mut builder, &mut dp);

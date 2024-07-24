@@ -3,8 +3,7 @@ use std::borrow::BorrowMut;
 use city_common_circuit::{
     circuits::{
         simple_wrapper::dynamic::SimpleWrapperDynamic, traits::qstandard::QStandardCircuit,
-    },
-    field::cubic::CubicExtendable,
+    }, dummy::dummy_circuit, field::cubic::CubicExtendable, proof_minifier::pm_core::get_circuit_fingerprint_generic
 };
 use city_crypto::{
     field::{qfield::QRichField, serialized_2d_felt_bls12381::Serialized2DFeltBLS12381},
@@ -40,7 +39,7 @@ use crate::{
         root_state_transition::block_state_transition::CRBlockStateTransitionCircuit,
     },
     sighash_circuits::{
-        sighash_final_gl::CRSigHashFinalGLCircuit, sighash_wrapper::CRSigHashWrapperCircuit,
+        sighash_final_gl::CRSigHashFinalGLCircuit, sighash_root::CRSigHashRootCircuit, sighash_wrapper::CRSigHashWrapperCircuit
     },
     worker::traits::{
         QWorkerCircuitCustomWithDataSync, QWorkerCircuitMutCustomWithDataSync,
@@ -64,6 +63,7 @@ where
     pub block_state_transition: CRBlockStateTransitionCircuit<C, D>,
     pub sighash_wrapper: CRSigHashWrapperCircuit<C, D>,
     pub sighash_final_gl: CRSigHashFinalGLCircuit<C, D>,
+    pub sighash_root: CRSigHashRootCircuit<C, D>,
     pub fingerprints: CRWorkerToolboxRootCircuitFingerprints<C::F>,
 }
 
@@ -117,6 +117,13 @@ where
             sighash_wrapper.get_verifier_config_ref(),
             sighash_wrapper.get_common_circuit_data_ref(),
         );
+        let dummy = dummy_circuit::<C::F, C, D>(block_state_transition.get_common_circuit_data_ref());
+        let sighash_root = CRSigHashRootCircuit::<C, D>::new(
+            sighash_final_gl.get_verifier_config_ref().constants_sigmas_cap.height(),
+            block_state_transition.get_fingerprint(),
+            QHashOut::from(get_circuit_fingerprint_generic::<D, C::F, C>(&dummy.verifier_data().verifier_only)),
+            block_state_transition.get_common_circuit_data_ref(),
+        );
 
         let fingerprints = CRWorkerToolboxRootCircuitFingerprints::<C::F> {
             network_magic,
@@ -135,6 +142,7 @@ where
             sighash_wrapper,
             sighash_final_gl,
             fingerprints,
+            sighash_root: todo!(),
         }
     }
     pub fn print_op_common_data(&self) {

@@ -18,7 +18,7 @@ use city_rollup_common::{
     introspection::rollup::introspection::{
         BlockSpendIntrospectionGadgetConfig, BlockSpendIntrospectionHint,
     },
-    qworker::{job_id::QProvingJobDataID, proof_store::QProofStoreReaderSync},
+    qworker::proof_store::QProofStoreReaderSync,
 };
 use plonky2::{
     hash::{hash_types::RichField, poseidon::PoseidonHash},
