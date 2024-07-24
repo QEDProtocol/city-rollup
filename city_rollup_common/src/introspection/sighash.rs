@@ -51,7 +51,7 @@ pub struct SigHashPreimageConfig {
     pub sighash_type: u32,
 }
 impl SigHashPreimageConfig {
-    pub fn generate_from_template(
+    pub fn generate_block_tx_from_template(
         config: &BlockSpendCoreConfig,
         num_deposits: usize,
         num_withdrawals: usize,
@@ -65,6 +65,12 @@ impl SigHashPreimageConfig {
                     num_withdrawals,
                     current_spend_index,
                 ),
+            sighash_type: config.sighash_type,
+        }
+    }
+    pub fn generate_refund_tx_from_template(config: &BlockSpendCoreConfig) -> Self {
+        Self {
+            transaction_config: BTCTransactionConfig::generate_refund_tx_from_template(config),
             sighash_type: config.sighash_type,
         }
     }

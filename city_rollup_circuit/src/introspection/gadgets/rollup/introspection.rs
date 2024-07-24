@@ -54,7 +54,6 @@ pub struct BTCRollupIntrospectionGadget {
 
     pub last_block_spend_index: i32,
     pub block_spend_index: usize,
-
     pub current_spend_index: usize,
 
     pub next_block_redeem_script: Vec<Target>,
@@ -63,6 +62,7 @@ pub struct BTCRollupIntrospectionGadget {
 
     pub hash_domain: Sha256AcceleratorDomain,
     pub hash_domain_id: Sha256AcceleratorDomainID,
+
     pub current_state_hash: HashOutTarget,
 }
 

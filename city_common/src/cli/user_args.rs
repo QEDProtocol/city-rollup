@@ -79,6 +79,31 @@ pub struct L1DepositArgs {
 }
 
 #[derive(Clone, Args)]
+pub struct L1RefundArgs {
+    #[clap(long, short, default_value = "http://127.0.0.1:3000", env)]
+    pub rpc_address: String,
+
+    #[clap(long, short)]
+    pub private_key: String,
+
+    #[clap(long, short)]
+    pub txid: String,
+
+    #[clap(long, short)]
+    pub index: u32,
+
+    #[clap(
+        env,
+        long,
+        default_value = "http://devnet:devnet@localhost:1337/bitcoin-rpc/?network=dogeRegtest",
+        env
+    )]
+    pub bitcoin_rpc: String,
+    #[clap(env, long, default_value = "http://localhost:1337/api", env)]
+    pub electrs_api: String,
+}
+
+#[derive(Clone, Args)]
 pub struct AddWithdrawalArgs {
     #[clap(long, short, default_value = "http://127.0.0.1:3000", env)]
     pub rpc_address: String,

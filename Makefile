@@ -142,6 +142,13 @@ cr_l1_deposit: build-if-not-exists
 		--private-key=2c6a1188f8739daaeff79c40f3690c573381c91a2359a0df2b45e4310b59f30b \
 		--amount=100000000
 
+.PHONY: cr_l1_refund
+cr_l1_refund: build-if-not-exists
+	@RUST_LOG=${LOG_LEVEL} RUST_BACKTRACE=${TRACE_ENABLED} ./target/${PROFILE}/city-rollup-user-cli l1-refund \
+		--private-key=2c6a1188f8739daaeff79c40f3690c573381c91a2359a0df2b45e4310b59f30b \
+		--txid= \
+		--index=
+
 .PHONY: cr_claim_deposit
 cr_claim_deposit: build-if-not-exists
 	@RUST_LOG=${LOG_LEVEL} RUST_BACKTRACE=${TRACE_ENABLED} ./target/${PROFILE}/city-rollup-user-cli claim-deposit \

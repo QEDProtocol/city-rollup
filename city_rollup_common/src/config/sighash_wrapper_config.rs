@@ -6,6 +6,7 @@ type F = GoldilocksField;
 
 pub const SIGHASH_CIRCUIT_WHITELIST_TREE_HEIGHT: u8 = 16;
 
+pub const SIGHASH_FINAL_GL_CIRCUIT_WHITELIST_TREE_HEIGHT: u8 = 8;
 
 // set SIGHASH_WHITELIST_DISABLED_DEV_MODE = true in development ONLY, this sighash whitelist inclusion check for debugging circuits
 pub const SIGHASH_WHITELIST_DISABLED_DEV_MODE: bool = false;
@@ -21,7 +22,8 @@ pub const SIGHASH_WHITELIST_TREE_ROOT: QHashOut<F> = QHashOut(HashOut {
         GoldilocksField(140650421114979125),
     ],
 });
-pub const SIGHASH_CIRCUIT_FINGERPRINTS: [QHashOut<F>; 1875] = [
+pub const SIGHASH_CIRCUIT_FINGERPRINTS: [QHashOut<F>; 1876] = [
+    QHashOut(HashOut{elements: [GoldilocksField(1871985676570558723), GoldilocksField(8504257406570409404), GoldilocksField(10874869249534039177), GoldilocksField(9702941997931657169)]}),
     QHashOut(HashOut{elements: [GoldilocksField(17176173351159861652), GoldilocksField(3295601747117460051), GoldilocksField(13981247426198068360), GoldilocksField(1333440782823976126)]}),
     QHashOut(HashOut{elements: [GoldilocksField(7622162276400740863), GoldilocksField(1016123828901447943), GoldilocksField(3363471858968395667), GoldilocksField(18296402451678424944)]}),
     QHashOut(HashOut{elements: [GoldilocksField(10658133973730684368), GoldilocksField(4119506697967481089), GoldilocksField(6417760801576096067), GoldilocksField(3426949141021383531)]}),

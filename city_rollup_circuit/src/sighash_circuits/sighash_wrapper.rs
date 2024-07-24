@@ -12,7 +12,7 @@ use city_rollup_common::{
     config::sighash_wrapper_config::{SIGHASH_CIRCUIT_WHITELIST_TREE_HEIGHT, SIGHASH_WHITELIST_DISABLED_DEV_MODE},
     introspection::rollup::introspection::BlockSpendCoreConfig,
     qworker::{
-        job_id::QProvingJobDataID, job_witnesses::sighash::CRSigHashWrapperCircuitInput,
+        job_id::QProvingJobDataID, job_witnesses::sighash::{CRSigHashWrapperCircuitInput, CRSigHashWrapperRefundCircuitInput},
         proof_store::QProofStoreReaderSync, verifier::QWorkerVerifyHelper,
     },
 };
@@ -30,9 +30,9 @@ use plonky2::{
     },
 };
 
-use crate::worker::traits::{
+use crate::{sighash_circuits::sighash_refund::CRSigHashRefundCircuit, worker::traits::{
     QWorkerCircuitCustomWithDataSync, QWorkerCircuitMutCustomWithDataSync,
-};
+}};
 
 use super::sighash::CRSigHashCircuit;
 
@@ -42,7 +42,8 @@ where
     C::Hasher: AlgebraicHasher<C::F>,
     C::F: CubicExtendable,
 {
-    pub inner_circuit_cache: HashMap<usize, CRSigHashCircuit<C, D>>,
+    pub sighash_circuit_cache: HashMap<usize, CRSigHashCircuit<C, D>>,
+    pub sighash_refund_circuit_cache: Option<CRSigHashRefundCircuit<C, D>>,
     // [START] circuit targets
     pub proof_target: ProofWithPublicInputsTarget<D>,
     pub verifier_data_target: VerifierCircuitTarget,
@@ -115,10 +116,11 @@ where
         let fingerprint = QHashOut(get_circuit_fingerprint_generic::<D, C::F, C>(
             &circuit_data.verifier_only,
         ));
-        let mut inner_circuit_cache = HashMap::new();
-        inner_circuit_cache.insert(0, child_circuit_0);
+        let mut sighash_circuit_cache = HashMap::new();
+        sighash_circuit_cache.insert(0, child_circuit_0);
         Self {
-            inner_circuit_cache,
+            sighash_circuit_cache,
+            sighash_refund_circuit_cache: None,
             whitelist_merkle_proof,
             proof_target,
             verifier_data_target,
@@ -131,10 +133,10 @@ where
         input: &CRSigHashWrapperCircuitInput<C::F>,
     ) -> anyhow::Result<ProofWithPublicInputs<C::F, C, D>> {
         let inner_proof = if self
-            .inner_circuit_cache
+            .sighash_circuit_cache
             .contains_key(&(input.whitelist_inclusion_proof.index as usize))
         {
-            self.inner_circuit_cache
+            self.sighash_circuit_cache
                 .get(&(input.whitelist_inclusion_proof.index as usize))
                 .unwrap()
                 .prove_base(&input.introspection_hint)?
@@ -142,21 +144,21 @@ where
             let child_circuit =
                 CRSigHashCircuit::<C, D>::new(input.introspection_hint.get_config());
             let proof = child_circuit.prove_base(&input.introspection_hint)?;
-            self.inner_circuit_cache.insert(
+            self.sighash_circuit_cache.insert(
                 input.whitelist_inclusion_proof.index as usize,
                 child_circuit,
             );
             proof
         };
-        let inner_veriifer_data = self
-            .inner_circuit_cache
+        let inner_verifier_data = self
+            .sighash_circuit_cache
             .get(&(input.whitelist_inclusion_proof.index as usize))
             .unwrap()
             .get_verifier_config_ref();
         let mut pw = PartialWitness::new();
 
         pw.set_proof_with_pis_target(&self.proof_target, &inner_proof);
-        pw.set_verifier_data_target(&self.verifier_data_target, inner_veriifer_data);
+        pw.set_verifier_data_target(&self.verifier_data_target, inner_verifier_data);
 
         self.whitelist_merkle_proof.set_witness(
             &mut pw,
@@ -173,11 +175,11 @@ where
         tracing::info!("proving sig hash introspection: {}",input.introspection_hint.sighash_preimage.get_hash().to_hex_string());
         let mut pw = PartialWitness::new();
         if self
-            .inner_circuit_cache
+            .sighash_circuit_cache
             .contains_key(&(input.whitelist_inclusion_proof.index as usize))
         {
             let child_circuit = self
-                .inner_circuit_cache
+                .sighash_circuit_cache
                 .get(&(input.whitelist_inclusion_proof.index as usize))
                 .unwrap();
 
@@ -196,6 +198,71 @@ where
             pw.set_verifier_data_target(
                 &self.verifier_data_target,
                 child_circuit.get_verifier_config_ref(),
+            );
+        }
+        self.whitelist_merkle_proof.set_witness(
+            &mut pw,
+            C::F::from_canonical_u64(input.whitelist_inclusion_proof.index),
+            input.whitelist_inclusion_proof.value,
+            &input.whitelist_inclusion_proof.siblings,
+        );
+        self.circuit_data.prove(pw)
+    }
+    pub fn prove_refund_mut(
+        &mut self,
+        input: &CRSigHashWrapperRefundCircuitInput<C::F>,
+    ) -> anyhow::Result<ProofWithPublicInputs<C::F, C, D>> {
+        tracing::info!("proving sig hash refund introspection: {}",input.introspection_hint.sighash_preimage.get_hash().to_hex_string());
+        let mut pw = PartialWitness::new();
+        if let Some(ref refund_circuit) = self.sighash_refund_circuit_cache {
+            let inner_proof = refund_circuit.prove_base(&input.introspection_hint)?;
+
+            pw.set_proof_with_pis_target(&self.proof_target, &inner_proof);
+            pw.set_verifier_data_target(
+                &self.verifier_data_target,
+                refund_circuit.get_verifier_config_ref(),
+            );
+        } else {
+            let refund_circuit =
+                CRSigHashRefundCircuit::<C, D>::new(input.introspection_hint.get_config());
+            let inner_proof = refund_circuit.prove_base(&input.introspection_hint)?;
+            pw.set_proof_with_pis_target(&self.proof_target, &inner_proof);
+            pw.set_verifier_data_target(
+                &self.verifier_data_target,
+                refund_circuit.get_verifier_config_ref(),
+            );
+            self.sighash_refund_circuit_cache = Some(refund_circuit);
+        }
+        self.whitelist_merkle_proof.set_witness(
+            &mut pw,
+            C::F::from_canonical_u64(input.whitelist_inclusion_proof.index),
+            input.whitelist_inclusion_proof.value,
+            &input.whitelist_inclusion_proof.siblings,
+        );
+        self.circuit_data.prove(pw)
+    }
+    pub fn prove_refund(
+        &self,
+        input: &CRSigHashWrapperRefundCircuitInput<C::F>,
+    ) -> anyhow::Result<ProofWithPublicInputs<C::F, C, D>> {
+        tracing::info!("proving sig hash refund introspection: {}",input.introspection_hint.sighash_preimage.get_hash().to_hex_string());
+        let mut pw = PartialWitness::new();
+        if let Some(ref refund_circuit) = self.sighash_refund_circuit_cache {
+            let inner_proof = refund_circuit.prove_base(&input.introspection_hint)?;
+
+            pw.set_proof_with_pis_target(&self.proof_target, &inner_proof);
+            pw.set_verifier_data_target(
+                &self.verifier_data_target,
+                refund_circuit.get_verifier_config_ref(),
+            );
+        } else {
+            let refund_circuit =
+                CRSigHashRefundCircuit::<C, D>::new(input.introspection_hint.get_config());
+            let inner_proof = refund_circuit.prove_base(&input.introspection_hint)?;
+            pw.set_proof_with_pis_target(&self.proof_target, &inner_proof);
+            pw.set_verifier_data_target(
+                &self.verifier_data_target,
+                refund_circuit.get_verifier_config_ref(),
             );
         }
         self.whitelist_merkle_proof.set_witness(

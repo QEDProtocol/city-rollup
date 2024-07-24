@@ -40,6 +40,7 @@ pub trait QBitcoinAPISync {
     fn get_funding_transactions_with_vout(
         &self,
         address: BTCAddress160,
+        filter_fn: impl Fn(&BTCUTXO) -> bool
     ) -> anyhow::Result<Vec<BTCTransactionWithVout>>;
     fn get_transaction(&self, txid: Hash256) -> anyhow::Result<BTCTransaction>;
     fn send_transaction(&self, tx: &BTCTransaction) -> anyhow::Result<Hash256>;
@@ -81,6 +82,27 @@ pub trait QBitcoinAPIFunderSync: QBitcoinAPISync {
             vec![BTCTransactionOutput {
                 value: amount,
                 script: address.to_btc_script(),
+            }],
+        )?;
+        self.send_transaction(&tx)
+    }
+    fn ask_for_refund<W: Secp256K1WalletProvider>(
+        &self,
+        wallet: &W,
+        from: BTCAddress160,
+        utxo: &BTCUTXO,
+    ) -> anyhow::Result<Hash256> {
+        let tx = create_p2pkh_tx(
+            wallet,
+            from.address,
+            &[BTCTransactionInputWithoutScript {
+                hash: utxo.txid,
+                sequence: 0xffff_ffff,
+                index: utxo.vout
+            }],
+            vec![BTCTransactionOutput {
+                value: utxo.value,
+                script: from.to_btc_script(),
             }],
         )?;
         self.send_transaction(&tx)

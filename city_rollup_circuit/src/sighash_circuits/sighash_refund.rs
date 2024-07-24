@@ -16,12 +16,12 @@ use city_common_circuit::{
 use city_crypto::hash::qhashout::QHashOut;
 use city_rollup_common::{
     introspection::rollup::introspection::{
-        BlockSpendIntrospectionGadgetConfig, BlockSpendIntrospectionHint,
+        RefundIntrospectionGadgetConfig, RefundSpendIntrospectionHint,
     },
-    qworker::{job_id::QProvingJobDataID, proof_store::QProofStoreReaderSync},
+    qworker::proof_store::QProofStoreReaderSync,
 };
 use plonky2::{
-    hash::{hash_types::RichField, poseidon::PoseidonHash},
+    hash::hash_types::{HashOutTarget, RichField},
     iop::{target::Target, witness::PartialWitness},
     plonk::{
         circuit_builder::CircuitBuilder,
@@ -32,24 +32,25 @@ use plonky2::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::introspection::gadgets::rollup::introspection::BTCRollupIntrospectionGadget;
+use crate::introspection::gadgets::rollup::refund::BTCRollupRefundIntrospectionGadget;
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(bound = "")]
-pub struct CRSigHashCircuitInput<F: RichField> {
-    pub introspection_hint: BlockSpendIntrospectionHint,
+pub struct CRSigHashRefundCircuitInput<F: RichField> {
+    pub introspection_hint: RefundSpendIntrospectionHint,
     pub _dummy: F, // in case we need F later
 }
+
 #[derive(Debug)]
-pub struct CRSigHashCircuit<C: GenericConfig<D> + 'static, const D: usize>
+pub struct CRSigHashRefundCircuit<C: GenericConfig<D> + 'static, const D: usize>
 where
     C::Hasher: AlgebraicHasher<C::F>,
     C::F: CubicExtendable,
 {
-    pub introspection_config: BlockSpendIntrospectionGadgetConfig,
+    pub introspection_config: RefundIntrospectionGadgetConfig,
 
     // [START] circuit targets
-    pub introspection_gadget: BTCRollupIntrospectionGadget,
+    pub introspection_gadget: BTCRollupRefundIntrospectionGadget,
     pub sha256_acceleration_gadget: SmartSha256AcceleratorGadgetWithDomain<
         Sha256Acc,
         Sha256AirParametersStandard<C::F>,
@@ -65,7 +66,7 @@ where
     pub minifier: QEDProofMinifierDynamicChain<D, C::F, C>,
     //pub tracer: DebugCircuitTracer,
 }
-impl<C: GenericConfig<D> + 'static, const D: usize> Clone for CRSigHashCircuit<C, D>
+impl<C: GenericConfig<D> + 'static, const D: usize> Clone for CRSigHashRefundCircuit<C, D>
 where
     C::Hasher: AlgebraicHasher<C::F>,
     C::F: CubicExtendable,
@@ -74,12 +75,12 @@ where
         Self::new(self.introspection_config.clone())
     }
 }
-impl<C: GenericConfig<D>, const D: usize> CRSigHashCircuit<C, D>
+impl<C: GenericConfig<D>, const D: usize> CRSigHashRefundCircuit<C, D>
 where
     C::Hasher: AlgebraicHasher<C::F>,
     C::F: CubicExtendable,
 {
-    pub fn new(introspection_config: BlockSpendIntrospectionGadgetConfig) -> Self {
+    pub fn new(introspection_config: RefundIntrospectionGadgetConfig) -> Self {
         let config = CircuitConfig::standard_recursion_config();
         let mut builder = CircuitBuilder::<C::F, D>::new(config);
         //let mut tracer = DebugCircuitTracer::new();
@@ -87,16 +88,17 @@ where
         let mut dp = Sha256AcceleratorDomainPlanner::new();
 
         let mut introspection_gadget =
-            BTCRollupIntrospectionGadget::add_virtual_to(&mut builder, &introspection_config);
+            BTCRollupRefundIntrospectionGadget::add_virtual_to(&mut builder, &introspection_config);
+        let sighash_felt252 = introspection_gadget.get_sighash_felt252(&mut builder);
+        let block_state_hash = builder.add_virtual_hash();
 
-        let introspection_result = introspection_gadget.generate_result(&mut builder);
-        let introspection_finalized =
-            introspection_result.get_finalized_result::<PoseidonHash, _, D>(&mut builder);
-        let introspection_finalized_hash =
-            introspection_finalized.get_combined_hash::<PoseidonHash, _, D>(&mut builder);
+        let zero_hash = HashOutTarget {
+            elements: core::array::from_fn(|_| builder.zero()),
+        };
+        builder.connect_hashes(block_state_hash, zero_hash);
 
-        builder.register_public_inputs(&introspection_finalized_hash.elements);
-        builder.register_public_inputs(&introspection_result.sighash_felt252.elements);
+        builder.register_public_inputs(&block_state_hash.elements);
+        builder.register_public_inputs(&sighash_felt252.elements);
 
         introspection_gadget.finalize(&mut builder, &mut dp);
 
@@ -131,7 +133,7 @@ where
     }
     pub fn prove_base(
         &self,
-        introspection_hint: &BlockSpendIntrospectionHint,
+        introspection_hint: &RefundSpendIntrospectionHint,
     ) -> anyhow::Result<ProofWithPublicInputs<C::F, C, D>> {
         let mut pw = PartialWitness::new();
         //todo, refactor sha256_acceleration_gadget to separate mutable state in a separate struct
@@ -157,7 +159,7 @@ where
 }
 
 impl<C: GenericConfig<D> + 'static, const D: usize> QStandardCircuit<C, D>
-    for CRSigHashCircuit<C, D>
+    for CRSigHashRefundCircuit<C, D>
 where
     C::Hasher: AlgebraicHasher<C::F>,
     C::F: CubicExtendable,
@@ -175,22 +177,23 @@ where
     }
 }
 impl<C: GenericConfig<D> + 'static, const D: usize>
-    QStandardCircuitProvable<CRSigHashCircuitInput<C::F>, C, D> for CRSigHashCircuit<C, D>
+    QStandardCircuitProvable<CRSigHashRefundCircuitInput<C::F>, C, D>
+    for CRSigHashRefundCircuit<C, D>
 where
     C::Hasher: AlgebraicHasher<C::F>,
     C::F: CubicExtendable,
 {
     fn prove_standard(
         &self,
-        input: &CRSigHashCircuitInput<C::F>,
+        input: &CRSigHashRefundCircuitInput<C::F>,
     ) -> anyhow::Result<ProofWithPublicInputs<C::F, C, D>> {
         self.prove_base(&input.introspection_hint)
     }
 }
 
 impl<S: QProofStoreReaderSync, C: GenericConfig<D> + 'static, const D: usize>
-    QStandardCircuitProvableWithProofStoreSync<S, CRSigHashCircuitInput<C::F>, C, D>
-    for CRSigHashCircuit<C, D>
+    QStandardCircuitProvableWithProofStoreSync<S, CRSigHashRefundCircuitInput<C::F>, C, D>
+    for CRSigHashRefundCircuit<C, D>
 where
     C::Hasher: AlgebraicHasher<C::F>,
     C::F: CubicExtendable,
@@ -198,7 +201,7 @@ where
     fn prove_with_proof_store_sync(
         &self,
         _store: &S,
-        input: &CRSigHashCircuitInput<C::F>,
+        input: &CRSigHashRefundCircuitInput<C::F>,
     ) -> anyhow::Result<ProofWithPublicInputs<C::F, C, D>> {
         self.prove_standard(input)
     }

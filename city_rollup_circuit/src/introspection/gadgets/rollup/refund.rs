@@ -1,9 +1,31 @@
-use city_common_circuit::{builder::{core::CircuitBuilderHelpersCore, signature::CircuitBuilderSignatureHelpers}, hash::{accelerator::sha256::planner::{Sha256AcceleratorDomain, Sha256AcceleratorDomainID, Sha256AcceleratorDomainPlanner, Sha256AcceleratorDomainResolver}, base_types::{hash160bytes::{CircuitBuilderHash160Bytes, Hash160BytesTarget}, hash256bytes::Hash256BytesTarget}}};
-use city_rollup_common::introspection::rollup::introspection::{RefundIntrospectionGadgetConfig, RefundSpendIntrospectionHint};
-use plonky2::{field::extension::Extendable, hash::hash_types::RichField, iop::{target::Target, witness::Witness}, plonk::circuit_builder::CircuitBuilder};
+use city_common_circuit::{
+    builder::{core::CircuitBuilderHelpersCore, signature::CircuitBuilderSignatureHelpers},
+    hash::{
+        accelerator::sha256::planner::{
+            Sha256AcceleratorDomain, Sha256AcceleratorDomainID, Sha256AcceleratorDomainPlanner,
+            Sha256AcceleratorDomainResolver,
+        },
+        base_types::{
+            felthash252::CircuitBuilderFelt252Hash,
+            hash160bytes::{CircuitBuilderHash160Bytes, Hash160BytesTarget},
+            hash256bytes::Hash256BytesTarget,
+        },
+    },
+};
+use city_rollup_common::introspection::rollup::introspection::{
+    RefundIntrospectionGadgetConfig, RefundSpendIntrospectionHint,
+};
+use plonky2::{
+    field::extension::Extendable,
+    hash::hash_types::{HashOutTarget, RichField},
+    iop::{target::Target, witness::Witness},
+    plonk::circuit_builder::CircuitBuilder,
+};
 
-use crate::introspection::gadgets::{rollup::introspection::ensure_output_script_is_p2pkh, sighash::SigHashPreimageBytesGadget, transaction::BTCTransactionBytesGadget};
-
+use crate::introspection::gadgets::{
+    rollup::introspection::ensure_output_script_is_p2pkh, sighash::SigHashPreimageBytesGadget,
+    transaction::BTCTransactionBytesGadget,
+};
 
 #[derive(Debug, Clone)]
 pub struct BTCRollupRefundIntrospectionGadget {
@@ -11,7 +33,6 @@ pub struct BTCRollupRefundIntrospectionGadget {
     pub funding_transaction: BTCTransactionBytesGadget,
 
     pub current_script: Vec<Target>,
-    pub current_spend_index: usize,
     pub current_sighash: Hash256BytesTarget,
 
     pub public_key: [Target; 9],
@@ -26,7 +47,6 @@ impl BTCRollupRefundIntrospectionGadget {
         builder: &mut CircuitBuilder<F, D>,
         config: &RefundIntrospectionGadgetConfig,
     ) -> Self {
-
         let mut hash_domain = Sha256AcceleratorDomain::new();
 
         // start sig hash
@@ -57,39 +77,50 @@ impl BTCRollupRefundIntrospectionGadget {
 
         // start funding transactions
 
-        let funding_transaction = BTCTransactionBytesGadget::add_virtual_to_fixed_locktime_version_with_der(
-          builder,
-          config.funding_transaction_config.layout.clone(),
-          config.funding_transaction_config.version,
-          config.funding_transaction_config.locktime,
-          false,
-          true,
-        );
+        let funding_transaction =
+            BTCTransactionBytesGadget::add_virtual_to_fixed_locktime_version_with_der(
+                builder,
+                config.funding_transaction_config.layout.clone(),
+                config.funding_transaction_config.version,
+                config.funding_transaction_config.locktime,
+                false,
+                true,
+            );
+
         // end funding transactions
 
-        let current_script = sighash_preimage.transaction.inputs[config.current_spend_index]
-            .script
-            .clone();
+        assert_eq!(
+            sighash_preimage.transaction.inputs.len(),
+            1,
+            "you can only refund your own deposit"
+        );
+        assert_eq!(
+            sighash_preimage.transaction.outputs.len(),
+            1,
+            "you can only send your refund back to yourself"
+        );
 
-        assert_eq!(sighash_preimage.transaction.inputs.len(), 1, "you can only refund your own deposit");
-        assert_eq!(sighash_preimage.transaction.outputs.len(), 1, "you can only send your refund back to yourself");
-  
-        funding_transaction.connect_to_hash_deposit(builder, &mut hash_domain, sighash_preimage.transaction.inputs[0].hash, true);
-        
+        let current_script = sighash_preimage.transaction.inputs[0].script.clone();
+
+        funding_transaction.connect_to_hash_deposit(
+            builder,
+            &mut hash_domain,
+            sighash_preimage.transaction.inputs[0].hash,
+            true,
+        );
+
         let public_key: [Target; 9] = if funding_transaction.inputs[0].script.len() == 106 {
             builder.bytes33_to_public_key(&funding_transaction.inputs[0].script[73..106])
-        }else{
+        } else {
             builder.bytes33_to_public_key(&funding_transaction.inputs[0].script[74..107])
         };
 
         // ensure the refund is sent to the sender
-        let output_public_key_hash = ensure_output_script_is_p2pkh(builder, &sighash_preimage.transaction.outputs[0].script);
+        let output_public_key_hash =
+            ensure_output_script_is_p2pkh(builder, &sighash_preimage.transaction.outputs[0].script);
         let input_public_key_hash = hash_domain.btc_hash160(builder, &public_key);
         builder.connect_hash160_bytes(output_public_key_hash, input_public_key_hash);
 
-
-        // start next redeem script
-        tracing::info!("config.block_script_length: {}", config.block_script_length);
         let result = Self {
             sighash_preimage,
             funding_transaction,
@@ -99,7 +130,6 @@ impl BTCRollupRefundIntrospectionGadget {
             public_key,
             public_key_hash160_bytes: input_public_key_hash,
             hash_domain_id: 0xffffffff,
-            current_spend_index: config.current_spend_index,
         };
 
         result
@@ -127,11 +157,19 @@ impl BTCRollupRefundIntrospectionGadget {
         self.sighash_preimage
             .transaction
             .set_witness(witness, &hint.sighash_preimage.transaction);
-        
-        self.funding_transaction.set_witness(witness, &hint.funding_transaction);
+
+        self.funding_transaction
+            .set_witness(witness, &hint.funding_transaction);
         if self.hash_domain_id == 0xffffffff {
             panic!("cannot set witness for a BTCRollupIntrospectionGadget that has not been finalized!");
         }
         dr.set_witness_for_domain(self.hash_domain_id, &[]);
+    }
+
+    pub fn get_sighash_felt252<F: RichField + Extendable<D>, const D: usize>(
+        &self,
+        builder: &mut CircuitBuilder<F, D>,
+    ) -> HashOutTarget {
+        builder.hash256_bytes_to_felt252_hashout_packed(self.current_sighash)
     }
 }

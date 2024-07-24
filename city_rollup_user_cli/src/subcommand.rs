@@ -7,6 +7,7 @@ pub mod claim_deposit;
 pub mod register_user;
 pub mod token_transfer;
 pub mod l1_deposit;
+pub mod l1_refund;
 
 pub mod sign_hash;
 pub mod get_public_key;
@@ -27,6 +28,7 @@ pub enum Commands {
     RegisterUser(city_common::cli::user_args::RegisterUserArgs),
     TokenTransfer(city_common::cli::user_args::TokenTransferArgs),
     L1Deposit(city_common::cli::user_args::L1DepositArgs),
+    L1Refund(city_common::cli::user_args::L1RefundArgs),
 
     SignHash(city_common::cli::user_args::SignHashArgs),
     GetPublicKey(city_common::cli::user_args::GetPublicKeyArgs),
