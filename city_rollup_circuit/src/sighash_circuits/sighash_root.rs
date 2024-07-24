@@ -11,7 +11,7 @@ use city_common_circuit::{
 };
 use city_crypto::hash::qhashout::QHashOut;
 use city_rollup_common::qworker::{
-    job_id::QProvingJobDataID, proof_store::QProofStoreReaderSync, verifier::QWorkerVerifyHelper,
+    job_id::{ProvingJobCircuitType, QProvingJobDataID}, job_witnesses::sighash::CRSigHashRootCircuitInput, proof_store::QProofStoreReaderSync, verifier::QWorkerVerifyHelper
 };
 use plonky2::{
     iop::witness::{PartialWitness, WitnessWrite},
@@ -137,16 +137,18 @@ where
 {
     fn prove_q_worker_custom(
         &self,
-        _verify_helper: &V,
+        verify_helper: &V,
         store: &S,
         job_id: QProvingJobDataID,
     ) -> anyhow::Result<ProofWithPublicInputs<C::F, C, D>> {
-        todo!()
-        // let input_bytes = store.get_bytes_by_id(job_id)?;
-        // let input: CRSigHashCircuitInput = bincode::deserialize(&input_bytes)?;
-        // let sighash_wrapper_proof = store.get_proof_by_id(input.sighash_introspection_proof_id)?;
-        // self.prove_base(
-        //     &sighash_wrapper_proof,
-        // )
+        let input_bytes = store.get_bytes_by_id(job_id)?;
+        let input: CRSigHashRootCircuitInput = bincode::deserialize(&input_bytes)?;
+        let sighash_final_gl_proof = store.get_proof_by_id(input.sighash_final_gl_proof_id)?;
+        self.prove_base(
+            &sighash_final_gl_proof,
+            &verify_helper.get_verifier_triplet_for_circuit_type(
+                ProvingJobCircuitType::GenerateFinalSigHashProof,
+            ).1
+        )
     }
 }

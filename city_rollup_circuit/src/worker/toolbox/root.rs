@@ -183,6 +183,9 @@ where
             ProvingJobCircuitType::GenerateFinalSigHashProof => {
                 self.sighash_final_gl.get_verifier_triplet()
             }
+            ProvingJobCircuitType::GenerateSigHashRootProof => {
+                self.sighash_root.get_verifier_triplet()
+            }
             other => self.core.get_verifier_triplet_for_circuit_type(other),
         }
     }
@@ -223,6 +226,9 @@ where
             ProvingJobCircuitType::GenerateFinalSigHashProof => self
                 .sighash_final_gl
                 .prove_q_worker_custom(self, store, job_id),
+            ProvingJobCircuitType::GenerateSigHashRootProof => self
+                .sighash_root
+                .prove_q_worker_custom(self, store, job_id),
             _ => self.core.worker_prove(store, job_id),
         }
     }
@@ -255,6 +261,9 @@ where
                 .prove_q_worker_custom(self, store, job_id),
             ProvingJobCircuitType::GenerateFinalSigHashProof => self
                 .sighash_final_gl
+                .prove_q_worker_custom(self, store, job_id),
+            ProvingJobCircuitType::GenerateSigHashRootProof => self
+                .sighash_root
                 .prove_q_worker_custom(self, store, job_id),
             _ => self.core.worker_prove(store, job_id),
         }

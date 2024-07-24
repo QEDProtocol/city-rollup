@@ -35,6 +35,7 @@ pub struct CRSigHashFinalGLCircuitInput<F: RichField> {
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
 #[serde(bound = "")]
 pub struct CRSigHashRootCircuitInput {
+    pub sighash_final_gl_proof_id: QProvingJobDataID,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
