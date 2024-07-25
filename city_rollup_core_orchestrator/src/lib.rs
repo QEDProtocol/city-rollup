@@ -4,7 +4,7 @@ use city_common::{cli::args::OrchestratorArgs, units::UNIT_BTC};
 use city_crypto::hash::{base_types::hash256::Hash256, qhashout::QHashOut};
 use city_macros::sync_infinite_loop;
 use city_redis_store::RedisStore;
-use city_rollup_circuit::{wallet::memory::CityMemoryWallet, worker::toolbox::{circuits::CRWorkerToolboxCoreCircuits}};
+use city_rollup_circuit::{wallet::memory::CityMemoryWallet, worker::toolbox::circuits::CRWorkerToolboxCoreCircuits};
 use city_rollup_common::{
     actors::{
         rpc_processor::QRPCProcessor,

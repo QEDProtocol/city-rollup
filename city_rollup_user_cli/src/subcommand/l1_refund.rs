@@ -5,19 +5,17 @@ use city_crypto::{
 };
 use city_rollup_circuit::worker::{prover::QWorkerStandardProver, toolbox::root::CRWorkerToolboxRootCircuits};
 use city_rollup_common::{
-    introspection::{
+    block_template::{data::CityGroth16ProofData, BLOCK_GROTH16_ENCODED_VERIFIER_DATA}, introspection::{
         rollup::{
             constants::get_network_magic_for_str, introspection::RefundSpendIntrospectionHint,
         },
         sighash::{SigHashPreimage, SIGHASH_ALL},
         transaction::{BTCTransaction, BTCTransactionInput, BTCTransactionOutput},
-    },
-    link::{
+    }, link::{
         data::{AddressToBTCScript, BTCAddress160},
         link_api::BTCLinkAPI,
         traits::QBitcoinAPISync,
-    },
-    qworker::memory_proof_store::SimpleProofStoreMemory,
+    }, qworker::{memory_proof_store::SimpleProofStoreMemory, proof_store::QProofStoreReaderSync}
 };
 use city_rollup_core_orchestrator::debug::scenario::sighash::finalizer::SigHashFinalizer;
 use city_rollup_rpc_provider::{CityRpcProvider, RpcProvider};
@@ -55,7 +53,7 @@ pub async fn run(args: L1RefundArgs) -> Result<()> {
     }]]
     .concat();
 
-    let base_tx = BTCTransaction {
+    let mut base_tx = BTCTransaction {
         version: 2,
         inputs: vec![BTCTransactionInput {
             hash: funding_transaction.get_hash(),
@@ -67,7 +65,7 @@ pub async fn run(args: L1RefundArgs) -> Result<()> {
         locktime: 0,
     };
     let base_sighash_preimage = SigHashPreimage {
-        transaction: base_tx,
+        transaction: base_tx.clone(),
         sighash_type: SIGHASH_ALL,
     };
 
@@ -88,7 +86,7 @@ pub async fn run(args: L1RefundArgs) -> Result<()> {
         &mut proof_store,
         &sighash_whitelist_tree,
         checkpoint_id,
-        &[hint],
+        &[hint.clone()],
     )?;
 
     let mut worker = QWorkerStandardProver::new();
@@ -106,6 +104,14 @@ pub async fn run(args: L1RefundArgs) -> Result<()> {
         worker.prove::<PS, _, C, D>(&mut proof_store, &toolbox, *job)?;
     }
 
+    let g16_proof_output_id = sighash_jobs.wrap_sighash_final_bls12381_job_ids[0].get_output_id();
+    let g16_proof: CityGroth16ProofData = bincode::deserialize(&proof_store.get_bytes_by_id(g16_proof_output_id)?)?;
+
+    let script = g16_proof.encode_witness_script(&BLOCK_GROTH16_ENCODED_VERIFIER_DATA[0], &hint.sighash_preimage.transaction.inputs[0].script);
+    base_tx.inputs[0].script = script;
+
+    let txid = api.send_transaction(&base_tx)?;
+    println!("txid={}", txid);
 
     Ok(())
 }

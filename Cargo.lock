@@ -723,6 +723,7 @@ name = "city-rollup-user-cli"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "bincode",
  "bitcoincore-rpc",
  "city_common",
  "city_common_circuit",

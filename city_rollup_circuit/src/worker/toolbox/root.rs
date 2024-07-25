@@ -276,6 +276,9 @@ where
             ProvingJobCircuitType::GenerateSigHashRootProof => self
                 .sighash_root
                 .prove_q_worker_custom(self, store, job_id),
+            ProvingJobCircuitType::GenerateRefundFinalSigHashProof => self
+                .sighash_refund_final_gl
+                .prove_q_worker_custom(self, store, job_id),
             _ => self.core.worker_prove(store, job_id),
         }
     }
@@ -321,7 +324,7 @@ impl<S: QProofStoreReaderSync> QWorkerGenericProverGroth16<S, PoseidonGoldilocks
                 pi_c: Serialized2DFeltBLS12381([0u8; 48]),
             })
         } else {
-            let (proof_string, _vk_string) = gnark_plonky2_wrapper::wrap_plonky2_proof(
+            let (proof_string, vk_string) = gnark_plonky2_wrapper::wrap_plonky2_proof(
                 wrapper.circuit_data,
                 &wrapper_proof,
                 Some(&format!("/tmp/plonky2_proof/{}", job_id.data_index)),
@@ -330,8 +333,8 @@ impl<S: QProofStoreReaderSync> QWorkerGenericProverGroth16<S, PoseidonGoldilocks
                     home::home_dir().unwrap().display()
                 ),
             )?;
-            //println!("proof: {}",proof_string);
-            //println!("vk: {}",vk_string);
+            println!("proof: {}",proof_string);
+            println!("vk: {}",vk_string);
             /*
             let proof_string = serde_json::to_string(&CityGroth16ProofData {
                 pi_a: Serialized2DFeltBLS12381([0u8; 48]),
