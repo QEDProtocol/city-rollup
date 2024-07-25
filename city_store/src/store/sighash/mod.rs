@@ -88,6 +88,9 @@ impl SigHashMerkleTree {
             root,
         }
     }
+    pub fn get_proof_for_index(&self, index: u64) -> anyhow::Result<MerkleProofCore<CityHash>> {
+        SigHashTreeStore::get_leaf_fc(&self.store, 0, index)
+    }
     pub fn get_proof_for_id_ref(
         &self,
         id: &SigHashGadgetId,

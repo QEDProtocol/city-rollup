@@ -142,7 +142,7 @@ where
             sighash_wrapper,
             sighash_final_gl,
             fingerprints,
-            sighash_root: todo!(),
+            sighash_root,
         }
     }
     pub fn print_op_common_data(&self) {

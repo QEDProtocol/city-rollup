@@ -24,6 +24,7 @@ pub fn plan_jobs<PS: QProofStore>(
         .map(|i| {
             (
                 QProvingJobDataID::wrap_sighash_final_bls3812_input_witness(checkpoint_id, i),
+                QProvingJobDataID::sighash_root_input_witness(checkpoint_id, i),
                 QProvingJobDataID::sighash_final_input_witness(checkpoint_id, i),
                 QProvingJobDataID::sighash_introspection_input_witness(checkpoint_id, i),
             )
@@ -33,6 +34,7 @@ pub fn plan_jobs<PS: QProofStore>(
     for (i, pij) in per_input_jobs.iter().enumerate() {
         proof_store.write_next_jobs(&[pij.0], &[agg_jobs_for_inputs[i]])?;
         proof_store.write_next_jobs(&[pij.1], &[pij.0])?;
+        proof_store.write_next_jobs(&[pij.2], &[pij.1])?;
     }
     let agg_state_and_introspections_group_id = 5;
     let agg_state_root_id = QProvingJobDataID::get_block_aggregate_jobs_group(
@@ -45,9 +47,9 @@ pub fn plan_jobs<PS: QProofStore>(
         agg_state_and_introspections_group_id,
         1,
     );
-    let introspection_jobs = per_input_jobs.iter().map(|x| x.2).collect::<Vec<_>>();
+    let introspection_jobs = per_input_jobs.iter().map(|x| x.3).collect::<Vec<_>>();
     proof_store.write_next_jobs(&introspection_jobs, &[agg_all_introspections_ids])?;
-    let final_input_witness_jobs = per_input_jobs.iter().map(|x| x.1).collect::<Vec<_>>();
+    let final_input_witness_jobs = per_input_jobs.iter().map(|x| x.2).collect::<Vec<_>>();
     proof_store.write_next_jobs(
         &[agg_state_root_id, agg_all_introspections_ids],
         &final_input_witness_jobs,

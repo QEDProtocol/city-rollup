@@ -101,6 +101,9 @@ pub struct L1RefundArgs {
     pub bitcoin_rpc: String,
     #[clap(env, long, default_value = "http://localhost:1337/api", env)]
     pub electrs_api: String,
+
+    #[clap(long, default_value = "dogeregtest", env)]
+    pub network: String,
 }
 
 #[derive(Clone, Args)]
