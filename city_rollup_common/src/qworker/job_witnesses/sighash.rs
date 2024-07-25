@@ -10,17 +10,16 @@ use crate::{
     qworker::job_id::QProvingJobDataID,
 };
 
-#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
-#[serde(bound = "")]
-pub struct CRSigHashWrapperCircuitInput<F: RichField> {
-    pub introspection_hint: BlockSpendIntrospectionHint,
-    pub whitelist_inclusion_proof: MerkleProofCore<QHashOut<F>>,
+#[derive(Serialize, Deserialize, PartialEq, Clone, Debug)]
+pub enum IntrospectionHint {
+    BlockSpend(BlockSpendIntrospectionHint),
+    Refund(RefundSpendIntrospectionHint)
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
 #[serde(bound = "")]
-pub struct CRSigHashWrapperRefundCircuitInput<F: RichField> {
-    pub introspection_hint: RefundSpendIntrospectionHint,
+pub struct CRSigHashWrapperCircuitInput<F: RichField> {
+    pub introspection_hint: IntrospectionHint,
     pub whitelist_inclusion_proof: MerkleProofCore<QHashOut<F>>,
 }
 

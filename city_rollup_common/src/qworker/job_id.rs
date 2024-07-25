@@ -105,6 +105,7 @@ pub enum ProvingJobCircuitType {
     GenerateFinalSigHashProofGroth16 = 35,
     WrapFinalSigHashProofBLS12381 = 36,
     GenerateSigHashRootProof = 37,
+    GenerateRefundFinalSigHashProof = 38,
 
     AggUserRegisterClaimDepositL2Transfer = 40,
     AggAddProcessL1WithdrawalAddL1Deposit = 41,
@@ -151,6 +152,8 @@ impl TryFrom<u8> for ProvingJobCircuitType {
             34 => Ok(ProvingJobCircuitType::GenerateFinalSigHashProof),
             35 => Ok(ProvingJobCircuitType::GenerateFinalSigHashProofGroth16),
             36 => Ok(ProvingJobCircuitType::WrapFinalSigHashProofBLS12381),
+            37 => Ok(ProvingJobCircuitType::GenerateSigHashRootProof),
+            38 => Ok(ProvingJobCircuitType::GenerateRefundFinalSigHashProof),
             40 => Ok(ProvingJobCircuitType::AggUserRegisterClaimDepositL2Transfer),
             41 => Ok(ProvingJobCircuitType::AggAddProcessL1WithdrawalAddL1Deposit),
             48 => Ok(ProvingJobCircuitType::DummyRegisterUserAggregate),
@@ -444,6 +447,18 @@ impl QProvingJobDataID {
             goal_id: block_id,
             group_id: ProvingJobCircuitType::GenerateFinalSigHashProof.to_circuit_group_id(),
             circuit_type: ProvingJobCircuitType::GenerateFinalSigHashProof,
+            sub_group_id: input_id as u32,
+            task_index: input_id as u32,
+            data_type: ProvingJobDataType::InputWitness,
+            data_index: 0,
+        }
+    }
+    pub fn sighash_refund_final_input_witness(block_id: u64, input_id: usize) -> Self {
+        Self {
+            topic: QJobTopic::GenerateStandardProof,
+            goal_id: block_id,
+            group_id: ProvingJobCircuitType::GenerateRefundFinalSigHashProof.to_circuit_group_id(),
+            circuit_type: ProvingJobCircuitType::GenerateRefundFinalSigHashProof,
             sub_group_id: input_id as u32,
             task_index: input_id as u32,
             data_type: ProvingJobDataType::InputWitness,

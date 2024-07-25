@@ -376,7 +376,12 @@ where
             ProvingJobCircuitType::WrapFinalSigHashProofBLS12381 => {
                 panic!("WrapFinalSigHashProofBLS12381 is not a standard circuit")
             }
-            ProvingJobCircuitType::GenerateSigHashRootProof => todo!(),
+            ProvingJobCircuitType::GenerateSigHashRootProof => {
+                panic!("SigHashRoot is not a standard circuit")
+            },
+            ProvingJobCircuitType::GenerateRefundFinalSigHashProof => {
+                panic!("RefundFinalSigHash is not a standard circuit")
+            },
         }
     }
 
@@ -484,6 +489,7 @@ where
             ProvingJobCircuitType::AggAddProcessL1WithdrawalAddL1Deposit => todo!(),
             ProvingJobCircuitType::WrapFinalSigHashProofBLS12381 => todo!(),
             ProvingJobCircuitType::GenerateSigHashRootProof => todo!(),
+            ProvingJobCircuitType::GenerateRefundFinalSigHashProof => todo!(),
         }
     }
 }

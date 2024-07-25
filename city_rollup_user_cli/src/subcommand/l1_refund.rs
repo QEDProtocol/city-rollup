@@ -1,25 +1,32 @@
 use anyhow::Result;
 use city_common::cli::user_args::L1RefundArgs;
-use city_common_circuit::circuits::traits::qstandard::QStandardCircuit;
 use city_crypto::{
     hash::base_types::hash256::Hash256, signature::secp256k1::wallet::MemorySecp256K1Wallet,
 };
-use city_rollup_circuit::{sighash_circuits::{sighash_refund::CRSigHashRefundCircuit, sighash_refund_final_gl::CRSigHashRefundFinalGLCircuit, sighash_wrapper::CRSigHashWrapperCircuit}, worker::toolbox::root::CRWorkerToolboxRootCircuits};
+use city_rollup_circuit::worker::{prover::QWorkerStandardProver, toolbox::root::CRWorkerToolboxRootCircuits};
 use city_rollup_common::{
-    introspection::{rollup::{constants::get_network_magic_for_str, introspection::RefundSpendIntrospectionHint}, sighash::{SigHashPreimage, SIGHASH_ALL}, transaction::{BTCTransaction, BTCTransactionInput, BTCTransactionOutput}},
+    introspection::{
+        rollup::{
+            constants::get_network_magic_for_str, introspection::RefundSpendIntrospectionHint,
+        },
+        sighash::{SigHashPreimage, SIGHASH_ALL},
+        transaction::{BTCTransaction, BTCTransactionInput, BTCTransactionOutput},
+    },
     link::{
         data::{AddressToBTCScript, BTCAddress160},
         link_api::BTCLinkAPI,
         traits::QBitcoinAPISync,
-    }, qworker::job_witnesses::sighash::CRSigHashWrapperRefundCircuitInput,
+    },
+    qworker::memory_proof_store::SimpleProofStoreMemory,
 };
-use city_rollup_rpc_provider::RpcProvider;
+use city_rollup_core_orchestrator::debug::scenario::sighash::finalizer::SigHashFinalizer;
+use city_rollup_rpc_provider::{CityRpcProvider, RpcProvider};
 use city_store::store::sighash::SigHashMerkleTree;
-use plonky2::{field::goldilocks_field::GoldilocksField, plonk::config::PoseidonGoldilocksConfig};
+use plonky2::plonk::config::PoseidonGoldilocksConfig;
 
 const D: usize = 2;
 type C = PoseidonGoldilocksConfig;
-type F = GoldilocksField;
+type PS = SimpleProofStoreMemory;
 
 pub async fn run(args: L1RefundArgs) -> Result<()> {
     let provider = RpcProvider::new(&args.rpc_address);
@@ -31,10 +38,10 @@ pub async fn run(args: L1RefundArgs) -> Result<()> {
     );
 
     let txid = Hash256::from_hex_string(&args.txid)?;
-    let funding_transactions =
-        api.get_funding_transactions_with_vout(BTCAddress160::new_p2sh(from.address),
-        |utxo| utxo.txid == txid
-    )?;
+    let funding_transactions = api
+        .get_funding_transactions_with_vout(BTCAddress160::new_p2sh(from.address), |utxo| {
+            utxo.txid == txid
+        })?;
 
     if funding_transactions.is_empty() {
         return Err(anyhow::anyhow!("specified utxo not found"));
@@ -42,21 +49,19 @@ pub async fn run(args: L1RefundArgs) -> Result<()> {
 
     let funding_transaction = &funding_transactions[0].transaction;
 
-    let outputs = [
-        vec![BTCTransactionOutput {
-            script: from.to_btc_script(),
-            value: funding_transaction.outputs[0].value,
-        }],
-    ]
+    let outputs = [vec![BTCTransactionOutput {
+        script: from.to_btc_script(),
+        value: funding_transaction.outputs[0].value,
+    }]]
     .concat();
 
     let base_tx = BTCTransaction {
         version: 2,
         inputs: vec![BTCTransactionInput {
-                hash: funding_transaction.get_hash(),
-                sequence: 0xffffffff,
-                script: vec![],
-                index: 0,
+            hash: funding_transaction.get_hash(),
+            sequence: 0xffffffff,
+            script: vec![],
+            index: 0,
         }],
         outputs,
         locktime: 0,
@@ -73,38 +78,34 @@ pub async fn run(args: L1RefundArgs) -> Result<()> {
 
     let network_magic = get_network_magic_for_str(args.network.to_string())?;
     let sighash_whitelist_tree = SigHashMerkleTree::new();
-    let circuits =
+    let toolbox =
         CRWorkerToolboxRootCircuits::<C, D>::new(network_magic, sighash_whitelist_tree.root);
+    let block_state = provider.get_latest_block_state().await?;
+    let checkpoint_id = block_state.checkpoint_id + 1;
 
-    let sighash_refund_circuit = CRSigHashRefundCircuit::<C, D>::new(hint.get_config());
-    let sighash_refund_proof = sighash_refund_circuit.prove_base(&hint)?;
+    let mut proof_store = SimpleProofStoreMemory::new();
+    let sighash_jobs = SigHashFinalizer::finalize_refund_sighashes::<PS>(
+        &mut proof_store,
+        &sighash_whitelist_tree,
+        checkpoint_id,
+        &[hint],
+    )?;
 
-    let sighash_circuit_whitelist_root = SigHashMerkleTree::new();
-    let sighash_wrapper_circuit = CRSigHashWrapperCircuit::<C, D>::new(sighash_circuit_whitelist_root.root);
-    let whitelist_inclusion_proof = sighash_circuit_whitelist_root.get_proof_for_index(0)?;
-    let sighash_wrapper_proof = sighash_wrapper_circuit.prove_refund(&CRSigHashWrapperRefundCircuitInput {
-        introspection_hint: hint,
-        whitelist_inclusion_proof,
-    })?;
+    let mut worker = QWorkerStandardProver::new();
 
-    let sighash_refund_final_gl = CRSigHashRefundFinalGLCircuit::<C, D>::new(
-        sighash_wrapper_circuit.get_verifier_config_ref(),
-        sighash_wrapper_circuit.get_common_circuit_data_ref()
-    );
-    let sighash_refund_final_gl_proof = sighash_refund_final_gl.prove_base(&sighash_wrapper_proof);
+    for job in sighash_jobs.sighash_introspection_job_ids.iter() {
+        worker.prove::<PS, _, C, D>(&mut proof_store, &toolbox, *job)?;
+    }
+    for job in sighash_jobs.sighash_final_gl_job_ids.iter() {
+        worker.prove::<PS, _, C, D>(&mut proof_store, &toolbox, *job)?;
+    }
+    for job in sighash_jobs.sighash_root_job_ids.iter() {
+        worker.prove::<PS, _, C, D>(&mut proof_store, &toolbox, *job)?;
+    }
+    for job in sighash_jobs.wrap_sighash_final_bls12381_job_ids.iter() {
+        worker.prove::<PS, _, C, D>(&mut proof_store, &toolbox, *job)?;
+    }
 
-
-
-    //
-    //
-    // let utxo = utxos.iter().find(|x| x.txid == txid).ok_or(anyhow::anyhow!("specified utxo not found"))?;
-    //
-    // let txid = api.ask_for_refund(
-    //     &wallet,
-    //     from,
-    //     &utxo,
-    // )?;
-    // println!("{{\"txid\": \"{}\"}}", txid.to_hex_string());
 
     Ok(())
 }
