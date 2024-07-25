@@ -1,4 +1,4 @@
-TRACE_ENABLED           := 1
+TRACE_ENABLED           := full
 PROFILE                 := release
 LOG_LEVEL  			        := info,city_common_circuit=off,city_rollup_circuit=off,plonky2=off,city_crypto=off,city_store=off,city_rollup_common=off
 

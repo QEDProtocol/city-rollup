@@ -45,16 +45,16 @@ where
     C::Hasher: AlgebraicHasher<C::F>,
 {
     pub fn new(
-        cap_height: usize,
-        block_state_transition_fingerprint: QHashOut<C::F>,
-        dummy_block_state_transition_fingerprint: QHashOut<C::F>,
+        merkle_cap_height: usize,
+        sighash_final_gl_fingerprint: QHashOut<C::F>,
+        sighash_refund_final_gl_fingerprint: QHashOut<C::F>,
         common_data: &CommonCircuitData<C::F, D>,
     ) -> Self {
         let config = CircuitConfig::standard_recursion_config();
         let mut builder = CircuitBuilder::<C::F, D>::new(config);
 
         let sighash_final_gl_proof_target = builder.add_virtual_proof_with_pis(common_data);
-        let sighash_final_gl_verifier_data_target = builder.add_virtual_verifier_data(cap_height);
+        let sighash_final_gl_verifier_data_target = builder.add_virtual_verifier_data(merkle_cap_height);
 
         builder.verify_proof::<C>(
             &sighash_final_gl_proof_target,
@@ -65,8 +65,8 @@ where
         builder.register_public_inputs(&sighash_final_gl_proof_target.public_inputs);
 
         let allowed_fingerprints = [
-            builder.constant_whash(block_state_transition_fingerprint),
-            builder.constant_whash(dummy_block_state_transition_fingerprint),
+            builder.constant_whash(sighash_final_gl_fingerprint),
+            builder.constant_whash(sighash_refund_final_gl_fingerprint),
         ];
         let actual_fingerprint =
             builder.get_circuit_fingerprint::<C::Hasher>(&sighash_final_gl_verifier_data_target);

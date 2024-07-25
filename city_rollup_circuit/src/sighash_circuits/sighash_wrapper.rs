@@ -185,7 +185,10 @@ where
 
             let inner_proof = child_circuit.prove_base(&input.introspection_hint)?;
 
+            eprintln!("DEBUGPRINT[2]: sighash_wrapper.rs:187 (after let inner_proof = child_circuit.prove_ba…)");
             pw.set_proof_with_pis_target(&self.proof_target, &inner_proof);
+
+            eprintln!("DEBUGPRINT[3]: sighash_wrapper.rs:190 (after pw.set_proof_with_pis_target(&self.proof…)");
             pw.set_verifier_data_target(
                 &self.verifier_data_target,
                 child_circuit.get_verifier_config_ref(),
