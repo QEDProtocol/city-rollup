@@ -707,6 +707,7 @@ dependencies = [
  "kvq",
  "plonky2",
  "rand",
+ "rayon",
  "redb",
  "serde",
  "serde_json",

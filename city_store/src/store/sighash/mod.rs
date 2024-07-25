@@ -53,7 +53,7 @@ impl SigHashMerkleTree {
             .enumerate()
             .map(|(i, x)| SigHashGadgetIdWithIndex {
                 gadget_id: x,
-                index: i,
+                index: i + 1,
             })
             .collect::<Vec<_>>();
         sorted_ids_with_index.sort_by(|a, b| a.gadget_id.cmp(&b.gadget_id));
@@ -64,11 +64,11 @@ impl SigHashMerkleTree {
                 SIGHASH_CIRCUIT_FINGERPRINTS[0],
         )
         .unwrap();
-        sorted_ids_with_index.iter().enumerate().for_each(|(i, x)| {
+        sorted_ids_with_index.iter().enumerate().for_each(|(_, x)| {
             SigHashTreeStore::set_leaf_fc(
                 &mut store,
                 0,
-                (i+1) as u64,
+                x.index as u64,
                 SIGHASH_CIRCUIT_FINGERPRINTS[x.index],
             )
             .unwrap();
