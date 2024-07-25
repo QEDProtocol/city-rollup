@@ -12,7 +12,7 @@ use city_rollup_common::{
             OrchestratorEventReceiverSync, OrchestratorRPCEventSenderSync,
             WorkerEventTransmitterSync,
         },
-    }, api::data::{block::rpc_request::CityRegisterUserRPCRequest, store::CityL2BlockState}, config::sighash_wrapper_config::SIGHASH_WHITELIST_TREE_ROOT, introspection::rollup::constants::get_network_magic_for_str, link::{
+    }, api::data::{block::rpc_request::CityRegisterUserRPCRequest, store::CityL2BlockState}, introspection::rollup::constants::get_network_magic_for_str, link::{
         data::BTCAddress160, link_api::BTCLinkAPI, traits::QBitcoinAPIFunderSync,
         tx::setup_genesis_block,
     }, qworker::proof_store::QDummyProofStore
