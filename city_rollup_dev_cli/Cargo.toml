@@ -16,6 +16,7 @@ serde_with = { workspace = true }
 rand = { workspace = true }
 gnark-plonky2-wrapper = { workspace = true }
 rayon = { workspace = true }
+indicatif = { workspace = true }
 
 hex-literal = "0.4.1"
 kvq           = { path = "../kvq" }

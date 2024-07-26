@@ -72,15 +72,7 @@ fn prove_block_demo(hints: &[BlockSpendIntrospectionHint]) -> anyhow::Result<()>
         user_1_public_key,
         user_2_public_key,
     ]);
-    let block_0_state = CityL2BlockState {
-        checkpoint_id: 0,
-        next_add_withdrawal_id: 0,
-        next_process_withdrawal_id: 0,
-        next_deposit_id: 0,
-        total_deposits_claimed_epoch: 0,
-        next_user_id: 0,
-        end_balance: 0,
-    };
+    let block_0_state = CityL2BlockState::default();
 
     CityStore::set_block_state(&mut store, &block_0_state)?;
 
