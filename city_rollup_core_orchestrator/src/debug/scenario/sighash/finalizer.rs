@@ -1,8 +1,11 @@
+use std::marker::PhantomData;
+
+use city_rollup_circuit::sighash_circuits::sighash_refund::CRSigHashRefundCircuitInput;
 use city_rollup_common::{
     introspection::rollup::introspection::{BlockSpendIntrospectionHint, RefundSpendIntrospectionHint},
     qworker::{
         job_id::QProvingJobDataID,
-        job_witnesses::sighash::{CRSigHashFinalGLCircuitInput, CRSigHashRefundFinalGLCircuitInput, CRSigHashRootCircuitInput, CRSigHashWrapperCircuitInput, IntrospectionHint},
+        job_witnesses::sighash::{CRSigHashFinalGLCircuitInput, CRSigHashRefundFinalGLCircuitInput, CRSigHashRootCircuitInput, CRSigHashWrapperCircuitInput},
         proof_store::QProofStore,
     },
 };
@@ -33,7 +36,7 @@ impl SigHashFinalizer {
             let whitelist_inclusion_proof = sighash_whitelist_tree
                 .get_proof_for_id(hint.get_config().get_gadget_config_id())?;
             let input = CRSigHashWrapperCircuitInput {
-                introspection_hint: IntrospectionHint::BlockSpend(hint.clone()),
+                introspection_hint: hint.clone(),
                 whitelist_inclusion_proof,
             };
             let input_bytes = bincode::serialize(&input)?;
@@ -76,7 +79,6 @@ impl SigHashFinalizer {
     }
     pub fn finalize_refund_sighashes<PS: QProofStore>(
         proof_store: &mut PS,
-        sighash_whitelist_tree: &SigHashMerkleTree,
         checkpoint_id: u64,
         hints: &[RefundSpendIntrospectionHint],
     ) -> anyhow::Result<Self> {
@@ -85,12 +87,11 @@ impl SigHashFinalizer {
         let mut sighash_root_job_ids: Vec<QProvingJobDataID> = Vec::new();
         let mut wrap_sighash_final_bls12381_job_ids: Vec<QProvingJobDataID> = Vec::new();
         for (i, hint) in hints.iter().enumerate() {
-            let job_id = QProvingJobDataID::sighash_introspection_input_witness(checkpoint_id, i);
-            let whitelist_inclusion_proof = sighash_whitelist_tree
-                .get_proof_for_index(0)?;
-            let input = CRSigHashWrapperCircuitInput {
-                introspection_hint: IntrospectionHint::Refund(hint.clone()),
-                whitelist_inclusion_proof,
+            let job_id = QProvingJobDataID::sighash_refund_introspection_input_witness(checkpoint_id, i);
+            let input = CRSigHashRefundCircuitInput::<F> {
+                introspection_hint: hint.clone(),
+                _marker: PhantomData,
+
             };
             let input_bytes = bincode::serialize(&input)?;
             proof_store.set_bytes_by_id(job_id, &input_bytes)?;
@@ -98,7 +99,7 @@ impl SigHashFinalizer {
 
             let final_job_id = QProvingJobDataID::sighash_refund_final_input_witness(checkpoint_id, i);
             let input = CRSigHashRefundFinalGLCircuitInput {
-                sighash_introspection_proof_id: job_id.get_output_id(),
+                sighash_refund_proof_id: job_id.get_output_id(),
             };
             proof_store.set_bytes_by_id(final_job_id, &bincode::serialize(&input)?)?;
             sighash_final_gl_job_ids.push(final_job_id);

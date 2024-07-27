@@ -39,7 +39,7 @@ use crate::{
         root_state_transition::block_state_transition::CRBlockStateTransitionCircuit,
     },
     sighash_circuits::{
-        sighash_final_gl::CRSigHashFinalGLCircuit, sighash_refund_final_gl::CRSigHashRefundFinalGLCircuit, sighash_root::CRSigHashRootCircuit, sighash_wrapper::CRSigHashWrapperCircuit
+        sighash_final_gl::CRSigHashFinalGLCircuit, sighash_refund::CRSigHashRefundCircuit, sighash_refund_final_gl::CRSigHashRefundFinalGLCircuit, sighash_root::CRSigHashRootCircuit, sighash_wrapper::CRSigHashWrapperCircuit
     },
     worker::traits::{
         QWorkerCircuitCustomWithDataSync, QWorkerCircuitMutCustomWithDataSync,
@@ -62,6 +62,7 @@ where
         CRAggAddProcessL1WithdrawalAddL1DepositCircuit<C, D>,
     pub block_state_transition: CRBlockStateTransitionCircuit<C, D>,
     pub sighash_wrapper: CRSigHashWrapperCircuit<C, D>,
+    pub sighash_refund: CRSigHashRefundCircuit<C, D>,
     pub sighash_final_gl: CRSigHashFinalGLCircuit<C, D>,
     pub sighash_refund_final_gl: CRSigHashRefundFinalGLCircuit<C, D>,
     pub sighash_root: CRSigHashRootCircuit<C, D>,
@@ -76,6 +77,7 @@ where
     pub fn new(network_magic: u64, sighash_whitelist_root: QHashOut<C::F>) -> Self {
         let core = CRWorkerToolboxCoreCircuits::<C, D>::new(network_magic);
         let sighash_wrapper = CRSigHashWrapperCircuit::<C, D>::new(sighash_whitelist_root);
+        let sighash_refund = CRSigHashRefundCircuit::<C, D>::new();
 
         let block_agg_register_claim_deposit_transfer =
             CRAggUserRegisterClaimDepositL2TransferCircuit::<C, D>::new(
@@ -119,8 +121,8 @@ where
             sighash_wrapper.get_common_circuit_data_ref(),
         );
         let sighash_refund_final_gl = CRSigHashRefundFinalGLCircuit::new(
-            sighash_wrapper.get_verifier_config_ref(),
-            sighash_wrapper.get_common_circuit_data_ref(),
+            sighash_refund.get_verifier_config_ref(),
+            sighash_refund.get_common_circuit_data_ref(),
         );
         let sighash_root = CRSigHashRootCircuit::<C, D>::new(
             sighash_final_gl.get_verifier_config_ref().constants_sigmas_cap.height(),
@@ -144,6 +146,7 @@ where
             block_agg_add_process_withdrawal_add_deposit,
             block_state_transition,
             sighash_wrapper,
+            sighash_refund,
             sighash_final_gl,
             sighash_refund_final_gl,
             fingerprints,
@@ -184,6 +187,9 @@ where
             }
             ProvingJobCircuitType::GenerateSigHashIntrospectionProof => {
                 self.sighash_wrapper.get_verifier_triplet()
+            }
+            ProvingJobCircuitType::GenerateRefundSigHashIntrospectionProof => {
+                self.sighash_refund.get_verifier_triplet()
             }
             ProvingJobCircuitType::GenerateFinalSigHashProof => {
                 self.sighash_final_gl.get_verifier_triplet()
@@ -227,6 +233,9 @@ where
                 .prove_q_worker_custom(self, store, job_id),
             ProvingJobCircuitType::GenerateSigHashIntrospectionProof => self
                 .sighash_wrapper
+                .prove_q_worker_custom(self, store, job_id),
+            ProvingJobCircuitType::GenerateRefundSigHashIntrospectionProof => self
+                .sighash_refund
                 .prove_q_worker_custom(self, store, job_id),
             ProvingJobCircuitType::GenerateRollupStateTransitionProof => self
                 .block_state_transition

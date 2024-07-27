@@ -4,22 +4,16 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     introspection::rollup::{
-        introspection::{BlockSpendIntrospectionHint, RefundSpendIntrospectionHint},
+        introspection::BlockSpendIntrospectionHint,
         introspection_result::BTCRollupIntrospectionFinalizedResult,
     },
     qworker::job_id::QProvingJobDataID,
 };
 
-#[derive(Serialize, Deserialize, PartialEq, Clone, Debug)]
-pub enum IntrospectionHint {
-    BlockSpend(BlockSpendIntrospectionHint),
-    Refund(RefundSpendIntrospectionHint)
-}
-
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
 #[serde(bound = "")]
 pub struct CRSigHashWrapperCircuitInput<F: RichField> {
-    pub introspection_hint: IntrospectionHint,
+    pub introspection_hint: BlockSpendIntrospectionHint,
     pub whitelist_inclusion_proof: MerkleProofCore<QHashOut<F>>,
 }
 
@@ -40,5 +34,5 @@ pub struct CRSigHashRootCircuitInput {
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
 #[serde(bound = "")]
 pub struct CRSigHashRefundFinalGLCircuitInput {
-    pub sighash_introspection_proof_id: QProvingJobDataID,
+    pub sighash_refund_proof_id: QProvingJobDataID,
 }

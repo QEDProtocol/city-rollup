@@ -42,6 +42,7 @@ fn prove_block_demo(hints: &[BlockSpendIntrospectionHint]) -> anyhow::Result<()>
     let sighash_whitelist_tree = SigHashMerkleTree::new();
     let toolbox_circuits =
         CRWorkerToolboxRootCircuits::<C, D>::new(network_magic, SIGHASH_WHITELIST_TREE_ROOT);
+    eprintln!("DEBUGPRINT[1]: full_block_v2.rs:44 (after CRWorkerToolboxRootCircuits::<C, D>::new…)");
     //toolbox_circuits.print_op_common_data();
 
     let mut proof_store = PS::new();
@@ -74,6 +75,7 @@ fn prove_block_demo(hints: &[BlockSpendIntrospectionHint]) -> anyhow::Result<()>
     ]);
     let block_0_state = CityL2BlockState::default();
 
+    eprintln!("DEBUGPRINT[2]: full_block_v2.rs:78 (before CityStore::set_block_state(&mut store, &…)");
     CityStore::set_block_state(&mut store, &block_0_state)?;
 
     timer.lap("end setup initial state");
@@ -81,6 +83,7 @@ fn prove_block_demo(hints: &[BlockSpendIntrospectionHint]) -> anyhow::Result<()>
     let mut block_1_builder = QRPCProcessor::<F>::new(1);
     block_1_builder.process_register_users(0, &register_user_rpc_events)?;
 
+    eprintln!("DEBUGPRINT[1]: full_block_v2.rs:85 (before let block_1_requested = CityScenarioRequ…)");
     let block_1_requested = CityScenarioRequestedActions::new_from_requested_rpc(
         block_1_builder.output,
         hints[0].funding_transactions.iter().skip(1),
@@ -88,6 +91,7 @@ fn prove_block_demo(hints: &[BlockSpendIntrospectionHint]) -> anyhow::Result<()>
         2,
     );
 
+    eprintln!("DEBUGPRINT[3]: full_block_v2.rs:91 (after );)");
     let mut block_1_planner = CityOrchestratorBlockPlanner::<S, PS>::new(
         toolbox_circuits.core.fingerprints.clone(),
         block_0_state,
@@ -95,6 +99,7 @@ fn prove_block_demo(hints: &[BlockSpendIntrospectionHint]) -> anyhow::Result<()>
     timer.lap("end process state block 1 RPC");
     timer.lap("start process requests block 1");
 
+    eprintln!("DEBUGPRINT[3]: full_block_v2.rs:102 (before let (_, block_1_job_ids, _block_1_state_…)");
     let (_, block_1_job_ids, _block_1_state_transition, block_1_end_jobs, _) =
         block_1_planner.process_requests(&mut store, &mut proof_store, &block_1_requested)?;
     let final_state_root =
@@ -104,6 +109,7 @@ fn prove_block_demo(hints: &[BlockSpendIntrospectionHint]) -> anyhow::Result<()>
         .map(|x| x.perform_sighash_hash_surgery(final_state_root))
         .collect::<Vec<_>>();
 
+    eprintln!("DEBUGPRINT[4]: full_block_v2.rs:112 (before let sighash_jobs = SigHashFinalizer::fin…)");
     let sighash_jobs = SigHashFinalizer::finalize_sighashes::<PS>(
         &mut proof_store,
         &sighash_whitelist_tree,
@@ -125,6 +131,7 @@ fn prove_block_demo(hints: &[BlockSpendIntrospectionHint]) -> anyhow::Result<()>
     let mut worker = QWorkerStandardProver::new();
     timer.lap("start proving op jobs");
 
+    eprintln!("DEBUGPRINT[5]: full_block_v2.rs:134 (before let all_job_ids = block_1_job_ids.plan_j…)");
     let all_job_ids = block_1_job_ids.plan_jobs();
     for job in all_job_ids {
         worker.prove::<PS, _, C, D>(&mut proof_store, &toolbox_circuits, job)?;
@@ -137,11 +144,13 @@ fn prove_block_demo(hints: &[BlockSpendIntrospectionHint]) -> anyhow::Result<()>
 
     timer.lap("start proving sighash jobs");
 
+    eprintln!("DEBUGPRINT[6]: full_block_v2.rs:147 (before for job in sighash_jobs.sighash_introspe…)");
     for job in sighash_jobs.sighash_introspection_job_ids.iter() {
         worker.prove::<PS, _, C, D>(&mut proof_store, &toolbox_circuits, *job)?;
     }
 
     timer.lap("start proving final_gl jobs");
+    eprintln!("DEBUGPRINT[7]: full_block_v2.rs:153 (before for job in sighash_jobs.sighash_final_gl…)");
     for job in sighash_jobs.sighash_final_gl_job_ids.iter() {
         worker.prove::<PS, _, C, D>(&mut proof_store, &toolbox_circuits, *job)?;
     }
@@ -186,6 +195,7 @@ fn prove_block_demo(hints: &[BlockSpendIntrospectionHint]) -> anyhow::Result<()>
     tracing::info!("block_1_state: {:?}", block_1_state);
     let mut block_2_builder = QRPCProcessor::<F>::new(2);
 
+    eprintln!("DEBUGPRINT[8]: full_block_v2.rs:198 (before let l1_deposit_0 = CityStore::<S>::get_d…)");
     let l1_deposit_0 = CityStore::<S>::get_deposit_by_id(&store, 1, 0)?;
     let l1_deposit_1 = CityStore::<S>::get_deposit_by_id(&store, 1, 1)?;
     let claim_deposit_0_req = wallet.sign_claim_deposit(network_magic, 0, &l1_deposit_0)?;
@@ -195,17 +205,20 @@ fn prove_block_demo(hints: &[BlockSpendIntrospectionHint]) -> anyhow::Result<()>
     let send_transfer_2_req =
         wallet.sign_l2_transfer(user_1_public_key, network_magic, 1, 2, 300000, 1)?;
 
+    eprintln!("DEBUGPRINT[9]: full_block_v2.rs:208 (before block_2_builder.process_deposits()");
     block_2_builder.process_deposits(
         &mut proof_store,
         0,
         &[claim_deposit_0_req, claim_deposit_1_req],
     )?;
+    eprintln!("DEBUGPRINT[10]: full_block_v2.rs:214 (before block_2_builder.process_transfers()");
     block_2_builder.process_transfers(
         &mut proof_store,
         0,
         &[send_transfer_1_req, send_transfer_2_req],
     )?;
 
+    eprintln!("DEBUGPRINT[11]: full_block_v2.rs:221 (before let block_2_requested = CityScenarioRequ…)");
     let block_2_requested = CityScenarioRequestedActions::new_from_requested_rpc(
         block_2_builder.output,
         [&BTCTransaction::dummy()].into_iter().skip(1),
@@ -213,6 +226,7 @@ fn prove_block_demo(hints: &[BlockSpendIntrospectionHint]) -> anyhow::Result<()>
         4,
     );
 
+    eprintln!("DEBUGPRINT[12]: full_block_v2.rs:229 (before let mut block_2_planner = CityOrchestrat…)");
     let mut block_2_planner = CityOrchestratorBlockPlanner::<S, PS>::new(
         toolbox_circuits.core.fingerprints.clone(),
         block_1_state,
@@ -220,6 +234,7 @@ fn prove_block_demo(hints: &[BlockSpendIntrospectionHint]) -> anyhow::Result<()>
     timer.lap("end process state block 2 RPC");
     timer.lap("start process requests block 2");
 
+    eprintln!("DEBUGPRINT[13]: full_block_v2.rs:237 (before let (_, block_2_job_ids, _block_2_state_…)");
     let (_, block_2_job_ids, _block_2_state_transition, block_2_end_jobs, _) =
         block_2_planner.process_requests(&mut store, &mut proof_store, &block_2_requested)?;
 
@@ -229,6 +244,7 @@ fn prove_block_demo(hints: &[BlockSpendIntrospectionHint]) -> anyhow::Result<()>
     }
     timer.lap("start proving end jobs");
 
+    eprintln!("DEBUGPRINT[14]: full_block_v2.rs:247 (before for job in block_2_end_jobs.iter() )");
     for job in block_2_end_jobs.iter() {
         worker.prove::<PS, _, C, D>(&mut proof_store, &toolbox_circuits, *job)?;
     }

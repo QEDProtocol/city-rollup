@@ -341,7 +341,7 @@ where
             ProvingJobCircuitType::GenerateRollupStateTransitionProof => todo!(),
             ProvingJobCircuitType::GenerateSigHashIntrospectionProof => todo!(),
             ProvingJobCircuitType::GenerateFinalSigHashProof => todo!(),
-            ProvingJobCircuitType::GenerateFinalSigHashProofGroth16 => todo!(),
+            ProvingJobCircuitType::GenerateRefundSigHashIntrospectionProof => todo!(),
             ProvingJobCircuitType::DummyRegisterUserAggregate => {
                 self.agg_state_transition_dummy.get_verifier_triplet()
             }
@@ -463,7 +463,7 @@ where
             ProvingJobCircuitType::GenerateRollupStateTransitionProof => todo!(),
             ProvingJobCircuitType::GenerateSigHashIntrospectionProof => todo!(),
             ProvingJobCircuitType::GenerateFinalSigHashProof => todo!(),
-            ProvingJobCircuitType::GenerateFinalSigHashProofGroth16 => todo!(),
+            ProvingJobCircuitType::GenerateRefundSigHashIntrospectionProof => todo!(),
             ProvingJobCircuitType::DummyRegisterUserAggregate => self
                 .agg_state_transition_dummy
                 .prove_q_worker_simple(self, store, job_id),

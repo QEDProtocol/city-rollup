@@ -27,7 +27,7 @@ where
     C::Hasher: AlgebraicHasher<C::F>,
 {
     // [START] circuit targets
-    pub sighash_wrapper_proof_target: ProofWithPublicInputsTarget<D>,
+    pub sighash_refund_proof_target: ProofWithPublicInputsTarget<D>,
     // [END] circuit targets
     pub circuit_data: CircuitData<C::F, C, D>,
     pub fingerprint: QHashOut<C::F>,
@@ -39,29 +39,29 @@ where
     C::Hasher: AlgebraicHasher<C::F>,
 {
     pub fn new(
-        sighash_wrapper_verifier_data: &VerifierOnlyCircuitData<C, D>,
-        sighash_wrapper_common_data: &CommonCircuitData<C::F, D>,
+        sighash_refund_verifier_data: &VerifierOnlyCircuitData<C, D>,
+        sighash_refund_common_data: &CommonCircuitData<C::F, D>,
     ) -> Self {
         let config = CircuitConfig::standard_recursion_config();
         let mut builder = CircuitBuilder::<C::F, D>::new(config);
 
-        let sighash_wrapper_proof_target =
-            builder.add_virtual_proof_with_pis(sighash_wrapper_common_data);
-        let sighash_wrapper_verifier_data_target =
-            builder.constant_verifier_data(sighash_wrapper_verifier_data);
+        let sighash_refund_proof_target =
+            builder.add_virtual_proof_with_pis(sighash_refund_common_data);
+        let sighash_refund_verifier_data_target =
+            builder.constant_verifier_data(sighash_refund_verifier_data);
 
         builder.verify_proof::<C>(
-            &sighash_wrapper_proof_target,
-            &sighash_wrapper_verifier_data_target,
-            sighash_wrapper_common_data,
+            &sighash_refund_proof_target,
+            &sighash_refund_verifier_data_target,
+            sighash_refund_common_data,
         );
 
         let sighash_252 = HashOutTarget {
             elements: [
-                sighash_wrapper_proof_target.public_inputs[4],
-                sighash_wrapper_proof_target.public_inputs[5],
-                sighash_wrapper_proof_target.public_inputs[6],
-                sighash_wrapper_proof_target.public_inputs[7],
+                sighash_refund_proof_target.public_inputs[4],
+                sighash_refund_proof_target.public_inputs[5],
+                sighash_refund_proof_target.public_inputs[6],
+                sighash_refund_proof_target.public_inputs[7],
             ],
         };
 
@@ -96,7 +96,7 @@ where
             &circuit_data.verifier_only,
         ));
         Self {
-            sighash_wrapper_proof_target,
+            sighash_refund_proof_target,
             circuit_data,
             fingerprint,
             minifier,
@@ -104,10 +104,10 @@ where
     }
     pub fn prove_base(
         &self,
-        sighash_wrapper_proof: &ProofWithPublicInputs<C::F, C, D>,
+        sighash_refund_proof: &ProofWithPublicInputs<C::F, C, D>,
     ) -> anyhow::Result<ProofWithPublicInputs<C::F, C, D>> {
         let mut pw = PartialWitness::new();
-        pw.set_proof_with_pis_target(&self.sighash_wrapper_proof_target, sighash_wrapper_proof);
+        pw.set_proof_with_pis_target(&self.sighash_refund_proof_target, sighash_refund_proof);
 
         let inner_proof = self.circuit_data.prove(pw)?;
         self.minifier.prove(&inner_proof)
@@ -148,9 +148,9 @@ where
     ) -> anyhow::Result<ProofWithPublicInputs<C::F, C, D>> {
         let input_bytes = store.get_bytes_by_id(job_id)?;
         let input: CRSigHashRefundFinalGLCircuitInput = bincode::deserialize(&input_bytes)?;
-        let sighash_wrapper_proof = store.get_proof_by_id(input.sighash_introspection_proof_id)?;
+        let sighash_refund_proof = store.get_proof_by_id(input.sighash_refund_proof_id)?;
         self.prove_base(
-            &sighash_wrapper_proof,
+            &sighash_refund_proof,
         )
     }
 }

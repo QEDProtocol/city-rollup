@@ -23,6 +23,7 @@ use city_store::store::sighash::SigHashMerkleTree;
 use plonky2::plonk::config::PoseidonGoldilocksConfig;
 
 const D: usize = 2;
+const MAX_CHECKPOINT_ID: u64 = 0xffffffff;
 type C = PoseidonGoldilocksConfig;
 type PS = SimpleProofStoreMemory;
 
@@ -36,8 +37,17 @@ pub async fn run(args: L1RefundArgs) -> Result<()> {
     );
 
     let txid = Hash256::from_hex_string(&args.txid)?;
+
+    let deposit_address = if args.deposit_address.is_empty() {
+        provider
+            .get_city_block_deposit_address(MAX_CHECKPOINT_ID)
+            .await?
+    } else {
+        BTCAddress160::try_from_string(&args.deposit_address)?.address
+    };
+
     let funding_transactions = api
-        .get_funding_transactions_with_vout(BTCAddress160::new_p2sh(from.address), |utxo| {
+        .get_funding_transactions_with_vout(BTCAddress160::new_p2sh(deposit_address), |utxo| {
             utxo.txid == txid
         })?;
 
@@ -81,30 +91,37 @@ pub async fn run(args: L1RefundArgs) -> Result<()> {
     let block_state = provider.get_latest_block_state().await?;
     let checkpoint_id = block_state.checkpoint_id + 1;
 
+    eprintln!("DEBUGPRINT[2]: l1_refund.rs:94 (before let mut proof_store = SimpleProofStoreMe…)");
     let mut proof_store = SimpleProofStoreMemory::new();
     let sighash_jobs = SigHashFinalizer::finalize_refund_sighashes::<PS>(
         &mut proof_store,
-        &sighash_whitelist_tree,
         checkpoint_id,
         &[hint.clone()],
     )?;
 
+    eprintln!("DEBUGPRINT[3]: l1_refund.rs:103 (before let mut worker = QWorkerStandardProver::…)");
     let mut worker = QWorkerStandardProver::new();
 
+    eprintln!("DEBUGPRINT[4]: l1_refund.rs:106 (before for job in sighash_jobs.sighash_introspe…)");
     for job in sighash_jobs.sighash_introspection_job_ids.iter() {
         worker.prove::<PS, _, C, D>(&mut proof_store, &toolbox, *job)?;
     }
+    eprintln!("DEBUGPRINT[5]: l1_refund.rs:110 (before for job in sighash_jobs.sighash_final_gl…)");
     for job in sighash_jobs.sighash_final_gl_job_ids.iter() {
         worker.prove::<PS, _, C, D>(&mut proof_store, &toolbox, *job)?;
     }
+    eprintln!("DEBUGPRINT[6]: l1_refund.rs:114 (before for job in sighash_jobs.sighash_root_job…)");
     for job in sighash_jobs.sighash_root_job_ids.iter() {
         worker.prove::<PS, _, C, D>(&mut proof_store, &toolbox, *job)?;
     }
+    eprintln!("DEBUGPRINT[7]: l1_refund.rs:118 (before for job in sighash_jobs.wrap_sighash_fin…)");
     for job in sighash_jobs.wrap_sighash_final_bls12381_job_ids.iter() {
         worker.prove::<PS, _, C, D>(&mut proof_store, &toolbox, *job)?;
     }
 
+    eprintln!("DEBUGPRINT[8]: l1_refund.rs:123 (before let g16_proof_output_id = sighash_jobs.w…)");
     let g16_proof_output_id = sighash_jobs.wrap_sighash_final_bls12381_job_ids[0].get_output_id();
+    eprintln!("DEBUGPRINT[9]: l1_refund.rs:125 (before let g16_proof: CityGroth16ProofData = bi…)");
     let g16_proof: CityGroth16ProofData = bincode::deserialize(&proof_store.get_bytes_by_id(g16_proof_output_id)?)?;
 
     let script = g16_proof.encode_witness_script(&BLOCK_GROTH16_ENCODED_VERIFIER_DATA[0], &hint.sighash_preimage.transaction.inputs[0].script);

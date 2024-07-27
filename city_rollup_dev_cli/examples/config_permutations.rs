@@ -2,12 +2,8 @@ use std::sync::Arc;
 
 use city_common_circuit::circuits::traits::qstandard::QStandardCircuit;
 use city_crypto::hash::qhashout::QHashOut;
-use city_rollup_circuit::sighash_circuits::{
-    sighash::CRSigHashCircuit, sighash_refund::CRSigHashRefundCircuit,
-};
-use city_rollup_common::introspection::rollup::introspection::{
-    BlockSpendCoreConfig, RefundIntrospectionGadgetConfig,
-};
+use city_rollup_circuit::sighash_circuits::sighash::CRSigHashCircuit;
+use city_rollup_common::introspection::rollup::introspection::BlockSpendCoreConfig;
 use city_store::store::sighash::SigHashMerkleTree;
 use indicatif::{ProgressBar, ProgressStyle};
 use plonky2::{field::goldilocks_field::GoldilocksField, plonk::config::PoseidonGoldilocksConfig};
@@ -61,13 +57,9 @@ fn main() {
     pb.set_style(style.clone());
     let pb = Arc::new(pb);
 
-    let mut fingerprints: Vec<QHashOut<F>> = vec![QHashOut::default(); permutations.len() + 1];
-    let config = RefundIntrospectionGadgetConfig::generate_from_template(&block_spend_config);
-    let circuit = CRSigHashRefundCircuit::<C, D>::new(config);
-    let fingerprint = circuit.get_fingerprint();
-    fingerprints[0] = fingerprint;
+    let mut fingerprints: Vec<QHashOut<F>> = vec![QHashOut::default(); permutations.len()];
 
-    parallelize(&mut fingerprints[1..], |fingerprints, start| {
+    parallelize(&mut fingerprints, |fingerprints, start| {
         for (i, fingerprint) in fingerprints.iter_mut().enumerate() {
             let idx = start + i;
             let circuit = CRSigHashCircuit::<C, D>::new(permutations[idx].0.clone());

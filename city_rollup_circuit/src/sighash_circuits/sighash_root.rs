@@ -11,7 +11,7 @@ use city_common_circuit::{
 };
 use city_crypto::hash::qhashout::QHashOut;
 use city_rollup_common::qworker::{
-    job_id::{ProvingJobCircuitType, QProvingJobDataID}, job_witnesses::sighash::CRSigHashRootCircuitInput, proof_store::QProofStoreReaderSync, verifier::QWorkerVerifyHelper
+    job_id::QProvingJobDataID, job_witnesses::sighash::CRSigHashRootCircuitInput, proof_store::QProofStoreReaderSync, verifier::QWorkerVerifyHelper
 };
 use plonky2::{
     iop::witness::{PartialWitness, WitnessWrite},
@@ -147,7 +147,7 @@ where
         self.prove_base(
             &sighash_final_gl_proof,
             &verify_helper.get_verifier_triplet_for_circuit_type(
-                ProvingJobCircuitType::GenerateFinalSigHashProof,
+                input.sighash_final_gl_proof_id.circuit_type
             ).1
         )
     }

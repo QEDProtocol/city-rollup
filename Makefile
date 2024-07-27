@@ -146,8 +146,8 @@ cr_l1_deposit: build-if-not-exists
 cr_l1_refund: build-if-not-exists
 	@RUST_LOG=${LOG_LEVEL} RUST_BACKTRACE=${TRACE_ENABLED} ./target/${PROFILE}/city-rollup-user-cli l1-refund \
 		--private-key=2c6a1188f8739daaeff79c40f3690c573381c91a2359a0df2b45e4310b59f30b \
-		--txid= \
-		--index=
+		--txid=${TXID} \
+		--index=0
 
 .PHONY: cr_claim_deposit
 cr_claim_deposit: build-if-not-exists
@@ -191,7 +191,7 @@ cr_get_deposit_by_txid:
 	curl http://localhost:3000 \
 		-X POST \
 		-H "Content-Type: application/json" \
-		--data '{"method":"cr_getDepositByTxid","params":["a4740418b4c2119468ba1a561561ff4163b14476ec2171c92f987c32922c85ff"],"id":1,"jsonrpc":"2.0"}'  | jq
+		--data '{"method":"cr_getDepositByTxid","params":["5096eab42d26997ef450567e3c1fd9646b31910fbfc71700affa8a0346fa4e5c"],"id":1,"jsonrpc":"2.0"}'  | jq
 
 .PHONY: cr_get_deposit_by_id
 cr_get_deposit_by_id:

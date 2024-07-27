@@ -14,14 +14,13 @@ pub const SIGHASH_CIRCUIT_MAX_WITHDRAWALS: usize = 4;
 pub const SIGHASH_CIRCUIT_MAX_DEPOSITS: usize = 4;
 pub const SIGHASH_WHITELIST_TREE_ROOT: QHashOut<F> = QHashOut(HashOut {
     elements: [
-        GoldilocksField(9564622260746035421),
-        GoldilocksField(7105939873651393016),
-        GoldilocksField(15747810056662205727),
-        GoldilocksField(8228269342592936627)
+        GoldilocksField(17337617638752727703),
+        GoldilocksField(11960210838874791136),
+        GoldilocksField(3474630268754029006),
+        GoldilocksField(140650421114979125)
     ],
 });
-pub const SIGHASH_CIRCUIT_FINGERPRINTS: [QHashOut<F>; 1876] = [
-    QHashOut(HashOut { elements: [GoldilocksField(1131301874159769610), GoldilocksField(11934753917353458397), GoldilocksField(17350903155108025974), GoldilocksField(9861718059519600092)] }),
+pub const SIGHASH_CIRCUIT_FINGERPRINTS: [QHashOut<F>; 1875] = [
     QHashOut(HashOut { elements: [GoldilocksField(17176173351159861652), GoldilocksField(3295601747117460051), GoldilocksField(13981247426198068360), GoldilocksField(1333440782823976126)] }),
     QHashOut(HashOut { elements: [GoldilocksField(10962908254349331548), GoldilocksField(9411292925103523436), GoldilocksField(18132707900265683949), GoldilocksField(1054028862770770887)] }),
     QHashOut(HashOut { elements: [GoldilocksField(14503471987775484975), GoldilocksField(17501986709915391149), GoldilocksField(8987212972080722495), GoldilocksField(8224087232761849687)] }),
@@ -1021,7 +1020,7 @@ pub const SIGHASH_CIRCUIT_FINGERPRINTS: [QHashOut<F>; 1876] = [
     QHashOut(HashOut { elements: [GoldilocksField(10576740309018877883), GoldilocksField(1838139135730595979), GoldilocksField(4609122449936793228), GoldilocksField(3684032778125477010)] }),
     QHashOut(HashOut { elements: [GoldilocksField(14478018280628369629), GoldilocksField(15513076351838936874), GoldilocksField(5421311589189294187), GoldilocksField(16657234163275149323)] }),
     QHashOut(HashOut { elements: [GoldilocksField(8336261703026368790), GoldilocksField(7538423687915753514), GoldilocksField(17197488057206840190), GoldilocksField(2015033113004145513)] }),
-     QHashOut(HashOut { elements: [GoldilocksField(15339096918326869217), GoldilocksField(9557532068674219894), GoldilocksField(12124661298074047548), GoldilocksField(13985975701557799197)] }),
+    QHashOut(HashOut { elements: [GoldilocksField(15339096918326869217), GoldilocksField(9557532068674219894), GoldilocksField(12124661298074047548), GoldilocksField(13985975701557799197)] }),
      QHashOut(HashOut { elements: [GoldilocksField(2146969671189499938), GoldilocksField(12174884921958372105), GoldilocksField(7126813681221281870), GoldilocksField(1219952901287721075)] }),
      QHashOut(HashOut { elements: [GoldilocksField(9536817573986705199), GoldilocksField(15144350823119501604), GoldilocksField(2187358422323402710), GoldilocksField(9026073793306846156)] }),
      QHashOut(HashOut { elements: [GoldilocksField(17436471715756357721), GoldilocksField(14972253280709399843), GoldilocksField(2278388364233917075), GoldilocksField(15163476373910356581)] }),

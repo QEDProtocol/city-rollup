@@ -1,3 +1,5 @@
+use std::marker::PhantomData;
+
 use hashbrown::HashMap;
 
 use city_common_circuit::{
@@ -16,9 +18,9 @@ use city_common_circuit::{
 use city_crypto::hash::qhashout::QHashOut;
 use city_rollup_common::{
     introspection::rollup::introspection::{
-        RefundIntrospectionGadgetConfig, RefundSpendIntrospectionHint,
+        BlockSpendCoreConfig, RefundIntrospectionGadgetConfig, RefundSpendIntrospectionHint
     },
-    qworker::proof_store::QProofStoreReaderSync,
+    qworker::{job_id::QProvingJobDataID, proof_store::QProofStoreReaderSync, verifier::QWorkerVerifyHelper},
 };
 use plonky2::{
     hash::hash_types::{HashOutTarget, RichField},
@@ -32,13 +34,13 @@ use plonky2::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::introspection::gadgets::rollup::refund::BTCRollupRefundIntrospectionGadget;
+use crate::{introspection::gadgets::rollup::refund::BTCRollupRefundIntrospectionGadget, worker::traits::{QWorkerCircuitCustomWithDataSync, QWorkerCircuitMutCustomWithDataSync}};
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(bound = "")]
 pub struct CRSigHashRefundCircuitInput<F: RichField> {
     pub introspection_hint: RefundSpendIntrospectionHint,
-    pub _dummy: F, // in case we need F later
+    pub _marker: PhantomData<F,> // in case we need F later
 }
 
 #[derive(Debug)]
@@ -72,7 +74,7 @@ where
     C::F: CubicExtendable,
 {
     fn clone(&self) -> Self {
-        Self::new(self.introspection_config.clone())
+        Self::new()
     }
 }
 impl<C: GenericConfig<D>, const D: usize> CRSigHashRefundCircuit<C, D>
@@ -80,7 +82,9 @@ where
     C::Hasher: AlgebraicHasher<C::F>,
     C::F: CubicExtendable,
 {
-    pub fn new(introspection_config: RefundIntrospectionGadgetConfig) -> Self {
+    pub fn new() -> Self {
+        let introspection_config_base = BlockSpendCoreConfig::standard_p2sh_p2pkh();
+        let introspection_config = RefundIntrospectionGadgetConfig::generate_from_template(&introspection_config_base);
         let config = CircuitConfig::standard_recursion_config();
         let mut builder = CircuitBuilder::<C::F, D>::new(config);
         //let mut tracer = DebugCircuitTracer::new();
@@ -204,5 +208,44 @@ where
         input: &CRSigHashRefundCircuitInput<C::F>,
     ) -> anyhow::Result<ProofWithPublicInputs<C::F, C, D>> {
         self.prove_standard(input)
+    }
+}
+
+impl<S: QProofStoreReaderSync, C: GenericConfig<D> + 'static, const D: usize>
+    QWorkerCircuitMutCustomWithDataSync<S, C, D> for CRSigHashRefundCircuit<C, D>
+where
+    C::Hasher: AlgebraicHasher<C::F>,
+    C::F: CubicExtendable,
+{
+    fn prove_q_worker_mut_custom(
+        &mut self,
+        store: &S,
+        job_id: QProvingJobDataID,
+    ) -> anyhow::Result<ProofWithPublicInputs<C::F, C, D>> {
+        let input_bytes = store.get_bytes_by_id(job_id)?;
+        let input: CRSigHashRefundCircuitInput<C::F> = bincode::deserialize(&input_bytes)?;
+        self.prove_base(&input.introspection_hint)
+    }
+}
+
+impl<
+        V: QWorkerVerifyHelper<C, D>,
+        S: QProofStoreReaderSync,
+        C: GenericConfig<D> + 'static,
+        const D: usize,
+    > QWorkerCircuitCustomWithDataSync<V, S, C, D> for CRSigHashRefundCircuit<C, D>
+where
+    C::Hasher: AlgebraicHasher<C::F>,
+    C::F: CubicExtendable,
+{
+    fn prove_q_worker_custom(
+        &self,
+        _verify_helper: &V,
+        store: &S,
+        job_id: QProvingJobDataID,
+    ) -> anyhow::Result<ProofWithPublicInputs<C::F, C, D>> {
+        let input_bytes = store.get_bytes_by_id(job_id)?;
+        let input: CRSigHashRefundCircuitInput<C::F> = bincode::deserialize(&input_bytes)?;
+        self.prove_base(&input.introspection_hint)
     }
 }

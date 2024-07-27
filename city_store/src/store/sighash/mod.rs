@@ -53,17 +53,10 @@ impl SigHashMerkleTree {
             .enumerate()
             .map(|(i, x)| SigHashGadgetIdWithIndex {
                 gadget_id: x,
-                index: i + 1,
+                index: i,
             })
             .collect::<Vec<_>>();
         sorted_ids_with_index.sort_by(|a, b| a.gadget_id.cmp(&b.gadget_id));
-        SigHashTreeStore::set_leaf_fc(
-                &mut store,
-                0,
-                0,
-                SIGHASH_CIRCUIT_FINGERPRINTS[0],
-        )
-        .unwrap();
         sorted_ids_with_index.iter().enumerate().for_each(|(_, x)| {
             SigHashTreeStore::set_leaf_fc(
                 &mut store,
@@ -99,7 +92,7 @@ impl SigHashMerkleTree {
             .sorted_ids
             .binary_search(id)
             .map_err(|_| anyhow::format_err!("unsupported sig hash config {:?}", id))?;
-        SigHashTreeStore::get_leaf_fc(&self.store, 0, (index + 1) as u64)
+        SigHashTreeStore::get_leaf_fc(&self.store, 0, index  as u64)
     }
     pub fn get_proof_for_id(
         &self,
