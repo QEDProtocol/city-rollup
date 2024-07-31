@@ -12,9 +12,9 @@ use city_common_circuit::{
         },
     },
 };
-use city_rollup_common::introspection::rollup::introspection::{
+use city_rollup_common::introspection::rollup::{introspection::{
     RefundIntrospectionGadgetConfig, RefundSpendIntrospectionHint,
-};
+}, introspection_result::BTCRollupRefundIntrospectionResult};
 use plonky2::{
     field::extension::Extendable,
     hash::hash_types::{HashOutTarget, RichField},
@@ -153,7 +153,10 @@ impl BTCRollupRefundIntrospectionGadget {
         witness: &mut W,
         dr: &mut DR,
         hint: &RefundSpendIntrospectionHint,
+        result: &BTCRollupRefundIntrospectionResult::<F>
     ) {
+        witness.set_target_arr(&self.public_key, &result.deposits[0].public_key);
+
         self.sighash_preimage
             .transaction
             .set_witness(witness, &hint.sighash_preimage.transaction);

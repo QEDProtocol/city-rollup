@@ -1,4 +1,3 @@
-use std::marker::PhantomData;
 
 use hashbrown::HashMap;
 
@@ -17,9 +16,9 @@ use city_common_circuit::{
 };
 use city_crypto::hash::qhashout::QHashOut;
 use city_rollup_common::{
-    introspection::rollup::introspection::{
+    introspection::rollup::{introspection::{
         BlockSpendCoreConfig, RefundIntrospectionGadgetConfig, RefundSpendIntrospectionHint
-    },
+    }, introspection_result::BTCRollupRefundIntrospectionResult},
     qworker::{job_id::QProvingJobDataID, proof_store::QProofStoreReaderSync, verifier::QWorkerVerifyHelper},
 };
 use plonky2::{
@@ -40,7 +39,7 @@ use crate::{introspection::gadgets::rollup::refund::BTCRollupRefundIntrospection
 #[serde(bound = "")]
 pub struct CRSigHashRefundCircuitInput<F: RichField> {
     pub introspection_hint: RefundSpendIntrospectionHint,
-    pub _marker: PhantomData<F,> // in case we need F later
+    pub result: BTCRollupRefundIntrospectionResult<F>,
 }
 
 #[derive(Debug)]
@@ -138,13 +137,14 @@ where
     pub fn prove_base(
         &self,
         introspection_hint: &RefundSpendIntrospectionHint,
+        result: &BTCRollupRefundIntrospectionResult<C::F>
     ) -> anyhow::Result<ProofWithPublicInputs<C::F, C, D>> {
         let mut pw = PartialWitness::new();
         //todo, refactor sha256_acceleration_gadget to separate mutable state in a separate struct
         let mut g = self.sha256_acceleration_gadget.clone();
 
         self.introspection_gadget
-            .set_witness::<_, C::F, D, _>(&mut pw, &mut g, introspection_hint);
+            .set_witness::<_, C::F, D, _>(&mut pw, &mut g, introspection_hint, result);
         // do this at the end
         g.finalize_witness(&mut pw, &self.targets_to_constants);
         /*let trace_result = self.tracer.resolve_partition::<C::F, C, D>(
@@ -191,7 +191,7 @@ where
         &self,
         input: &CRSigHashRefundCircuitInput<C::F>,
     ) -> anyhow::Result<ProofWithPublicInputs<C::F, C, D>> {
-        self.prove_base(&input.introspection_hint)
+        self.prove_base(&input.introspection_hint, &input.result)
     }
 }
 
@@ -224,7 +224,7 @@ where
     ) -> anyhow::Result<ProofWithPublicInputs<C::F, C, D>> {
         let input_bytes = store.get_bytes_by_id(job_id)?;
         let input: CRSigHashRefundCircuitInput<C::F> = bincode::deserialize(&input_bytes)?;
-        self.prove_base(&input.introspection_hint)
+        self.prove_base(&input.introspection_hint, &input.result)
     }
 }
 
@@ -246,6 +246,6 @@ where
     ) -> anyhow::Result<ProofWithPublicInputs<C::F, C, D>> {
         let input_bytes = store.get_bytes_by_id(job_id)?;
         let input: CRSigHashRefundCircuitInput<C::F> = bincode::deserialize(&input_bytes)?;
-        self.prove_base(&input.introspection_hint)
+        self.prove_base(&input.introspection_hint, &input.result)
     }
 }

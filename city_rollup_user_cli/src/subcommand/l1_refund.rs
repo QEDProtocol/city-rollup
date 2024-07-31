@@ -1,7 +1,7 @@
 use anyhow::Result;
 use city_common::cli::user_args::L1RefundArgs;
 use city_crypto::{
-    hash::base_types::hash256::Hash256, signature::secp256k1::wallet::MemorySecp256K1Wallet,
+    hash::{base_types::hash256::Hash256, core::btc::btc_hash160}, signature::secp256k1::wallet::MemorySecp256K1Wallet,
 };
 use city_rollup_circuit::worker::{prover::QWorkerStandardProver, toolbox::root::CRWorkerToolboxRootCircuits};
 use city_rollup_common::{
@@ -38,13 +38,16 @@ pub async fn run(args: L1RefundArgs) -> Result<()> {
 
     let txid = Hash256::from_hex_string(&args.txid)?;
 
-    let deposit_address = if args.deposit_address.is_empty() {
+    let deposit_block_script = hex::decode(if let Some(checkpoint_id) = args.deposit_checkpoint_id {
         provider
-            .get_city_block_deposit_address(MAX_CHECKPOINT_ID)
+            .get_city_block_script(checkpoint_id)
             .await?
     } else {
-        BTCAddress160::try_from_string(&args.deposit_address)?.address
-    };
+        provider
+            .get_city_block_script(MAX_CHECKPOINT_ID)
+            .await?
+    })?;
+    let deposit_address = btc_hash160(&deposit_block_script);
 
     let funding_transactions = api
         .get_funding_transactions_with_vout(BTCAddress160::new_p2sh(deposit_address), |utxo| {
@@ -56,6 +59,8 @@ pub async fn run(args: L1RefundArgs) -> Result<()> {
     }
 
     let funding_transaction = &funding_transactions[0].transaction;
+    // todo: check from
+    eprintln!("DEBUGPRINT[1]: l1_refund.rs:58: transaction={:#?}", funding_transaction);
 
     let outputs = [vec![BTCTransactionOutput {
         script: from.to_btc_script(),
@@ -68,12 +73,13 @@ pub async fn run(args: L1RefundArgs) -> Result<()> {
         inputs: vec![BTCTransactionInput {
             hash: funding_transaction.get_hash(),
             sequence: 0xffffffff,
-            script: vec![],
+            script: deposit_block_script,
             index: 0,
         }],
         outputs,
         locktime: 0,
     };
+    eprintln!("DEBUGPRINT[1]: l1_refund.rs:73: funding_transaction.inputs[0].script.clone()={:#?}", funding_transaction.inputs[0].script.clone());
     let base_sighash_preimage = SigHashPreimage {
         transaction: base_tx.clone(),
         sighash_type: SIGHASH_ALL,

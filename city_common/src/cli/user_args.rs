@@ -86,14 +86,11 @@ pub struct L1RefundArgs {
     #[clap(long, short)]
     pub private_key: String,
 
-    #[clap(long, short, default_value = "")]
-    pub deposit_address: String,
+    #[clap(long, short)]
+    pub deposit_checkpoint_id: Option<u64>,
 
     #[clap(long, short)]
     pub txid: String,
-
-    #[clap(long, short)]
-    pub index: u32,
 
     #[clap(
         env,

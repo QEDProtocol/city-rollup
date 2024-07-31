@@ -93,7 +93,7 @@ impl BTCTransactionConfig {
     pub fn generate_refund_tx_from_template(config: &BlockSpendCoreConfig) -> Self {
         Self {
             layout: BTCTransactionLayout {
-                input_script_sizes: vec![config.deposit_funding_script_size],
+                input_script_sizes: vec![config.block_sighash_script_size],
                 output_script_sizes: vec![config.withdrawal_output_script_size],
             },
             locktime: config.locktime,

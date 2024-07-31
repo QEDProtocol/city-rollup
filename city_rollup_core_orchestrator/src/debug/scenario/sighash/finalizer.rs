@@ -1,4 +1,3 @@
-use std::marker::PhantomData;
 
 use city_rollup_circuit::sighash_circuits::sighash_refund::CRSigHashRefundCircuitInput;
 use city_rollup_common::{
@@ -90,8 +89,7 @@ impl SigHashFinalizer {
             let job_id = QProvingJobDataID::sighash_refund_introspection_input_witness(checkpoint_id, i);
             let input = CRSigHashRefundCircuitInput::<F> {
                 introspection_hint: hint.clone(),
-                _marker: PhantomData,
-
+                result: hint.get_introspection_result::<PoseidonHash, F>()
             };
             let input_bytes = bincode::serialize(&input)?;
             proof_store.set_bytes_by_id(job_id, &input_bytes)?;

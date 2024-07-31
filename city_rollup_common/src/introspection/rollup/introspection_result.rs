@@ -140,6 +140,16 @@ pub fn get_introspection_events_hash<H: AlgebraicHasher<F>, F: RichField>(
 
 #[derive(Serialize, Deserialize, PartialEq, Clone, Debug)]
 #[serde(bound = "")]
+pub struct BTCRollupRefundIntrospectionResult<F: RichField> {
+    pub deposits: Vec<BTCRollupIntrospectionResultDeposit<F>>,
+    pub withdrawals: Vec<BTCRollupIntrospectionResultWithdrawal<F>>,
+
+    pub sighash: Hash256,
+    pub sighash_felt252: QHashOut<F>,
+}
+
+#[derive(Serialize, Deserialize, PartialEq, Clone, Debug)]
+#[serde(bound = "")]
 pub struct BTCRollupIntrospectionResult<F: RichField> {
     pub deposits: Vec<BTCRollupIntrospectionResultDeposit<F>>,
     pub withdrawals: Vec<BTCRollupIntrospectionResultWithdrawal<F>>,
