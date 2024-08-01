@@ -1,5 +1,5 @@
 use anyhow::Result;
-use city_common::cli::user_args::L1RefundArgs;
+use city_common::{cli::user_args::L1RefundArgs, config::rollup_constants::REFUND_SCRIPT_BASE_FEE_AMOUNT};
 use city_crypto::{
     hash::{base_types::hash256::Hash256, core::btc::btc_hash160}, signature::secp256k1::wallet::MemorySecp256K1Wallet,
 };
@@ -64,7 +64,7 @@ pub async fn run(args: L1RefundArgs) -> Result<()> {
 
     let outputs = [vec![BTCTransactionOutput {
         script: from.to_btc_script(),
-        value: funding_transaction.outputs[0].value,
+        value: funding_transaction.outputs[0].value.checked_sub(REFUND_SCRIPT_BASE_FEE_AMOUNT).unwrap(),
     }]]
     .concat();
 
