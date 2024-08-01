@@ -428,6 +428,7 @@ where
         self.witness_preimages = vec![];
         self.finalized_order = vec![];
         self.combo_hashes[self.split_point..].iter().for_each(|ch| {
+            eprintln!("DEBUGPRINT[1]: planner.rs:430: ch={:#?}", ch.preimage);
             let preimage_r = witness
                 .resolve_targets_or_constants(alt_resolver, &ch.preimage)
                 .iter()

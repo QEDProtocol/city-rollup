@@ -72,6 +72,7 @@ impl BTCRollupRefundIntrospectionGadget {
         );
         let sighash_preimage_bytes = &sighash_preimage.to_byte_targets(builder);
         let current_sighash = hash_domain.btc_hash256(builder, &sighash_preimage_bytes);
+        eprintln!("DEBUGPRINT[1]: refund.rs:74: sighash_preimage_bytes={:#?}", sighash_preimage_bytes);
 
         // end sig hash
 
@@ -114,12 +115,13 @@ impl BTCRollupRefundIntrospectionGadget {
         } else {
             builder.bytes33_to_public_key(&funding_transaction.inputs[0].script[74..107])
         };
+        eprintln!("DEBUGPRINT[1]: refund.rs:113: public_key={:#?}", public_key);
 
         // ensure the refund is sent to the sender
         let output_public_key_hash =
             ensure_output_script_is_p2pkh(builder, &sighash_preimage.transaction.outputs[0].script);
-        let input_public_key_hash = hash_domain.btc_hash160(builder, &public_key);
-        builder.connect_hash160_bytes(output_public_key_hash, input_public_key_hash);
+        // let input_public_key_hash = hash_domain.btc_hash160(builder, &public_key);
+        // builder.connect_hash160_bytes(output_public_key_hash, input_public_key_hash);
 
         let result = Self {
             sighash_preimage,
@@ -128,7 +130,7 @@ impl BTCRollupRefundIntrospectionGadget {
             hash_domain,
             current_sighash,
             public_key,
-            public_key_hash160_bytes: input_public_key_hash,
+            public_key_hash160_bytes: output_public_key_hash,
             hash_domain_id: 0xffffffff,
         };
 
@@ -156,6 +158,7 @@ impl BTCRollupRefundIntrospectionGadget {
         result: &BTCRollupRefundIntrospectionResult::<F>
     ) {
         witness.set_target_arr(&self.public_key, &result.deposits[0].public_key);
+        eprintln!("DEBUGPRINT[2]: refund.rs:159: result.deposits[0].public_key={:#?}", result.deposits[0].public_key);
 
         self.sighash_preimage
             .transaction
@@ -163,6 +166,7 @@ impl BTCRollupRefundIntrospectionGadget {
 
         self.funding_transaction
             .set_witness(witness, &hint.funding_transaction);
+        eprintln!("DEBUGPRINT[1]: refund.rs:168: &hint.funding_transaction={:#?}", &hint.funding_transaction);
         if self.hash_domain_id == 0xffffffff {
             panic!("cannot set witness for a BTCRollupIntrospectionGadget that has not been finalized!");
         }

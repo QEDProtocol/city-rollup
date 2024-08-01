@@ -98,6 +98,7 @@ where
         sighash_final_gl_verifier_data: &VerifierOnlyCircuitData<C, D>,
     ) -> anyhow::Result<ProofWithPublicInputs<C::F, C, D>> {
         let mut pw = PartialWitness::new();
+        eprintln!("DEBUGPRINT[1]: sighash_root.rs:101: sighash_final_gl_proof={:#?}", sighash_final_gl_proof);
         pw.set_proof_with_pis_target(&self.sighash_final_gl_proof_target, sighash_final_gl_proof);
         pw.set_verifier_data_target(
             &self.sighash_final_gl_verifier_data_target,

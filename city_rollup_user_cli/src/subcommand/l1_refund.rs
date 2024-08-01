@@ -32,9 +32,9 @@ pub async fn run(args: L1RefundArgs) -> Result<()> {
     let mut wallet = MemorySecp256K1Wallet::new();
 
     let api = BTCLinkAPI::new_str(&args.bitcoin_rpc, &args.electrs_api);
-    let from = BTCAddress160::from_p2pkh_key(
-        wallet.add_private_key(Hash256::from_hex_string(&args.private_key)?)?,
-    );
+    let public_key = wallet.add_private_key(Hash256::from_hex_string(&args.private_key)?)?;
+    eprintln!("DEBUGPRINT[1]: l1_refund.rs:35: public_key={:#?}", public_key);
+    let from = BTCAddress160::from_p2pkh_key(public_key);
 
     let txid = Hash256::from_hex_string(&args.txid)?;
 

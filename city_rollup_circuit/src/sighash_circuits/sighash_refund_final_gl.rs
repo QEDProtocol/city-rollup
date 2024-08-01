@@ -10,14 +10,12 @@ use city_rollup_common::qworker::{
     proof_store::QProofStoreReaderSync, verifier::QWorkerVerifyHelper,
 };
 use plonky2::{
-    hash::hash_types::HashOutTarget,
-    iop::witness::{PartialWitness, WitnessWrite},
-    plonk::{
+    gates::noop::NoopGate, hash::hash_types::HashOutTarget, iop::witness::{PartialWitness, WitnessWrite}, plonk::{
         circuit_builder::CircuitBuilder,
         circuit_data::{CircuitConfig, CircuitData, CommonCircuitData, VerifierOnlyCircuitData},
         config::{AlgebraicHasher, GenericConfig},
         proof::{ProofWithPublicInputs, ProofWithPublicInputsTarget},
-    },
+    }
 };
 use crate::worker::traits::QWorkerCircuitCustomWithDataSync;
 
@@ -41,6 +39,7 @@ where
     pub fn new(
         sighash_refund_verifier_data: &VerifierOnlyCircuitData<C, D>,
         sighash_refund_common_data: &CommonCircuitData<C::F, D>,
+        expected_degree: usize
     ) -> Self {
         let config = CircuitConfig::standard_recursion_config();
         let mut builder = CircuitBuilder::<C::F, D>::new(config);
@@ -56,6 +55,15 @@ where
             sighash_refund_common_data,
         );
 
+        let block_start_hash = HashOutTarget {
+            elements: [
+                sighash_refund_proof_target.public_inputs[0],
+                sighash_refund_proof_target.public_inputs[1],
+                sighash_refund_proof_target.public_inputs[2],
+                sighash_refund_proof_target.public_inputs[3],
+            ],
+        };
+
         let sighash_252 = HashOutTarget {
             elements: [
                 sighash_refund_proof_target.public_inputs[4],
@@ -66,6 +74,18 @@ where
         };
 
         let zero = builder.zero();
+        let bits_block_start_hash = block_start_hash
+            .elements
+            .iter()
+            .map(|x| {
+                builder
+                    .split_le(*x, 64)
+                    .iter()
+                    .map(|b| b.target)
+                    .collect::<Vec<_>>()
+            })
+            .flatten()
+            .collect::<Vec<_>>();
         let mut bits_sighash = sighash_252
             .elements
             .iter()
@@ -81,9 +101,14 @@ where
 
         bits_sighash.append(&mut vec![zero, zero, zero, zero, zero, zero, zero, zero]);
 
-
+        builder.register_public_inputs(&bits_block_start_hash);
         builder.register_public_inputs(&bits_sighash);
 
+        if builder.num_gates() < expected_degree {
+            for _ in 0..expected_degree - builder.num_gates() {
+                builder.add_gate(NoopGate, vec![]);
+            }
+        }
         let circuit_data = builder.build::<C>();
 
         let minifier = QEDProofMinifierDynamicChain::new_with_dynamic_constant_verifier(

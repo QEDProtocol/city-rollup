@@ -123,6 +123,7 @@ where
         let sighash_refund_final_gl = CRSigHashRefundFinalGLCircuit::new(
             sighash_refund.get_verifier_config_ref(),
             sighash_refund.get_common_circuit_data_ref(),
+            sighash_final_gl.get_common_circuit_data_ref().degree()
         );
         let sighash_root = CRSigHashRootCircuit::<C, D>::new(
             sighash_final_gl.get_verifier_config_ref().constants_sigmas_cap.height(),

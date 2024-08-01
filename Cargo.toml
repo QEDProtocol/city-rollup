@@ -131,3 +131,6 @@ plonky2 = { git = "https://github.com/QEDProtocol/plonky2-hwa", rev = "6a8ca008d
 
 [patch.'https://github.com/succinctlabs/starkyx.git']
 starkyx = { git = "https://github.com/QEDProtocol/starkyx", rev = "a53ea1060c6256a8a26820e43fbe8d75233e8b29" }
+
+[profile.release]
+debug = true
