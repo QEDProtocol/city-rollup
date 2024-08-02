@@ -28,7 +28,7 @@ dedup:
 
 .PHONY: build
 build:
-	cargo build --${PROFILE}
+	cargo build --profile ${PROFILE}
 
 .PHONY: build-if-not-exists
 build-if-not-exists:

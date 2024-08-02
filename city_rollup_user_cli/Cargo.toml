@@ -16,6 +16,7 @@ serde_with = { workspace = true }
 rand = { workspace = true }
 bincode = { workspace = true }
 city_crypto           = { path = "../city_crypto" }
+city_macros           = { path = "../city_macros" }
 city_common_circuit   = { path = "../city_common_circuit" }
 city_rollup_circuit   = { path = "../city_rollup_circuit" }
 city_common           = { path = "../city_common" }

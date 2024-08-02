@@ -729,6 +729,7 @@ dependencies = [
  "city_common",
  "city_common_circuit",
  "city_crypto",
+ "city_macros",
  "city_rollup_circuit",
  "city_rollup_common",
  "city_rollup_core_node",

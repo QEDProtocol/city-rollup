@@ -1,14 +1,13 @@
 use city_common_circuit::{
-    circuits::traits::qstandard::QStandardCircuit,
-    proof_minifier::{
+    circuits::traits::qstandard::QStandardCircuit, hash::base_types::felthash248::CircuitBuilderFelt248Hash, proof_minifier::{
         pm_chain_dynamic::QEDProofMinifierDynamicChain, pm_core::get_circuit_fingerprint_generic,
-    },
+    }
 };
 use city_crypto::hash::qhashout::QHashOut;
-use city_rollup_common::qworker::{
+use city_rollup_common::{introspection::rollup::introspection_result::BTCRollupRefundIntrospectionFinalizedResult, qworker::{
     job_id::QProvingJobDataID, job_witnesses::sighash::CRSigHashRefundFinalGLCircuitInput,
     proof_store::QProofStoreReaderSync, verifier::QWorkerVerifyHelper,
-};
+}};
 use plonky2::{
     gates::noop::NoopGate, hash::hash_types::HashOutTarget, iop::witness::{PartialWitness, WitnessWrite}, plonk::{
         circuit_builder::CircuitBuilder,
@@ -17,7 +16,7 @@ use plonky2::{
         proof::{ProofWithPublicInputs, ProofWithPublicInputsTarget},
     }
 };
-use crate::worker::traits::QWorkerCircuitCustomWithDataSync;
+use crate::{introspection::gadgets::rollup::refund_result::BTCRollupRefundIntrospectionFinalizedResultGadget, worker::traits::QWorkerCircuitCustomWithDataSync};
 
 #[derive(Debug)]
 pub struct CRSigHashRefundFinalGLCircuit<C: GenericConfig<D> + 'static, const D: usize>
@@ -26,6 +25,7 @@ where
 {
     // [START] circuit targets
     pub sighash_refund_proof_target: ProofWithPublicInputsTarget<D>,
+    pub introspection_finalized_result_gadget: BTCRollupRefundIntrospectionFinalizedResultGadget,
     // [END] circuit targets
     pub circuit_data: CircuitData<C::F, C, D>,
     pub fingerprint: QHashOut<C::F>,
@@ -49,13 +49,17 @@ where
         let sighash_refund_verifier_data_target =
             builder.constant_verifier_data(sighash_refund_verifier_data);
 
+        let introspection_finalized_result_gadget =
+            BTCRollupRefundIntrospectionFinalizedResultGadget::add_virtual_to(&mut builder);
+        let expected_start_hash = introspection_finalized_result_gadget.current_block_state_hash;
+
         builder.verify_proof::<C>(
             &sighash_refund_proof_target,
             &sighash_refund_verifier_data_target,
             sighash_refund_common_data,
         );
 
-        let block_start_hash = HashOutTarget {
+        let actual_start_hash = HashOutTarget {
             elements: [
                 sighash_refund_proof_target.public_inputs[0],
                 sighash_refund_proof_target.public_inputs[1],
@@ -63,6 +67,11 @@ where
                 sighash_refund_proof_target.public_inputs[3],
             ],
         };
+
+        builder.connect_full_hashout_to_felt248_hashout(
+            actual_start_hash,
+            expected_start_hash
+        );
 
         let sighash_252 = HashOutTarget {
             elements: [
@@ -74,7 +83,7 @@ where
         };
 
         let zero = builder.zero();
-        let bits_block_start_hash = block_start_hash
+        let bits_block_start_hash = expected_start_hash
             .elements
             .iter()
             .map(|x| {
@@ -122,6 +131,7 @@ where
         ));
         Self {
             sighash_refund_proof_target,
+            introspection_finalized_result_gadget,
             circuit_data,
             fingerprint,
             minifier,
@@ -130,9 +140,13 @@ where
     pub fn prove_base(
         &self,
         sighash_refund_proof: &ProofWithPublicInputs<C::F, C, D>,
+        result: &BTCRollupRefundIntrospectionFinalizedResult<C::F>
     ) -> anyhow::Result<ProofWithPublicInputs<C::F, C, D>> {
         let mut pw = PartialWitness::new();
         pw.set_proof_with_pis_target(&self.sighash_refund_proof_target, sighash_refund_proof);
+
+        self.introspection_finalized_result_gadget
+            .set_witness(&mut pw, &result);
 
         let inner_proof = self.circuit_data.prove(pw)?;
         self.minifier.prove(&inner_proof)
@@ -172,10 +186,11 @@ where
         job_id: QProvingJobDataID,
     ) -> anyhow::Result<ProofWithPublicInputs<C::F, C, D>> {
         let input_bytes = store.get_bytes_by_id(job_id)?;
-        let input: CRSigHashRefundFinalGLCircuitInput = bincode::deserialize(&input_bytes)?;
+        let input: CRSigHashRefundFinalGLCircuitInput<C::F> = bincode::deserialize(&input_bytes)?;
         let sighash_refund_proof = store.get_proof_by_id(input.sighash_refund_proof_id)?;
         self.prove_base(
             &sighash_refund_proof,
+            &input.result
         )
     }
 }

@@ -98,6 +98,7 @@ impl SigHashFinalizer {
             let final_job_id = QProvingJobDataID::sighash_refund_final_input_witness(checkpoint_id, i);
             let input = CRSigHashRefundFinalGLCircuitInput {
                 sighash_refund_proof_id: job_id.get_output_id(),
+                result: hint.get_introspection_result::<PoseidonHash, F>().get_finalized_result::<PoseidonHash>(),
             };
             proof_store.set_bytes_by_id(final_job_id, &bincode::serialize(&input)?)?;
             sighash_final_gl_job_ids.push(final_job_id);

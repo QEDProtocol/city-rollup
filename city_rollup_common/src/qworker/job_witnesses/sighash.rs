@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     introspection::rollup::{
         introspection::BlockSpendIntrospectionHint,
-        introspection_result::BTCRollupIntrospectionFinalizedResult,
+        introspection_result::{BTCRollupIntrospectionFinalizedResult, BTCRollupRefundIntrospectionFinalizedResult},
     },
     qworker::job_id::QProvingJobDataID,
 };
@@ -33,6 +33,7 @@ pub struct CRSigHashRootCircuitInput {
 
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
 #[serde(bound = "")]
-pub struct CRSigHashRefundFinalGLCircuitInput {
+pub struct CRSigHashRefundFinalGLCircuitInput<F: RichField> {
+    pub result: BTCRollupRefundIntrospectionFinalizedResult<F>,
     pub sighash_refund_proof_id: QProvingJobDataID,
 }

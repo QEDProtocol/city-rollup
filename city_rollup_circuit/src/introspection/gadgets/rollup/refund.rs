@@ -6,15 +6,14 @@ use city_common_circuit::{
             Sha256AcceleratorDomainResolver,
         },
         base_types::{
-            felthash252::CircuitBuilderFelt252Hash,
-            hash160bytes::{CircuitBuilderHash160Bytes, Hash160BytesTarget},
-            hash256bytes::Hash256BytesTarget,
+            felthash248::CircuitBuilderFelt248Hash, felthash252::CircuitBuilderFelt252Hash, hash160bytes::Hash160BytesTarget, hash256bytes::{CircuitBuilderHash256Bytes, Hash256BytesTarget}
         },
     },
 };
-use city_rollup_common::introspection::rollup::{introspection::{
-    RefundIntrospectionGadgetConfig, RefundSpendIntrospectionHint,
-}, introspection_result::BTCRollupRefundIntrospectionResult};
+use city_rollup_common::introspection::rollup::{
+    introspection::{RefundIntrospectionGadgetConfig, RefundSpendIntrospectionHint},
+    introspection_result::BTCRollupRefundIntrospectionResult,
+};
 use plonky2::{
     field::extension::Extendable,
     hash::hash_types::{HashOutTarget, RichField},
@@ -23,7 +22,14 @@ use plonky2::{
 };
 
 use crate::introspection::gadgets::{
-    rollup::introspection::ensure_output_script_is_p2pkh, sighash::SigHashPreimageBytesGadget,
+    rollup::{
+        introspection::ensure_output_script_is_p2pkh,
+        introspection_result::{
+            BTCRollupIntrospectionResultDepositGadget, BTCRollupIntrospectionResultWithdrawalGadget,
+        },
+        refund_result::BTCRollupRefundIntrospectionResultGadget,
+    },
+    sighash::SigHashPreimageBytesGadget,
     transaction::BTCTransactionBytesGadget,
 };
 
@@ -31,6 +37,8 @@ use crate::introspection::gadgets::{
 pub struct BTCRollupRefundIntrospectionGadget {
     pub sighash_preimage: SigHashPreimageBytesGadget,
     pub funding_transaction: BTCTransactionBytesGadget,
+
+    pub current_state_hash: HashOutTarget,
 
     pub current_script: Vec<Target>,
     pub current_sighash: Hash256BytesTarget,
@@ -72,7 +80,10 @@ impl BTCRollupRefundIntrospectionGadget {
         );
         let sighash_preimage_bytes = &sighash_preimage.to_byte_targets(builder);
         let current_sighash = hash_domain.btc_hash256(builder, &sighash_preimage_bytes);
-        eprintln!("DEBUGPRINT[1]: refund.rs:74: sighash_preimage_bytes={:#?}", sighash_preimage_bytes);
+        eprintln!(
+            "DEBUGPRINT[1]: refund.rs:74: sighash_preimage_bytes={:#?}",
+            sighash_preimage_bytes
+        );
 
         // end sig hash
 
@@ -122,6 +133,10 @@ impl BTCRollupRefundIntrospectionGadget {
             ensure_output_script_is_p2pkh(builder, &sighash_preimage.transaction.outputs[0].script);
         // let input_public_key_hash = hash_domain.btc_hash160(builder, &public_key);
         // builder.connect_hash160_bytes(output_public_key_hash, input_public_key_hash);
+        //
+        let current_state_hash_bytes: Hash256BytesTarget =
+            core::array::from_fn(|i| current_script[i + 1]);
+        let current_state_hash = builder.hash256_bytes_to_felt248_hashout(current_state_hash_bytes);
 
         let result = Self {
             sighash_preimage,
@@ -132,9 +147,87 @@ impl BTCRollupRefundIntrospectionGadget {
             public_key,
             public_key_hash160_bytes: output_public_key_hash,
             hash_domain_id: 0xffffffff,
+            current_state_hash
         };
 
         result
+    }
+
+    pub fn get_deposits<F: RichField + Extendable<D>, const D: usize>(
+        &mut self,
+        builder: &mut CircuitBuilder<F, D>,
+    ) -> Vec<BTCRollupIntrospectionResultDepositGadget> {
+        let funding_tx = &self.funding_transaction;
+        assert_eq!(
+            funding_tx.inputs.len(),
+            1,
+            "deposits should only have one input (p2pkh)"
+        );
+        assert_eq!(
+            funding_tx.outputs.len(),
+            1,
+            "deposits should only have one output (send to layer 2)"
+        );
+
+        assert_eq!(
+            funding_tx.inputs[0].script.len(),
+            106,
+            "the input script for a deposit should be a p2pkh signature + public key reveal"
+        );
+        let public_key = if funding_tx.inputs[0].script.len() == 106 {
+            builder.bytes33_to_public_key(&funding_tx.inputs[0].script[73..106])
+        } else {
+            builder.bytes33_to_public_key(&funding_tx.inputs[0].script[74..107])
+        };
+        let txid_224 =
+            builder.hash256_bytes_to_hashout224(self.sighash_preimage.transaction.inputs[0].hash);
+
+        vec![BTCRollupIntrospectionResultDepositGadget {
+            txid_224,
+            public_key,
+            value: funding_tx.outputs[0].get_value_target_u64(builder),
+        }]
+    }
+
+    pub fn get_withdrawals<F: RichField + Extendable<D>, const D: usize>(
+        &mut self,
+        builder: &mut CircuitBuilder<F, D>,
+    ) -> Vec<BTCRollupIntrospectionResultWithdrawalGadget> {
+        self.sighash_preimage
+            .transaction
+            .outputs
+            .iter()
+            .enumerate()
+            .filter_map(|(_, output)| {
+                assert_eq!(
+                    output.script.len(),
+                    25,
+                    "withdrawals should be to a p2pkh address",
+                );
+                ensure_output_script_is_p2pkh(builder, &output.script);
+                Some(BTCRollupIntrospectionResultWithdrawalGadget {
+                    script: output.script.clone(),
+                    value: output.get_value_target_u64(builder),
+                })
+            })
+            .collect()
+    }
+
+    pub fn generate_result<F: RichField + Extendable<D>, const D: usize>(
+        &mut self,
+        builder: &mut CircuitBuilder<F, D>,
+    ) -> BTCRollupRefundIntrospectionResultGadget {
+        let deposits = self.get_deposits(builder);
+        let withdrawals = self.get_withdrawals(builder);
+        let sighash_felt252 = builder.hash256_bytes_to_felt252_hashout_packed(self.current_sighash);
+
+        BTCRollupRefundIntrospectionResultGadget {
+            deposits,
+            withdrawals,
+            sighash: self.current_sighash,
+            sighash_felt252,
+            current_block_state_hash: self.current_state_hash,
+        }
     }
 
     pub fn finalize<F: RichField + Extendable<D>, const D: usize>(
@@ -155,10 +248,13 @@ impl BTCRollupRefundIntrospectionGadget {
         witness: &mut W,
         dr: &mut DR,
         hint: &RefundSpendIntrospectionHint,
-        result: &BTCRollupRefundIntrospectionResult::<F>
+        result: &BTCRollupRefundIntrospectionResult<F>,
     ) {
         witness.set_target_arr(&self.public_key, &result.deposits[0].public_key);
-        eprintln!("DEBUGPRINT[2]: refund.rs:159: result.deposits[0].public_key={:#?}", result.deposits[0].public_key);
+        eprintln!(
+            "DEBUGPRINT[2]: refund.rs:159: result.deposits[0].public_key={:#?}",
+            result.deposits[0].public_key
+        );
 
         self.sighash_preimage
             .transaction
@@ -166,7 +262,10 @@ impl BTCRollupRefundIntrospectionGadget {
 
         self.funding_transaction
             .set_witness(witness, &hint.funding_transaction);
-        eprintln!("DEBUGPRINT[1]: refund.rs:168: &hint.funding_transaction={:#?}", &hint.funding_transaction);
+        eprintln!(
+            "DEBUGPRINT[1]: refund.rs:168: &hint.funding_transaction={:#?}",
+            &hint.funding_transaction
+        );
         if self.hash_domain_id == 0xffffffff {
             panic!("cannot set witness for a BTCRollupIntrospectionGadget that has not been finalized!");
         }

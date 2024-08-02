@@ -335,9 +335,6 @@ impl SimpleActorOrchestrator {
         let leaf_jobs_debug_serialized = leaf_jobs.iter().map(|x|QProvingJobDataIDSerializedWrapped(x.to_fixed_bytes())).collect::<Vec<_>>();
         println!("leaf_jobs: {}", serde_json::to_string(&leaf_jobs_debug_serialized)?);
 
-
-
-
         Ok((
             leaf_jobs,
             checkpoint_id,

@@ -59,7 +59,7 @@ impl RefundSpendIntrospectionHint {
             value: F::from_noncanonical_u64(d.outputs[0].value),
         });
 
-        for (_, output) in self.sighash_preimage.transaction.outputs.iter().enumerate() {
+        for output in self.sighash_preimage.transaction.outputs.iter() {
             withdrawals.push(BTCRollupIntrospectionResultWithdrawal {
                 script: output
                     .script
@@ -69,12 +69,19 @@ impl RefundSpendIntrospectionHint {
                 value: F::from_noncanonical_u64(output.value),
             })
         }
+        let current_block_state_hash: [u8; 32] =
+            self.sighash_preimage.transaction.inputs[0].script[1..33]
+                .try_into()
+                .unwrap();
 
         BTCRollupRefundIntrospectionResult {
             sighash: self.sighash_preimage.get_hash(),
             sighash_felt252,
             deposits,
             withdrawals,
+            current_block_state_hash: QHashOut(hash256_le_to_felt248_hashout(
+                &current_block_state_hash,
+            )),
         }
     }
 }

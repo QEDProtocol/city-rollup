@@ -1,29 +1,43 @@
 use anyhow::Result;
-use city_common::{cli::user_args::L1RefundArgs, config::rollup_constants::REFUND_SCRIPT_BASE_FEE_AMOUNT};
-use city_crypto::{
-    hash::{base_types::hash256::Hash256, core::btc::btc_hash160}, signature::secp256k1::wallet::MemorySecp256K1Wallet,
+use city_common::{
+    cli::user_args::L1RefundArgs, config::rollup_constants::REFUND_SCRIPT_BASE_FEE_AMOUNT,
 };
-use city_rollup_circuit::worker::{prover::QWorkerStandardProver, toolbox::root::CRWorkerToolboxRootCircuits};
+use city_crypto::{
+    hash::{base_types::{felt248::felt248_hashout_to_hash256_le, hash256::Hash256}, core::btc::btc_hash160}, signature::secp256k1::wallet::MemorySecp256K1Wallet,
+};
+use city_rollup_circuit::worker::{
+    prover::QWorkerStandardProver, toolbox::root::CRWorkerToolboxRootCircuits,
+};
 use city_rollup_common::{
-    block_template::{data::CityGroth16ProofData, BLOCK_GROTH16_ENCODED_VERIFIER_DATA}, introspection::{
+    block_template::{
+        config::STANDARD_BLOCK_SCRIPT_TEMPLATE, data::CityGroth16ProofData,
+        BLOCK_GROTH16_ENCODED_VERIFIER_DATA,
+    },
+    introspection::{
         rollup::{
             constants::get_network_magic_for_str, introspection::RefundSpendIntrospectionHint,
         },
         sighash::{SigHashPreimage, SIGHASH_ALL},
         transaction::{BTCTransaction, BTCTransactionInput, BTCTransactionOutput},
-    }, link::{
+    },
+    link::{
         data::{AddressToBTCScript, BTCAddress160},
         link_api::BTCLinkAPI,
         traits::QBitcoinAPISync,
-    }, qworker::{memory_proof_store::SimpleProofStoreMemory, proof_store::QProofStoreReaderSync}
+    },
+    qworker::{memory_proof_store::SimpleProofStoreMemory, proof_store::QProofStoreReaderSync},
 };
 use city_rollup_core_orchestrator::debug::scenario::sighash::finalizer::SigHashFinalizer;
 use city_rollup_rpc_provider::{CityRpcProvider, RpcProvider};
 use city_store::store::sighash::SigHashMerkleTree;
-use plonky2::plonk::config::PoseidonGoldilocksConfig;
+use plonky2::{
+    field::goldilocks_field::GoldilocksField, hash::poseidon::PoseidonHash,
+    plonk::config::PoseidonGoldilocksConfig,
+};
 
 const D: usize = 2;
 const MAX_CHECKPOINT_ID: u64 = 0xffffffff;
+type F = GoldilocksField;
 type C = PoseidonGoldilocksConfig;
 type PS = SimpleProofStoreMemory;
 
@@ -33,7 +47,10 @@ pub async fn run(args: L1RefundArgs) -> Result<()> {
 
     let api = BTCLinkAPI::new_str(&args.bitcoin_rpc, &args.electrs_api);
     let public_key = wallet.add_private_key(Hash256::from_hex_string(&args.private_key)?)?;
-    eprintln!("DEBUGPRINT[1]: l1_refund.rs:35: public_key={:#?}", public_key);
+    eprintln!(
+        "DEBUGPRINT[1]: l1_refund.rs:35: public_key={:#?}",
+        public_key
+    );
     let from = BTCAddress160::from_p2pkh_key(public_key);
 
     let txid = Hash256::from_hex_string(&args.txid)?;
@@ -47,28 +64,29 @@ pub async fn run(args: L1RefundArgs) -> Result<()> {
             .get_city_block_script(MAX_CHECKPOINT_ID)
             .await?
     })?;
-    let deposit_address = btc_hash160(&deposit_block_script);
 
-    let funding_transactions = api
-        .get_funding_transactions_with_vout(BTCAddress160::new_p2sh(deposit_address), |utxo| {
-            utxo.txid == txid
-        })?;
+    let funding_transactions = api.get_funding_transactions_with_vout(
+        BTCAddress160::new_p2sh(btc_hash160(&deposit_block_script)),
+        |utxo| utxo.txid == txid,
+    )?;
 
     if funding_transactions.is_empty() {
         return Err(anyhow::anyhow!("specified utxo not found"));
     }
 
     let funding_transaction = &funding_transactions[0].transaction;
-    // todo: check from
-    eprintln!("DEBUGPRINT[1]: l1_refund.rs:58: transaction={:#?}", funding_transaction);
+    eprintln!(
+        "DEBUGPRINT[1]: l1_refund.rs:58: transaction={:#?}",
+        funding_transaction
+    );
 
     let outputs = [vec![BTCTransactionOutput {
         script: from.to_btc_script(),
-        value: funding_transaction.outputs[0].value.checked_sub(REFUND_SCRIPT_BASE_FEE_AMOUNT).unwrap(),
+        value: funding_transaction.outputs[0].value - REFUND_SCRIPT_BASE_FEE_AMOUNT,
     }]]
     .concat();
 
-    let mut base_tx = BTCTransaction {
+    let mut tx = BTCTransaction {
         version: 2,
         inputs: vec![BTCTransactionInput {
             hash: funding_transaction.get_hash(),
@@ -79,14 +97,17 @@ pub async fn run(args: L1RefundArgs) -> Result<()> {
         outputs,
         locktime: 0,
     };
-    eprintln!("DEBUGPRINT[1]: l1_refund.rs:73: funding_transaction.inputs[0].script.clone()={:#?}", funding_transaction.inputs[0].script.clone());
-    let base_sighash_preimage = SigHashPreimage {
-        transaction: base_tx.clone(),
+    eprintln!(
+        "DEBUGPRINT[1]: l1_refund.rs:73: funding_transaction.inputs[0].script.clone()={:#?}",
+        funding_transaction.inputs[0].script.clone()
+    );
+    let sighash_preimage = SigHashPreimage {
+        transaction: tx.clone(),
         sighash_type: SIGHASH_ALL,
     };
 
-    let hint = RefundSpendIntrospectionHint {
-        sighash_preimage: base_sighash_preimage,
+    let mut hint = RefundSpendIntrospectionHint {
+        sighash_preimage,
         funding_transaction: funding_transaction.clone(),
     };
 
@@ -98,6 +119,13 @@ pub async fn run(args: L1RefundArgs) -> Result<()> {
     let checkpoint_id = block_state.checkpoint_id + 1;
 
     eprintln!("DEBUGPRINT[2]: l1_refund.rs:94 (before let mut proof_store = SimpleProofStoreMe…)");
+    let combined_hash = hint
+        .get_introspection_result::<PoseidonHash, F>()
+        .get_finalized_result::<PoseidonHash>()
+        .get_combined_hash::<PoseidonHash>();
+    eprintln!("DEBUGPRINT[1]: l1_refund.rs:126: hex::encode(&felt248_hashout_to_hash256_le(combined_hash.0).0)={:#?}", hex::encode(&felt248_hashout_to_hash256_le(combined_hash.0).0));
+    hint.sighash_preimage.transaction.inputs[0].script[1..33].copy_from_slice(&felt248_hashout_to_hash256_le(combined_hash.0).0);
+
     let mut proof_store = SimpleProofStoreMemory::new();
     let sighash_jobs = SigHashFinalizer::finalize_refund_sighashes::<PS>(
         &mut proof_store,
@@ -128,12 +156,20 @@ pub async fn run(args: L1RefundArgs) -> Result<()> {
     eprintln!("DEBUGPRINT[8]: l1_refund.rs:123 (before let g16_proof_output_id = sighash_jobs.w…)");
     let g16_proof_output_id = sighash_jobs.wrap_sighash_final_bls12381_job_ids[0].get_output_id();
     eprintln!("DEBUGPRINT[9]: l1_refund.rs:125 (before let g16_proof: CityGroth16ProofData = bi…)");
-    let g16_proof: CityGroth16ProofData = bincode::deserialize(&proof_store.get_bytes_by_id(g16_proof_output_id)?)?;
+    let g16_proof: CityGroth16ProofData =
+        bincode::deserialize(&proof_store.get_bytes_by_id(g16_proof_output_id)?)?;
 
-    let script = g16_proof.encode_witness_script(&BLOCK_GROTH16_ENCODED_VERIFIER_DATA[0], &hint.sighash_preimage.transaction.inputs[0].script);
-    base_tx.inputs[0].script = script;
+    let script = g16_proof.encode_witness_script(
+        &BLOCK_GROTH16_ENCODED_VERIFIER_DATA[0],
+        &hint.sighash_preimage.transaction.inputs[0].script,
+    );
+    tx.inputs[0].script = script;
 
-    let txid = api.send_transaction(&base_tx)?;
+    eprintln!(
+        "DEBUGPRINT[1]: l1_refund.rs:173: base_tx.to_bytes()={:#?}",
+        hex::encode(&tx.to_bytes())
+    );
+    let txid = api.send_transaction(&tx)?;
     println!("txid={}", txid);
 
     Ok(())
