@@ -46,7 +46,6 @@ impl BTCTransactionBytesInputGadget {
         witness.set_hash256_bytes_target(&self.hash, &tx_in.hash.0);
         witness.set_u32_bytes_le_target(&self.index, tx_in.index);
         witness.set_byte_targets(&self.script, &tx_in.script);
-        eprintln!("DEBUGPRINT[2]: transaction.rs:48: &tx_in.script={:#?}", &tx_in.script);
         witness.set_u32_bytes_le_target(&self.sequence, tx_in.sequence);
     }
 }
@@ -281,22 +280,16 @@ impl BTCTransactionBytesGadget {
         vb.write_constant_varuint(builder, self.inputs.len() as u64);
         for input in &self.inputs {
             vb.write_slice(&input.hash); // 32
-            eprintln!("DEBUGPRINT[1]: transaction.rs:282: hash={:#?}", input.hash);
             vb.write_slice(&input.index); // 4
-            eprintln!("DEBUGPRINT[2]: transaction.rs:284: index={:#?}", input.index);
             vb.write_var_slice(builder, &input.script); // 107
-            eprintln!("DEBUGPRINT[3]: transaction.rs:286: script={:#?}", input.script);
             vb.write_slice(&input.sequence); // 4
-            eprintln!("DEBUGPRINT[4]: transaction.rs:288: sequence={:#?}", input.sequence);
         }
 
         // outputs
         vb.write_constant_varuint(builder, self.outputs.len() as u64); // 9
         for output in &self.outputs {
             vb.write_slice(&output.value); // 8
-            eprintln!("DEBUGPRINT[5]: transaction.rs:295: value={:#?}", output.value);
             vb.write_var_slice(builder, &output.script); // 23
-            eprintln!("DEBUGPRINT[6]: transaction.rs:297: script={:#?}", output.script);
         }
 
         vb.write_slice(&self.locktime); // 4
@@ -341,17 +334,14 @@ impl BTCTransactionBytesGadget {
             && self.inputs[0].script.len() == 106
             &&tx.inputs[0].script.len() == 107
         {
-            eprintln!("DEBUGPRINT[1]: transaction.rs:336 (after &&tx.inputs[0].script.len() == 107)");
             let mut tx_in = tx.inputs[0].clone();
             tx_in.script = [tx_in.script[0..5].to_vec(), tx_in.script[6..107].to_vec()].concat(); // 106
             self.inputs[0].set_witness(witness, &tx_in);
         } else {
-            eprintln!("DEBUGPRINT[2]: transaction.rs:341 (after  else )");
             for (input, tx_in) in self.inputs.iter().zip(tx.inputs.iter()) {
                 input.set_witness(witness, tx_in);
             }
         }
-        eprintln!("DEBUGPRINT[3]: transaction.rs:346 (after input.set_witness(witness, tx_in);)");
         for (output, tx_out) in self.outputs.iter().zip(tx.outputs.iter()) {
             output.set_witness(witness, tx_out);
         }
