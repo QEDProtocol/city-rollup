@@ -33,12 +33,12 @@ pub fn run_debug_outer(args: L2WorkerArgs) -> anyhow::Result<()> {
         serde_json::to_string(&toolbox.core.fingerprints).unwrap()
     );*/
 
-    // if args.worker_mode.is_groth16_enabled() {
-    //     gnark_plonky2_wrapper::initialize(&format!(
-    //         "{}/.city-rollup/keystore/",
-    //         home::home_dir().unwrap().display()
-    //     ))?;
-    // }
+    if args.worker_mode.is_groth16_enabled() {
+        gnark_plonky2_wrapper::initialize(&format!(
+            "{}/.city-rollup/keystore/",
+            home::home_dir().unwrap().display()
+        ))?;
+    }
     println!("worker ready");
     loop {
         run_debug_inner(&args, &mut toolbox)?;
@@ -117,12 +117,12 @@ pub fn run(args: L2WorkerArgs) -> anyhow::Result<()> {
     if GROTH16_DISABLED_DEV_MODE {
         println!("\x1B[0m\x1B[38;5;227m\x1B[48;5;9m[SECURITY WARNING]\x1B[0m GROTH16_DISABLED_DEV_MODE is set to true, so the rollup will not verify the groth16 proofs on doge (OP_CHECKGROTH16VERIFY is replaced with OP_NOP). GROTH16_DISABLED_DEV_MODE should \x1B[1m\x1B[38;5;9mNEVER\x1B[0m be set to true in production!\x1B[0m");
     }else{
-        // if args.worker_mode.is_groth16_enabled() {
-        //     gnark_plonky2_wrapper::initialize(&format!(
-        //         "{}/.city-rollup/keystore/",
-        //         home::home_dir().unwrap().display()
-        //     ))?;
-        // }
+        if args.worker_mode.is_groth16_enabled() {
+            gnark_plonky2_wrapper::initialize(&format!(
+                "{}/.city-rollup/keystore/",
+                home::home_dir().unwrap().display()
+            ))?;
+        }
     }
 
     println!("worker setup completed");

@@ -30,9 +30,7 @@ use city_rollup_common::{
 use city_rollup_core_orchestrator::debug::scenario::sighash::finalizer::SigHashFinalizer;
 use city_rollup_rpc_provider::{CityRpcProvider, RpcProvider};
 use city_store::store::sighash::SigHashMerkleTree;
-use plonky2::{
-    plonk::config::PoseidonGoldilocksConfig,
-};
+use plonky2::plonk::config::PoseidonGoldilocksConfig;
 
 const D: usize = 2;
 const MAX_CHECKPOINT_ID: u64 = 0xffffffff;
@@ -137,7 +135,7 @@ pub async fn run(args: L1RefundArgs) -> Result<()> {
     tx.inputs[0].script = script;
 
     let txid = api.send_transaction(&tx)?;
-    println!("{}", txid);
+    println!("txid: {}", txid);
 
     Ok(())
 }

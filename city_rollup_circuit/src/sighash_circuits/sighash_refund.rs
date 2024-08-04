@@ -49,7 +49,7 @@ where
     pub introspection_config: RefundIntrospectionGadgetConfig,
 
     // [START] circuit targets
-    pub introspection_gadget: BTCRollupRefundIntrospectionGadget,
+    pub introspection_gadget: BTCRollupRefundIntrospectionGadget::<C, D>,
     pub sha256_acceleration_gadget: SmartSha256AcceleratorGadgetWithDomain<
         Sha256Acc,
         Sha256AirParametersStandard<C::F>,
@@ -136,7 +136,7 @@ where
         let mut g = self.sha256_acceleration_gadget.clone();
 
         self.introspection_gadget
-            .set_witness::<_, C::F, D, _>(&mut pw, &mut g, introspection_hint, result);
+            .set_witness(&mut pw, &mut g, introspection_hint, result);
         // do this at the end
         g.finalize_witness(&mut pw, &self.targets_to_constants);
         /*let trace_result = self.tracer.resolve_partition::<C::F, C, D>(
