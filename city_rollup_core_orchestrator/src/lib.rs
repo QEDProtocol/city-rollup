@@ -3,7 +3,7 @@ use std::{process, sync::Arc, time::Duration};
 use city_common::{cli::args::OrchestratorArgs, units::UNIT_BTC};
 use city_crypto::hash::{base_types::hash256::Hash256, qhashout::QHashOut};
 use city_macros::sync_infinite_loop;
-use city_redis_store::RedisStore;
+use city_redis_store::{RedisStore, initialize_redis_cache};
 use city_rollup_circuit::{wallet::memory::CityMemoryWallet, worker::toolbox::circuits::CRWorkerToolboxCoreCircuits};
 use city_rollup_common::{
     actors::{
@@ -51,6 +51,7 @@ pub fn run(args: OrchestratorArgs) -> anyhow::Result<()> {
     debug!("file lock status: {:?}", file_lock.status);
 
     let mut proof_store = RedisStore::new(&args.redis_uri)?;
+    initialize_redis_cache(&args.redis_uri)?;
     let queue = RedisQueue::new(&args.redis_uri)?;
     let mut event_processor = CityEventProcessor::new(queue.clone());
     let mut api = BTCLinkAPI::new_str(&args.bitcoin_rpc, &args.electrs_api);

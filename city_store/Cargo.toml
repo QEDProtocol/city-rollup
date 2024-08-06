@@ -27,6 +27,7 @@ city_common           = { path = "../city_common" }
 city_rollup_common           = { path = "../city_rollup_common" }
 kvq_store_redb            = { path = "../kvq_store_redb" }
 city_crypto           = { path = "../city_crypto" }
+city_redis_store           = { path = "../city_redis_store" }
 tracing = { workspace = true }
 fs2 = "0.4"
 strum = "0.26.0"
