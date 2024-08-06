@@ -4,6 +4,9 @@ use std::sync::Arc;
 
 use bytes::Bytes;
 use city_common::cli::args::RPCServerArgs;
+use city_common_circuit::circuits::zk_signature::{
+    verify_secp256k1_signature_proof,verify_standard_wrapped_zk_signature_proof
+};
 use city_redis_store::RedisStore;
 use city_rollup_common::{
     actors::traits::OrchestratorRPCEventSenderSync,
@@ -26,6 +29,7 @@ use city_rollup_worker_dispatch::{
     },
     traits::{proving_dispatcher::ProvingDispatcher, proving_worker::ProvingWorkerListener},
 };
+use city_store::config::C;
 use http_body_util::BodyExt;
 use http_body_util::Full;
 use hyper::body::Incoming;
@@ -44,7 +48,8 @@ use plonky2::hash::hash_types::RichField;
 use rayon::iter::{IndexedParallelIterator, IntoParallelRefIterator, ParallelIterator};
 use serde::de::DeserializeOwned;
 use serde_json::{json, Value};
-use tokio::{net::TcpListener};
+use tokio::{net::TcpListener, task::spawn_blocking};
+
 
 use crate::rpc::ErrorCode;
 use crate::rpc::ExternalRequestParams;
@@ -312,7 +317,7 @@ impl<F: RichField> CityRollupRPCServerHandler<F> {
         &mut self,
         req: CityClaimDepositRPCRequest,
     ) -> Result<(), anyhow::Error> {
-        self.verify_signature_proof(req.user_id, req.signature_proof.clone())
+        self.verify_signature_proof_secp256k1(req.user_id, req.signature_proof.clone())
             .await?;
         self.notify_rpc_claim_deposit(&req)?;
         Ok(())
@@ -328,19 +333,36 @@ impl<F: RichField> CityRollupRPCServerHandler<F> {
         Ok(())
     }
 
+    async fn verify_signature_proof_secp256k1(
+        &self,
+        _user_id: u64,
+        signature_proof: Vec<u8>,
+    ) -> anyhow::Result<()> {
+
+        spawn_blocking(move || {
+            verify_secp256k1_signature_proof::<C, { city_store::config::D }>(
+                Default::default(),
+                signature_proof,
+            )?;
+            Ok::<_, anyhow::Error>(())
+        })
+        .await??;
+        Ok(())
+    }
     async fn verify_signature_proof(
         &self,
         _user_id: u64,
-        _signature_proof: Vec<u8>,
+        signature_proof: Vec<u8>,
     ) -> anyhow::Result<()> {
-        // let pubkey_bytes = self.store.get_user_state(user_id)?.public_key;
-        //
-        // spawn_blocking(move || {
-        //     verify_standard_wrapped_zk_signature_proof::<C, D>(pubkey_bytes, signature_proof)?;
-        //     Ok::<_, anyhow::Error>(())
-        // })
-        // .await??;
 
+        spawn_blocking(move || {
+            verify_standard_wrapped_zk_signature_proof::<C, { city_store::config::D }>(
+                Default::default(),
+                signature_proof,
+            )?;
+            Ok::<_, anyhow::Error>(())
+        })
+        .await??;
         Ok(())
     }
 }

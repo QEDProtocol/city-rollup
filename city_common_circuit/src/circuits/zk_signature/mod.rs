@@ -17,6 +17,9 @@ use self::{
 };
 
 use super::traits::qstandard::{provable::QStandardCircuitProvable, QStandardCircuit};
+use crate::circuits::{
+    l1_secp256k1_signature::L1Secp256K1SignatureCircuit,
+};
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(bound = "")]
 pub struct ZKSignatureCircuitInput<F: RichField> {
@@ -140,4 +143,16 @@ where
     verifier.verify(proof)?;
 
     Ok(())
+}
+
+pub fn verify_secp256k1_signature_proof<C: GenericConfig<D> + 'static, const D: usize>(
+    _public_key: QHashOut<C::F>,
+    signature_proof: Vec<u8>,
+) -> anyhow::Result<()>
+where
+    C::Hasher: AlgebraicHasher<C::F>,
+{
+    let circuit = L1Secp256K1SignatureCircuit::<C, D>::new();
+    let proof = bincode::deserialize::<ProofWithPublicInputs<C::F, C, D>>(&signature_proof)?;
+    circuit.minifier_chain.verify(proof)
 }
