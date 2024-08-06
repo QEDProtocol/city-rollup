@@ -1,15 +1,12 @@
 use std::borrow::Cow;
 
-use city_rollup_common::api::data::block::rpc_request::CityAddWithdrawalRPCRequest;
-use city_rollup_common::api::data::block::rpc_request::CityClaimDepositRPCRequest;
-use city_rollup_common::api::data::block::rpc_request::CityRegisterUserRPCRequest;
-use city_rollup_common::api::data::block::rpc_request::CityTokenTransferRPCRequest;
+use city_rollup_common::api::data::block::rpc_request::{
+    CityAddWithdrawalRPCRequest, CityClaimDepositRPCRequest, CityRegisterUserRPCRequest,
+    CityTokenTransferRPCRequest,
+};
 use jsonrpsee::core::traits::ToRpcParams;
 use plonky2::hash::hash_types::RichField;
-use serde::Deserialize;
-use serde::Deserializer;
-use serde::Serialize;
-use serde::Serializer;
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_json::value::RawValue;
 use serde_with::serde_as;
 
@@ -43,6 +40,14 @@ pub enum RequestParams<F: RichField> {
     RegisterUser(CityRegisterUserRPCRequest<F>),
     #[serde(rename = "cr_produce_block")]
     ProduceBlock,
+    #[serde(rename = "cr_gather_register_user")]
+    GatherRegisterUser,
+    #[serde(rename = "cr_gather_claim_deposit")]
+    GatherClaimDeposit(u64),
+    #[serde(rename = "cr_gather_add_withdrawal")]
+    GatherAddWithdrawal(u64),
+    #[serde(rename = "cr_gather_token_transfer")]
+    GatherTokenTransfer(u64),
 }
 
 

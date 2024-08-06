@@ -126,6 +126,7 @@ shutdown:
 	@sudo rm -fr redis-data || true
 	@sudo rm -fr db || true
 	@sudo rm -fr /tmp/plonky2_proof || true
+	@sudo rm -fr /tmp/city_rollup.lock || true
 	# @sudo rm -fr ~/.dogecoin || true
 	# @sudo rm -fr ~/.city-rollup/keystore || true
 

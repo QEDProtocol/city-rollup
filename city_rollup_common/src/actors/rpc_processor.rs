@@ -63,6 +63,18 @@ impl<F: RichField> OrchestratorEventReceiverSync<F> for CityScenarioRequestedAct
     fn wait_for_produce_block(&mut self) -> anyhow::Result<bool> {
         Ok(false)
     }
+    fn flush_all(&self) -> anyhow::Result<CityScenarioRequestedActionsFromRPC<F>> {
+        let claim_l1_deposits = self.clone().flush_claim_deposits()?;
+        let register_users = self.clone().flush_register_users()?;
+        let add_withdrawals = self.clone().flush_add_withdrawals()?;
+        let token_transfers = self.clone().flush_token_transfers()?;
+        Ok(CityScenarioRequestedActionsFromRPC {
+            token_transfers,
+            register_users,
+            claim_l1_deposits,
+            add_withdrawals,
+        })
+    }
 }
 impl<F: RichField> OrchestratorEventSenderSync<F> for CityScenarioRequestedActionsFromRPC<F> {
     fn notify_claim_deposit(&mut self, event: &CityClaimDepositRequest) -> anyhow::Result<()> {

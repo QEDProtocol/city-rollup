@@ -34,6 +34,7 @@ hyper  = { workspace = true }
 hyper-util  = { workspace = true }
 jsonrpsee = { workspace = true }
 tracing = { workspace = true }
+rayon = { workspace = true }
 
 tower = { workspace = true }
 tower-http = { workspace = true }

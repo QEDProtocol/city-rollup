@@ -6,7 +6,7 @@ use city_crypto::hash::base_types::{felt252::felt252_hashout_to_hash256_le, hash
 use city_rollup_common::{
     actors::{
         requested_actions::CityScenarioRequestedActions,
-        rpc_processor::CityScenarioRequestedActionsFromRPC,
+
         traits::{OrchestratorEventReceiverSync, WorkerEventTransmitterSync},
     },
     api::data::store::CityL1Withdrawal,
@@ -231,10 +231,13 @@ impl SimpleActorOrchestrator {
         let checkpoint_id = last_block.checkpoint_id + 1;
         let mut timer = DebugTimer::new(&format!("produce_block [{}]", checkpoint_id));
 
-        let register_users = event_receiver.flush_register_users()?;
-        let claim_l1_deposits = event_receiver.flush_claim_deposits()?;
-        let add_withdrawals = event_receiver.flush_add_withdrawals()?;
-        let token_transfers = event_receiver.flush_token_transfers()?;
+        // let register_users = event_receiver.flush_register_users()?;
+        // let claim_l1_deposits = event_receiver.flush_claim_deposits()?;
+        // let add_withdrawals = event_receiver.flush_add_withdrawals()?;
+        // let token_transfers = event_receiver.flush_token_transfers()?;\
+        let rpc_all = event_receiver.flush_all()?;
+        timer.lap(&"end process rpc_all".to_string());
+
         tracing::info!(
             "last_block_address: {}",
             BTCAddress160::new_p2sh(last_block_address,).to_address_string()
@@ -283,12 +286,13 @@ impl SimpleActorOrchestrator {
         all_inputs.append(&mut deposit_utxos);
 
         let block_requested = CityScenarioRequestedActions::new_from_requested_rpc(
-            CityScenarioRequestedActionsFromRPC {
-                register_users,
-                claim_l1_deposits,
-                add_withdrawals,
-                token_transfers,
-            },
+            // CityScenarioRequestedActionsFromRPC {
+            //     register_users,
+            //     claim_l1_deposits,
+            //     add_withdrawals,
+            //     token_transfers,
+            // },
+            rpc_all,
             all_inputs.iter().skip(1),
             &last_block,
             SIGHASH_CIRCUIT_MAX_WITHDRAWALS,
@@ -307,6 +311,12 @@ impl SimpleActorOrchestrator {
 
         let next_address = CityStore::get_city_block_deposit_address(store, checkpoint_id + 1)?;
         let next_script = CityStore::get_city_block_script(store, checkpoint_id + 1)?;
+        tracing::info!(
+            "next_address: {}",
+            BTCAddress160::new_p2sh(next_address).to_address_string()
+        );
+
+
         /*tracing::info!(
             "next_address: {}",
             BTCAddress160::new_p2sh(next_address).to_address_string()

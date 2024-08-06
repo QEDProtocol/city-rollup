@@ -408,3 +408,29 @@ macro_rules! city_rpc_call_sync {
         }
     }};
 }
+
+#[macro_export]
+macro_rules! async_rpc_call_with_response_handling {
+    ($instance:ident, $params:expr, $retype:ty) => {{
+        let response = $instance
+            .client
+            .post($instance.url)
+            .json(&RpcRequest {
+                jsonrpc: Version::V2,
+                request: $params,
+                id: Id::Number(1),
+            })
+            .send()
+            .await?
+            .json::<RpcResponse<$retype>>()
+            .await?;
+
+        if let ResponseResult::Success(s) = response.result {
+            Ok(s)
+        } else {
+            Err(anyhow::format_err!("rpc call failed"))
+        }
+    }};
+
+}
+

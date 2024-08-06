@@ -16,3 +16,4 @@ city_store = { path = "../city_store" }
 plonky2 = { workspace = true }
 serde_json = { workspace = true }
 city_macros = { path = "../city_macros" }
+lazy_static = { workspace = true }
