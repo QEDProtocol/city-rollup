@@ -28,7 +28,9 @@ city_rollup_common           = { path = "../city_rollup_common" }
 kvq_store_redb            = { path = "../kvq_store_redb" }
 city_crypto           = { path = "../city_crypto" }
 tracing = { workspace = true }
-
+fs2 = "0.4"
+strum = "0.26.0"
+strum_macros = "0.26.0"
 [dev-dependencies]
 criterion = "0.5.1"
 rand_chacha = "0.3.1"

@@ -82,3 +82,5 @@ pub type L2UserIdsStore<S> = L2UserIdsModel<
     S,
     KVQStandardAdapter<S, L2UserIdKeyByPubicKeyIdCore<L2_USER_IDS_BY_PUBLIC_KEY_TABLE_TYPE>, u64>,
 >;
+
+pub const LOCK_FILE_PATH: &str = "/tmp/city_rollup.lock";

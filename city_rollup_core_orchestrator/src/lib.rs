@@ -1,4 +1,4 @@
-use std::{sync::Arc, time::Duration};
+use std::{process, sync::Arc, time::Duration};
 
 use city_common::{cli::args::OrchestratorArgs, units::UNIT_BTC};
 use city_crypto::hash::{base_types::hash256::Hash256, qhashout::QHashOut};
@@ -20,10 +20,14 @@ use city_rollup_common::{
 use city_rollup_core_api::KV;
 use city_rollup_core_worker::event_processor::CityEventProcessor;
 use city_rollup_worker_dispatch::implementations::redis::RedisQueue;
-use city_store::store::{city::base::CityStore, sighash::SigHashMerkleTree};
+use city_store::{
+    file_lock::{try_lock, FileLockStatus},
+    store::{city::base::CityStore, sighash::SigHashMerkleTree},
+};
 use kvq_store_redb::KVQReDBStore;
 use plonky2::{field::goldilocks_field::GoldilocksField, plonk::config::PoseidonGoldilocksConfig};
 use redb::Database;
+use tracing::{debug, log::info};
 
 use crate::{
     debug::scenario::actors::simple::SimpleActorOrchestrator, event_receiver::CityEventReceiver,
@@ -37,6 +41,15 @@ type C = PoseidonGoldilocksConfig;
 type F = GoldilocksField;
 
 pub fn run(args: OrchestratorArgs) -> anyhow::Result<()> {
+    let file_lock = match try_lock(){
+        Ok(file_lock) => file_lock,
+        Err(e) => {
+            eprintln!("{}", e);
+            process::exit(1);
+        }
+    };
+    debug!("file lock status: {:?}", file_lock.status);
+
     let mut proof_store = RedisStore::new(&args.redis_uri)?;
     let queue = RedisQueue::new(&args.redis_uri)?;
     let mut event_processor = CityEventProcessor::new(queue.clone());
@@ -47,26 +60,7 @@ pub fn run(args: OrchestratorArgs) -> anyhow::Result<()> {
     let mut rpc_queue =
         CityEventReceiver::<F>::new(queue.clone(), QRPCProcessor::new(0), proof_store.clone());
 
-    let mut wallet = CityMemoryWallet::<C, D>::new_fast_setup();
-    let genesis_funder_public_key = wallet.add_secp256k1_private_key(Hash256(
-        hex_literal::hex!("133700f4676a0d0e16aaced646ed693626fcf1329db55be8eee13ad8df001337"),
-    ))?;
-    let genesis_funder_address = BTCAddress160::from_p2pkh_key(genesis_funder_public_key);
-    let deposit_0_public_key = wallet.add_secp256k1_private_key(Hash256(hex_literal::hex!(
-        "e6baf19a8b0b9b8537b9354e178a0a42d0887371341d4b2303537c5d18d7bb87"
-    )))?;
-    let _deposit_0_address = BTCAddress160::from_p2pkh_key(deposit_0_public_key);
-    let deposit_1_public_key = wallet.add_secp256k1_private_key(Hash256(hex_literal::hex!(
-        "51dfec6b389f5f033bbe815d5df995a20851227fd845a3be389ca9ad2b6924f0"
-    )))?;
-    let _deposit_1_address = BTCAddress160::from_p2pkh_key(deposit_1_public_key);
 
-    let sighash_whitelist_tree = SigHashMerkleTree::new();
-    let block0 = CityL2BlockState::default();
-    let block1 = CityL2BlockState {
-        checkpoint_id: 1,
-        ..Default::default()
-    };
     let db = Arc::new(Database::create(&args.db_path)?);
     let wxn = db.begin_write()?;
     {
@@ -92,8 +86,37 @@ pub fn run(args: OrchestratorArgs) -> anyhow::Result<()> {
                 Ok::<_, anyhow::Error>(())
             });
         });
-        CityStore::set_block_state(&mut store, &block0)?;
-        CityStore::set_block_state(&mut store, &block1)?;
+
+        //if lock file is created and locked, then set block[0] and block[1] to the
+        // store
+        if file_lock.status == FileLockStatus::FileCreatedAndLocked {
+            debug!("file_lock.status: {:?}", file_lock.status);
+
+            let block0 = CityL2BlockState::default();
+            let block1 = CityL2BlockState {
+                checkpoint_id: 1,
+                ..Default::default()
+            };
+            info!("set block0 and block1 to the store");
+            CityStore::set_block_state(&mut store, &block0)?;
+            CityStore::set_block_state(&mut store, &block1)?;
+
+            let mut wallet = CityMemoryWallet::<C, D>::new_fast_setup();
+            let genesis_funder_public_key =
+                wallet.add_secp256k1_private_key(Hash256(hex_literal::hex!(
+                    "133700f4676a0d0e16aaced646ed693626fcf1329db55be8eee13ad8df001337"
+                )))?;
+            let genesis_funder_address = BTCAddress160::from_p2pkh_key(genesis_funder_public_key);
+            let deposit_0_public_key =
+                wallet.add_secp256k1_private_key(Hash256(hex_literal::hex!(
+                    "e6baf19a8b0b9b8537b9354e178a0a42d0887371341d4b2303537c5d18d7bb87"
+                )))?;
+            let _deposit_0_address = BTCAddress160::from_p2pkh_key(deposit_0_public_key);
+            let deposit_1_public_key =
+                wallet.add_secp256k1_private_key(Hash256(hex_literal::hex!(
+                    "51dfec6b389f5f033bbe815d5df995a20851227fd845a3be389ca9ad2b6924f0"
+                )))?;
+            let _deposit_1_address = BTCAddress160::from_p2pkh_key(deposit_1_public_key);
 
         let genesis_state_hash = CityStore::get_city_root(&store, 0)?;
         let setup_fee = 100000 * 500;
@@ -131,6 +154,7 @@ pub fn run(args: OrchestratorArgs) -> anyhow::Result<()> {
             .map(|x| rpc_queue.notify_rpc_register_user(&x))
             .collect::<anyhow::Result<Vec<()>>>()?;
     }
+}
     wxn.commit()?;
 
     /*
@@ -162,6 +186,7 @@ pub fn run(args: OrchestratorArgs) -> anyhow::Result<()> {
         .map(|x| rpc_queue.notify_rpc_register_user(&x))
         .collect::<anyhow::Result<Vec<()>>>()?;
     */
+    let sighash_whitelist_tree = SigHashMerkleTree::new();
 
     sync_infinite_loop!(1000, {
         let wxn = db.begin_write()?;
