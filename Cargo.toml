@@ -124,8 +124,8 @@ bs58 = { version = "0.5.1", features = ["std", "check"] }
 jsonrpsee = { version = "0.24.0", features = ["full"] }
 # rocksdb = { version = "0.21.0", features = ["serde", "multi-threaded-cf"] }
 home = { version = "0.5.9" }
-indicatif = "0.17.8"
-
+indicatif = {version = "0.17.8", features = ["rayon"]}
+jemallocator = "0.5"
 [patch.'https://github.com/0xPolygonZero/plonky2.git']
 plonky2 = { git = "https://github.com/QEDProtocol/plonky2-hwa", rev = "6a8ca008da97890b67a84f64784cfbc488b5238d" }
 

@@ -37,6 +37,7 @@ reqwest = { workspace = true }
 kvq           = { path = "../kvq" }
 city_store           = { path = "../city_store" }
 city_rollup_rpc_provider = { path = "../city_rollup_rpc_provider" }
+jemallocator = { workspace = true }
 
 repl-rs = "0.2.8"
 [build-dependencies]

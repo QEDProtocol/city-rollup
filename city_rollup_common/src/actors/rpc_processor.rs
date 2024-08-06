@@ -1,3 +1,4 @@
+use rayon::prelude::{IntoParallelRefIterator, ParallelIterator};
 use crate::{
     api::data::block::{
         requested_actions::{
@@ -228,10 +229,14 @@ impl<F: RichField> QRPCProcessor<F> {
         rpc_node_id: u32,
         reqs: &[CityRegisterUserRPCRequest<F>],
     ) -> anyhow::Result<()> {
-        for req in reqs {
-            let register = self.injest_rpc_register_user(rpc_node_id, req)?;
-            self.output.register_users.push(register);
-        }
+        let mut registers = reqs
+            .par_iter()
+            .map(|req| {
+                self.injest_rpc_register_user(rpc_node_id, req)
+                    .expect("injest_rpc_register_user failed")
+            })
+            .collect::<Vec<_>>();
+        self.output.register_users.append(&mut registers);
         Ok(())
     }
 }
