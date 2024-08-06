@@ -5,10 +5,12 @@ use city_crypto::hash::base_types::hash256::Hash256;
 use reqwest::blocking::ClientBuilder;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
+use std::thread::sleep;
+use std::time::Duration;
 use crate::{
     errors::data_resolver::BTCDataResolverError, introspection::transaction::BTCTransaction,
 };
-
+use tracing::{debug};
 use super::{
     data::{BTCAddress160, BTCFeeRateEstimate, BTCTransactionWithVout, BTCUTXO},
     traits::{QBitcoinAPIFunderSync, QBitcoinAPISync},
@@ -186,32 +188,42 @@ impl BTCLinkAPI {
         &self,
         path: String,
     ) -> Result<R, BTCDataResolverError> {
-        let client = if self.no_proxy {
-            ClientBuilder::new()
-                .no_proxy()
-                .build()
-                .expect("Client::new()")
-        } else {
-            ClientBuilder::new().build().expect("Client::new()")
-        };
-        let resp = client
-            .get(format!("{}/{}", self.electrs_url, path))
-            .send()
-            .map_err(|err| BTCDataResolverError {
-                message: err.to_string(),
-            })?
-            .error_for_status()
-            .map_err(|err| BTCDataResolverError {
-                message: err.to_string(),
-            })?;
-        let text = resp.text().map_err(|err| BTCDataResolverError {
-            message: err.to_string(),
-        })?;
-        Ok(
-            serde_json::from_str::<R>(&text).map_err(|err| BTCDataResolverError {
-                message: err.to_string(),
-            })?,
-        )
+        const RETRY_INTERVAL: Duration = Duration::from_millis(200); // in milliseconds
+        const MAX_RETRIES: usize = 300; // 300 * 200ms = 60s, may need to adjust
+
+        let client = self.create_http_client();
+        let uri = format!("{}/{}", self.electrs_url, path);
+
+        for attempt in 1..=MAX_RETRIES {
+            debug!("Attempt {} to fetch UTXO from Electrum", attempt);
+            let response = client.get(&uri).send().map_err(|e| BTCDataResolverError { message: e.to_string() })?;
+            let text = response.text().map_err(|e| BTCDataResolverError { message: e.to_string() })?;
+
+            // Check if the response is an array that only contains "[]"
+            if text != "[]" {
+                debug!("Response from Electrum: {}", text);
+                return match serde_json::from_str::<R>(&text) {
+                    Ok(data) => Ok(data),
+                    Err(e) => Err(BTCDataResolverError { message: e.to_string() }),
+                }
+            } else {
+                debug!("Received empty response, retrying...");
+            }
+
+            // Check if we have reached the maximum number of retries
+            if attempt == MAX_RETRIES {
+                return Err(BTCDataResolverError {
+                    message: "Maximum retries reached with empty response".to_string(),
+                });
+            }
+
+            // sleep for a short interval before retrying
+            sleep(RETRY_INTERVAL);
+        }
+
+        Err(BTCDataResolverError {
+            message: "Failed to retrieve data after maximum retries".to_string(),
+        })
     }
     pub fn is_doge(&self) -> bool {
         self.rpc_config.is_doge
@@ -294,6 +306,16 @@ impl BTCLinkAPI {
         n_blocks: u32,
     ) -> Result<BTCFeeRateEstimate, BTCDataResolverError> {
         self.send_command("estimatesmartfee", "1.0", (n_blocks,))
+    }
+    pub fn create_http_client(&self) -> reqwest::blocking::Client {
+        if self.no_proxy {
+            ClientBuilder::new()
+                .no_proxy()
+                .build()
+                .expect("Failed to create HTTP client with no proxy")
+        } else {
+            ClientBuilder::new().build() .expect("Failed to create HTTP client")
+        }
     }
 }
 
