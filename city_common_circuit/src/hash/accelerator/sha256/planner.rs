@@ -165,7 +165,8 @@ impl Sha256AcceleratorDomain {
         W: Witness<F>,
         F: RichField + Extendable<D>,
         const D: usize,
-        Iter: Iterator<Item = &'a [u8]>,
+        T: AsRef<[u8]>,
+        Iter: IntoIterator<Item = T>,
     >(
         &self,
         witness: &mut W,
@@ -175,6 +176,7 @@ impl Sha256AcceleratorDomain {
             .iter()
             .zip(preimages)
             .for_each(|(hash_id, p)| {
+                let p = p.as_ref();
                 let digest = CoreSha256Hasher::hash_bytes(p);
                 witness.set_hash256_bytes_target(&self.planned_hashes[*hash_id].digest, &digest.0);
                 witness.set_target_arr(
@@ -190,19 +192,7 @@ impl Sha256AcceleratorDomain {
         witness: &mut W,
         preimages: &[Vec<u8>],
     ) {
-        self.witnessed_hash_ids
-            .iter()
-            .zip(preimages)
-            .for_each(|(hash_id, p)| {
-                let digest = CoreSha256Hasher::hash_bytes(p);
-                witness.set_hash256_bytes_target(&self.planned_hashes[*hash_id].digest, &digest.0);
-                witness.set_target_arr(
-                    &self.planned_hashes[*hash_id].preimage,
-                    &p.iter()
-                        .map(|x| F::from_canonical_u8(*x))
-                        .collect::<Vec<F>>(),
-                )
-            });
+        self.set_witness_iter(witness, preimages)
     }
 
     pub fn set_witness_refs<W: Witness<F>, F: RichField + Extendable<D>, const D: usize>(
@@ -210,19 +200,7 @@ impl Sha256AcceleratorDomain {
         witness: &mut W,
         preimages: &[&[u8]],
     ) {
-        self.witnessed_hash_ids
-            .iter()
-            .zip(preimages)
-            .for_each(|(hash_id, p)| {
-                let digest = CoreSha256Hasher::hash_bytes(p);
-                witness.set_hash256_bytes_target(&self.planned_hashes[*hash_id].digest, &digest.0);
-                witness.set_target_arr(
-                    &self.planned_hashes[*hash_id].preimage,
-                    &p.iter()
-                        .map(|x| F::from_canonical_u8(*x))
-                        .collect::<Vec<F>>(),
-                )
-            });
+        self.set_witness_iter(witness, preimages)
     }
     pub fn process_derived_pass<W: Witness<F>, F: RichField + Extendable<D>, const D: usize>(
         &self,

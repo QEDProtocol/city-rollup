@@ -112,12 +112,12 @@ pub fn create_hints_for_block(
             funding_transactions: all_inputs.to_vec(),
             next_block_redeem_script: next_script.to_vec(),
         };
-        
+
         //tracing::info!("hint[{}]: {}",i, serde_json::to_string(&hint).unwrap());
         tracing::info!("sighash[{}]: {}", i, hint.sighash_preimage.get_hash().to_hex_string());
         //tracing::info!("sighash_252[{}]: {:?}", hint.sighash_preimage.get_hash_felt252::<F>());
         tracing::info!("sighash_252_hex[{}]: {}", i, felt252_hashout_to_hash256_le(hint.sighash_preimage.get_hash_felt252::<F>()).to_hex_string());
-        
+
         spend_hints.push(hint);
     }
 
@@ -334,9 +334,6 @@ impl SimpleActorOrchestrator {
 
         let leaf_jobs_debug_serialized = leaf_jobs.iter().map(|x|QProvingJobDataIDSerializedWrapped(x.to_fixed_bytes())).collect::<Vec<_>>();
         println!("leaf_jobs: {}", serde_json::to_string(&leaf_jobs_debug_serialized)?);
-        
-
-
 
         Ok((
             leaf_jobs,

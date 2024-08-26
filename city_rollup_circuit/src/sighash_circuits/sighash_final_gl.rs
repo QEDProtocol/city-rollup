@@ -12,7 +12,7 @@ use city_rollup_common::qworker::{
 };
 use plonky2::{
     hash::hash_types::HashOutTarget,
-    iop::{target::Target, witness::{PartialWitness, WitnessWrite}},
+    iop::witness::{PartialWitness, WitnessWrite},
     plonk::{
         circuit_builder::CircuitBuilder,
         circuit_data::{CircuitConfig, CircuitData, CommonCircuitData, VerifierOnlyCircuitData},
@@ -25,16 +25,6 @@ use crate::{
     introspection::gadgets::rollup::introspection_result::BTCRollupIntrospectionFinalizedResultGadget,
     worker::traits::QWorkerCircuitCustomWithDataSync,
 };
-fn _reverse_endian_bits(bits: &[Target]) -> Vec<Target> {
-    let mut byte_groups = bits.to_vec().chunks_exact(8).map(|chunk| {
-        [
-            chunk[0], chunk[1], chunk[2], chunk[3], chunk[4], chunk[5], chunk[6], chunk[7],
-        ]
-    }).collect::<Vec<_>>();
-    byte_groups.reverse();
-
-    byte_groups.into_iter().flatten().collect::<Vec<_>>()
-}
 #[derive(Debug)]
 pub struct CRSigHashFinalGLCircuit<C: GenericConfig<D> + 'static, const D: usize>
 where

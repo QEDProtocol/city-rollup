@@ -1,4 +1,4 @@
-use city_common::logging::trace_timer::TraceTimer;
+// use city_common::logging::trace_timer::TraceTimer;
 use city_common_circuit::{builder::{connect::CircuitBuilderConnectHelpers, core::{CircuitBuilderHelpersCore, WitnessHelpersCore}, select::CircuitBuilderSelectHelpers, signature::CircuitBuilderSignatureHelpers}, hash::{accelerator::sha256::planner::{Sha256AcceleratorDomain, Sha256AcceleratorDomainID, Sha256AcceleratorDomainPlanner, Sha256AcceleratorDomainResolver}, base_types::{felthash248::CircuitBuilderFelt248Hash, felthash252::CircuitBuilderFelt252Hash, hash160bytes::Hash160BytesTarget, hash256bytes::{CircuitBuilderHash256Bytes, Hash256BytesTarget}}}};
 use city_rollup_common::{block_template::config::{GENESIS_STATE_HASH, OP_CHECKGROTH16VERIFY, OP_CHECKGROTH16VERIFY_NOP}, introspection::rollup::introspection::{BlockSpendIntrospectionGadgetConfig, BlockSpendIntrospectionHint}};
 use plonky2::{
@@ -54,7 +54,6 @@ pub struct BTCRollupIntrospectionGadget {
 
     pub last_block_spend_index: i32,
     pub block_spend_index: usize,
-
     pub current_spend_index: usize,
 
     pub next_block_redeem_script: Vec<Target>,
@@ -63,6 +62,7 @@ pub struct BTCRollupIntrospectionGadget {
 
     pub hash_domain: Sha256AcceleratorDomain,
     pub hash_domain_id: Sha256AcceleratorDomainID,
+
     pub current_state_hash: HashOutTarget,
 }
 
@@ -71,19 +71,18 @@ impl BTCRollupIntrospectionGadget {
         builder: &mut CircuitBuilder<F, D>,
         config: &BlockSpendIntrospectionGadgetConfig,
     ) -> Self {
-        let mut trace_timer = TraceTimer::new("BTCRollupIntrospectionGadget");
+        // let mut trace_timer = TraceTimer::new("BTCRollupIntrospectionGadget");
 
         let mut hash_domain = Sha256AcceleratorDomain::new();
 
         // start sig hash
-        let sighash_tx = BTCTransactionBytesGadget::add_virtual_to_fixed_locktime_version(
+        let sighash_tx = BTCTransactionBytesGadget::add_virtual_to_fixed_locktime(
             builder,
             config
                 .sighash_preimage_config
                 .transaction_config
                 .layout
                 .clone(),
-            config.sighash_preimage_config.transaction_config.version,
             config.sighash_preimage_config.transaction_config.locktime,
             false,
         );
@@ -105,25 +104,23 @@ impl BTCRollupIntrospectionGadget {
 
         let mut funding_transactions = Vec::with_capacity(config.funding_transaction_configs.len());
         for (i, funding_tx_config) in config.funding_transaction_configs.iter().enumerate() {
-            trace_timer.event(format!(
-                "funding_tx_config: {:?}",
-                funding_tx_config.layout.input_script_sizes
-            ));
+            // trace_timer.event(format!(
+            //     "funding_tx_config: {:?}",
+            //     funding_tx_config.layout.input_script_sizes
+            // ));
 
             let funding_tx = if i != config.block_spend_index {
-                BTCTransactionBytesGadget::add_virtual_to_fixed_locktime_version_with_der(
+                BTCTransactionBytesGadget::add_virtual_to_fixed_locktime_with_der(
                 builder,
                 funding_tx_config.layout.clone(),
-                funding_tx_config.version,
                 funding_tx_config.locktime,
                 false,
                 true,
             )
         }else{
-            BTCTransactionBytesGadget::add_virtual_to_fixed_locktime_version(
+            BTCTransactionBytesGadget::add_virtual_to_fixed_locktime(
                 builder,
                 funding_tx_config.layout.clone(),
-                funding_tx_config.version,
                 funding_tx_config.locktime,
                 false,
             )

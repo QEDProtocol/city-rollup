@@ -321,10 +321,12 @@ impl QBitcoinAPISync for BTCLinkAPI {
     fn get_funding_transactions_with_vout(
         &self,
         address: BTCAddress160,
+        filter_fn: impl Fn(&BTCUTXO) -> bool
     ) -> anyhow::Result<Vec<BTCTransactionWithVout>> {
         let utxos = self.btc_get_utxos(address.to_string())?;
         let transactions = utxos
             .iter()
+            .filter(|&utxo| filter_fn(utxo))
             .map(|utxo| {
                 let txid = utxo.txid;
                 let tx = self.btc_get_raw_transaction(txid)?;
@@ -371,21 +373,7 @@ impl QBitcoinAPISync for BTCLinkAPI {
         &self,
         address: BTCAddress160,
     ) -> anyhow::Result<Vec<BTCTransactionWithVout>> {
-        let utxos = self.btc_get_utxos(address.to_string())?;
-        tracing::info!("utxos len: {}", utxos.len());
-        let transactions = utxos
-            .into_iter()
-            .filter(|x| x.status.confirmed)
-            .map(|utxo| {
-                let txid = utxo.txid;
-                let tx = self.btc_get_raw_transaction(txid)?;
-                Ok(BTCTransactionWithVout {
-                    transaction: BTCTransaction::from_bytes(&tx.0)?,
-                    vout: utxo.vout,
-                })
-            })
-            .collect::<anyhow::Result<Vec<BTCTransactionWithVout>>>()?;
-        Ok(transactions)
+        Ok(self.get_funding_transactions_with_vout(address, |utxo| utxo.status.confirmed)?)
     }
 }
 

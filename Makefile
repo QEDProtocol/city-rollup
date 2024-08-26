@@ -1,4 +1,4 @@
-TRACE_ENABLED           := 1
+TRACE_ENABLED           := full
 PROFILE                 := release
 LOG_LEVEL  			        := info,city_common_circuit=off,city_rollup_circuit=off,plonky2=off,city_crypto=off,city_store=off,city_rollup_common=off
 
@@ -28,7 +28,7 @@ dedup:
 
 .PHONY: build
 build:
-	cargo build --${PROFILE}
+	cargo build --profile ${PROFILE}
 
 .PHONY: build-if-not-exists
 build-if-not-exists:
@@ -142,6 +142,12 @@ cr_l1_deposit: build-if-not-exists
 		--private-key=2c6a1188f8739daaeff79c40f3690c573381c91a2359a0df2b45e4310b59f30b \
 		--amount=100000000
 
+.PHONY: cr_l1_refund
+cr_l1_refund: build-if-not-exists
+	@RUST_LOG=${LOG_LEVEL} RUST_BACKTRACE=${TRACE_ENABLED} ./target/${PROFILE}/city-rollup-user-cli l1-refund \
+		--private-key=2c6a1188f8739daaeff79c40f3690c573381c91a2359a0df2b45e4310b59f30b \
+		--txid=${TXID}
+
 .PHONY: cr_claim_deposit
 cr_claim_deposit: build-if-not-exists
 	@RUST_LOG=${LOG_LEVEL} RUST_BACKTRACE=${TRACE_ENABLED} ./target/${PROFILE}/city-rollup-user-cli claim-deposit \
@@ -184,7 +190,7 @@ cr_get_deposit_by_txid:
 	curl http://localhost:3000 \
 		-X POST \
 		-H "Content-Type: application/json" \
-		--data '{"method":"cr_getDepositByTxid","params":["a4740418b4c2119468ba1a561561ff4163b14476ec2171c92f987c32922c85ff"],"id":1,"jsonrpc":"2.0"}'  | jq
+		--data '{"method":"cr_getDepositByTxid","params":["5096eab42d26997ef450567e3c1fd9646b31910fbfc71700affa8a0346fa4e5c"],"id":1,"jsonrpc":"2.0"}'  | jq
 
 .PHONY: cr_get_deposit_by_id
 cr_get_deposit_by_id:

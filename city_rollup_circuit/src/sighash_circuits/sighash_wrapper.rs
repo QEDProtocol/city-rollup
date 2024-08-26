@@ -42,7 +42,7 @@ where
     C::Hasher: AlgebraicHasher<C::F>,
     C::F: CubicExtendable,
 {
-    pub inner_circuit_cache: HashMap<usize, CRSigHashCircuit<C, D>>,
+    pub sighash_circuit_cache: HashMap<usize, CRSigHashCircuit<C, D>>,
     // [START] circuit targets
     pub proof_target: ProofWithPublicInputsTarget<D>,
     pub verifier_data_target: VerifierCircuitTarget,
@@ -115,10 +115,10 @@ where
         let fingerprint = QHashOut(get_circuit_fingerprint_generic::<D, C::F, C>(
             &circuit_data.verifier_only,
         ));
-        let mut inner_circuit_cache = HashMap::new();
-        inner_circuit_cache.insert(0, child_circuit_0);
+        let mut sighash_circuit_cache = HashMap::new();
+        sighash_circuit_cache.insert(0, child_circuit_0);
         Self {
-            inner_circuit_cache,
+            sighash_circuit_cache,
             whitelist_merkle_proof,
             proof_target,
             verifier_data_target,
@@ -131,10 +131,10 @@ where
         input: &CRSigHashWrapperCircuitInput<C::F>,
     ) -> anyhow::Result<ProofWithPublicInputs<C::F, C, D>> {
         let inner_proof = if self
-            .inner_circuit_cache
+            .sighash_circuit_cache
             .contains_key(&(input.whitelist_inclusion_proof.index as usize))
         {
-            self.inner_circuit_cache
+            self.sighash_circuit_cache
                 .get(&(input.whitelist_inclusion_proof.index as usize))
                 .unwrap()
                 .prove_base(&input.introspection_hint)?
@@ -142,21 +142,22 @@ where
             let child_circuit =
                 CRSigHashCircuit::<C, D>::new(input.introspection_hint.get_config());
             let proof = child_circuit.prove_base(&input.introspection_hint)?;
-            self.inner_circuit_cache.insert(
+            self.sighash_circuit_cache.insert(
                 input.whitelist_inclusion_proof.index as usize,
                 child_circuit,
             );
             proof
         };
-        let inner_veriifer_data = self
-            .inner_circuit_cache
+        let inner_verifier_data = self
+            .sighash_circuit_cache
             .get(&(input.whitelist_inclusion_proof.index as usize))
             .unwrap()
             .get_verifier_config_ref();
+
         let mut pw = PartialWitness::new();
 
         pw.set_proof_with_pis_target(&self.proof_target, &inner_proof);
-        pw.set_verifier_data_target(&self.verifier_data_target, inner_veriifer_data);
+        pw.set_verifier_data_target(&self.verifier_data_target, &inner_verifier_data);
 
         self.whitelist_merkle_proof.set_witness(
             &mut pw,
@@ -170,14 +171,14 @@ where
         &self,
         input: &CRSigHashWrapperCircuitInput<C::F>,
     ) -> anyhow::Result<ProofWithPublicInputs<C::F, C, D>> {
-        tracing::info!("proving sig hash introspection: {}",input.introspection_hint.sighash_preimage.get_hash().to_hex_string());
         let mut pw = PartialWitness::new();
+
         if self
-            .inner_circuit_cache
+            .sighash_circuit_cache
             .contains_key(&(input.whitelist_inclusion_proof.index as usize))
         {
             let child_circuit = self
-                .inner_circuit_cache
+                .sighash_circuit_cache
                 .get(&(input.whitelist_inclusion_proof.index as usize))
                 .unwrap();
 
@@ -198,6 +199,7 @@ where
                 child_circuit.get_verifier_config_ref(),
             );
         }
+
         self.whitelist_merkle_proof.set_witness(
             &mut pw,
             C::F::from_canonical_u64(input.whitelist_inclusion_proof.index),

@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     introspection::rollup::{
         introspection::BlockSpendIntrospectionHint,
-        introspection_result::BTCRollupIntrospectionFinalizedResult,
+        introspection_result::{BTCRollupIntrospectionFinalizedResult, BTCRollupRefundIntrospectionFinalizedResult},
     },
     qworker::job_id::QProvingJobDataID,
 };
@@ -23,4 +23,17 @@ pub struct CRSigHashFinalGLCircuitInput<F: RichField> {
     pub result: BTCRollupIntrospectionFinalizedResult<F>,
     pub state_transition_proof_id: QProvingJobDataID,
     pub sighash_introspection_proof_id: QProvingJobDataID,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
+#[serde(bound = "")]
+pub struct CRSigHashRootCircuitInput {
+    pub sighash_final_gl_proof_id: QProvingJobDataID,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
+#[serde(bound = "")]
+pub struct CRSigHashRefundFinalGLCircuitInput<F: RichField> {
+    pub result: BTCRollupRefundIntrospectionFinalizedResult<F>,
+    pub sighash_refund_proof_id: QProvingJobDataID,
 }

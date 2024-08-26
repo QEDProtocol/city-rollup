@@ -1,21 +1,23 @@
 use city_common_circuit::{
-    builder::core::{CircuitBuilderHelpersCore, WitnessHelpersCore},
-    hash::{
+    builder::{
+        connect::CircuitBuilderConnectHelpers,
+        core::{CircuitBuilderHelpersCore, WitnessHelpersCore},
+    }, hash::{
         accelerator::sha256::planner::Sha256AcceleratorDomain,
         base_types::hash256bytes::{
             CircuitBuilderHash256Bytes, Hash256BytesTarget, WitnessHash256Bytes,
         },
-    },
-    vector_builder::ByteTargetVectorBuilder,
+    }, vector_builder::ByteTargetVectorBuilder
 };
 use city_rollup_common::introspection::{
+    rollup::constants::ALLOWED_TRANSACTION_VERSIONS,
     size::BTCTransactionLayout,
     transaction::{BTCTransaction, BTCTransactionInput, BTCTransactionOutput},
 };
 use plonky2::{
     field::extension::Extendable,
     hash::hash_types::RichField,
-    iop::{target::Target, witness::Witness},
+    iop::{target::{Target}, witness::Witness},
     plonk::circuit_builder::CircuitBuilder,
 };
 
@@ -92,17 +94,15 @@ pub struct BTCTransactionBytesGadget {
 }
 
 impl BTCTransactionBytesGadget {
-    pub fn add_virtual_to_fixed_locktime_version<F: RichField + Extendable<D>, const D: usize>(
+    pub fn add_virtual_to_fixed_locktime<F: RichField + Extendable<D>, const D: usize>(
         builder: &mut CircuitBuilder<F, D>,
         layout: BTCTransactionLayout,
-        version: u32,
         locktime: u32,
         same_script: bool,
     ) -> Self {
-        Self::add_virtual_to_fixed_locktime_version_with_der(
+        Self::add_virtual_to_fixed_locktime_with_der(
             builder,
             layout,
-            version,
             locktime,
             same_script,
             false,
@@ -111,26 +111,23 @@ impl BTCTransactionBytesGadget {
     pub fn add_virtual_to_complex<F: RichField + Extendable<D>, const D: usize>(
         builder: &mut CircuitBuilder<F, D>,
         layout: BTCTransactionLayout,
-        version: Option<u32>,
         locktime: Option<u32>,
         input_scripts: Option<Vec<Vec<Target>>>,
     ) -> Self {
         Self::add_virtual_to_complex_with_der(
             builder,
             layout,
-            version,
             locktime,
             input_scripts,
             false,
         )
     }
-    pub fn add_virtual_to_fixed_locktime_version_with_der<
+    pub fn add_virtual_to_fixed_locktime_with_der<
         F: RichField + Extendable<D>,
         const D: usize,
     >(
         builder: &mut CircuitBuilder<F, D>,
         layout: BTCTransactionLayout,
-        version: u32,
         locktime: u32,
         same_script: bool,
         enable_der_pad: bool,
@@ -152,7 +149,12 @@ impl BTCTransactionBytesGadget {
                     .collect()
             }
         };
-        let version_t = builder.constant_u32_bytes_le(version);
+        let version_t = builder.add_virtual_target_arr();
+        let allowed_tx_versions = ALLOWED_TRANSACTION_VERSIONS
+            .into_iter()
+            .map(|version| builder.constant_u32_bytes_le(version).to_vec())
+            .collect::<Vec<_>>();
+        builder.connect_any_vec(&version_t, &allowed_tx_versions);
         let locktime_t = builder.constant_u32_bytes_le(locktime);
         let inputs = scripts
             .into_iter()
@@ -179,7 +181,6 @@ impl BTCTransactionBytesGadget {
     pub fn add_virtual_to_complex_with_der<F: RichField + Extendable<D>, const D: usize>(
         builder: &mut CircuitBuilder<F, D>,
         layout: BTCTransactionLayout,
-        version: Option<u32>,
         locktime: Option<u32>,
         input_scripts: Option<Vec<Vec<Target>>>,
         enable_der_pad: bool,
@@ -188,13 +189,14 @@ impl BTCTransactionBytesGadget {
             !enable_der_pad,
             "enable_der_pad not implemented for add_virtual_to_complex"
         );
-        let version_t: [Target; 4] = if version.is_some() {
-            builder.constant_u32_bytes_le(version.unwrap())
-        } else {
-            builder.add_virtual_target_arr()
-        };
+        let version_t = builder.add_virtual_target_arr();
+        let allowed_tx_versions = ALLOWED_TRANSACTION_VERSIONS
+            .into_iter()
+            .map(|version| builder.constant_u32_bytes_le(version).to_vec())
+            .collect::<Vec<_>>();
+        builder.connect_any_vec(&version_t, &allowed_tx_versions);
         let locktime_t: [Target; 4] = if locktime.is_some() {
-            builder.constant_u32_bytes_le(version.unwrap())
+            builder.constant_u32_bytes_le(locktime.unwrap())
         } else {
             builder.add_virtual_target_arr()
         };
@@ -274,25 +276,25 @@ impl BTCTransactionBytesGadget {
     ) -> Vec<Target> {
         let mut vb = ByteTargetVectorBuilder::new();
 
-        vb.write_slice(&self.version);
+        vb.write_slice(&self.version); // 4
 
         // inputs
         vb.write_constant_varuint(builder, self.inputs.len() as u64);
         for input in &self.inputs {
-            vb.write_slice(&input.hash);
-            vb.write_slice(&input.index);
-            vb.write_var_slice(builder, &input.script);
-            vb.write_slice(&input.sequence);
+            vb.write_slice(&input.hash); // 32
+            vb.write_slice(&input.index); // 4
+            vb.write_var_slice(builder, &input.script); // 107
+            vb.write_slice(&input.sequence); // 4
         }
 
         // outputs
-        vb.write_constant_varuint(builder, self.outputs.len() as u64);
+        vb.write_constant_varuint(builder, self.outputs.len() as u64); // 9
         for output in &self.outputs {
-            vb.write_slice(&output.value);
-            vb.write_var_slice(builder, &output.script);
+            vb.write_slice(&output.value); // 8
+            vb.write_var_slice(builder, &output.script); // 23
         }
 
-        vb.write_slice(&self.locktime);
+        vb.write_slice(&self.locktime); // 4
 
         vb.to_targets_vec()
     }
@@ -332,10 +334,10 @@ impl BTCTransactionBytesGadget {
             && self.inputs.len() == 1
             && self.outputs.len() == 1
             && self.inputs[0].script.len() == 106
-            &&tx.inputs[0].script.len() == 107
+            && tx.inputs[0].script.len() == 107
         {
             let mut tx_in = tx.inputs[0].clone();
-            tx_in.script = [tx_in.script[0..5].to_vec(), tx_in.script[6..107].to_vec()].concat();
+            tx_in.script = [tx_in.script[0..5].to_vec(), tx_in.script[6..107].to_vec()].concat(); // 106
             self.inputs[0].set_witness(witness, &tx_in);
         } else {
             for (input, tx_in) in self.inputs.iter().zip(tx.inputs.iter()) {

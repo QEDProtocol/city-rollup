@@ -90,6 +90,16 @@ impl BTCTransactionConfig {
             version: config.version,
         }
     }
+    pub fn generate_refund_tx_from_template(config: &BlockSpendCoreConfig) -> Self {
+        Self {
+            layout: BTCTransactionLayout {
+                input_script_sizes: vec![config.block_sighash_script_size],
+                output_script_sizes: vec![config.withdrawal_output_script_size],
+            },
+            locktime: config.locktime,
+            version: config.version,
+        }
+    }
 }
 
 #[serde_as]
@@ -260,7 +270,7 @@ impl BTCTransaction {
         //let address = Hash160::from_bytes(&self.outputs[0].script[3..23]).unwrap();
         /*address == next_address
         && */
-        
+
         self.outputs[0].script.len() == 23
             && self.inputs[0].script.len() > BLOCK_SCRIPT_LENGTH
             && btc_hash160(

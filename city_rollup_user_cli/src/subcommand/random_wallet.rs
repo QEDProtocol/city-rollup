@@ -15,8 +15,6 @@ pub async fn run(_: RandomWalletArgs) -> Result<()> {
     let mut debug_wallet = CityMemoryWallet::<PoseidonGoldilocksConfig, 2>::new_fast_setup();
     let public_key = debug_wallet.add_zk_private_key(private_key);
 
-
-
     let random_wallet = RandomWalletOutputJSON {
         public_key,
         private_key,

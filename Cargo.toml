@@ -122,11 +122,15 @@ r2d2_redis = { git = "https://github.com/GopherJ/r2d2-redis", rev = "63be37454cf
 gnark-plonky2-wrapper = { git = "https://github.com/cf/gnark-plonky2-verifier", rev = "75681e2a0e20270734f082145d13cdfe3349d009" }
 bs58 = { version = "0.5.1", features = ["std", "check"] }
 jsonrpsee = { version = "0.24.0", features = ["full"] }
-rocksdb = { version = "0.21.0", features = ["serde", "multi-threaded-cf"] }
+# rocksdb = { version = "0.21.0", features = ["serde", "multi-threaded-cf"] }
 home = { version = "0.5.9" }
+indicatif = "0.17.8"
 
 [patch.'https://github.com/0xPolygonZero/plonky2.git']
 plonky2 = { git = "https://github.com/QEDProtocol/plonky2-hwa", rev = "6a8ca008da97890b67a84f64784cfbc488b5238d" }
 
 [patch.'https://github.com/succinctlabs/starkyx.git']
 starkyx = { git = "https://github.com/QEDProtocol/starkyx", rev = "a53ea1060c6256a8a26820e43fbe8d75233e8b29" }
+
+[profile.release]
+debug = true

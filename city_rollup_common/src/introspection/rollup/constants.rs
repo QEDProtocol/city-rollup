@@ -21,3 +21,5 @@ pub fn get_network_magic_for_str(network: String) -> anyhow::Result<u64> {
         _ => Err(anyhow::anyhow!("Invalid network {}", network)),
     }
 }
+
+pub const ALLOWED_TRANSACTION_VERSIONS: [u32; 2] = [1u32, 2u32];

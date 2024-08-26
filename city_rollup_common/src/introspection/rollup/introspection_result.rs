@@ -140,6 +140,44 @@ pub fn get_introspection_events_hash<H: AlgebraicHasher<F>, F: RichField>(
 
 #[derive(Serialize, Deserialize, PartialEq, Clone, Debug)]
 #[serde(bound = "")]
+pub struct BTCRollupRefundIntrospectionResult<F: RichField> {
+    pub deposits: Vec<BTCRollupIntrospectionResultDeposit<F>>,
+    pub withdrawals: Vec<BTCRollupIntrospectionResultWithdrawal<F>>,
+
+    pub current_block_state_hash: QHashOut<F>,
+
+    pub sighash: Hash256,
+    pub sighash_felt252: QHashOut<F>,
+}
+
+impl<F: RichField> BTCRollupRefundIntrospectionResult<F> {
+    pub fn get_finalized_result<H: AlgebraicHasher<F>>(
+        &self,
+    ) -> BTCRollupRefundIntrospectionFinalizedResult<F> {
+        let d_events = self
+            .deposits
+            .iter()
+            .map(|d| d.get_hash::<H>())
+            .collect::<Vec<_>>();
+        let deposits_hash = get_introspection_events_hash::<H, F>(&d_events);
+        let w_events = self
+            .withdrawals
+            .iter()
+            .map(|w| w.get_hash::<H>())
+            .collect::<Vec<_>>();
+
+        let withdrawals_hash = get_introspection_events_hash::<H, F>(&w_events);
+
+        BTCRollupRefundIntrospectionFinalizedResult {
+            deposits_hash,
+            withdrawals_hash,
+            current_block_state_hash: self.current_block_state_hash
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, PartialEq, Clone, Debug)]
+#[serde(bound = "")]
 pub struct BTCRollupIntrospectionResult<F: RichField> {
     pub deposits: Vec<BTCRollupIntrospectionResultDeposit<F>>,
     pub withdrawals: Vec<BTCRollupIntrospectionResultWithdrawal<F>>,
@@ -232,6 +270,31 @@ impl<F: RichField> BTCRollupIntrospectionFinalizedResult<F> {
             self.total_withdrawals_count,
             self.current_block_rollup_balance,
             self.next_block_rollup_balance,
+        ]);
+        QHashOut(combined_hash)
+    }
+}
+
+#[derive(Serialize, Deserialize, PartialEq, Clone, Debug)]
+#[serde(bound = "")]
+pub struct BTCRollupRefundIntrospectionFinalizedResult<F: RichField> {
+    pub deposits_hash: QHashOut<F>,
+    pub withdrawals_hash: QHashOut<F>,
+    pub current_block_state_hash: QHashOut<F>,
+}
+impl<F: RichField> BTCRollupRefundIntrospectionFinalizedResult<F> {
+    pub fn get_combined_hash<H: AlgebraicHasher<F>>(&self) -> QHashOut<F> {
+        let deposits_withdrawals_hash =
+            H::two_to_one(self.deposits_hash.0, self.withdrawals_hash.0);
+        let combined_hash = H::hash_no_pad(&[
+            self.current_block_state_hash.0.elements[0],
+            self.current_block_state_hash.0.elements[1],
+            self.current_block_state_hash.0.elements[2],
+            self.current_block_state_hash.0.elements[3],
+            deposits_withdrawals_hash.elements[0],
+            deposits_withdrawals_hash.elements[1],
+            deposits_withdrawals_hash.elements[2],
+            deposits_withdrawals_hash.elements[3],
         ]);
         QHashOut(combined_hash)
     }

@@ -3,8 +3,7 @@ use std::borrow::BorrowMut;
 use city_common_circuit::{
     circuits::{
         simple_wrapper::dynamic::SimpleWrapperDynamic, traits::qstandard::QStandardCircuit,
-    },
-    field::cubic::CubicExtendable,
+    }, field::cubic::CubicExtendable
 };
 use city_crypto::{
     field::{qfield::QRichField, serialized_2d_felt_bls12381::Serialized2DFeltBLS12381},
@@ -40,7 +39,7 @@ use crate::{
         root_state_transition::block_state_transition::CRBlockStateTransitionCircuit,
     },
     sighash_circuits::{
-        sighash_final_gl::CRSigHashFinalGLCircuit, sighash_wrapper::CRSigHashWrapperCircuit,
+        sighash_final_gl::CRSigHashFinalGLCircuit, sighash_refund::CRSigHashRefundCircuit, sighash_refund_final_gl::CRSigHashRefundFinalGLCircuit, sighash_root::CRSigHashRootCircuit, sighash_wrapper::CRSigHashWrapperCircuit
     },
     worker::traits::{
         QWorkerCircuitCustomWithDataSync, QWorkerCircuitMutCustomWithDataSync,
@@ -63,7 +62,10 @@ where
         CRAggAddProcessL1WithdrawalAddL1DepositCircuit<C, D>,
     pub block_state_transition: CRBlockStateTransitionCircuit<C, D>,
     pub sighash_wrapper: CRSigHashWrapperCircuit<C, D>,
+    pub sighash_refund: CRSigHashRefundCircuit<C, D>,
     pub sighash_final_gl: CRSigHashFinalGLCircuit<C, D>,
+    pub sighash_refund_final_gl: CRSigHashRefundFinalGLCircuit<C, D>,
+    pub sighash_root: CRSigHashRootCircuit<C, D>,
     pub fingerprints: CRWorkerToolboxRootCircuitFingerprints<C::F>,
 }
 
@@ -75,6 +77,7 @@ where
     pub fn new(network_magic: u64, sighash_whitelist_root: QHashOut<C::F>) -> Self {
         let core = CRWorkerToolboxCoreCircuits::<C, D>::new(network_magic);
         let sighash_wrapper = CRSigHashWrapperCircuit::<C, D>::new(sighash_whitelist_root);
+        let sighash_refund = CRSigHashRefundCircuit::<C, D>::new();
 
         let block_agg_register_claim_deposit_transfer =
             CRAggUserRegisterClaimDepositL2TransferCircuit::<C, D>::new(
@@ -117,6 +120,17 @@ where
             sighash_wrapper.get_verifier_config_ref(),
             sighash_wrapper.get_common_circuit_data_ref(),
         );
+        let sighash_refund_final_gl = CRSigHashRefundFinalGLCircuit::new(
+            sighash_refund.get_verifier_config_ref(),
+            sighash_refund.get_common_circuit_data_ref(),
+            sighash_final_gl.get_common_circuit_data_ref().degree()
+        );
+        let sighash_root = CRSigHashRootCircuit::<C, D>::new(
+            sighash_final_gl.get_verifier_config_ref().constants_sigmas_cap.height(),
+            sighash_final_gl.get_fingerprint(),
+            sighash_refund_final_gl.get_fingerprint(),
+            sighash_final_gl.get_common_circuit_data_ref(),
+        );
 
         let fingerprints = CRWorkerToolboxRootCircuitFingerprints::<C::F> {
             network_magic,
@@ -133,8 +147,11 @@ where
             block_agg_add_process_withdrawal_add_deposit,
             block_state_transition,
             sighash_wrapper,
+            sighash_refund,
             sighash_final_gl,
+            sighash_refund_final_gl,
             fingerprints,
+            sighash_root,
         }
     }
     pub fn print_op_common_data(&self) {
@@ -172,8 +189,17 @@ where
             ProvingJobCircuitType::GenerateSigHashIntrospectionProof => {
                 self.sighash_wrapper.get_verifier_triplet()
             }
+            ProvingJobCircuitType::GenerateRefundSigHashIntrospectionProof => {
+                self.sighash_refund.get_verifier_triplet()
+            }
             ProvingJobCircuitType::GenerateFinalSigHashProof => {
                 self.sighash_final_gl.get_verifier_triplet()
+            }
+            ProvingJobCircuitType::GenerateSigHashRootProof => {
+                self.sighash_root.get_verifier_triplet()
+            }
+            ProvingJobCircuitType::GenerateRefundFinalSigHashProof => {
+                self.sighash_refund_final_gl.get_verifier_triplet()
             }
             other => self.core.get_verifier_triplet_for_circuit_type(other),
         }
@@ -209,11 +235,20 @@ where
             ProvingJobCircuitType::GenerateSigHashIntrospectionProof => self
                 .sighash_wrapper
                 .prove_q_worker_custom(self, store, job_id),
+            ProvingJobCircuitType::GenerateRefundSigHashIntrospectionProof => self
+                .sighash_refund
+                .prove_q_worker_custom(self, store, job_id),
             ProvingJobCircuitType::GenerateRollupStateTransitionProof => self
                 .block_state_transition
                 .prove_q_worker_custom(self, store, job_id),
             ProvingJobCircuitType::GenerateFinalSigHashProof => self
                 .sighash_final_gl
+                .prove_q_worker_custom(self, store, job_id),
+            ProvingJobCircuitType::GenerateSigHashRootProof => self
+                .sighash_root
+                .prove_q_worker_custom(self, store, job_id),
+            ProvingJobCircuitType::GenerateRefundFinalSigHashProof => self
+                .sighash_refund_final_gl
                 .prove_q_worker_custom(self, store, job_id),
             _ => self.core.worker_prove(store, job_id),
         }
@@ -247,6 +282,12 @@ where
                 .prove_q_worker_custom(self, store, job_id),
             ProvingJobCircuitType::GenerateFinalSigHashProof => self
                 .sighash_final_gl
+                .prove_q_worker_custom(self, store, job_id),
+            ProvingJobCircuitType::GenerateSigHashRootProof => self
+                .sighash_root
+                .prove_q_worker_custom(self, store, job_id),
+            ProvingJobCircuitType::GenerateRefundFinalSigHashProof => self
+                .sighash_refund_final_gl
                 .prove_q_worker_custom(self, store, job_id),
             _ => self.core.worker_prove(store, job_id),
         }
@@ -293,7 +334,7 @@ impl<S: QProofStoreReaderSync> QWorkerGenericProverGroth16<S, PoseidonGoldilocks
                 pi_c: Serialized2DFeltBLS12381([0u8; 48]),
             })
         } else {
-            let (proof_string, _vk_string) = gnark_plonky2_wrapper::wrap_plonky2_proof(
+            let (proof_string, vk_string) = gnark_plonky2_wrapper::wrap_plonky2_proof(
                 wrapper.circuit_data,
                 &wrapper_proof,
                 Some(&format!("/tmp/plonky2_proof/{}", job_id.data_index)),
@@ -302,8 +343,8 @@ impl<S: QProofStoreReaderSync> QWorkerGenericProverGroth16<S, PoseidonGoldilocks
                     home::home_dir().unwrap().display()
                 ),
             )?;
-            //println!("proof: {}",proof_string);
-            //println!("vk: {}",vk_string);
+            println!("proof: {}",proof_string);
+            println!("vk: {}",vk_string);
             /*
             let proof_string = serde_json::to_string(&CityGroth16ProofData {
                 pi_a: Serialized2DFeltBLS12381([0u8; 48]),

@@ -3,7 +3,7 @@ use city_crypto::hash::merkle::treeprover::{AggStateTransitionInput, AggStateTra
 use plonky2::{hash::hash_types::RichField, plonk::{config::GenericConfig, proof::ProofWithPublicInputs}};
 use serde::{Deserialize, Serialize};
 
-use crate::qworker::job_id::{ProvingJobCircuitType, QProvingJobDataID};
+use crate::qworker::{job_id::{ProvingJobCircuitType, QProvingJobDataID}};
 
 use super::{agg::{CRAggAddProcessL1WithdrawalAddL1DepositCircuitInput, CRAggUserRegisterClaimDepositL2TransferCircuitInput, CRBlockStateTransitionCircuitInput}, op::{CRAddL1DepositCircuitInput, CRAddL1WithdrawalCircuitInput, CRClaimL1DepositCircuitInput, CRL2TransferCircuitInput, CRProcessL1WithdrawalCircuitInput, CRUserRegistrationCircuitInput}, sighash::{CRSigHashFinalGLCircuitInput, CRSigHashWrapperCircuitInput}};
 

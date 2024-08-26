@@ -341,7 +341,7 @@ where
             ProvingJobCircuitType::GenerateRollupStateTransitionProof => todo!(),
             ProvingJobCircuitType::GenerateSigHashIntrospectionProof => todo!(),
             ProvingJobCircuitType::GenerateFinalSigHashProof => todo!(),
-            ProvingJobCircuitType::GenerateFinalSigHashProofGroth16 => todo!(),
+            ProvingJobCircuitType::GenerateRefundSigHashIntrospectionProof => todo!(),
             ProvingJobCircuitType::DummyRegisterUserAggregate => {
                 self.agg_state_transition_dummy.get_verifier_triplet()
             }
@@ -376,6 +376,12 @@ where
             ProvingJobCircuitType::WrapFinalSigHashProofBLS12381 => {
                 panic!("WrapFinalSigHashProofBLS12381 is not a standard circuit")
             }
+            ProvingJobCircuitType::GenerateSigHashRootProof => {
+                panic!("SigHashRoot is not a standard circuit")
+            },
+            ProvingJobCircuitType::GenerateRefundFinalSigHashProof => {
+                panic!("RefundFinalSigHash is not a standard circuit")
+            },
         }
     }
 
@@ -457,7 +463,7 @@ where
             ProvingJobCircuitType::GenerateRollupStateTransitionProof => todo!(),
             ProvingJobCircuitType::GenerateSigHashIntrospectionProof => todo!(),
             ProvingJobCircuitType::GenerateFinalSigHashProof => todo!(),
-            ProvingJobCircuitType::GenerateFinalSigHashProofGroth16 => todo!(),
+            ProvingJobCircuitType::GenerateRefundSigHashIntrospectionProof => todo!(),
             ProvingJobCircuitType::DummyRegisterUserAggregate => self
                 .agg_state_transition_dummy
                 .prove_q_worker_simple(self, store, job_id),
@@ -482,6 +488,8 @@ where
             ProvingJobCircuitType::AggUserRegisterClaimDepositL2Transfer => todo!(),
             ProvingJobCircuitType::AggAddProcessL1WithdrawalAddL1Deposit => todo!(),
             ProvingJobCircuitType::WrapFinalSigHashProofBLS12381 => todo!(),
+            ProvingJobCircuitType::GenerateSigHashRootProof => todo!(),
+            ProvingJobCircuitType::GenerateRefundFinalSigHashProof => todo!(),
         }
     }
 }

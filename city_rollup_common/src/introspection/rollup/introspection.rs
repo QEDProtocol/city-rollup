@@ -13,8 +13,7 @@ use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 
 use crate::introspection::{
-    sighash::{SigHashPreimage, SigHashPreimageConfig},
-    transaction::{BTCTransaction, BTCTransactionConfig},
+    rollup::introspection_result::BTCRollupRefundIntrospectionResult, sighash::{SigHashPreimage, SigHashPreimageConfig}, transaction::{BTCTransaction, BTCTransactionConfig}
 };
 
 use super::introspection_result::{
@@ -25,10 +24,68 @@ use super::introspection_result::{
 #[derive(Serialize, Deserialize, PartialEq, Clone, Debug)]
 pub struct RefundSpendIntrospectionHint {
     pub sighash_preimage: SigHashPreimage,
-    pub current_spend_index: usize,
     pub funding_transaction: BTCTransaction,
-
 }
+
+impl RefundSpendIntrospectionHint {
+    pub fn get_config(&self) -> RefundIntrospectionGadgetConfig {
+        RefundIntrospectionGadgetConfig {
+            sighash_preimage_config: self.sighash_preimage.get_sighash_config(),
+            funding_transaction_config: self.funding_transaction.get_tx_config(),
+        }
+    }
+    pub fn get_sighash_felt252<H: AlgebraicHasher<F>, F: RichField>(
+        &self,
+    ) ->  QHashOut<F> {
+        QHashOut(self.sighash_preimage.get_hash_felt252::<F>())
+    }
+    pub fn get_introspection_result<H: AlgebraicHasher<F>, F: RichField>(
+        &self,
+    ) -> BTCRollupRefundIntrospectionResult<F> {
+        let sighash_felt252 = QHashOut(self.sighash_preimage.get_hash_felt252::<F>());
+        let mut deposits: Vec<BTCRollupIntrospectionResultDeposit<F>> = Vec::new();
+        let mut withdrawals: Vec<BTCRollupIntrospectionResultWithdrawal<F>> = Vec::new();
+        let d = &self.funding_transaction;
+
+        deposits.push(BTCRollupIntrospectionResultDeposit {
+            txid_224: QHashOut(hash256_to_hashout_u224(
+                d.get_hash(),
+            )),
+            public_key: bytes33_to_public_key::<F>(if d.inputs[0].script.len() == 106 {
+                &d.inputs[0].script[73..106]
+            } else {
+                &d.inputs[0].script[74..107]
+            }),
+            value: F::from_noncanonical_u64(d.outputs[0].value),
+        });
+
+        for output in self.sighash_preimage.transaction.outputs.iter() {
+            withdrawals.push(BTCRollupIntrospectionResultWithdrawal {
+                script: output
+                    .script
+                    .iter()
+                    .map(|b| F::from_canonical_u8(*b))
+                    .collect::<Vec<_>>(),
+                value: F::from_noncanonical_u64(output.value),
+            })
+        }
+        let current_block_state_hash: [u8; 32] =
+            self.sighash_preimage.transaction.inputs[0].script[1..33]
+                .try_into()
+                .unwrap();
+
+        BTCRollupRefundIntrospectionResult {
+            sighash: self.sighash_preimage.get_hash(),
+            sighash_felt252,
+            deposits,
+            withdrawals,
+            current_block_state_hash: QHashOut(hash256_le_to_felt248_hashout(
+                &current_block_state_hash,
+            )),
+        }
+    }
+}
+
 #[serde_as]
 #[derive(Serialize, Deserialize, PartialEq, Clone, Debug)]
 pub struct BlockSpendIntrospectionHint {
@@ -44,6 +101,7 @@ pub struct BlockSpendIntrospectionHint {
     #[serde_as(as = "serde_with::hex::Hex")]
     pub next_block_redeem_script: Vec<u8>,
 }
+
 impl BlockSpendIntrospectionHint {
     pub fn get_config(&self) -> BlockSpendIntrospectionGadgetConfig {
         BlockSpendIntrospectionGadgetConfig {
@@ -435,8 +493,21 @@ impl BlockSpendCoreConfig {
 pub struct RefundIntrospectionGadgetConfig {
     pub sighash_preimage_config: SigHashPreimageConfig,
     pub funding_transaction_config: BTCTransactionConfig,
-    pub block_script_length: usize,
-    pub current_spend_index: usize,
+}
+
+impl RefundIntrospectionGadgetConfig {
+    pub fn generate_from_template(config: &BlockSpendCoreConfig) -> Self {
+        let sighash_preimage_config = SigHashPreimageConfig::generate_refund_tx_from_template(
+            config,
+        );
+
+        let funding_transaction_config = BTCTransactionConfig::generate_funding_deposit_tx_from_template(config);
+
+        Self {
+            sighash_preimage_config,
+            funding_transaction_config,
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Clone, Debug, Hash, Eq, PartialOrd, Ord)]
@@ -461,7 +532,7 @@ impl BlockSpendIntrospectionGadgetConfig {
         num_withdrawals: usize,
         current_spend_index: usize,
     ) -> Self {
-        let sighash_preimage_config = SigHashPreimageConfig::generate_from_template(
+        let sighash_preimage_config = SigHashPreimageConfig::generate_block_tx_from_template(
             config,
             num_deposits,
             num_withdrawals,
