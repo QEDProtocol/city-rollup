@@ -44,6 +44,7 @@ pub trait CircuitBuilderSelectHelpers<F: RichField + Extendable<D>, const D: usi
         x: Hash256BytesTarget,
         y: Hash256BytesTarget,
     ) -> BoolTarget;
+    fn is_equal_array(&mut self, x: &[Target], y: &[Target]) -> BoolTarget;
 }
 
 impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilderSelectHelpers<F, D>
@@ -112,18 +113,21 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilderSelectHelpers<F
         }
         last_allowed
     }
-    
+
     fn is_equal_hash_256_bytes(
         &mut self,
         x: Hash256BytesTarget,
         y: Hash256BytesTarget,
     ) -> BoolTarget {
+        self.is_equal_array(&x, &y)
+    }
+
+    fn is_equal_array(&mut self, x: &[Target], y: &[Target]) -> BoolTarget {
         let mut result = self.constant_bool(true);
         for i in 0..x.len() {
             let equal = self.is_equal(x[i], y[i]);
             result = self.and(equal, result);
         }
         result
-
     }
 }

@@ -76,14 +76,13 @@ impl BTCRollupIntrospectionGadget {
         let mut hash_domain = Sha256AcceleratorDomain::new();
 
         // start sig hash
-        let sighash_tx = BTCTransactionBytesGadget::add_virtual_to_fixed_locktime_version(
+        let sighash_tx = BTCTransactionBytesGadget::add_virtual_to_fixed_locktime(
             builder,
             config
                 .sighash_preimage_config
                 .transaction_config
                 .layout
                 .clone(),
-            config.sighash_preimage_config.transaction_config.version,
             config.sighash_preimage_config.transaction_config.locktime,
             false,
         );
@@ -111,19 +110,17 @@ impl BTCRollupIntrospectionGadget {
             // ));
 
             let funding_tx = if i != config.block_spend_index {
-                BTCTransactionBytesGadget::add_virtual_to_fixed_locktime_version_with_der(
+                BTCTransactionBytesGadget::add_virtual_to_fixed_locktime_with_der(
                 builder,
                 funding_tx_config.layout.clone(),
-                funding_tx_config.version,
                 funding_tx_config.locktime,
                 false,
                 true,
             )
         }else{
-            BTCTransactionBytesGadget::add_virtual_to_fixed_locktime_version(
+            BTCTransactionBytesGadget::add_virtual_to_fixed_locktime(
                 builder,
                 funding_tx_config.layout.clone(),
-                funding_tx_config.version,
                 funding_tx_config.locktime,
                 false,
             )

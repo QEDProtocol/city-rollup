@@ -70,14 +70,13 @@ where
         let tracer = DebugCircuitTracer::new();
 
         // start sig hash
-        let sighash_tx = BTCTransactionBytesGadget::add_virtual_to_fixed_locktime_version(
+        let sighash_tx = BTCTransactionBytesGadget::add_virtual_to_fixed_locktime(
             builder,
             config
                 .sighash_preimage_config
                 .transaction_config
                 .layout
                 .clone(),
-            config.sighash_preimage_config.transaction_config.version,
             config.sighash_preimage_config.transaction_config.locktime,
             false,
         );
@@ -98,10 +97,9 @@ where
         // start funding transactions
 
         let funding_transaction =
-            BTCTransactionBytesGadget::add_virtual_to_fixed_locktime_version_with_der(
+            BTCTransactionBytesGadget::add_virtual_to_fixed_locktime_with_der(
                 builder,
                 config.funding_transaction_config.layout.clone(),
-                config.funding_transaction_config.version,
                 config.funding_transaction_config.locktime,
                 false,
                 true,

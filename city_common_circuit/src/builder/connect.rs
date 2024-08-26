@@ -53,6 +53,7 @@ pub trait CircuitBuilderConnectHelpers<F: RichField + Extendable<D>, const D: us
         allowed: &[HashOutTarget],
     );
     fn connect_vec(&mut self, x: &[Target], y: &[Target]);
+    fn connect_any_vec(&mut self, x: &[Target], y: &[Vec<Target>]);
     fn connect_templated_array(
         &mut self,
         template_start: &[u64],
@@ -192,5 +193,14 @@ impl<F: RichField + Extendable<D>, const D: usize> CircuitBuilderConnectHelpers<
             .collect::<Vec<_>>();
         let combined = [tpl_start, template_middle.to_vec(), tpl_end].concat();
         self.connect_vec(target_array, &combined);
+    }
+
+    fn connect_any_vec(&mut self, x: &[Target], y: &[Vec<Target>]) {
+        let mut result = self._false();
+        for arr in y.iter() {
+            let equal = self.is_equal_array(x, arr);
+            result = self.or(result, equal);
+        }
+        self.assert_one(result.target)
     }
 }
