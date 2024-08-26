@@ -12,6 +12,7 @@ use city_rollup_common::api::data::block::rpc_request::{
     CityAddWithdrawalRPCRequest, CityClaimDepositRPCRequest, CityRegisterUserRPCRequest,
     CityTokenTransferRPCRequest,
 };
+use city_rollup_rpc_provider::{CityRpcProvider, RpcProvider};
 use city_rollup_common::qworker::proof_store::QProofStore;
 use city_rollup_worker_dispatch::implementations::redis::{
     QueueCmd, RedisQueue, Q_CMD, Q_RPC_ADD_WITHDRAWAL, Q_RPC_CLAIM_DEPOSIT, Q_RPC_REGISTER_USER,
@@ -21,6 +22,7 @@ use city_rollup_worker_dispatch::traits::proving_dispatcher::ProvingDispatcher;
 use city_rollup_worker_dispatch::traits::proving_worker::ProvingWorkerListener;
 use plonky2::hash::hash_types::RichField;
 use serde::de::DeserializeOwned;
+use tokio::join;
 
 #[derive(Clone)]
 pub struct CityEventReceiver<F: RichField> {
@@ -136,8 +138,38 @@ impl<F: RichField> OrchestratorEventReceiverSync<F> for CityEventReceiver<F> {
             }
         }
     }
-}
 
+    fn flush_all(&self) -> anyhow::Result<CityScenarioRequestedActionsFromRPC<F>> {
+        let check_point_id = self.rpc_processor.checkpoint_id;
+        let result = tokio::runtime::Runtime::new()
+            .unwrap()
+            .block_on(flush_all_async::<F>(check_point_id));
+        result
+    }
+}
+async fn flush_all_async<F: RichField>(
+    checkpoint_id: u64,
+) -> anyhow::Result<CityScenarioRequestedActionsFromRPC<F>> {
+    //get rpc client
+    let rpc_client = match RpcProvider::get_rpc_provider().clone() {
+        Some(rpc_client) => rpc_client,
+        None => return Err(anyhow::format_err!("rpc client not found")),
+    };
+    //post
+    let (r, c, t, a) = join!(
+        rpc_client.gather_register_user::<F>(),
+        rpc_client.gather_claim_deposit::<F>(checkpoint_id),
+        rpc_client.gather_token_transfer::<F>(checkpoint_id),
+        rpc_client.gather_add_withdrawal::<F>(checkpoint_id),
+    );
+
+    Ok(CityScenarioRequestedActionsFromRPC {
+        register_users: r?,
+        claim_l1_deposits: c?,
+        token_transfers: t?,
+        add_withdrawals: a?,
+    })
+}
 // Dev only
 impl<F: RichField> OrchestratorRPCEventSenderSync<F> for CityEventReceiver<F> {
     fn notify_rpc_claim_deposit(

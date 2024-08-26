@@ -36,6 +36,7 @@ city_common           = { path = "../city_common" }
 city_rollup_common = { path = "../city_rollup_common" }
 async-trait = { workspace = true }
 tracing = { workspace = true }
+bincode = "1.3.3"
 
 [dev-dependencies]
 criterion = "0.5.1"

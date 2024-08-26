@@ -19,6 +19,8 @@ serde_json = {workspace = true}
 r2d2 = { workspace = true }
 r2d2_redis = { workspace = true }
 bitcoin = { workspace = true }
+lazy_static = { workspace = true }
+log =  { workspace = true }
 
 [dev-dependencies]
 criterion = "0.5.1"

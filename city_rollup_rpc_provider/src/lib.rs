@@ -1,11 +1,18 @@
-use std::sync::Arc;
+use std::sync::{Arc, RwLock, RwLockReadGuard};
 
+use anyhow::Context;
 use city_common::data::{kv::SimpleKVPair, u8bytes::U8Bytes};
 use city_crypto::hash::base_types::hash160::Hash160;
 use city_crypto::hash::base_types::hash256::Hash256;
-use city_macros::{city_external_rpc_call, city_external_rpc_call_sync, city_rpc_call, city_rpc_call_sync};
+use city_macros::{city_external_rpc_call, city_external_rpc_call_sync, city_rpc_call, city_rpc_call_sync, async_rpc_call_with_response_handling};
 use city_rollup_common::{api::data::{
-    block::rpc_request::*,
+        block::{
+            requested_actions::{
+                CityAddWithdrawalRequest, CityClaimDepositRequest, CityRegisterUserRequest,
+                CityTokenTransferRequest,
+            },
+            rpc_request::*,
+        },
     store::{CityL1DepositJSON, CityL1Withdrawal, CityL2BlockState, CityUserState},
 }, qworker::job_id::QProvingJobDataIDSerializedWrapped};
 use city_rollup_core_node::rpc::{
@@ -13,9 +20,14 @@ use city_rollup_core_node::rpc::{
     Version,
 };
 use city_store::config::{CityHash, CityMerkleProof};
+use lazy_static::lazy_static;
 use plonky2::hash::hash_types::RichField;
 use reqwest::Client;
 use serde_json::json;
+
+lazy_static! {
+    pub static ref RPC_PROVIDER: RwLock<Option<RpcProvider>> = RwLock::new(None);
+}
 
 #[derive(Clone, Debug)]
 pub struct RpcProvider {
@@ -29,6 +41,17 @@ impl RpcProvider {
             client: Arc::new(Client::new()),
             url: Box::leak(url.to_string().into_boxed_str()),
         }
+    }
+    pub fn get_rpc_provider() -> RwLockReadGuard<'static, Option<RpcProvider>> {
+        RPC_PROVIDER
+            .read()
+            .expect("cannot get RPC_PROVIDER read lock")
+    }
+    pub fn initialize_rpc_provider(address: &str) {
+        let mut rpc_provider = RPC_PROVIDER
+            .write()
+            .expect("cannot get RPC_PROVIDER write lock");
+        *rpc_provider = Some(RpcProvider::new(address));
     }
 }
 
@@ -178,6 +201,21 @@ pub trait CityRpcProvider {
         &self,
         req: CityTokenTransferRPCRequest,
     ) -> anyhow::Result<()>;
+    async fn gather_register_user<F: RichField>(
+        &self,
+    ) -> anyhow::Result<Vec<CityRegisterUserRequest<F>>>;
+    async fn gather_claim_deposit<F: RichField>(
+        &self,
+        checkpoint_id: u64,
+    ) -> anyhow::Result<Vec<CityClaimDepositRequest>>;
+    async fn gather_add_withdrawal<F: RichField>(
+        &self,
+        checkpoint_id: u64,
+    ) -> anyhow::Result<Vec<CityAddWithdrawalRequest>>;
+    async fn gather_token_transfer<F: RichField>(
+        &self,
+        checkpoint_id: u64,
+    ) -> anyhow::Result<Vec<CityTokenTransferRequest>>;
 }
 
 pub trait CityRpcProviderSync {
@@ -615,9 +653,67 @@ impl CityRpcProvider for RpcProvider {
     ) -> anyhow::Result<()> {
         city_rpc_call!(self, RequestParams::<F>::TokenTransfer(req))
     }
+    async fn gather_register_user<F: RichField>(
+        &self,
+    ) -> anyhow::Result<Vec<CityRegisterUserRequest<F>>> {
+        let ret = {
+            let response = self
+                .client
+                .post(self.url)
+                .json(&RpcRequest {
+                    jsonrpc: Version::V2,
+                    request: RequestParams::<F>::GatherRegisterUser,
+                    id: Id::Number(1),
+                })
+                .send()
+                .await?
+                .json::<RpcResponse<Vec<CityRegisterUserRequest<F>>>>()
+                .await?;
+
+            if let ResponseResult::Success(s) = response.result {
+                Ok(s)
+            } else {
+                Err(anyhow::format_err!("rpc call failed"))
+            }
+        };
+
+        ret.context("gather_register_user failed")
+    }
+    async fn gather_claim_deposit<F: RichField>(
+        &self,
+        checkpoint_id: u64,
+    ) -> anyhow::Result<Vec<CityClaimDepositRequest>> {
+        let ret = async_rpc_call_with_response_handling!(
+            self,
+            RequestParams::<F,>::GatherClaimDeposit(checkpoint_id),
+            Vec<CityClaimDepositRequest,>
+        );
+
+        ret.context("gather_claim_deposit failed")
+    }
+    async fn gather_add_withdrawal<F: RichField>(
+        &self,
+        checkpoint_id: u64,
+    ) -> anyhow::Result<Vec<CityAddWithdrawalRequest>> {
+        let ret = async_rpc_call_with_response_handling!(
+            self,
+            RequestParams::<F,>::GatherAddWithdrawal(checkpoint_id),
+            Vec<CityAddWithdrawalRequest,>
+        );
+        ret.context("gather_add_withdrawal failed")
+    }
+    async fn gather_token_transfer<F: RichField>(
+        &self,
+        checkpoint_id: u64,
+    ) -> anyhow::Result<Vec<CityTokenTransferRequest>> {
+        let ret = async_rpc_call_with_response_handling!(
+            self,
+            RequestParams::<F,>::GatherTokenTransfer(checkpoint_id),
+            Vec<CityTokenTransferRequest,>
+        );
+        ret.context("gather_token_transfer failed")
+    }
 }
-
-
 
 impl CityRpcProviderSync for RpcProviderSync {
     fn get_user_tree_root_sync(&self, checkpoint_id: u64) -> anyhow::Result<CityHash> {

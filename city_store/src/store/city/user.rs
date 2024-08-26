@@ -1,4 +1,5 @@
 use city_crypto::hash::qhashout::QHashOut;
+use city_redis_store::{get_cached_user_state, update_cache_user_state};
 use city_rollup_common::api::data::store::CityUserState;
 use kvq::traits::{KVQBinaryStore, KVQBinaryStoreReader};
 use plonky2::{
@@ -32,10 +33,18 @@ impl<S: KVQBinaryStoreReader> CityStore<S> {
         checkpoint_id: u64,
         user_id: u64,
     ) -> anyhow::Result<CityUserState> {
+        //try to get user state from redis cache
+        if let Some(user_state) = get_cached_user_state(user_id)? {
+            return Ok(user_state);
+        }
+
         let leaf_id = user_id * 2;
         let left = GlobalUserTreeStore::<S>::get_leaf_value_fc(store, checkpoint_id, leaf_id)?;
         let right = GlobalUserTreeStore::<S>::get_leaf_value_fc(store, checkpoint_id, leaf_id + 1)?;
-        Ok(CityUserState::from_hash(user_id, left, right))
+        let user_state = CityUserState::from_hash(user_id, left, right);
+        update_cache_user_state(&user_state)?;
+
+        Ok(user_state)
     }
     pub fn get_user_merkle_proof_by_id(
         store: &S,
@@ -92,6 +101,8 @@ impl<S: KVQBinaryStore> CityStore<S> {
             leaf_id + if left_before_right { 1 } else { 0 },
             second_leaf,
         )?;
+        update_cache_user_state(user)?;
+
         Ok((first_proof, second_proof))
     }
     pub fn register_user(
@@ -100,6 +111,9 @@ impl<S: KVQBinaryStore> CityStore<S> {
         user_id: u64,
         public_key: CityHash,
     ) -> anyhow::Result<CityDeltaMerkleProof> {
+        let user_state = CityUserState::new_user_with_public_key(user_id, public_key);
+        update_cache_user_state(&user_state)?;
+
         let leaf_id = user_id * 2;
         L2UserIdsStore::set_user_id_public_key_pair(store, user_id, public_key)?;
         GlobalUserTreeStore::set_leaf_fc(store, checkpoint_id, leaf_id + 1, public_key)
@@ -136,7 +150,9 @@ impl<S: KVQBinaryStore> CityStore<S> {
                 current_leaf.0.elements[3],
             ],
         });
-
+        let right = GlobalUserTreeStore::get_leaf_value_fc(store, checkpoint_id, leaf_id + 1)?;
+        let user_state = CityUserState::from_hash(user_id, new_user_leaf, right);
+        update_cache_user_state(&user_state)?;
         GlobalUserTreeStore::set_leaf_fc(store, checkpoint_id, leaf_id, new_user_leaf)
     }
 
@@ -175,7 +191,9 @@ impl<S: KVQBinaryStore> CityStore<S> {
                 current_leaf.0.elements[3],
             ],
         });
-
+        let right = GlobalUserTreeStore::get_leaf_value_fc(store, checkpoint_id, leaf_id + 1)?;
+        let user_state = CityUserState::from_hash(user_id, new_user_leaf, right);
+        update_cache_user_state(&user_state)?;
         GlobalUserTreeStore::set_leaf_fc(store, checkpoint_id, leaf_id, new_user_leaf)
     }
 }

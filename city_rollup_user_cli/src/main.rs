@@ -5,6 +5,9 @@ use shadow_rs::shadow;
 
 shadow!(build);
 
+#[global_allocator]
+static ALLOC: jemallocator::Jemalloc = jemallocator::Jemalloc;
+
 use clap::Parser;
 use error::Result;
 

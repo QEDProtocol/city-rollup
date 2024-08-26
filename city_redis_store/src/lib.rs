@@ -1,17 +1,24 @@
+use std::sync::{Arc, RwLock};
 use city_rollup_common::api::data::store::CityUserState;
 use city_rollup_common::qworker::job_id::QProvingJobDataID;
 use city_rollup_common::qworker::proof_store::QProofStoreReaderSync;
 use city_rollup_common::qworker::proof_store::QProofStoreWriterSync;
 use plonky2::plonk::config::GenericConfig;
+use lazy_static::lazy_static;
 use plonky2::plonk::proof::ProofWithPublicInputs;
 use r2d2_redis::RedisConnectionManager;
 use redis::Commands;
+use log::info;
 
 // Table
 pub const USER_STATE: &'static str = "user_state";
 
 pub const PROOFS: &'static str = "proofs";
 pub const PROOF_COUNTERS: &'static str = "proof_counters";
+
+lazy_static! {
+    pub static ref REDIS_CACHE: Arc<RwLock<Option<RedisStore>>> = Arc::new(RwLock::new(None));
+}
 
 #[derive(Clone)]
 pub struct RedisStore {
@@ -48,6 +55,7 @@ impl RedisStore {
         )?;
         Ok(())
     }
+
 }
 
 impl QProofStoreReaderSync for RedisStore {
@@ -108,5 +116,33 @@ impl QProofStoreWriterSync for RedisStore {
         next_jobs: &[QProvingJobDataID],
     ) -> anyhow::Result<()> {
         self.write_multidimensional_jobs_core(jobs_levels, next_jobs)
+    }
+}
+pub fn initialize_redis_cache(redis_uri: &str) -> anyhow::Result<()> {
+    let store = RedisStore::new(redis_uri)?;
+    let mut redis_cache = REDIS_CACHE.write()
+        .expect("Failed to acquire write lock on REDIS_CACHE");
+    *redis_cache = Some(store);
+    Ok(())
+}
+
+pub fn update_cache_user_state(user_state: &CityUserState) -> anyhow::Result<()> {
+    info!(
+        "Updating user state in cache: {}",
+        serde_json::to_string(user_state).unwrap()
+    );
+    // Save user state to Redis cache
+    if let Ok(redis_cache) = REDIS_CACHE.read() {
+        redis_cache.clone().unwrap().set_user_state(user_state)?;
+    }
+    Ok(())
+}
+
+pub fn get_cached_user_state(user_id: u64) -> anyhow::Result<Option<CityUserState>> {
+    info!("Getting user state from cache: user_id({})", user_id);
+    if let Ok(redis_cache) = REDIS_CACHE.read() {
+        Ok(redis_cache.clone().unwrap().get_user_state(user_id).ok())
+    } else {
+        Ok(None)
     }
 }

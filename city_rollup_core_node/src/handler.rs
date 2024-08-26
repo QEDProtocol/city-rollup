@@ -4,17 +4,32 @@ use std::sync::Arc;
 
 use bytes::Bytes;
 use city_common::cli::args::RPCServerArgs;
+use city_common_circuit::circuits::zk_signature::{
+    verify_secp256k1_signature_proof,verify_standard_wrapped_zk_signature_proof
+};
 use city_redis_store::RedisStore;
-use city_rollup_common::actors::traits::OrchestratorRPCEventSenderSync;
-use city_rollup_common::api::data::block::rpc_request::*;
+use city_rollup_common::{
+    actors::traits::OrchestratorRPCEventSenderSync,
+    api::data::block::{
+        requested_actions::{
+            CityAddWithdrawalRequest, CityClaimDepositRequest, CityRegisterUserRequest,
+            CityTokenTransferRequest,
+        },
+        rpc_request::*,
+    },
+    qworker::{job_id::QProvingJobDataID, proof_store::QProofStoreWriterSync},
+};
+
 use city_rollup_worker_dispatch::implementations::redis::QueueCmd;
 use city_rollup_worker_dispatch::implementations::redis::RedisQueue;
-use city_rollup_worker_dispatch::implementations::redis::Q_CMD;
-use city_rollup_worker_dispatch::implementations::redis::Q_RPC_ADD_WITHDRAWAL;
-use city_rollup_worker_dispatch::implementations::redis::Q_RPC_CLAIM_DEPOSIT;
-use city_rollup_worker_dispatch::implementations::redis::Q_RPC_REGISTER_USER;
-use city_rollup_worker_dispatch::implementations::redis::Q_RPC_TOKEN_TRANSFER;
-use city_rollup_worker_dispatch::traits::proving_dispatcher::ProvingDispatcher;
+use city_rollup_worker_dispatch::{
+    implementations::redis::{
+        Q_CMD, Q_RPC_ADD_WITHDRAWAL, Q_RPC_CLAIM_DEPOSIT,
+        Q_RPC_REGISTER_USER, Q_RPC_TOKEN_TRANSFER,
+    },
+    traits::{proving_dispatcher::ProvingDispatcher, proving_worker::ProvingWorkerListener},
+};
+use city_store::config::C;
 use http_body_util::BodyExt;
 use http_body_util::Full;
 use hyper::body::Incoming;
@@ -30,9 +45,11 @@ use jsonrpsee::core::client::ClientT;
 use jsonrpsee::http_client::HttpClient;
 use jsonrpsee::http_client::HttpClientBuilder;
 use plonky2::hash::hash_types::RichField;
-use serde_json::json;
-use serde_json::Value;
-use tokio::net::TcpListener;
+use rayon::iter::{IndexedParallelIterator, IntoParallelRefIterator, ParallelIterator};
+use serde::de::DeserializeOwned;
+use serde_json::{json, Value};
+use tokio::{net::TcpListener, task::spawn_blocking};
+
 
 use crate::rpc::ErrorCode;
 use crate::rpc::ExternalRequestParams;
@@ -105,6 +122,22 @@ impl<F: RichField> CityRollupRPCServerHandler<F> {
                 request: ProduceBlock,
                 ..
             }) => self.produce_block().map(|r| json!(r)),
+            Ok(RpcRequest {
+                request: GatherRegisterUser,
+                ..
+            }) => self.gather_register_user().map(|r| json!(r)),
+            Ok(RpcRequest {
+                request: GatherClaimDeposit(checkpoint_id),
+                ..
+            }) => self.gather_claim_deposit(checkpoint_id).map(|r| json!(r)),
+            Ok(RpcRequest {
+                request: GatherAddWithdrawal(checkpoint_id),
+                ..
+            }) => self.gather_add_withdrawal(checkpoint_id).map(|r| json!(r)),
+            Ok(RpcRequest {
+                request: GatherTokenTransfer(checkpoint_id),
+                ..
+            }) => self.gather_token_transfer(checkpoint_id).map(|r| json!(r)),
             Err(_) => {
                 let request =
                     serde_json::from_slice::<RpcRequest<ExternalRequestParams>>(&whole_body)?
@@ -151,7 +184,121 @@ impl<F: RichField> CityRollupRPCServerHandler<F> {
         self.notify_rpc_register_user(&req)?;
         Ok(())
     }
+    pub fn flush_rpc_requests<T: DeserializeOwned>(
+        &mut self,
+        topic: &'static str,
+    ) -> anyhow::Result<Vec<T>> {
+        Ok(self
+            .tx_queue
+            .pop_all(topic)?
+            .into_iter()
+            .map(|v| Ok(serde_json::from_slice(&v)?))
+            .collect::<anyhow::Result<Vec<_>>>()?)
+    }
+    fn gather_register_user(&mut self) -> Result<Vec<CityRegisterUserRequest<F>>, anyhow::Error> {
+        let ret =
+            match self.flush_rpc_requests::<CityRegisterUserRPCRequest<F>>(Q_RPC_REGISTER_USER) {
+                Ok(v) => Ok(v
+                    .par_iter()
+                    .map(|req| CityRegisterUserRequest::<F>::new(req.public_key))
+                    .collect::<Vec<_>>()),
+                Err(e) => Err(e),
+            };
+        ret
+    }
+    fn gather_claim_deposit(
+        &mut self,
+        checkpoint_id: u64,
+    ) -> Result<Vec<CityClaimDepositRequest>, anyhow::Error> {
+        //todo: have rpc_node id from somewhere
+        let rpc_node_id = 0;
+        let reqs = self.flush_rpc_requests::<CityClaimDepositRPCRequest>(Q_RPC_CLAIM_DEPOSIT)?;
+        let deposit = reqs
+            .par_iter()
+            .enumerate()
+            .map(|(i, req)| {
+                let count = i as u32;
+                let signature_proof_id = QProvingJobDataID::claim_deposit_l1_signature_proof(
+                    rpc_node_id,
+                    checkpoint_id,
+                    count, //it's index indeed
+                );
+                let mut ps = self.store.clone();
+                ps.set_bytes_by_id(signature_proof_id, &req.signature_proof)?;
 
+                Ok(CityClaimDepositRequest::new(
+                    req.user_id,
+                    req.deposit_id,
+                    req.value,
+                    req.txid,
+                    req.public_key,
+                    signature_proof_id,
+                ))
+            })
+            .collect::<anyhow::Result<Vec<CityClaimDepositRequest>>>()?;
+        Ok(deposit)
+    }
+    fn gather_add_withdrawal(
+        &mut self,
+        checkpoint_id: u64,
+    ) -> Result<Vec<CityAddWithdrawalRequest>, anyhow::Error> {
+        let rpc_node_id = 0;
+        let reqs = self.flush_rpc_requests::<CityAddWithdrawalRPCRequest>(Q_RPC_ADD_WITHDRAWAL)?;
+        let withdraw = reqs
+            .par_iter()
+            .enumerate()
+            .map(|(i, req)| {
+                let count = i as u32;
+                let signature_proof_id = QProvingJobDataID::withdrawal_signature_proof(
+                    rpc_node_id,
+                    checkpoint_id,
+                    count, //it's index indeed
+                );
+                let mut ps = self.store.clone();
+                ps.set_bytes_by_id(signature_proof_id, &req.signature_proof)?;
+
+                Ok(CityAddWithdrawalRequest::new(
+                    req.user_id,
+                    req.value,
+                    req.nonce,
+                    req.destination_type,
+                    req.destination,
+                    signature_proof_id,
+                ))
+            })
+            .collect::<anyhow::Result<Vec<CityAddWithdrawalRequest>>>()?;
+        Ok(withdraw)
+    }
+    fn gather_token_transfer(
+        &mut self,
+        checkpoint_id: u64,
+    ) -> Result<Vec<CityTokenTransferRequest>, anyhow::Error> {
+        let rpc_node_id = 0;
+        let reqs = self.flush_rpc_requests::<CityTokenTransferRPCRequest>(Q_RPC_TOKEN_TRANSFER)?;
+        let transfer = reqs
+            .par_iter()
+            .enumerate()
+            .map(|(i, req)| {
+                let count = i as u32;
+                let signature_proof_id = QProvingJobDataID::transfer_signature_proof(
+                    rpc_node_id,
+                    checkpoint_id,
+                    count, //it's index indeed
+                );
+                let mut ps = self.store.clone();
+                ps.set_bytes_by_id(signature_proof_id, &req.signature_proof)?;
+
+                Ok(CityTokenTransferRequest::new(
+                    req.user_id,
+                    req.to,
+                    req.value,
+                    req.nonce,
+                    signature_proof_id,
+                ))
+            })
+            .collect::<anyhow::Result<Vec<CityTokenTransferRequest>>>()?;
+        Ok(transfer)
+    }
     fn produce_block(&mut self) -> Result<(), anyhow::Error> {
         Ok(self.notify_rpc_produce_block()?)
     }
@@ -170,7 +317,7 @@ impl<F: RichField> CityRollupRPCServerHandler<F> {
         &mut self,
         req: CityClaimDepositRPCRequest,
     ) -> Result<(), anyhow::Error> {
-        self.verify_signature_proof(req.user_id, req.signature_proof.clone())
+        self.verify_signature_proof_secp256k1(req.user_id, req.signature_proof.clone())
             .await?;
         self.notify_rpc_claim_deposit(&req)?;
         Ok(())
@@ -186,19 +333,36 @@ impl<F: RichField> CityRollupRPCServerHandler<F> {
         Ok(())
     }
 
+    async fn verify_signature_proof_secp256k1(
+        &self,
+        _user_id: u64,
+        signature_proof: Vec<u8>,
+    ) -> anyhow::Result<()> {
+
+        spawn_blocking(move || {
+            verify_secp256k1_signature_proof::<C, { city_store::config::D }>(
+                Default::default(),
+                signature_proof,
+            )?;
+            Ok::<_, anyhow::Error>(())
+        })
+        .await??;
+        Ok(())
+    }
     async fn verify_signature_proof(
         &self,
         _user_id: u64,
-        _signature_proof: Vec<u8>,
+        signature_proof: Vec<u8>,
     ) -> anyhow::Result<()> {
-        // let pubkey_bytes = self.store.get_user_state(user_id)?.public_key;
-        //
-        // spawn_blocking(move || {
-        //     verify_standard_wrapped_zk_signature_proof::<C, D>(pubkey_bytes, signature_proof)?;
-        //     Ok::<_, anyhow::Error>(())
-        // })
-        // .await??;
 
+        spawn_blocking(move || {
+            verify_standard_wrapped_zk_signature_proof::<C, { city_store::config::D }>(
+                Default::default(),
+                signature_proof,
+            )?;
+            Ok::<_, anyhow::Error>(())
+        })
+        .await??;
         Ok(())
     }
 }

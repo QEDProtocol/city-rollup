@@ -1,3 +1,4 @@
+use rayon::prelude::{IntoParallelRefIterator, ParallelIterator};
 use crate::{
     api::data::block::{
         requested_actions::{
@@ -62,6 +63,18 @@ impl<F: RichField> OrchestratorEventReceiverSync<F> for CityScenarioRequestedAct
 
     fn wait_for_produce_block(&mut self) -> anyhow::Result<bool> {
         Ok(false)
+    }
+    fn flush_all(&self) -> anyhow::Result<CityScenarioRequestedActionsFromRPC<F>> {
+        let claim_l1_deposits = self.clone().flush_claim_deposits()?;
+        let register_users = self.clone().flush_register_users()?;
+        let add_withdrawals = self.clone().flush_add_withdrawals()?;
+        let token_transfers = self.clone().flush_token_transfers()?;
+        Ok(CityScenarioRequestedActionsFromRPC {
+            token_transfers,
+            register_users,
+            claim_l1_deposits,
+            add_withdrawals,
+        })
     }
 }
 impl<F: RichField> OrchestratorEventSenderSync<F> for CityScenarioRequestedActionsFromRPC<F> {
@@ -216,10 +229,14 @@ impl<F: RichField> QRPCProcessor<F> {
         rpc_node_id: u32,
         reqs: &[CityRegisterUserRPCRequest<F>],
     ) -> anyhow::Result<()> {
-        for req in reqs {
-            let register = self.injest_rpc_register_user(rpc_node_id, req)?;
-            self.output.register_users.push(register);
-        }
+        let mut registers = reqs
+            .par_iter()
+            .map(|req| {
+                self.injest_rpc_register_user(rpc_node_id, req)
+                    .expect("injest_rpc_register_user failed")
+            })
+            .collect::<Vec<_>>();
+        self.output.register_users.append(&mut registers);
         Ok(())
     }
 }

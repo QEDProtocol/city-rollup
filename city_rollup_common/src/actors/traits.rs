@@ -1,6 +1,7 @@
 use plonky2::hash::hash_types::RichField;
 
 use crate::{
+    actors::rpc_processor::CityScenarioRequestedActionsFromRPC,
     api::data::{
         block::{
             requested_actions::{
@@ -103,6 +104,7 @@ pub trait OrchestratorEventReceiverSync<F: RichField> {
     fn flush_token_transfers(&mut self) -> anyhow::Result<Vec<CityTokenTransferRequest>>;
 
     fn wait_for_produce_block(&mut self) -> anyhow::Result<bool>;
+    fn flush_all(&self) -> anyhow::Result<CityScenarioRequestedActionsFromRPC<F>>;
 }
 pub trait WorkerEventReceiverSync {
     fn wait_for_next_job(&mut self) -> anyhow::Result<QProvingJobDataID>;
